@@ -25,6 +25,18 @@ class ItemViewModel(
     private val _uiState = MutableStateFlow<ItemUiState>(ItemUiState())
     val uiState: StateFlow<ItemUiState> = _uiState.asStateFlow()
 
+    // 临时存储识别得到的特征码
+    private val _pendingFeatureCode = MutableStateFlow<String?>(null)
+    val pendingFeatureCode: StateFlow<String?> = _pendingFeatureCode.asStateFlow()
+    
+    fun setPendingFeatureCode(featureCode: String?) {
+        _pendingFeatureCode.value = featureCode
+    }
+    
+    fun clearPendingFeatureCode() {
+        _pendingFeatureCode.value = null
+    }
+
     fun loadItem(itemId: Long) {
         viewModelScope.launch {
             val item = itemRepository.getItemById(itemId)
@@ -50,21 +62,16 @@ class ItemViewModel(
         }
     }
 
-    fun updateItemStatus(itemId: Long, status: ItemStatus) {
-        viewModelScope.launch {
-            val item = itemRepository.getItemById(itemId)
-            item?.let {
-                itemRepository.updateItem(it.copy(status = status, updatedAt = Date()))
-            }
-        }
-    }
-
     fun getItemByBarcode(barcode: String, onResult: (Item?) -> Unit) {
         viewModelScope.launch {
             val item = itemRepository.getItemByBarcode(barcode)
             onResult(item)
         }
     }
+    
+    fun searchItemsByName(query: String) = itemRepository.searchItemsByName(query)
+    
+    suspend fun getAllItemsList(): List<Item> = itemRepository.getAllItemsList()
 }
 
 data class ItemUiState(

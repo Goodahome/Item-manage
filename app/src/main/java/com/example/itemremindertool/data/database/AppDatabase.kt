@@ -5,7 +5,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.itemremindertool.data.converters.DateConverters
+import com.example.itemremindertool.data.converters.StringListConverters
 import com.example.itemremindertool.data.dao.CategoryDao
 import com.example.itemremindertool.data.dao.ItemDao
 import com.example.itemremindertool.data.dao.ShoppingItemDao
@@ -17,10 +20,10 @@ import com.example.itemremindertool.data.model.Warehouse
 
 @Database(
     entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class],
-    version = 1,
+    version = 5,
     exportSchema = false
 )
-@TypeConverters(DateConverters::class)
+@TypeConverters(DateConverters::class, StringListConverters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun itemDao(): ItemDao
     abstract fun categoryDao(): CategoryDao
@@ -37,11 +40,42 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "item_reminder_database"
-                ).build()
+                )
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }
         }
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE items ADD COLUMN tags TEXT NOT NULL DEFAULT ''")
+                database.execSQL("CREATE TABLE items_new (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, description TEXT NOT NULL, categoryId INTEGER, warehouseId INTEGER, tags TEXT NOT NULL DEFAULT '', purchaseDate INTEGER, expiryDate INTEGER, price REAL, quantity INTEGER NOT NULL DEFAULT 1, barcode TEXT, imageUri TEXT, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
+                database.execSQL("INSERT INTO items_new (id, name, description, categoryId, warehouseId, tags, purchaseDate, expiryDate, price, quantity, barcode, imageUri, createdAt, updatedAt) SELECT id, name, description, categoryId, warehouseId, '', purchaseDate, expiryDate, price, quantity, barcode, imageUri, createdAt, updatedAt FROM items")
+                database.execSQL("DROP TABLE items")
+                database.execSQL("ALTER TABLE items_new RENAME TO items")
+            }
+        }
+        
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE items ADD COLUMN featureCode TEXT")
+            }
+        }
+        
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE shopping_items ADD COLUMN imageUri TEXT")
+            }
+        }
+        
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE warehouses ADD COLUMN parentId INTEGER")
+                database.execSQL("ALTER TABLE warehouses ADD COLUMN level INTEGER NOT NULL DEFAULT 1")
+            }
+        }
     }
 }
-

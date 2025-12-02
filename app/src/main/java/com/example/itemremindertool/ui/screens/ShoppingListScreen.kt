@@ -1,9 +1,26 @@
 package com.example.itemremindertool.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import android.graphics.BitmapFactory
+import androidx.compose.ui.graphics.ImageBitmap
+import com.example.itemremindertool.utils.ImageUtils
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -13,6 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.itemremindertool.R
+import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.data.model.Priority
 import com.example.itemremindertool.data.model.ShoppingItem
 import com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel
@@ -23,24 +43,31 @@ fun ShoppingListScreen(
     viewModel: ShoppingItemViewModel,
     onAddItem: () -> Unit,
     onEditItem: (Long) -> Unit,
+    onNavigateBack: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val shoppingItems by viewModel.activeShoppingItems.collectAsState(initial = emptyList())
+    // 显示所有购物项（包括已完成的），而不是只显示未完成的
+    val shoppingItems by viewModel.shoppingItems.collectAsState(initial = emptyList())
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("购物篮") },
+                title = { Text(stringResource(R.string.shopping_basket)) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                    }
+                },
                 actions = {
                     IconButton(onClick = onAddItem) {
-                        Icon(Icons.Default.Add, "添加购物项")
+                        Icon(Icons.Default.Add, stringResource(R.string.add_shopping_item))
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddItem) {
-                Icon(Icons.Default.Add, "添加购物项")
+                Icon(Icons.Default.Add, stringResource(R.string.add_shopping_item))
             }
         }
     ) { paddingValues ->
@@ -62,12 +89,12 @@ fun ShoppingListScreen(
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     Text(
-                        "购物篮为空",
+                        stringResource(R.string.no_shopping_items),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     Button(onClick = onAddItem) {
-                        Text("添加第一个购物项")
+                        Text(stringResource(R.string.add_first_shopping_item))
                     }
                 }
             }
@@ -79,12 +106,17 @@ fun ShoppingListScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(shoppingItems, key = { it.id }) { item ->
+                // 排序：未完成的在前，已完成的在后
+                val sortedItems = shoppingItems.sortedBy { it.isCompleted }
+                items(sortedItems, key = { it.id }) { item ->
                     ShoppingItemCard(
                         item = item,
                         onEdit = { onEditItem(item.id) },
                         onDelete = { viewModel.deleteShoppingItem(item) },
-                        onToggleComplete = { viewModel.toggleComplete(item) }
+                        onToggleComplete = { viewModel.toggleComplete(item) },
+                        onQuantityChange = { newQuantity ->
+                            viewModel.updateShoppingItem(item.copy(quantity = newQuantity))
+                        }
                     )
                 }
             }
@@ -98,9 +130,55 @@ fun ShoppingItemCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onToggleComplete: () -> Unit,
+    onQuantityChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var quantityText by remember { mutableStateOf(item.quantity.toString()) }
+    val context = LocalContext.current
+    
+    // 加载背景图片（从ShoppingItem的imageUri字段）
+    val backgroundBitmap = remember(item.imageUri) {
+        if (item.imageUri != null) {
+            try {
+                BitmapFactory.decodeFile(item.imageUri)?.asImageBitmap()
+            } catch (e: Exception) {
+                null
+            }
+        } else {
+            null
+        }
+    }
+    
+    // 计算背景图片的亮度，决定文字颜色
+    val isImageBright = remember(item.imageUri) {
+        if (item.imageUri != null) {
+            try {
+                val bitmap = BitmapFactory.decodeFile(item.imageUri)
+                if (bitmap != null) {
+                    ImageUtils.calculateImageBrightness(bitmap)
+                } else {
+                    true // 默认使用深色文字
+                }
+            } catch (e: Exception) {
+                true // 默认使用深色文字
+            }
+        } else {
+            true // 默认使用深色文字
+        }
+    }
+    
+    // 根据图片亮度决定文字颜色
+    val textColor = if (isImageBright) {
+        Color.Black
+    } else {
+        Color.White
+    }
+    
+    // 当物品数量改变时，更新本地状态
+    LaunchedEffect(item.quantity) {
+        quantityText = item.quantity.toString()
+    }
 
     val priorityColor = when (item.priority) {
         Priority.HIGH -> Color(0xFFD32F2F)
@@ -108,23 +186,71 @@ fun ShoppingItemCard(
         Priority.LOW -> Color(0xFF388E3C)
     }
 
+    // 统一的灰色背景色（用于已完成状态）
+    val completedBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+    
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (item.isCompleted) 1.dp else 1.dp // 已完成的不显示阴影，避免边框效果
+        ),
+        colors = CardDefaults.cardColors(
+            // 明确设置为白色背景
+            containerColor = Color.White
+        )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Box {
+            // 未完成状态：显示背景图片和文字遮罩（如果有背景图片）
+            if (!item.isCompleted) {
+                if (backgroundBitmap != null) {
+                    androidx.compose.foundation.Image(
+                        bitmap = backgroundBitmap,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .matchParentSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    // 根据图片亮度添加半透明遮罩，确保文字可读
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .matchParentSize()
+                            .background(
+                                if (isImageBright) {
+                                    Color.White.copy(alpha = 0.4f) // 亮图用浅色遮罩
+                                } else {
+                                    Color.Black.copy(alpha = 0.5f) // 暗图用深色遮罩
+                                }
+                            )
+                    )
+                }
+                // 如果没有背景图片，Card 的白色背景会显示出来
+            }
+            
+            // 已完成状态：只显示灰色遮罩层覆盖整个卡片（仅在已完成时显示）
+            if (item.isCompleted) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .matchParentSize()
+                        .background(completedBackgroundColor)
+                )
+            }
+            
             Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(0.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                 Checkbox(
                     checked = item.isCompleted,
                     onCheckedChange = { onToggleComplete() }
@@ -133,17 +259,35 @@ fun ShoppingItemCard(
                     Text(
                         text = item.name,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = if (item.isCompleted) {
+                            if (backgroundBitmap != null) {
+                                textColor.copy(alpha = 0.5f)
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            }
+                        } else {
+                            if (backgroundBitmap != null) {
+                                textColor
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            }
+                        }
                     )
                     if (item.description.isNotEmpty()) {
                         Text(
                             text = item.description,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            color = if (backgroundBitmap != null) {
+                                textColor.copy(alpha = 0.9f)
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            }
                         )
                     }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
                         AssistChip(
@@ -154,26 +298,86 @@ fun ShoppingItemCard(
                                 labelColor = priorityColor
                             )
                         )
-                        if (item.quantity > 1) {
-                            Text(
-                                text = "数量: ${item.quantity}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        // 直接显示为可编辑的数量输入框（使用BasicTextField自定义内边距）
+                        var isFocused by remember { mutableStateOf(false) }
+                        BasicTextField(
+                            value = quantityText,
+                            onValueChange = { newValue: String ->
+                                quantityText = newValue.filter { char: Char -> char.isDigit() }
+                            },
+                            modifier = Modifier
+                                .width(60.dp)
+                                .heightIn(min = 30.dp) // 使用 heightIn 而不是固定 height，允许内容自适应
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isFocused) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.outline
+                                    },
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp) // 自定义内边距
+                                .onFocusChanged { focusState ->
+                                    isFocused = focusState.isFocused
+                                    if (!focusState.isFocused) {
+                                        // 失去焦点时保存数量
+                                        val newQuantity = quantityText.toIntOrNull() ?: 1
+                                        if (newQuantity > 0) {
+                                            onQuantityChange(newQuantity)
+                                        } else {
+                                            quantityText = item.quantity.toString()
+                                        }
+                                    }
+                                },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodySmall.copy(
+                                color = if (backgroundBitmap != null) {
+                                    if (isFocused) textColor else textColor.copy(alpha = 0.8f)
+                                } else {
+                                    if (isFocused) {
+                                        MaterialTheme.colorScheme.onSurface
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                    }
+                                }
+                            ),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    val newQuantity = quantityText.toIntOrNull() ?: 1
+                                    if (newQuantity > 0) {
+                                        onQuantityChange(newQuantity)
+                                    } else {
+                                        quantityText = item.quantity.toString()
+                                    }
+                                }
                             )
-                        }
+                        )
                     }
                 }
-            }
+                }
             Box {
                 IconButton(onClick = { showMenu = true }) {
-                    Icon(Icons.Default.MoreVert, "更多选项")
+                    Icon(
+                        Icons.Default.MoreVert,
+                        stringResource(R.string.more_options),
+                        tint = if (backgroundBitmap != null && !item.isCompleted) {
+                            textColor
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        }
+                    )
                 }
                 DropdownMenu(
                     expanded = showMenu,
                     onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("编辑") },
+                        text = { Text(stringResource(R.string.edit)) },
                         onClick = {
                             showMenu = false
                             onEdit()
@@ -181,7 +385,7 @@ fun ShoppingItemCard(
                         leadingIcon = { Icon(Icons.Default.Edit, null) }
                     )
                     DropdownMenuItem(
-                        text = { Text("删除") },
+                        text = { Text(stringResource(R.string.delete)) },
                         onClick = {
                             showMenu = false
                             onDelete()
@@ -190,15 +394,17 @@ fun ShoppingItemCard(
                     )
                 }
             }
+            }
         }
     }
 }
 
+@Composable
 fun getPriorityLabel(priority: Priority): String {
     return when (priority) {
-        Priority.HIGH -> "高优先级"
-        Priority.MEDIUM -> "中优先级"
-        Priority.LOW -> "低优先级"
+        Priority.HIGH -> stringResource(R.string.priority_high)
+        Priority.MEDIUM -> stringResource(R.string.priority_medium)
+        Priority.LOW -> stringResource(R.string.priority_low)
     }
 }
 

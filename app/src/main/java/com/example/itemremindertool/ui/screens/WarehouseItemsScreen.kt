@@ -20,6 +20,8 @@ import com.example.itemremindertool.data.model.ItemStatus
 import com.example.itemremindertool.ui.screens.ItemCard
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
+import com.example.itemremindertool.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,10 +43,10 @@ fun WarehouseItemsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(warehouse.selectedWarehouse?.name ?: "仓库物品") },
+                title = { Text(warehouse.selectedWarehouse?.name ?: stringResource(R.string.warehouse_items_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "返回")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -68,7 +70,7 @@ fun WarehouseItemsScreen(
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     Text(
-                        "该仓库暂无物品",
+                        stringResource(R.string.warehouse_empty_hint),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
@@ -86,10 +88,7 @@ fun WarehouseItemsScreen(
                     ItemCard(
                         item = item,
                         onEdit = { onEditItem(item.id) },
-                        onDelete = { itemViewModel.deleteItem(item) },
-                        onStatusChange = { status ->
-                            itemViewModel.updateItemStatus(item.id, status)
-                        }
+                        onDelete = { itemViewModel.deleteItem(item) }
                     )
                 }
             }

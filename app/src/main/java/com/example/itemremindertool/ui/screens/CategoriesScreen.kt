@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.data.model.Category
 import com.example.itemremindertool.ui.viewmodel.CategoryViewModel
+import com.example.itemremindertool.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,6 +27,7 @@ fun CategoriesScreen(
     viewModel: CategoryViewModel,
     onAddCategory: () -> Unit,
     onEditCategory: (Long) -> Unit,
+    onNavigateBack: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val categories by viewModel.categories.collectAsState(initial = emptyList())
@@ -32,17 +35,22 @@ fun CategoriesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("分类管理") },
+                title = { Text(stringResource(R.string.category_management)) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                    }
+                },
                 actions = {
                     IconButton(onClick = onAddCategory) {
-                        Icon(Icons.Default.Add, "添加分类")
+                        Icon(Icons.Default.Add, stringResource(R.string.add_category))
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddCategory) {
-                Icon(Icons.Default.Add, "添加分类")
+                        Icon(Icons.Default.Add, stringResource(R.string.add_category))
             }
         }
     ) { paddingValues ->
@@ -69,7 +77,7 @@ fun CategoriesScreen(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     Button(onClick = onAddCategory) {
-                        Text("添加第一个分类")
+                        Text(stringResource(R.string.add_first_category))
                     }
                 }
             }
@@ -150,14 +158,14 @@ fun CategoryCard(
             }
             Box {
                 IconButton(onClick = { showMenu = true }) {
-                    Icon(Icons.Default.MoreVert, "更多选项")
+                    Icon(Icons.Default.MoreVert, stringResource(R.string.more_options))
                 }
                 DropdownMenu(
                     expanded = showMenu,
                     onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("编辑") },
+                        text = { Text(stringResource(R.string.edit)) },
                         onClick = {
                             showMenu = false
                             onEdit()
@@ -165,7 +173,7 @@ fun CategoryCard(
                         leadingIcon = { Icon(Icons.Default.Edit, null) }
                     )
                     DropdownMenuItem(
-                        text = { Text("删除") },
+                        text = { Text(stringResource(R.string.delete)) },
                         onClick = {
                             showMenu = false
                             onDelete()

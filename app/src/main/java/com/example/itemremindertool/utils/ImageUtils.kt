@@ -1,0 +1,181 @@
+package com.example.itemremindertool.utils
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.os.Environment
+import androidx.core.content.FileProvider
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.*
+
+object ImageUtils {
+    /**
+     * 创建临时图片文件
+     */
+    fun createImageFile(context: Context): File {
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val imageFileName = "JPEG_${timeStamp}_"
+        val storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        return File.createTempFile(imageFileName, ".jpg", storageDir)
+    }
+
+    /**
+     * 获取图片的 FileProvider URI
+     */
+    fun getImageUri(context: Context, file: File): Uri {
+        return FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+    }
+
+    /**
+     * 保存图片到应用私有目录
+     */
+    fun saveImageToInternalStorage(context: Context, bitmap: Bitmap, fileName: String): String? {
+        return try {
+            val file = File(context.filesDir, "images")
+            if (!file.exists()) {
+                file.mkdirs()
+            }
+            val imageFile = File(file, fileName)
+            // 根据文件扩展名选择压缩格式
+            val format = when {
+                fileName.endsWith(".png", ignoreCase = true) -> Bitmap.CompressFormat.PNG
+                fileName.endsWith(".webp", ignoreCase = true) -> Bitmap.CompressFormat.WEBP
+                else -> Bitmap.CompressFormat.JPEG
+            }
+            val quality = if (format == Bitmap.CompressFormat.PNG) 100 else 90
+            FileOutputStream(imageFile).use { out ->
+                bitmap.compress(format, quality, out)
+            }
+            imageFile.absolutePath
+        } catch (e: IOException) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * 从 URI 加载 Bitmap
+     */
+    fun loadBitmapFromUri(context: Context, uri: Uri): Bitmap? {
+        return try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                BitmapFactory.decodeStream(inputStream)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * 从文件路径加载 Bitmap
+     */
+    fun loadBitmapFromPath(path: String): Bitmap? {
+        return try {
+            BitmapFactory.decodeFile(path)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * 裁剪图片为指定尺寸（物品卡片大小）
+     */
+    fun cropImageToCardSize(bitmap: Bitmap, cardWidth: Int, cardHeight: Int): Bitmap {
+        val originalWidth = bitmap.width
+        val originalHeight = bitmap.height
+        
+        // 计算缩放比例，保持宽高比
+        val scale = maxOf(
+            cardWidth.toFloat() / originalWidth,
+            cardHeight.toFloat() / originalHeight
+        )
+        
+        val scaledWidth = (originalWidth * scale).toInt()
+        val scaledHeight = (originalHeight * scale).toInt()
+        
+        // 缩放图片
+        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
+        
+        // 居中裁剪
+        val x = (scaledWidth - cardWidth) / 2
+        val y = (scaledHeight - cardHeight) / 2
+        
+        return Bitmap.createBitmap(scaledBitmap, x, y, cardWidth, cardHeight)
+    }
+
+    /**
+     * 裁剪图片为应用图标大小（正方形）
+     */
+    fun cropImageToIconSize(bitmap: Bitmap, iconSize: Int): Bitmap {
+        val originalWidth = bitmap.width
+        val originalHeight = bitmap.height
+        
+        // 计算缩放比例，保持宽高比，确保图片能完全覆盖目标尺寸
+        val scale = maxOf(
+            iconSize.toFloat() / originalWidth,
+            iconSize.toFloat() / originalHeight
+        )
+        
+        val scaledWidth = (originalWidth * scale).toInt()
+        val scaledHeight = (originalHeight * scale).toInt()
+        
+        // 缩放图片
+        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
+        
+        // 居中裁剪为正方形
+        val x = (scaledWidth - iconSize) / 2
+        val y = (scaledHeight - iconSize) / 2
+        
+        return Bitmap.createBitmap(scaledBitmap, x, y, iconSize, iconSize)
+    }
+
+    /**
+     * 删除图片文件
+     */
+    fun deleteImageFile(path: String?) {
+        if (path != null) {
+            try {
+                File(path).delete()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    /**
+     * 计算图片的平均亮度（0-255）
+     * 返回 true 表示图片较亮（应使用深色文字），false 表示图片较暗（应使用浅色文字）
+     */
+    fun calculateImageBrightness(bitmap: Bitmap): Boolean {
+        var totalBrightness = 0.0
+        val pixelCount = bitmap.width * bitmap.height
+        val sampleSize = 10 // 采样间隔，提高性能
+        
+        for (y in 0 until bitmap.height step sampleSize) {
+            for (x in 0 until bitmap.width step sampleSize) {
+                val pixel = bitmap.getPixel(x, y)
+                val r = android.graphics.Color.red(pixel)
+                val g = android.graphics.Color.green(pixel)
+                val b = android.graphics.Color.blue(pixel)
+                // 使用相对亮度公式
+                val brightness = (0.299 * r + 0.587 * g + 0.114 * b)
+                totalBrightness += brightness
+            }
+        }
+        
+        val averageBrightness = totalBrightness / (pixelCount / (sampleSize * sampleSize))
+        // 如果平均亮度大于 128，图片较亮，使用深色文字；否则使用浅色文字
+        return averageBrightness > 128
+    }
+}
+

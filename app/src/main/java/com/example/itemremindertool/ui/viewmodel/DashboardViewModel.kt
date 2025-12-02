@@ -3,7 +3,6 @@ package com.example.itemremindertool.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.itemremindertool.data.model.ItemStatus
 import com.example.itemremindertool.data.repository.CategoryRepository
 import com.example.itemremindertool.data.repository.ItemRepository
 import com.example.itemremindertool.data.repository.ShoppingItemRepository
@@ -42,19 +41,18 @@ class DashboardViewModel(
 
     private fun loadStats() {
         viewModelScope.launch {
+            val currentTime = System.currentTimeMillis()
             combine(
                 itemRepository.getItemCount(),
-                itemRepository.getItemCountByStatus(ItemStatus.NORMAL),
-                itemRepository.getItemCountByStatus(ItemStatus.DAMAGED),
-                itemRepository.getItemCountByStatus(ItemStatus.LOST),
-                itemRepository.getItemCountByStatus(ItemStatus.EXPIRED)
-            ) { totalItems: Int, normal: Int, damaged: Int, lost: Int, expired: Int ->
+                itemRepository.getNormalItemCount(currentTime),
+                itemRepository.getExpiredItemCount(currentTime)
+            ) { totalItems: Int, normal: Int, expired: Int ->
                 Pair(
                     DashboardStats(
                         totalItems = totalItems,
                         normalItems = normal,
-                        damagedItems = damaged,
-                        lostItems = lost,
+                        damagedItems = 0,
+                        lostItems = 0,
                         expiredItems = expired,
                         totalCategories = 0,
                         totalWarehouses = 0,
@@ -104,4 +102,3 @@ class DashboardViewModelFactory(
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
-

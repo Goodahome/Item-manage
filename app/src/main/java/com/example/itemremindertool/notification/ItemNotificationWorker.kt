@@ -11,9 +11,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.itemremindertool.MainActivity
 import com.example.itemremindertool.data.database.AppDatabase
-import com.example.itemremindertool.data.model.ItemStatus
 import kotlinx.coroutines.flow.first
-import java.util.Date
 
 class ItemNotificationWorker(
     context: Context,
@@ -25,14 +23,8 @@ class ItemNotificationWorker(
         val itemDao = database.itemDao()
 
         // 检查过期物品
-        val allItems = itemDao.getAllItems().first()
-        val expiredItems = allItems.filter { item ->
-            item.expiryDate != null && item.expiryDate.before(Date()) && item.status != ItemStatus.EXPIRED
-        }
-
-        // 检查损坏和遗失物品
-        val damagedItems = itemDao.getItemsByStatus(ItemStatus.DAMAGED).first()
-        val lostItems = itemDao.getItemsByStatus(ItemStatus.LOST).first()
+        val currentTime = System.currentTimeMillis()
+        val expiredItems = itemDao.getExpiredItems(currentTime).first()
 
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -47,28 +39,6 @@ class ItemNotificationWorker(
                 title = "物品过期提醒",
                 message = "有 ${expiredItems.size} 个物品已过期",
                 id = NOTIFICATION_ID_EXPIRED
-            )
-        }
-
-        // 发送损坏物品通知
-        if (damagedItems.isNotEmpty()) {
-            sendNotification(
-                context = applicationContext,
-                notificationManager = notificationManager,
-                title = "物品损坏提醒",
-                message = "有 ${damagedItems.size} 个物品标记为损坏",
-                id = NOTIFICATION_ID_DAMAGED
-            )
-        }
-
-        // 发送遗失物品通知
-        if (lostItems.isNotEmpty()) {
-            sendNotification(
-                context = applicationContext,
-                notificationManager = notificationManager,
-                title = "物品遗失提醒",
-                message = "有 ${lostItems.size} 个物品标记为遗失",
-                id = NOTIFICATION_ID_LOST
             )
         }
 
@@ -120,8 +90,6 @@ class ItemNotificationWorker(
     companion object {
         const val CHANNEL_ID = "item_reminder_channel"
         const val NOTIFICATION_ID_EXPIRED = 1
-        const val NOTIFICATION_ID_DAMAGED = 2
-        const val NOTIFICATION_ID_LOST = 3
     }
 }
 

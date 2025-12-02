@@ -10,7 +10,8 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector,
     object Items : Screen("items", "物品管理", Icons.Outlined.Inventory, Icons.Filled.Inventory)
     object Categories : Screen("categories", "分类管理", Icons.Outlined.Category, Icons.Filled.Category)
     object ShoppingList : Screen("shopping_list", "购物篮", Icons.Outlined.ShoppingCart, Icons.Filled.ShoppingCart)
-    object Warehouses : Screen("warehouses", "仓库管理", Icons.Outlined.Warehouse, Icons.Filled.Warehouse)
+    object Warehouses : Screen("warehouses", "容器管理", Icons.Outlined.Warehouse, Icons.Filled.Warehouse)
+    object Settings : Screen("settings", "设置", Icons.Outlined.Settings, Icons.Filled.Settings)
 
     object ItemDetail : Screen("item_detail/{itemId}", "物品详情", Icons.Default.Info, Icons.Default.Info) {
         fun createRoute(itemId: Long) = "item_detail/$itemId"
@@ -31,15 +32,19 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector,
         fun createRoute(itemId: Long) = "edit_shopping_item/$itemId"
     }
 
-    object AddWarehouse : Screen("add_warehouse", "添加仓库", Icons.Default.Add, Icons.Default.Add)
-    object EditWarehouse : Screen("edit_warehouse/{warehouseId}", "编辑仓库", Icons.Default.Edit, Icons.Default.Edit) {
+    object AddWarehouse : Screen("add_warehouse", "添加容器", Icons.Default.Add, Icons.Default.Add)
+    object AddChildWarehouse : Screen("add_warehouse/{parentId}", "添加子容器", Icons.Default.Add, Icons.Default.Add) {
+        fun createRoute(parentId: Long) = "add_warehouse/$parentId"
+    }
+    object EditWarehouse : Screen("edit_warehouse/{warehouseId}", "编辑容器", Icons.Default.Edit, Icons.Default.Edit) {
         fun createRoute(warehouseId: Long) = "edit_warehouse/$warehouseId"
     }
 
-    object WarehouseItems : Screen("warehouse_items/{warehouseId}", "仓库物品", Icons.Default.Inventory, Icons.Default.Inventory) {
+    object WarehouseItems : Screen("warehouse_items/{warehouseId}", "容器物品", Icons.Default.Inventory, Icons.Default.Inventory) {
         fun createRoute(warehouseId: Long) = "warehouse_items/$warehouseId"
     }
 
     object BarcodeScanner : Screen("barcode_scanner", "扫码添加", Icons.Default.QrCodeScanner, Icons.Default.QrCodeScanner)
+    object ItemRecognition : Screen("item_recognition", "物品识别", Icons.Default.ImageSearch, Icons.Default.ImageSearch)
 }
 

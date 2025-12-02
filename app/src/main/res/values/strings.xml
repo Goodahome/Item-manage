@@ -1,3 +1,276 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">物品提醒工具</string>
+    <!-- 应用名称 -->
+    <string name="app_name">盒记</string>
+    
+    <!-- 通用 -->
+    <string name="back">返回</string>
+    <string name="confirm">确认</string>
+    <string name="cancel">取消</string>
+    <string name="save">保存</string>
+    <string name="delete">删除</string>
+    <string name="edit">编辑</string>
+    <string name="add">添加</string>
+    <string name="modify">修改</string>
+    <string name="search">搜索</string>
+    <string name="settings">设置</string>
+    <string name="ok">确定</string>
+    <string name="yes">是</string>
+    <string name="no">否</string>
+    <string name="later">稍后</string>
+    <string name="now">现在</string>
+    
+    <!-- 导航 -->
+    <string name="nav_home">首页</string>
+    <string name="nav_all_items">所有物品</string>
+    <string name="nav_item_management">物品管理</string>
+    <string name="nav_category_management">分类管理</string>
+    <string name="nav_shopping_basket">购物篮</string>
+    <string name="nav_warehouse_management">容器管理</string>
+    <string name="nav_warehouse_info">容器信息</string>
+    <string name="nav_items">物品</string>
+    <string name="nav_item_shelf">物品架</string>
+    
+    <!-- 设置页面 -->
+    <string name="settings_title">设置</string>
+    <string name="appearance_settings">外观设置</string>
+    <string name="app_settings">应用设置</string>
+    <string name="cloud_storage">云端存储</string>
+    
+    <string name="theme">主题</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="theme_system">跟随系统</string>
+    
+    <string name="language">语言</string>
+    <string name="language_zh">简体中文</string>
+    <string name="language_en">English</string>
+    <string name="language_fr">Français</string>
+    <string name="language_de">Deutsch</string>
+    <string name="language_es">Español</string>
+    <string name="language_it">Italiano</string>
+    <string name="language_pt">Português</string>
+    
+    <string name="app_name_label">程序名称</string>
+    <string name="password_protection">密码保护</string>
+    <string name="password_enabled">已启用</string>
+    <string name="password_disabled">未启用</string>
+    
+    <string name="cloud_server_url">服务器地址</string>
+    <string name="cloud_server_not_set">未设置</string>
+    <string name="auto_sync">自动同步</string>
+    <string name="auto_sync_enabled">已启用</string>
+    <string name="auto_sync_disabled">已禁用</string>
+    
+    <!-- 密码锁屏 -->
+    <string name="enter_password">请输入密码</string>
+    <string name="password">密码</string>
+    <string name="password_incorrect">密码错误，请重试</string>
+    <string name="show_password">显示密码</string>
+    <string name="hide_password">隐藏密码</string>
+    <string name="set_password">设置密码</string>
+    <string name="confirm_password">确认密码</string>
+    <string name="password_mismatch">两次输入的密码不一致</string>
+    <string name="password_empty">密码不能为空</string>
+    
+    <!-- 对话框 -->
+    <string name="modify_app_name">修改程序名称</string>
+    <string name="app_name_hint">程序名称</string>
+    <string name="app_name_changed">程序名称已修改，需要重启应用才能在系统中看到新的名称</string>
+    <string name="restart_app">是否现在重启应用？选择\"稍后\"将在下次启动时自动应用。</string>
+    
+    <string name="set_cloud_server">设置服务器地址</string>
+    <string name="server_url_hint">服务器地址</string>
+    <string name="server_url_example">例如: https://api.example.com</string>
+    
+    <!-- 统计卡片 -->
+    <string name="total_items">物品总数</string>
+    <string name="number_of_warehouses">容器数</string>
+    <string name="shopping_items">待购物品</string>
+    <string name="items_count">%d 件物品</string>
+    
+    <!-- 物品相关 -->
+    <string name="item_name">物品名称</string>
+    <string name="item_description">描述</string>
+    <string name="item_category">分类</string>
+    <string name="item_warehouse">容器</string>
+    <string name="item_price">价格</string>
+    <string name="item_quantity">数量</string>
+    <string name="item_barcode">条形码</string>
+    <string name="item_expiry_date">过期日期</string>
+    <string name="item_tags">标签</string>
+    <string name="item_status">状态</string>
+    <string name="item_image">图片</string>
+    <string name="item_feature_code">特征码</string>
+    <string name="add_item">添加物品</string>
+    <string name="edit_item">编辑物品</string>
+    <string name="item_detail">物品详情</string>
+    <string name="delete_item">删除物品</string>
+    <string name="delete_item_confirm">确定要删除这个物品吗？</string>
+    <string name="add_to_shopping_cart">加入购物篮</string>
+    
+    <!-- 物品状态 -->
+    <string name="status_normal">正常</string>
+    <string name="status_expired">已过期</string>
+    <string name="status_low_stock">库存不足</string>
+    <string name="status_out_of_stock">缺货</string>
+    <string name="status_damaged">损坏</string>
+    <string name="status_lost">遗失</string>
+    
+    <!-- 优先级 -->
+    <string name="priority_high">高</string>
+    <string name="priority_medium">中</string>
+    <string name="priority_low">低</string>
+    
+    <!-- 购物篮 -->
+    <string name="shopping_list">购物清单</string>
+    <string name="shopping_item">购物项</string>
+    <string name="add_shopping_item">添加购物项</string>
+    <string name="edit_shopping_item">编辑购物项</string>
+    <string name="delete_shopping_item">删除购物项</string>
+    <string name="delete_shopping_item_confirm">确定要删除这个购物项吗？</string>
+    <string name="purchased">已购买</string>
+    
+    <!-- 分类 -->
+    <string name="category">分类</string>
+    <string name="categories">分类管理</string>
+    <string name="add_category">添加分类</string>
+    <string name="edit_category">编辑分类</string>
+    <string name="delete_category">删除分类</string>
+    <string name="delete_category_confirm">确定要删除这个分类吗？删除后该分类下的物品将变为未分类。</string>
+    <string name="category_name">分类名称</string>
+    <string name="category_description">分类描述</string>
+    <string name="no_category">未分类</string>
+    
+    <!-- 容器 -->
+    <string name="warehouse">容器</string>
+    <string name="warehouses">容器管理</string>
+    <string name="warehouse_settings">容器设置</string>
+    <string name="add_warehouse">添加容器</string>
+    <string name="edit_warehouse">编辑容器</string>
+    <string name="delete_warehouse">删除容器</string>
+    <string name="delete_warehouse_confirm">确定要删除这个容器吗？删除后该容器下的物品将变为未分配容器。</string>
+    <string name="warehouse_name">容器名称</string>
+    <string name="warehouse_description">容器描述</string>
+    <string name="warehouse_location">位置</string>
+    <string name="warehouse_items">容器物品</string>
+    <string name="no_warehouse">未分配容器</string>
+    <string name="child_containers">子容器</string>
+    <string name="parent_container">父容器</string>
+    <string name="max_level_reached">已达到最大容器层级（5层），请在设置中开启无限容器模式</string>
+    <string name="unlimited_containers">无限容器模式</string>
+    <string name="unlimited_containers_description">允许创建超过5层的容器层级</string>
+    
+    <!-- 标签 -->
+    <string name="tags">标签</string>
+    <string name="add_tag">添加标签</string>
+    <string name="tag_hint">输入标签（最多12个字符）</string>
+    <string name="tag_limit_exceeded">标签长度不能超过12个字符</string>
+    
+    <!-- 日期选择 -->
+    <string name="select_date">选择日期</string>
+    <string name="no_date_selected">未选择日期</string>
+    
+    <!-- 图片相关 -->
+    <string name="take_photo">拍照</string>
+    <string name="select_from_gallery">相册</string>
+    <string name="item_image_capture">物品图片</string>
+    <string name="crop_image">裁剪图片</string>
+    <string name="delete_image">删除图片</string>
+    <string name="clear_feature_code">清除特征码</string>
+    
+    <!-- 条形码扫描 -->
+    <string name="barcode_scanner">扫码添加</string>
+    <string name="scan_barcode">扫描条形码</string>
+    <string name="barcode_scanned">条形码：%s</string>
+    
+    <!-- 物品识别 -->
+    <string name="item_recognition">物品识别</string>
+    <string name="click_to_recognize">点击按钮拍照识别物品</string>
+    <string name="take_photo_recognize">拍照识别</string>
+    <string name="extracting_features">正在提取特征…</string>
+    <string name="model_not_loaded">模型未加载，请确保模型文件已放置在 assets 目录中</string>
+    <string name="model_loaded">模型已加载，准备拍照识别</string>
+    
+    <!-- 搜索 -->
+    <string name="search_items">搜索物品</string>
+    <string name="search_by_image">图像识别搜索</string>
+    <string name="search_hint">输入物品名称搜索</string>
+    <string name="no_results">未找到结果</string>
+    <string name="found_similar_items">找到 %d 个相似物品</string>
+    
+    <!-- 空状态 -->
+    <string name="no_items">暂无物品</string>
+    <string name="no_categories">暂无分类</string>
+    <string name="no_warehouses">暂无容器</string>
+    <string name="no_shopping_items">购物篮为空</string>
+    
+    <!-- 操作提示 -->
+    <string name="item_saved">物品已保存</string>
+    <string name="item_deleted">物品已删除</string>
+    <string name="category_saved">分类已保存</string>
+    <string name="category_deleted">分类已删除</string>
+    <string name="warehouse_saved">容器已保存</string>
+    <string name="warehouse_deleted">容器已删除</string>
+    <string name="shopping_item_saved">购物项已保存</string>
+    <string name="shopping_item_deleted">购物项已删除</string>
+    <string name="added_to_shopping_cart">已加入购物篮</string>
+    <string name="more_options">更多选项</string>
+    
+    <!-- 必填字段提示 -->
+    <string name="name_required">请输入物品名称</string>
+    <string name="category_name_required">请输入分类名称</string>
+    <string name="warehouse_name_required">请输入容器名称</string>
+    <string name="shopping_item_name_required">请输入购物项名称</string>
+    
+    <!-- 其他 -->
+    <string name="loading">加载中…</string>
+    <string name="error">错误</string>
+    <string name="unknown_error">未知错误</string>
+    <string name="retry">重试</string>
+    
+    <!-- 代码中发现的额外字符串 -->
+    <string name="shopping_basket">购物篮</string>
+    <string name="add_first_shopping_item">添加第一个购物项</string>
+    <string name="item_management">物品管理</string>
+    <string name="add_first_item">添加第一个物品</string>
+    <string name="no_matching_items">未找到匹配的物品</string>
+    <string name="warehouse_not_found">容器不存在</string>
+    <string name="warehouse_items_title">容器物品</string>
+    <string name="warehouse_management">容器管理</string>
+    <string name="add_first_warehouse">添加第一个容器</string>
+    <string name="view_items">查看物品</string>
+    <string name="category_management">分类管理</string>
+    <string name="add_first_category">添加第一个分类</string>
+    <string name="item_name_required">物品名称 *</string>
+    <string name="description">描述</string>
+    <string name="no_category_option">无分类</string>
+    <string name="no_warehouse_option">无容器</string>
+    <string name="status_tags">状态标签</string>
+    <string name="expired_tag">过期</string>
+    <string name="price">价格</string>
+    <string name="quantity">数量</string>
+    <string name="barcode">条形码</string>
+    <string name="feature_code">物品特征码</string>
+    <string name="expiry_date">到期日期</string>
+    <string name="recognizing_image">正在识别图片...</string>
+    <string name="take_photo_search">拍照搜索</string>
+    <string name="close">关闭</string>
+    <string name="take_photo_recognize_button">拍照识别</string>
+    <string name="extracting_features_progress">正在提取特征...</string>
+    <string name="camera_permission_required">需要相机权限</string>
+    <string name="camera_permission_for_scanner">需要相机权限才能使用扫码功能</string>
+    <string name="category_name_required_field">分类名称 *</string>
+    <string name="select_color">选择颜色</string>
+    <string name="shopping_item_name_required_field">物品名称 *</string>
+    <string name="priority">优先级</string>
+    <string name="warehouse_name_required_field">容器名称 *</string>
+    <string name="capacity_limit_optional">容量限制（可选）</string>
+    <string name="expires_on">到期: %1$s</string>
+    <string name="quantity_with_value">数量: %1$d</string>
+    <string name="price_with_value">¥%1$.2f</string>
+    <string name="warehouse_empty_hint">该容器暂无物品</string>
+    <string name="capacity">容量</string>
+    <string name="used_capacity">已使用: %1$d / %2$d</string>
+    <string name="items_unit">件</string>
 </resources>

@@ -19,17 +19,26 @@ interface ItemDao {
     @Query("SELECT * FROM items WHERE warehouseId = :warehouseId ORDER BY updatedAt DESC")
     fun getItemsByWarehouse(warehouseId: Long): Flow<List<Item>>
 
-    @Query("SELECT * FROM items WHERE status = :status ORDER BY updatedAt DESC")
-    fun getItemsByStatus(status: ItemStatus): Flow<List<Item>>
+    @Query("SELECT * FROM items WHERE expiryDate IS NOT NULL AND expiryDate < :currentTime ORDER BY updatedAt DESC")
+    fun getExpiredItems(currentTime: Long): Flow<List<Item>>
 
     @Query("SELECT * FROM items WHERE barcode = :barcode LIMIT 1")
     suspend fun getItemByBarcode(barcode: String): Item?
+    
+    @Query("SELECT * FROM items WHERE name LIKE '%' || :query || '%'")
+    fun searchItemsByName(query: String): Flow<List<Item>>
+    
+    @Query("SELECT * FROM items ORDER BY updatedAt DESC")
+    suspend fun getAllItemsList(): List<Item>
 
     @Query("SELECT COUNT(*) FROM items")
     fun getItemCount(): Flow<Int>
 
-    @Query("SELECT COUNT(*) FROM items WHERE status = :status")
-    fun getItemCountByStatus(status: ItemStatus): Flow<Int>
+    @Query("SELECT COUNT(*) FROM items WHERE expiryDate IS NULL OR expiryDate >= :currentTime")
+    fun getNormalItemCount(currentTime: Long): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM items WHERE expiryDate IS NOT NULL AND expiryDate < :currentTime")
+    fun getExpiredItemCount(currentTime: Long): Flow<Int>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItem(item: Item): Long

@@ -19,6 +19,19 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // 支持 16 KB 页面大小
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
+    }
+    
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+            // 确保原生库正确对齐以支持 16KB 页面大小
+            pickFirsts += listOf("**/libc++_shared.so", "**/libtensorflowlite_jni.so")
+        }
     }
 
     buildTypes {
@@ -42,6 +55,11 @@ android {
     }
 }
 
+// 全局排除 litert-api，强制使用 tensorflow-lite-api，避免与 ML Kit 冲突
+configurations.all {
+    exclude(group = "com.google.ai.edge.litert", module = "litert-api")
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -62,10 +80,25 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
-    implementation(libs.androidx.camera.mlkit.vision)
-    implementation(libs.mlkit.barcode.scanning)
+    // 排除 ML Kit 中的 litert-api 以避免与 TensorFlow Lite 冲突
+    implementation(libs.androidx.camera.mlkit.vision) {
+        exclude(group = "com.google.ai.edge.litert", module = "litert-api")
+    }
+    implementation(libs.mlkit.barcode.scanning) {
+        exclude(group = "com.google.ai.edge.litert", module = "litert-api")
+    }
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlinx.coroutines.android)
+    // TensorFlow Lite for MobileNetV3 (使用最新版本以支持 16KB 页面大小)
+    // 强制使用统一的 TensorFlow Lite API 版本，避免与 ML Kit 的 litert-api 冲突
+    implementation("org.tensorflow:tensorflow-lite:2.17.0") {
+        exclude(group = "com.google.ai.edge.litert")
+    }
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4") {
+        exclude(group = "com.google.ai.edge.litert")
+    }
+    // 暂时移除 GPU 支持以避免 16KB 兼容性问题
+    // implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

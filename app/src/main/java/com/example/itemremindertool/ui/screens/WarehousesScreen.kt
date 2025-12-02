@@ -14,6 +14,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.data.model.Warehouse
 import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
+import com.example.itemremindertool.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,6 +24,7 @@ fun WarehousesScreen(
     onAddWarehouse: () -> Unit,
     onEditWarehouse: (Long) -> Unit,
     onViewItems: (Long) -> Unit,
+    onNavigateBack: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val warehouses by viewModel.warehouses.collectAsState(initial = emptyList())
@@ -29,17 +32,22 @@ fun WarehousesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("仓库管理") },
+                title = { Text(stringResource(R.string.warehouse_management)) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.ArrowBack, "返回")
+                    }
+                },
                 actions = {
                     IconButton(onClick = onAddWarehouse) {
-                        Icon(Icons.Default.Add, "添加仓库")
+                        Icon(Icons.Default.Add, stringResource(R.string.add_warehouse))
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddWarehouse) {
-                Icon(Icons.Default.Add, "添加仓库")
+                        Icon(Icons.Default.Add, stringResource(R.string.add_warehouse))
             }
         }
     ) { paddingValues ->
@@ -61,12 +69,12 @@ fun WarehousesScreen(
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     Text(
-                        "暂无仓库",
+                        stringResource(R.string.no_warehouses),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     Button(onClick = onAddWarehouse) {
-                        Text("添加第一个仓库")
+                        Text(stringResource(R.string.add_first_warehouse))
                     }
                 }
             }
@@ -152,14 +160,14 @@ fun WarehouseCard(
                 }
                 Box {
                     IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, "更多选项")
+                        Icon(Icons.Default.MoreVert, stringResource(R.string.more_options))
                     }
                     DropdownMenu(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("查看物品") },
+                            text = { Text(stringResource(R.string.view_items)) },
                             onClick = {
                                 showMenu = false
                                 onViewItems()
@@ -167,7 +175,7 @@ fun WarehouseCard(
                             leadingIcon = { Icon(Icons.Default.Inventory, null) }
                         )
                         DropdownMenuItem(
-                            text = { Text("编辑") },
+                            text = { Text(stringResource(R.string.edit)) },
                             onClick = {
                                 showMenu = false
                                 onEdit()
@@ -175,7 +183,7 @@ fun WarehouseCard(
                             leadingIcon = { Icon(Icons.Default.Edit, null) }
                         )
                         DropdownMenuItem(
-                            text = { Text("删除") },
+                            text = { Text(stringResource(R.string.delete)) },
                             onClick = {
                                 showMenu = false
                                 onDelete()
@@ -192,7 +200,7 @@ fun WarehouseCard(
             ) {
                 Icon(Icons.Default.Inventory, null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("查看物品")
+                Text(stringResource(R.string.view_items))
             }
         }
     }

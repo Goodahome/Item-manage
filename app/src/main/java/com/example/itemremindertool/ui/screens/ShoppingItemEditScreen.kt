@@ -13,6 +13,8 @@ import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.data.model.Priority
 import com.example.itemremindertool.data.model.ShoppingItem
 import com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel
+import com.example.itemremindertool.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,10 +48,10 @@ fun ShoppingItemEditScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (itemId == null) "添加购物项" else "编辑购物项") },
+                title = { Text(if (itemId == null) stringResource(R.string.add_shopping_item) else stringResource(R.string.edit_shopping_item)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "返回")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 actions = {
@@ -70,7 +72,7 @@ fun ShoppingItemEditScreen(
                             onNavigateBack()
                         }
                     ) {
-                        Text("保存")
+                        Text(stringResource(R.string.save))
                     }
                 }
             )
@@ -87,7 +89,7 @@ fun ShoppingItemEditScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("物品名称 *") },
+                label = { Text(stringResource(R.string.shopping_item_name_required_field)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -95,7 +97,7 @@ fun ShoppingItemEditScreen(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("描述") },
+                label = { Text(stringResource(R.string.description)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
                 maxLines = 5
@@ -104,12 +106,12 @@ fun ShoppingItemEditScreen(
             OutlinedTextField(
                 value = quantity,
                 onValueChange = { quantity = it },
-                label = { Text("数量") },
+                label = { Text(stringResource(R.string.quantity)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
             )
 
-            Text("优先级", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.priority), style = MaterialTheme.typography.labelLarge)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)

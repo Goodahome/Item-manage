@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Name -->
+    <string name="app_name">Heji</string>
+    
+    <!-- Common -->
+    <string name="back">Retour</string>
+    <string name="confirm">Confirmer</string>
+    <string name="cancel">Annuler</string>
+    <string name="save">Enregistrer</string>
+    <string name="delete">Supprimer</string>
+    <string name="edit">Modifier</string>
+    <string name="add">Ajouter</string>
+    <string name="modify">Modifier</string>
+    <string name="search">Rechercher</string>
+    <string name="settings">Paramètres</string>
+    <string name="ok">OK</string>
+    <string name="yes">Oui</string>
+    <string name="no">Non</string>
+    <string name="later">Plus tard</string>
+    <string name="now">Maintenant</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">Accueil</string>
+    <string name="nav_all_items">Tous les objets</string>
+    <string name="nav_item_management">Gestion des objets</string>
+    <string name="nav_category_management">Gestion des catégories</string>
+    <string name="nav_shopping_basket">Panier d\'achat</string>
+    <string name="nav_warehouse_management">Gestion des conteneurs</string>
+    <string name="nav_warehouse_info">Info conteneur</string>
+    <string name="nav_items">Objets</string>
+    <string name="nav_item_shelf">Rayon d\'objets</string>
+    
+    <!-- Settings -->
+    <string name="settings_title">Paramètres</string>
+    <string name="appearance_settings">Apparence</string>
+    <string name="app_settings">Paramètres de l\'application</string>
+    <string name="cloud_storage">Stockage cloud</string>
+    
+    <string name="theme">Thème</string>
+    <string name="theme_light">Clair</string>
+    <string name="theme_dark">Sombre</string>
+    <string name="theme_system">Suivre le système</string>
+    
+    <string name="language">Langue</string>
+    <string name="language_zh">简体中文</string>
+    <string name="language_en">English</string>
+    <string name="language_fr">Français</string>
+    <string name="language_de">Deutsch</string>
+    <string name="language_es">Español</string>
+    <string name="language_it">Italiano</string>
+    <string name="language_pt">Português</string>
+    
+    <string name="app_name_label">Nom de l\'application</string>
+    <string name="password_protection">Protection par mot de passe</string>
+    <string name="password_enabled">Activée</string>
+    <string name="password_disabled">Désactivée</string>
+    
+    <string name="cloud_server_url">URL du serveur</string>
+    <string name="cloud_server_not_set">Non configuré</string>
+    <string name="auto_sync">Synchronisation automatique</string>
+    <string name="auto_sync_enabled">Activée</string>
+    <string name="auto_sync_disabled">Désactivée</string>
+    
+    <!-- Password Lock -->
+    <string name="enter_password">Saisir le mot de passe</string>
+    <string name="password">Mot de passe</string>
+    <string name="password_incorrect">Mot de passe incorrect, veuillez réessayer</string>
+    <string name="show_password">Afficher le mot de passe</string>
+    <string name="hide_password">Masquer le mot de passe</string>
+    <string name="set_password">Définir le mot de passe</string>
+    <string name="confirm_password">Confirmer le mot de passe</string>
+    <string name="password_mismatch">Les mots de passe ne correspondent pas</string>
+    <string name="password_empty">Le mot de passe ne peut pas être vide</string>
+    
+    <!-- Dialogs -->
+    <string name="modify_app_name">Modifier le nom de l\'application</string>
+    <string name="app_name_hint">Nom de l\'application</string>
+    <string name="app_name_changed">Le nom de l\'application a été modifié. Redémarrez l\'application pour voir le nouveau nom dans le système.</string>
+    <string name="restart_app">Redémarrer maintenant ? Choisir « Plus tard » appliquera le changement au prochain lancement.</string>
+    
+    <string name="set_cloud_server">Configurer l\'URL du serveur</string>
+    <string name="server_url_hint">URL du serveur</string>
+    <string name="server_url_example">ex : https://api.example.com</string>
+    
+    <!-- Statistics Cards -->
+    <string name="total_items">Total des objets</string>
+    <string name="number_of_warehouses">Conteneurs</string>
+    <string name="shopping_items">Articles à acheter</string>
+    <string name="items_count">%d objets</string>
+    
+    <!-- Items -->
+    <string name="item_name">Nom de l\'objet</string>
+    <string name="item_description">Description</string>
+    <string name="item_category">Catégorie</string>
+    <string name="item_warehouse">Conteneur</string>
+    <string name="item_price">Prix</string>
+    <string name="item_quantity">Quantité</string>
+    <string name="item_barcode">Code-barres</string>
+    <string name="item_expiry_date">Date d\'expiration</string>
+    <string name="item_tags">Étiquettes</string>
+    <string name="item_status">État</string>
+    <string name="item_image">Image</string>
+    <string name="item_feature_code">Code caractéristique</string>
+    <string name="add_item">Ajouter un objet</string>
+    <string name="edit_item">Modifier l\'objet</string>
+    <string name="item_detail">Détail de l\'objet</string>
+    <string name="delete_item">Supprimer l\'objet</string>
+    <string name="delete_item_confirm">Voulez-vous vraiment supprimer cet objet ?</string>
+    <string name="add_to_shopping_cart">Ajouter au panier</string>
+    
+    <!-- Item Status -->
+    <string name="status_normal">Normal</string>
+    <string name="status_expired">Expiré</string>
+    <string name="status_low_stock">Stock faible</string>
+    <string name="status_out_of_stock">Rupture de stock</string>
+    <string name="status_damaged">Endommagé</string>
+    <string name="status_lost">Perdu</string>
+    
+    <!-- Priority -->
+    <string name="priority_high">Élevée</string>
+    <string name="priority_medium">Moyenne</string>
+    <string name="priority_low">Faible</string>
+    
+    <!-- Shopping List -->
+    <string name="shopping_list">Liste d\'achats</string>
+    <string name="shopping_item">Article à acheter</string>
+    <string name="add_shopping_item">Ajouter un article</string>
+    <string name="edit_shopping_item">Modifier l\'article</string>
+    <string name="delete_shopping_item">Supprimer l\'article</string>
+    <string name="delete_shopping_item_confirm">Voulez-vous vraiment supprimer cet article ?</string>
+    <string name="purchased">Acheté</string>
+    
+    <!-- Categories -->
+    <string name="category">Catégorie</string>
+    <string name="categories">Gestion des catégories</string>
+    <string name="add_category">Ajouter une catégorie</string>
+    <string name="edit_category">Modifier la catégorie</string>
+    <string name="delete_category">Supprimer la catégorie</string>
+    <string name="delete_category_confirm">Voulez-vous vraiment supprimer cette catégorie ? Les objets de cette catégorie deviendront non classés.</string>
+    <string name="category_name">Nom de la catégorie</string>
+    <string name="category_description">Description de la catégorie</string>
+    <string name="no_category">Sans catégorie</string>
+    
+    <!-- Warehouses -->
+    <string name="warehouse">Conteneur</string>
+    <string name="warehouses">Gestion des conteneurs</string>
+    <string name="add_warehouse">Ajouter un conteneur</string>
+    <string name="edit_warehouse">Modifier l\'conteneur</string>
+    <string name="delete_warehouse">Supprimer l\'conteneur</string>
+    <string name="delete_warehouse_confirm">Voulez-vous vraiment supprimer cet conteneur ? Les objets qu\'il contient deviendront non assignés.</string>
+    <string name="warehouse_name">Nom de l\'conteneur</string>
+    <string name="warehouse_description">Description de l\'conteneur</string>
+    <string name="warehouse_location">Emplacement</string>
+    <string name="warehouse_items">Objets dans l\'conteneur</string>
+    <string name="no_warehouse">Non assigné</string>
+    
+    <!-- Tags -->
+    <string name="tags">Étiquettes</string>
+    <string name="add_tag">Ajouter une étiquette</string>
+    <string name="tag_hint">Saisir l\'étiquette (12 caractères max)</string>
+    <string name="tag_limit_exceeded">La longueur de l\'étiquette ne peut pas dépasser 12 caractères</string>
+    
+    <!-- Date Picker -->
+    <string name="select_date">Sélectionner une date</string>
+    <string name="no_date_selected">Aucune date sélectionnée</string>
+    
+    <!-- Image -->
+    <string name="take_photo">Prendre une photo</string>
+    <string name="select_from_gallery">Galerie</string>
+    <string name="item_image_capture">Image de l\'objet</string>
+    <string name="crop_image">Recadrer l\'image</string>
+    <string name="delete_image">Supprimer l\'image</string>
+    <string name="clear_feature_code">Effacer le code caractéristique</string>
+    
+    <!-- Barcode Scanner -->
+    <string name="barcode_scanner">Scanner le code-barres</string>
+    <string name="scan_barcode">Scanner le code-barres</string>
+    <string name="barcode_scanned">Code-barres : %s</string>
+    
+    <!-- Item Recognition -->
+    <string name="item_recognition">Reconnaissance d\'objets</string>
+    <string name="click_to_recognize">Cliquez sur le bouton pour prendre une photo et reconnaître l\'objet</string>
+    <string name="take_photo_recognize">Prendre une photo pour reconnaître</string>
+    <string name="extracting_features">Extraction des caractéristiques…</string>
+    <string name="model_not_loaded">Modèle non chargé. Veuillez vous assurer que le fichier modèle est dans le dossier assets.</string>
+    <string name="model_loaded">Modèle chargé, prêt à prendre une photo pour la reconnaissance</string>
+    
+    <!-- Search -->
+    <string name="search_items">Rechercher des objets</string>
+    <string name="search_by_image">Recherche par reconnaissance d\'image</string>
+    <string name="search_hint">Saisir le nom de l\'objet à rechercher</string>
+    <string name="no_results">Aucun résultat trouvé</string>
+    <string name="found_similar_items">%d objets similaires trouvés</string>
+    
+    <!-- Empty States -->
+    <string name="no_items">Aucun objet</string>
+    <string name="no_categories">Aucune catégorie</string>
+    <string name="no_warehouses">Aucun conteneur</string>
+    <string name="no_shopping_items">Le panier est vide</string>
+    
+    <!-- Action Messages -->
+    <string name="item_saved">Objet enregistré</string>
+    <string name="item_deleted">Objet supprimé</string>
+    <string name="category_saved">Catégorie enregistrée</string>
+    <string name="category_deleted">Catégorie supprimée</string>
+    <string name="warehouse_saved">Conteneur enregistré</string>
+    <string name="warehouse_deleted">Conteneur supprimé</string>
+    <string name="shopping_item_saved">Article enregistré</string>
+    <string name="shopping_item_deleted">Article supprimé</string>
+    <string name="added_to_shopping_cart">Ajouté au panier</string>
+    <string name="more_options">Plus d\'options</string>
+    
+    <!-- Required Fields -->
+    <string name="name_required">Veuillez saisir le nom de l\'objet</string>
+    <string name="category_name_required">Veuillez saisir le nom de la catégorie</string>
+    <string name="warehouse_name_required">Veuillez saisir le nom de l\'conteneur</string>
+    <string name="shopping_item_name_required">Veuillez saisir le nom de l\'article</string>
+    
+    <!-- Other -->
+    <string name="loading">Chargement…</string>
+    <string name="error">Erreur</string>
+    <string name="unknown_error">Erreur inconnue</string>
+    <string name="retry">Réessayer</string>
+    
+    <!-- Additional strings -->
+    <string name="shopping_basket">Panier d\'achat</string>
+    <string name="add_first_shopping_item">Ajouter le premier article</string>
+    <string name="item_management">Gestion des objets</string>
+    <string name="add_first_item">Ajouter le premier objet</string>
+    <string name="no_matching_items">Aucun objet correspondant</string>
+    <string name="warehouse_not_found">Conteneur non trouvé</string>
+    <string name="warehouse_items_title">Objets de l\'conteneur</string>
+    <string name="warehouse_management">Gestion des conteneurs</string>
+    <string name="add_first_warehouse">Ajouter le premier conteneur</string>
+    <string name="view_items">Voir les objets</string>
+    <string name="category_management">Gestion des catégories</string>
+    <string name="add_first_category">Ajouter la première catégorie</string>
+    <string name="item_name_required">Nom de l\'objet *</string>
+    <string name="description">Description</string>
+    <string name="no_category_option">Aucune catégorie</string>
+    <string name="no_warehouse_option">Aucun conteneur</string>
+    <string name="status_tags">Étiquettes d\'état</string>
+    <string name="expired_tag">Expiré</string>
+    <string name="price">Prix</string>
+    <string name="quantity">Quantité</string>
+    <string name="barcode">Code-barres</string>
+    <string name="feature_code">Code caractéristique de l\'objet</string>
+    <string name="expiry_date">Date d\'expiration</string>
+    <string name="recognizing_image">Reconnaissance de l\'image…</string>
+    <string name="take_photo_search">Prendre une photo pour rechercher</string>
+    <string name="close">Fermer</string>
+    <string name="take_photo_recognize_button">Prendre une photo pour reconnaître</string>
+    <string name="extracting_features_progress">Extraction des caractéristiques…</string>
+    <string name="camera_permission_required">Autorisation de caméra requise</string>
+    <string name="camera_permission_for_scanner">L\'autorisation de caméra est requise pour utiliser le scanner</string>
+    <string name="category_name_required_field">Nom de la catégorie *</string>
+    <string name="select_color">Choisir la couleur</string>
+    <string name="shopping_item_name_required_field">Nom de l\'article *</string>
+    <string name="priority">Priorité</string>
+    <string name="warehouse_name_required_field">Nom de l\'conteneur *</string>
+    <string name="capacity_limit_optional">Limite de capacité (facultatif)</string>
+    <string name="capacity">Capacité</string>
+    <string name="used_capacity">Utilisé : %1$d / %2$d</string>
+    <string name="items_unit">objets</string>
+    <string name="expires_on">Expire le : %1$s</string>
+    <string name="quantity_with_value">Quantité : %1$d</string>
+    <string name="price_with_value">%1$.2f €</string>
+    <string name="warehouse_empty_hint">Aucun objet dans cet conteneur</string>
+</resources>

@@ -17,6 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.data.model.Category
 import com.example.itemremindertool.ui.viewmodel.CategoryViewModel
+import com.example.itemremindertool.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,10 +55,10 @@ fun CategoryEditScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (categoryId == null) "添加分类" else "编辑分类") },
+                title = { Text(if (categoryId == null) stringResource(R.string.add_category) else stringResource(R.string.edit_category)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "返回")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 actions = {
@@ -76,7 +78,7 @@ fun CategoryEditScreen(
                             onNavigateBack()
                         }
                     ) {
-                        Text("保存")
+                        Text(stringResource(R.string.save))
                     }
                 }
             )
@@ -93,7 +95,7 @@ fun CategoryEditScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("分类名称 *") },
+                label = { Text(stringResource(R.string.category_name_required_field)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -101,13 +103,13 @@ fun CategoryEditScreen(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("描述") },
+                label = { Text(stringResource(R.string.description)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
                 maxLines = 5
             )
 
-            Text("选择颜色", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.select_color), style = MaterialTheme.typography.labelLarge)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)

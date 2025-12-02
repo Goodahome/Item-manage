@@ -21,6 +21,8 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
+import androidx.compose.ui.res.stringResource
+import com.example.itemremindertool.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,10 +52,10 @@ fun BarcodeScannerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("扫码添加") },
+                title = { Text(stringResource(R.string.barcode_scanner)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "返回")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -75,7 +77,7 @@ fun BarcodeScannerScreen(
                         contentDescription = null,
                         modifier = Modifier.size(64.dp)
                     )
-                    Text("需要相机权限才能使用扫码功能")
+                    Text(stringResource(R.string.camera_permission_for_scanner))
                 }
             }
         } else {
