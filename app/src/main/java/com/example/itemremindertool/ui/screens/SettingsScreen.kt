@@ -58,14 +58,14 @@ fun SettingsScreen(
                     .clickable { onNavigateToAppearance() }
                     .padding(vertical = 8.dp)
             )
-            
-            Divider()
-            
-            // 语言设置
+                    
+                    Divider()
+                    
+                    // 语言设置
             ListItem(
                 headlineContent = { 
-                    Text(
-                        text = stringResource(R.string.language),
+                            Text(
+                                text = stringResource(R.string.language),
                         style = MaterialTheme.typography.titleMedium
                     )
                 },
@@ -112,9 +112,9 @@ fun SettingsScreen(
                     .clickable { onNavigateToApp() }
                     .padding(vertical = 8.dp)
             )
-            
-            Divider()
-            
+                    
+                    Divider()
+                    
             // 云端存储设置
             ListItem(
                 headlineContent = { 
@@ -130,7 +130,7 @@ fun SettingsScreen(
                     .clickable { onNavigateToCloudStorage() }
                     .padding(vertical = 8.dp)
             )
-        }
+                }
     }
 }
 

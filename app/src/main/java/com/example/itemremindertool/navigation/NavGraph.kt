@@ -45,6 +45,11 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
     object WarehouseItems : Screen("warehouse_items/{warehouseId}", R.string.warehouse_items, Icons.Default.Inventory, Icons.Default.Inventory) {
         fun createRoute(warehouseId: Long) = "warehouse_items/$warehouseId"
     }
+    
+    object AllItems : Screen("all_items", R.string.nav_all_items, Icons.Default.Inventory, Icons.Default.Inventory)
+    object WarehouseItemsTab : Screen("warehouse_items_tab/{warehouseId}", R.string.nav_items, Icons.Default.Inventory, Icons.Default.Inventory) {
+        fun createRoute(warehouseId: Long) = "warehouse_items_tab/$warehouseId"
+    }
 
     object BarcodeScanner : Screen("barcode_scanner", R.string.barcode_scanner, Icons.Default.QrCodeScanner, Icons.Default.QrCodeScanner)
     object ItemRecognition : Screen("item_recognition", R.string.item_recognition, Icons.Default.ImageSearch, Icons.Default.ImageSearch)

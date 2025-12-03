@@ -62,9 +62,8 @@ fun DashboardScreen(
     onNavigateToShoppingList: () -> Unit = {},
     onNavigateToWarehouses: () -> Unit = {},
     onAddChildWarehouse: (Long) -> Unit = {},
+    onNavigateToWarehouseItemsTab: (Long) -> Unit = {}, // 导航到容器物品页面
     initialSelectedWarehouseId: Long? = null, // 初始选中的容器ID
-    onReturnToAllItemsTab: ((() -> Unit) -> Unit)? = null, // 接收返回到所有物品标签页函数的回调
-    onReturnToWarehouseItemsTab: ((() -> Unit) -> Unit)? = null, // 接收返回到容器物品标签页函数的回调
     modifier: Modifier = Modifier
 ) {
     val stats by dashboardViewModel.stats.collectAsState()
@@ -74,65 +73,19 @@ fun DashboardScreen(
 
     // 容器物品数量映射（包含所有容器，不仅仅是顶层容器）
     var warehouseItemCounts by remember { mutableStateOf<Map<Long, Int>>(emptyMap()) }
-    var selectedWarehouseId by remember { mutableStateOf<Long?>(initialSelectedWarehouseId) }
-    var warehouseItems by remember { mutableStateOf<List<Item>>(emptyList()) }
-    
-    // 当 initialSelectedWarehouseId 变化时更新 selectedWarehouseId
-    // 问题1修复：防止在返回时被重新设置为容器ID
-    // 只有在 selectedWarehouseId 为 null 时才更新，避免覆盖 returnToAllItemsTab 的设置
-    LaunchedEffect(initialSelectedWarehouseId) {
-        // 只有在 selectedWarehouseId 为 null 时才更新，避免覆盖 returnToAllItemsTab 的设置
-        if (selectedWarehouseId == null) {
-            selectedWarehouseId = initialSelectedWarehouseId
-        }
-    }
 
-    // 根据是否选中容器动态设置Tab
-    val warehouseInfoTabTitle = stringResource(R.string.nav_warehouse_info)
-    val warehouseItemsTabTitle = stringResource(R.string.nav_items)
+    // Tab设置：只有首页和所有物品两个标签页
     val homeTabTitle = stringResource(R.string.nav_home)
     val allItemsTabTitle = stringResource(R.string.nav_all_items)
 
-    val tabs = if (selectedWarehouseId != null) {
-        listOf(warehouseInfoTabTitle, warehouseItemsTabTitle)
-        } else {
-        listOf(homeTabTitle, allItemsTabTitle)
-    }
+    val tabs = listOf(homeTabTitle, allItemsTabTitle)
 
     // 必须在这里声明！！
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val scope = rememberCoroutineScope()
-
-    // 返回到所有物品标签页的函数
-    val returnToAllItemsTab: () -> Unit = {
-        selectedWarehouseId = null
-        scope.launch {
-            pagerState.animateScrollToPage(1) // 切换到所有物品标签页
-        }
-    }
     
-    // 返回到容器物品标签页的函数（保持在物品页面，不跳转到容器信息页面）
-    val returnToWarehouseItemsTab: () -> Unit = {
-        // 保持当前选中的容器，但切换到物品页面（页面1）
-        scope.launch {
-            pagerState.animateScrollToPage(1) // 切换到容器物品标签页
-        }
-    }
-    
-    // 暴露给外部使用
-    LaunchedEffect(Unit) {
-        onReturnToAllItemsTab?.invoke(returnToAllItemsTab)
-        onReturnToWarehouseItemsTab?.invoke(returnToWarehouseItemsTab)
-    }
-
-    // 当选中容器改变时，重置到第一页
-    LaunchedEffect(selectedWarehouseId) {
-        if (selectedWarehouseId != null) {
-            scope.launch {
-                pagerState.animateScrollToPage(0)
-            }
-        }
-    }
+    // 移除自动导航逻辑，用户应该主动点击容器卡片来导航
+    // 这样可以避免返回时意外导航
     
     // 计算每个容器的物品数量（包含所有容器，不仅仅是顶层容器）
     LaunchedEffect(allWarehouses, items) {
@@ -142,20 +95,6 @@ fun DashboardScreen(
         warehouseItemCounts = counts
     }
     
-    // 当选中容器时，加载该容器的信息和子容器
-    LaunchedEffect(selectedWarehouseId) {
-        if (selectedWarehouseId != null) {
-            warehouseViewModel.loadWarehouse(selectedWarehouseId!!)
-            warehouseViewModel.loadWarehouseItems(selectedWarehouseId!!)
-        }
-    }
-    
-    val warehouseItemsState by warehouseViewModel.uiState.collectAsState()
-    LaunchedEffect(selectedWarehouseId, warehouseItemsState.warehouseItems) {
-        if (selectedWarehouseId != null) {
-            warehouseItems = warehouseItemsState.warehouseItems
-        }
-    }
     
     // 搜索相关状态
     var showSearch by remember { mutableStateOf(false) }
@@ -180,19 +119,6 @@ fun DashboardScreen(
         }
     }
     
-    // 处理返回手势和返回键：当选中容器时，返回到上一级容器；顶层容器再返回到首页
-    BackHandler(enabled = selectedWarehouseId != null) {
-        val path = warehouseItemsState.warehousePath
-        if (path.size > 1) {
-            // 返回到上一级容器
-            val parentWarehouse = path[path.size - 2]
-            selectedWarehouseId = parentWarehouse.id
-        } else {
-            // 当前为顶层容器，返回首页
-        selectedWarehouseId = null
-        warehouseItems = emptyList()
-    }
-    }
 
     val context = LocalContext.current
     
@@ -201,87 +127,21 @@ fun DashboardScreen(
             val appSettings = LocalAppSettings.current
             TopAppBar(
                 title = { 
-                    if (selectedWarehouseId != null) {
-                        // 显示面包屑导航
-                        val path = warehouseItemsState.warehousePath
-                        if (path.isNotEmpty()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Start,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                path.forEachIndexed { index, warehouse ->
-                                    if (index > 0) {
-                                        Text(
-                                            " / ",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                        )
-                                    }
-                    Text(
-                                        warehouse.name,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = if (index == path.size - 1) FontWeight.Bold else FontWeight.Normal,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        } else {
-                            Text(
-                                warehouses.find { it.id == selectedWarehouseId }?.name
-                                    ?: stringResource(R.string.warehouse_items)
-                            )
-                        }
-                    } else {
-                        Text(appSettings.appName)
-                    }
+                    Text(appSettings.appName)
                 },
                 navigationIcon = {
-                    if (selectedWarehouseId != null) {
-                        IconButton(onClick = { 
-                            val path = warehouseItemsState.warehousePath
-                            if (path.size > 1) {
-                                // 返回到上一级容器
-                                val parentWarehouse = path[path.size - 2]
-                                selectedWarehouseId = parentWarehouse.id
-                            } else {
-                                // 当前为顶层容器，返回首页
-                            selectedWarehouseId = null
-                            warehouseItems = emptyList()
-                            }
-                        }) {
-                            Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
-                        }
-                    } else {
-                        IconButton(onClick = onMenuClick) {
-                            Icon(Icons.Default.Menu, stringResource(R.string.settings))
-                        }
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Default.Menu, stringResource(R.string.settings))
                     }
                 },
                 actions = {
                     if (pagerState.currentPage == 0) {
-                        // 首页：显示查找按钮或添加子容器按钮
-                        if (selectedWarehouseId == null) {
-                            IconButton(onClick = { showSearch = !showSearch }) {
-                                Icon(Icons.Default.Search, stringResource(R.string.search_items))
-                            }
-                        } else {
-                            // 显示添加子容器按钮（根据层级和设置控制）
-                            val path = warehouseItemsState.warehousePath
-                            val currentDepth = if (path.isNotEmpty()) path.size else 1
-                            val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
-                            val unlimitedContainers = prefs.getBoolean("unlimited_containers", false)
-
-                            if (unlimitedContainers || currentDepth < 5) {
-                                IconButton(onClick = {
-                                    selectedWarehouseId?.let { onAddChildWarehouse(it) }
-                                }) {
-                                    Icon(Icons.Default.Add, stringResource(R.string.add_warehouse))
-                                }
-                            }
+                        // 首页：显示查找按钮
+                        IconButton(onClick = { showSearch = !showSearch }) {
+                            Icon(Icons.Default.Search, stringResource(R.string.search_items))
                         }
                     } else if (pagerState.currentPage == 1) {
+                        // 所有物品页面：显示扫码、识别和添加按钮
                         IconButton(onClick = onScanBarcode) {
                             Icon(
                                 Icons.Default.QrCodeScanner,
@@ -294,7 +154,7 @@ fun DashboardScreen(
                                 stringResource(R.string.item_recognition)
                             )
                         }
-                        IconButton(onClick = { onAddItem(selectedWarehouseId) }) {
+                        IconButton(onClick = { onAddItem(null) }) {
                             Icon(Icons.Default.Add, stringResource(R.string.add_item))
                         }
                     }
@@ -323,7 +183,7 @@ fun DashboardScreen(
             }
             
             // 搜索框（在首页且显示搜索时显示，且未选中容器）
-            if (pagerState.currentPage == 0 && showSearch && selectedWarehouseId == null) {
+            if (pagerState.currentPage == 0 && showSearch) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -418,39 +278,6 @@ fun DashboardScreen(
                                     }
                                 }
                             }
-                        } else if (selectedWarehouseId != null) {
-                            // 容器信息页面
-                            val selectedWarehouse = warehouseItemsState.selectedWarehouse
-                            val childWarehouses = warehouseItemsState.childWarehouses
-                            // 如果容器还在加载中，显示加载状态
-                            if (selectedWarehouse == null && warehouseItemsState.isLoading) {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator()
-                                }
-                            } else if (selectedWarehouse != null) {
-                                WarehouseInfoScreen(
-                                    warehouse = selectedWarehouse,
-                                    itemCount = warehouseItemCounts[selectedWarehouse.id] ?: 0,
-                                    childWarehouses = childWarehouses,
-                                    warehouseItemCounts = warehouseItemCounts,
-                                    onWarehouseClick = { warehouseId: Long ->
-                                        selectedWarehouseId = warehouseId
-                                    },
-                                    onEditWarehouse = {
-                                        // 可以添加编辑容器的功能
-                                    }
-                                )
-                            } else {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(stringResource(R.string.warehouse_not_found))
-                                }
-                            }
                         } else {
                             // 显示统计卡片和容器卡片
                             val totalItemsTitle = stringResource(R.string.total_items)
@@ -511,80 +338,22 @@ fun DashboardScreen(
                                     WarehouseStatCard(
                                         warehouse = warehouse,
                                         itemCount = warehouseItemCounts[warehouse.id] ?: 0,
-                                        onClick = { selectedWarehouseId = warehouse.id }
+                                        onClick = {
+                                            onNavigateToWarehouseItemsTab(warehouse.id)
+                                        }
                                     )
                                 }
                             }
                         }
                         }
                     1 -> {
-                        val isWarehouseContext = selectedWarehouseId != null
-                        val itemsToDisplay = if (isWarehouseContext) {
-                            warehouseItems
-                        } else {
-                            items
-                        }
-
-                        if (itemsToDisplay.isEmpty()) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.Inventory,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(64.dp),
-                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                    )
-                                    Text(
-                                        text = if (isWarehouseContext) {
-                                            stringResource(R.string.warehouse_empty_hint)
-                                        } else {
-                                            stringResource(R.string.no_items)
-                                        },
-                                        style = MaterialTheme.typography.titleLarge,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                        textAlign = TextAlign.Center
-                                    )
-                                    if (!isWarehouseContext) {
-                                        Button(onClick = { onAddItem(null) }) {
-                                            Text(stringResource(R.string.add_first_item))
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                items(itemsToDisplay, key = { it.id }) { item ->
-                                    ItemCard(
-                                        item = item,
-                                        onEdit = { onEditItem(item.id) },
-                                        onDelete = { itemViewModel.deleteItem(item) },
-                                        onAddToShoppingCart = {
-                                            val shoppingItem =
-                                                com.example.itemremindertool.data.model.ShoppingItem(
-                                                    name = item.name,
-                                                    description = "",
-                                                    quantity = 1,
-                                                    isCompleted = false,
-                                                    priority = com.example.itemremindertool.data.model.Priority.MEDIUM,
-                                                    createdAt = Date(),
-                                                    imageUri = item.imageUri
-                                                )
-                                            shoppingItemViewModel.insertShoppingItem(shoppingItem)
-                                        }
-                                    )
-                                }
-                            }
-                        }
+                        // 所有物品页面：使用独立的 AllItemsScreen
+                        AllItemsScreen(
+                            itemViewModel = itemViewModel,
+                            shoppingItemViewModel = shoppingItemViewModel,
+                            onAddItem = { onAddItem(null) },
+                            onEditItem = onEditItem
+                        )
                     }
                     }
                 }

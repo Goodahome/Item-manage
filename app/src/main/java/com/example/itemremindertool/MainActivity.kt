@@ -184,10 +184,6 @@ fun ItemReminderToolApp(
     
     // 维护当前选中的容器ID状态
     var selectedWarehouseId by remember { mutableStateOf<Long?>(null) }
-    var returnToAllItemsTab: (() -> Unit)? by remember { mutableStateOf(null) }
-    var returnToWarehouseItemsTab: (() -> Unit)? by remember { mutableStateOf(null) }
-    var isEditingFromAllItems by remember { mutableStateOf(false) } // 标记是否从所有物品页面进入编辑
-    var isEditingFromWarehouseItems by remember { mutableStateOf(false) } // 标记是否从容器物品页面进入编辑
     
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -296,17 +292,16 @@ fun ItemReminderToolApp(
                     warehouseViewModel = warehouseViewModel,
                     shoppingItemViewModel = shoppingItemViewModel,
                     onAddItem = { warehouseId ->
-                        // 保存当前选中的容器ID，以便在添加物品后返回
+                        // 保存当前选中的容器ID，用于设置初始容器
                         if (warehouseId != null) {
                             selectedWarehouseId = warehouseId
+                        } else {
+                            // 从所有物品页面添加时，清理 selectedWarehouseId
+                            selectedWarehouseId = null
                         }
                         navController.navigate(Screen.AddItem.route)
                     },
                     onEditItem = { itemId ->
-                        // 判断是否从所有物品页面进入（selectedWarehouseId 为 null）
-                        isEditingFromAllItems = selectedWarehouseId == null
-                        // 判断是否从容器物品页面进入（selectedWarehouseId 不为 null）
-                        isEditingFromWarehouseItems = selectedWarehouseId != null
                         navController.navigate(Screen.EditItem.createRoute(itemId))
                     },
                     onScanBarcode = { navController.navigate(Screen.BarcodeScanner.route) },
@@ -337,15 +332,15 @@ fun ItemReminderToolApp(
                         selectedWarehouseId = parentId // 保存父容器ID
                         navController.navigate(Screen.AddChildWarehouse.createRoute(parentId))
                     },
-                    // 使用当前的 selectedWarehouseId 初始化 Dashboard 的容器上下文；
-                    // 从"所有物品"进入编辑时，这个值为 null，因此不会跳到容器页面。
-                    initialSelectedWarehouseId = selectedWarehouseId,
-                    onReturnToAllItemsTab = { callback ->
-                        returnToAllItemsTab = callback
+                    onNavigateToWarehouseItemsTab = { warehouseId ->
+                        selectedWarehouseId = warehouseId
+                        // 直接导航，不使用 popUpTo，让返回按钮正常工作
+                        navController.navigate(Screen.WarehouseItemsTab.createRoute(warehouseId)) {
+                            launchSingleTop = true
+                        }
                     },
-                    onReturnToWarehouseItemsTab = { callback ->
-                        returnToWarehouseItemsTab = callback
-                    }
+                    // 不再传递 initialSelectedWarehouseId，避免自动导航
+                    initialSelectedWarehouseId = null
                 )
             }
 
@@ -353,10 +348,6 @@ fun ItemReminderToolApp(
                 val categories by categoryViewModel.categories.collectAsState(initial = emptyList())
                 val warehouses by warehouseViewModel.warehouses.collectAsState(initial = emptyList())
                 val pendingFeatureCode by itemViewModel.pendingFeatureCode.collectAsState()
-                // 判断是否从所有物品页面进入（selectedWarehouseId 为 null）
-                val isFromAllItems = selectedWarehouseId == null
-                // 判断是否从容器物品页面进入（selectedWarehouseId 不为 null）
-                val isFromWarehouseItems = selectedWarehouseId != null
                 ItemEditScreen(
                     itemId = null,
                     viewModel = itemViewModel,
@@ -364,12 +355,12 @@ fun ItemReminderToolApp(
                     warehouses = warehouses,
                     tagManager = tagManager,
                     initialFeatureCode = pendingFeatureCode,
-                    // 问题2修复：从所有物品页面进入时，不传递容器ID（为 null）
-                    initialWarehouseId = if (isFromAllItems) null else selectedWarehouseId,
-                    returnToAllItemsTab = if (isFromAllItems) returnToAllItemsTab else null, // 只有从所有物品页面进入时才传递
-                    returnToWarehouseItemsTab = if (isFromWarehouseItems) returnToWarehouseItemsTab else null, // 只有从容器物品页面进入时才传递
+                    // 从所有物品页面进入时，不传递容器ID（为 null）
+                    initialWarehouseId = if (selectedWarehouseId == null) null else selectedWarehouseId,
                     onNavigateBack = { 
                         itemViewModel.clearPendingFeatureCode()
+                        // 返回时清理 selectedWarehouseId，避免意外导航
+                        selectedWarehouseId = null
                         navController.popBackStack() 
                     }
                 )
@@ -403,13 +394,9 @@ fun ItemReminderToolApp(
                     categories = categories,
                     warehouses = warehouses,
                     tagManager = tagManager,
-                    // 问题1修复：从所有物品页面进入时，传递 returnToAllItemsTab，确保返回后保持在所有物品页面
-                    returnToAllItemsTab = if (isEditingFromAllItems) returnToAllItemsTab else null,
-                    // 问题3修复：从容器物品页面进入时，传递 returnToWarehouseItemsTab，确保返回后保持在容器物品页面
-                    returnToWarehouseItemsTab = if (isEditingFromWarehouseItems) returnToWarehouseItemsTab else null,
                     onNavigateBack = { 
-                        isEditingFromAllItems = false // 重置标志
-                        isEditingFromWarehouseItems = false // 重置标志
+                        // 返回时清理 selectedWarehouseId，避免意外导航
+                        selectedWarehouseId = null
                         navController.popBackStack() 
                     }
                 )
@@ -587,13 +574,14 @@ fun ItemReminderToolApp(
                     warehouseId = null,
                     viewModel = warehouseViewModel,
                     onNavigateBack = { 
+                        // 返回时清理 selectedWarehouseId，避免意外导航
+                        selectedWarehouseId = null
                         navController.popBackStack()
-                        // 返回到 Dashboard 后，保持父容器选中状态
                     },
                     initialParentId = parentId,
                     onSaveSuccess = { savedParentId ->
-                        // 保存成功后，设置选中的容器为父容器
-                        selectedWarehouseId = savedParentId
+                        // 保存成功后，不设置 selectedWarehouseId，避免返回时意外导航
+                        // selectedWarehouseId 应该只在用户主动点击容器时设置
                     }
                 )
             }
@@ -623,6 +611,71 @@ fun ItemReminderToolApp(
                         navController.navigate(Screen.EditItem.createRoute(itemId))
                     },
                     onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.AllItems.route) {
+                AllItemsScreen(
+                    itemViewModel = itemViewModel,
+                    shoppingItemViewModel = shoppingItemViewModel,
+                    onAddItem = { 
+                        navController.navigate(Screen.AddItem.route)
+                    },
+                    onEditItem = { itemId ->
+                        navController.navigate(Screen.EditItem.createRoute(itemId))
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.WarehouseItemsTab.route,
+                arguments = listOf(navArgument("warehouseId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val warehouseId = backStackEntry.arguments?.getLong("warehouseId") ?: return@composable
+                // 创建一个带有标签页的容器详情页面（容器信息 + 容器物品）
+                WarehouseDetailScreen(
+                    warehouseId = warehouseId,
+                    warehouseViewModel = warehouseViewModel,
+                    itemViewModel = itemViewModel,
+                    shoppingItemViewModel = shoppingItemViewModel,
+                    onAddItem = { warehouseId ->
+                        // 保存当前选中的容器ID，用于设置初始容器
+                        selectedWarehouseId = warehouseId
+                        navController.navigate(Screen.AddItem.route)
+                    },
+                    onEditItem = { itemId ->
+                        // 不设置 selectedWarehouseId，避免返回时意外导航
+                        navController.navigate(Screen.EditItem.createRoute(itemId))
+                    },
+                    onScanBarcode = { navController.navigate(Screen.BarcodeScanner.route) },
+                    onItemRecognition = { navController.navigate(Screen.ItemRecognition.route) },
+                    onAddChildWarehouse = { parentId ->
+                        navController.navigate(Screen.AddChildWarehouse.createRoute(parentId))
+                    },
+                    onNavigateToWarehouseItemsTab = { childWarehouseId ->
+                        // 正常导航到子容器详情页面，保持导航栈，让返回按钮能够正常工作
+                        navController.navigate(Screen.WarehouseItemsTab.createRoute(childWarehouseId))
+                    },
+                    onNavigateBack = { 
+                        // 返回时清理 selectedWarehouseId，避免意外导航到容器页面
+                        selectedWarehouseId = null
+                        navController.popBackStack() 
+                    },
+                    onNavigateToParentWarehouse = { targetWarehouseId ->
+                        // 导航到目标容器（可能是父容器或更上层的容器）
+                        // 策略：尝试弹出到目标容器，如果不存在则导航到它
+                        val targetRoute = Screen.WarehouseItemsTab.createRoute(targetWarehouseId)
+                        
+                        // 尝试弹出到目标路由（如果存在）
+                        val popped = navController.popBackStack(targetRoute, inclusive = false)
+                        
+                        if (!popped) {
+                            // 如果目标路由不在栈中，直接导航到它
+                            // 先弹出当前页面，然后导航到目标
+                            navController.popBackStack()
+                            navController.navigate(targetRoute)
+                        }
+                    }
                 )
             }
         }
