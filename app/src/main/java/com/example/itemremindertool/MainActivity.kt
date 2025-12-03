@@ -35,6 +35,9 @@ import com.example.itemremindertool.ui.theme.ItemReminderToolTheme
 import com.example.itemremindertool.ui.viewmodel.*
 import com.example.itemremindertool.utils.AppConfigManager
 import com.example.itemremindertool.utils.LocaleHelper
+import com.example.itemremindertool.utils.IconManager
+import com.example.itemremindertool.R
+import androidx.compose.ui.res.stringResource
 
 class MainActivity : ComponentActivity() {
     override fun attachBaseContext(newBase: Context) {
@@ -60,6 +63,9 @@ class MainActivity : ComponentActivity() {
 
         // 启动通知调度
         NotificationScheduler.scheduleNotifications(this)
+        
+        // 初始化应用图标
+        IconManager.initializeIcon(applicationContext)
         
         // 检查并应用待处理的系统级别更改
         // 注意：系统级别的名称和图标修改需要重新安装应用
@@ -178,6 +184,10 @@ fun ItemReminderToolApp(
     
     // 维护当前选中的容器ID状态
     var selectedWarehouseId by remember { mutableStateOf<Long?>(null) }
+    var returnToAllItemsTab: (() -> Unit)? by remember { mutableStateOf(null) }
+    var returnToWarehouseItemsTab: (() -> Unit)? by remember { mutableStateOf(null) }
+    var isEditingFromAllItems by remember { mutableStateOf(false) } // 标记是否从所有物品页面进入编辑
+    var isEditingFromWarehouseItems by remember { mutableStateOf(false) } // 标记是否从容器物品页面进入编辑
     
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -190,7 +200,7 @@ fun ItemReminderToolApp(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "菜单",
+                        text = stringResource(R.string.menu),
                         style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.padding(16.dp)
                     )
@@ -198,7 +208,7 @@ fun ItemReminderToolApp(
                     
                     NavigationDrawerItem(
                         icon = { Icon(Screen.Categories.icon, null) },
-                        label = { Text(Screen.Categories.label) },
+                        label = { Text(stringResource(R.string.nav_category_management)) },
                         selected = currentDestination == Screen.Categories,
                     onClick = {
                             currentDestination = Screen.Categories
@@ -216,7 +226,7 @@ fun ItemReminderToolApp(
                     
                     NavigationDrawerItem(
                         icon = { Icon(Screen.ShoppingList.icon, null) },
-                        label = { Text(Screen.ShoppingList.label) },
+                        label = { Text(stringResource(R.string.nav_shopping_basket)) },
                         selected = currentDestination == Screen.ShoppingList,
                         onClick = {
                             currentDestination = Screen.ShoppingList
@@ -234,7 +244,7 @@ fun ItemReminderToolApp(
                     
                     NavigationDrawerItem(
                         icon = { Icon(Screen.Warehouses.icon, null) },
-                        label = { Text(Screen.Warehouses.label) },
+                        label = { Text(stringResource(R.string.nav_warehouse_management)) },
                         selected = currentDestination == Screen.Warehouses,
                         onClick = {
                             currentDestination = Screen.Warehouses
@@ -254,7 +264,7 @@ fun ItemReminderToolApp(
                     
                     NavigationDrawerItem(
                         icon = { Icon(Screen.Settings.icon, null) },
-                        label = { Text(Screen.Settings.label) },
+                        label = { Text(stringResource(R.string.settings)) },
                         selected = currentDestination == Screen.Settings,
                         onClick = {
                             currentDestination = Screen.Settings
@@ -293,6 +303,10 @@ fun ItemReminderToolApp(
                         navController.navigate(Screen.AddItem.route)
                     },
                     onEditItem = { itemId ->
+                        // 判断是否从所有物品页面进入（selectedWarehouseId 为 null）
+                        isEditingFromAllItems = selectedWarehouseId == null
+                        // 判断是否从容器物品页面进入（selectedWarehouseId 不为 null）
+                        isEditingFromWarehouseItems = selectedWarehouseId != null
                         navController.navigate(Screen.EditItem.createRoute(itemId))
                     },
                     onScanBarcode = { navController.navigate(Screen.BarcodeScanner.route) },
@@ -324,8 +338,14 @@ fun ItemReminderToolApp(
                         navController.navigate(Screen.AddChildWarehouse.createRoute(parentId))
                     },
                     // 使用当前的 selectedWarehouseId 初始化 Dashboard 的容器上下文；
-                    // 从“所有物品”进入编辑时，这个值为 null，因此不会跳到容器页面。
-                    initialSelectedWarehouseId = selectedWarehouseId
+                    // 从"所有物品"进入编辑时，这个值为 null，因此不会跳到容器页面。
+                    initialSelectedWarehouseId = selectedWarehouseId,
+                    onReturnToAllItemsTab = { callback ->
+                        returnToAllItemsTab = callback
+                    },
+                    onReturnToWarehouseItemsTab = { callback ->
+                        returnToWarehouseItemsTab = callback
+                    }
                 )
             }
 
@@ -333,6 +353,10 @@ fun ItemReminderToolApp(
                 val categories by categoryViewModel.categories.collectAsState(initial = emptyList())
                 val warehouses by warehouseViewModel.warehouses.collectAsState(initial = emptyList())
                 val pendingFeatureCode by itemViewModel.pendingFeatureCode.collectAsState()
+                // 判断是否从所有物品页面进入（selectedWarehouseId 为 null）
+                val isFromAllItems = selectedWarehouseId == null
+                // 判断是否从容器物品页面进入（selectedWarehouseId 不为 null）
+                val isFromWarehouseItems = selectedWarehouseId != null
                 ItemEditScreen(
                     itemId = null,
                     viewModel = itemViewModel,
@@ -340,7 +364,10 @@ fun ItemReminderToolApp(
                     warehouses = warehouses,
                     tagManager = tagManager,
                     initialFeatureCode = pendingFeatureCode,
-                    initialWarehouseId = selectedWarehouseId, // 传递初始容器ID
+                    // 问题2修复：从所有物品页面进入时，不传递容器ID（为 null）
+                    initialWarehouseId = if (isFromAllItems) null else selectedWarehouseId,
+                    returnToAllItemsTab = if (isFromAllItems) returnToAllItemsTab else null, // 只有从所有物品页面进入时才传递
+                    returnToWarehouseItemsTab = if (isFromWarehouseItems) returnToWarehouseItemsTab else null, // 只有从容器物品页面进入时才传递
                     onNavigateBack = { 
                         itemViewModel.clearPendingFeatureCode()
                         navController.popBackStack() 
@@ -376,7 +403,15 @@ fun ItemReminderToolApp(
                     categories = categories,
                     warehouses = warehouses,
                     tagManager = tagManager,
-                    onNavigateBack = { navController.popBackStack() }
+                    // 问题1修复：从所有物品页面进入时，传递 returnToAllItemsTab，确保返回后保持在所有物品页面
+                    returnToAllItemsTab = if (isEditingFromAllItems) returnToAllItemsTab else null,
+                    // 问题3修复：从容器物品页面进入时，传递 returnToWarehouseItemsTab，确保返回后保持在容器物品页面
+                    returnToWarehouseItemsTab = if (isEditingFromWarehouseItems) returnToWarehouseItemsTab else null,
+                    onNavigateBack = { 
+                        isEditingFromAllItems = false // 重置标志
+                        isEditingFromWarehouseItems = false // 重置标志
+                        navController.popBackStack() 
+                    }
                 )
             }
 
@@ -475,6 +510,41 @@ fun ItemReminderToolApp(
             composable(Screen.Settings.route) {
                 currentDestination = Screen.Settings
                 SettingsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToAppearance = { navController.navigate(Screen.AppearanceSettings.route) },
+                    onNavigateToLanguage = { navController.navigate(Screen.LanguageSettings.route) },
+                    onNavigateToWarehouse = { navController.navigate(Screen.WarehouseSettings.route) },
+                    onNavigateToApp = { navController.navigate(Screen.AppSettings.route) },
+                    onNavigateToCloudStorage = { navController.navigate(Screen.CloudStorageSettings.route) }
+                )
+            }
+            
+            composable(Screen.AppearanceSettings.route) {
+                AppearanceSettingsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable(Screen.LanguageSettings.route) {
+                LanguageSettingsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable(Screen.WarehouseSettings.route) {
+                WarehouseSettingsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable(Screen.AppSettings.route) {
+                AppSettingsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable(Screen.CloudStorageSettings.route) {
+                CloudStorageSettingsScreen(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

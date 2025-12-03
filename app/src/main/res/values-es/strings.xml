@@ -153,6 +153,23 @@
     <string name="warehouse_location">Ubicación</string>
     <string name="warehouse_items">Artículos del contenedor</string>
     <string name="no_warehouse">Sin asignar</string>
+    <string name="warehouse_settings">Configuración del contenedor</string>
+    <string name="child_containers">Contenedores hijos</string>
+    <string name="parent_container">Contenedor padre</string>
+    <string name="max_level_reached">Nivel máximo de contenedor (5 niveles) alcanzado. Por favor, active el modo de contenedor ilimitado en la configuración.</string>
+    <string name="unlimited_containers">Modo de contenedor ilimitado</string>
+    <string name="unlimited_containers_description">Permitir crear jerarquías de contenedores más allá de 5 niveles</string>
+    <string name="no_warehouse_option">Sin contenedor</string>
+    <string name="warehouse_name_required_field">Nombre del contenedor *</string>
+    <string name="warehouse_saved">Contenedor guardado</string>
+    <string name="warehouse_deleted">Contenedor eliminado</string>
+    <string name="warehouse_name_required">Por favor, introduzca el nombre del contenedor</string>
+    <string name="warehouse_not_found">Contenedor no encontrado</string>
+    <string name="warehouse_items_title">Artículos del contenedor</string>
+    <string name="warehouse_management">Gestión de contenedores</string>
+    <string name="add_first_warehouse">Añadir primer contenedor</string>
+    <string name="warehouse_empty_hint">No hay artículos en este contenedor</string>
+    <string name="no_warehouses">No hay contenedores</string>
     
     <!-- Etiquetas -->
     <string name="tags">Etiquetas</string>
@@ -193,7 +210,6 @@
     <!-- Estados vacíos -->
     <string name="no_items">Sin artículos</string>
     <string name="no_categories">Sin categorías</string>
-    <string name="no_warehouses">Sin contenedores</string>
     <string name="no_shopping_items">La cesta de compras está vacía</string>
     
     <!-- Mensajes de acción -->
@@ -201,8 +217,6 @@
     <string name="item_deleted">Artículo eliminado</string>
     <string name="category_saved">Categoría guardada</string>
     <string name="category_deleted">Categoría eliminada</string>
-    <string name="warehouse_saved">Contenedor guardado</string>
-    <string name="warehouse_deleted">Contenedor eliminado</string>
     <string name="shopping_item_saved">Artículo de compra guardado</string>
     <string name="shopping_item_deleted">Artículo de compra eliminado</string>
     <string name="added_to_shopping_cart">Añadido a la cesta de compras</string>
@@ -211,7 +225,6 @@
     <!-- Campos requeridos -->
     <string name="name_required">Por favor, introduzca el nombre del artículo</string>
     <string name="category_name_required">Por favor, introduzca el nombre de la categoría</string>
-    <string name="warehouse_name_required">Por favor, introduzca el nombre del contenedor</string>
     <string name="shopping_item_name_required">Por favor, introduzca el nombre del artículo de compra</string>
     
     <!-- Otros -->
@@ -226,17 +239,12 @@
     <string name="item_management">Gestión de artículos</string>
     <string name="add_first_item">Añadir el primer artículo</string>
     <string name="no_matching_items">No se encontraron artículos coincidentes</string>
-    <string name="warehouse_not_found">Contenedor no encontrado</string>
-    <string name="warehouse_items_title">Artículos del contenedor</string>
-    <string name="warehouse_management">Gestión de contenedores</string>
-    <string name="add_first_warehouse">Añadir el primer contenedor</string>
     <string name="view_items">Ver artículos</string>
     <string name="category_management">Gestión de categorías</string>
     <string name="add_first_category">Añadir la primera categoría</string>
     <string name="item_name_required">Nombre del artículo *</string>
     <string name="description">Descripción</string>
     <string name="no_category_option">Sin categoría</string>
-    <string name="no_warehouse_option">Sin contenedor</string>
     <string name="status_tags">Etiquetas de estado</string>
     <string name="expired_tag">Caducado</string>
     <string name="price">Precio</string>
@@ -255,12 +263,10 @@
     <string name="select_color">Seleccionar color</string>
     <string name="shopping_item_name_required_field">Nombre del artículo *</string>
     <string name="priority">Prioridad</string>
-    <string name="warehouse_name_required_field">Nombre del contenedor *</string>
     <string name="capacity_limit_optional">Límite de capacidad (opcional)</string>
     <string name="expires_on">Caduca: %1$s</string>
     <string name="quantity_with_value">Cantidad: %1$d</string>
     <string name="price_with_value">%1$.2f €</string>
-    <string name="warehouse_empty_hint">Este contenedor no tiene artículos</string>
     <string name="capacity">Capacidad</string>
     <string name="used_capacity">Usado: %1$d / %2$d</string>
     <string name="items_unit">artículos</string>

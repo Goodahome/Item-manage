@@ -63,6 +63,8 @@ fun DashboardScreen(
     onNavigateToWarehouses: () -> Unit = {},
     onAddChildWarehouse: (Long) -> Unit = {},
     initialSelectedWarehouseId: Long? = null, // 初始选中的容器ID
+    onReturnToAllItemsTab: ((() -> Unit) -> Unit)? = null, // 接收返回到所有物品标签页函数的回调
+    onReturnToWarehouseItemsTab: ((() -> Unit) -> Unit)? = null, // 接收返回到容器物品标签页函数的回调
     modifier: Modifier = Modifier
 ) {
     val stats by dashboardViewModel.stats.collectAsState()
@@ -76,8 +78,13 @@ fun DashboardScreen(
     var warehouseItems by remember { mutableStateOf<List<Item>>(emptyList()) }
     
     // 当 initialSelectedWarehouseId 变化时更新 selectedWarehouseId
+    // 问题1修复：防止在返回时被重新设置为容器ID
+    // 只有在 selectedWarehouseId 为 null 时才更新，避免覆盖 returnToAllItemsTab 的设置
     LaunchedEffect(initialSelectedWarehouseId) {
-        selectedWarehouseId = initialSelectedWarehouseId
+        // 只有在 selectedWarehouseId 为 null 时才更新，避免覆盖 returnToAllItemsTab 的设置
+        if (selectedWarehouseId == null) {
+            selectedWarehouseId = initialSelectedWarehouseId
+        }
     }
 
     // 根据是否选中容器动态设置Tab
@@ -95,6 +102,28 @@ fun DashboardScreen(
     // 必须在这里声明！！
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val scope = rememberCoroutineScope()
+
+    // 返回到所有物品标签页的函数
+    val returnToAllItemsTab: () -> Unit = {
+        selectedWarehouseId = null
+        scope.launch {
+            pagerState.animateScrollToPage(1) // 切换到所有物品标签页
+        }
+    }
+    
+    // 返回到容器物品标签页的函数（保持在物品页面，不跳转到容器信息页面）
+    val returnToWarehouseItemsTab: () -> Unit = {
+        // 保持当前选中的容器，但切换到物品页面（页面1）
+        scope.launch {
+            pagerState.animateScrollToPage(1) // 切换到容器物品标签页
+        }
+    }
+    
+    // 暴露给外部使用
+    LaunchedEffect(Unit) {
+        onReturnToAllItemsTab?.invoke(returnToAllItemsTab)
+        onReturnToWarehouseItemsTab?.invoke(returnToWarehouseItemsTab)
+    }
 
     // 当选中容器改变时，重置到第一页
     LaunchedEffect(selectedWarehouseId) {
@@ -664,7 +693,7 @@ fun WarehouseStatCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = itemCount.toString(),
+                    text = stringResource(R.string.items_count, itemCount),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF5D4037),
@@ -940,10 +969,11 @@ fun ChildWarehouseCard(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = itemCount.toString(),
+                text = stringResource(R.string.items_count, itemCount),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF5D4037)
+                color = Color(0xFF5D4037),
+                textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(

@@ -21,6 +21,7 @@
     <string name="now">现在</string>
     
     <!-- 导航 -->
+    <string name="menu">菜单</string>
     <string name="nav_home">首页</string>
     <string name="nav_all_items">所有物品</string>
     <string name="nav_item_management">物品管理</string>
@@ -273,4 +274,13 @@
     <string name="capacity">容量</string>
     <string name="used_capacity">已使用: %1$d / %2$d</string>
     <string name="items_unit">件</string>
+    
+    <!-- 图标切换 -->
+    <string name="app_icon">应用图标</string>
+    <string name="icon_name_0">图标 1</string>
+    <string name="icon_name_1">图标 2</string>
+    <string name="icon_name_2">图标 3</string>
+    <string name="icon_name_3">图标 4</string>
+    <string name="icon_name_4">图标 5</string>
+    <string name="icon_changed">图标已切换，可能需要重启应用才能看到效果</string>
 </resources>

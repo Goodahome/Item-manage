@@ -35,7 +35,7 @@ fun WarehousesScreen(
                 title = { Text(stringResource(R.string.warehouse_management)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "返回")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 actions = {

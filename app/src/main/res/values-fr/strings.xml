@@ -154,6 +154,21 @@
     <string name="warehouse_location">Emplacement</string>
     <string name="warehouse_items">Objets dans l\'conteneur</string>
     <string name="no_warehouse">Non assigné</string>
+    <string name="warehouse_settings">Paramètres du conteneur</string>
+    <string name="child_containers">Conteneurs enfants</string>
+    <string name="parent_container">Conteneur parent</string>
+    <string name="max_level_reached">Niveau maximum de conteneur (5 niveaux) atteint. Veuillez activer le mode conteneur illimité dans les paramètres.</string>
+    <string name="unlimited_containers">Mode conteneur illimité</string>
+    <string name="unlimited_containers_description">Permettre de créer des hiérarchies de conteneurs au-delà de 5 niveaux</string>
+    <string name="warehouse_saved">Conteneur enregistré</string>
+    <string name="warehouse_deleted">Conteneur supprimé</string>
+    <string name="warehouse_name_required">Veuillez entrer le nom du conteneur</string>
+    <string name="warehouse_not_found">Conteneur introuvable</string>
+    <string name="warehouse_items_title">Objets du conteneur</string>
+    <string name="warehouse_management">Gestion des conteneurs</string>
+    <string name="add_first_warehouse">Ajouter le premier conteneur</string>
+    <string name="warehouse_empty_hint">Aucun objet dans ce conteneur</string>
+    <string name="no_warehouses">Aucun conteneur</string>
     
     <!-- Tags -->
     <string name="tags">Étiquettes</string>
@@ -196,7 +211,6 @@
     <!-- Empty States -->
     <string name="no_items">Aucun objet</string>
     <string name="no_categories">Aucune catégorie</string>
-    <string name="no_warehouses">Aucun conteneur</string>
     <string name="no_shopping_items">Le panier est vide</string>
     
     <!-- Action Messages -->
@@ -204,8 +218,6 @@
     <string name="item_deleted">Objet supprimé</string>
     <string name="category_saved">Catégorie enregistrée</string>
     <string name="category_deleted">Catégorie supprimée</string>
-    <string name="warehouse_saved">Conteneur enregistré</string>
-    <string name="warehouse_deleted">Conteneur supprimé</string>
     <string name="shopping_item_saved">Article enregistré</string>
     <string name="shopping_item_deleted">Article supprimé</string>
     <string name="added_to_shopping_cart">Ajouté au panier</string>
@@ -214,7 +226,6 @@
     <!-- Required Fields -->
     <string name="name_required">Veuillez saisir le nom de l\'objet</string>
     <string name="category_name_required">Veuillez saisir le nom de la catégorie</string>
-    <string name="warehouse_name_required">Veuillez saisir le nom de l\'conteneur</string>
     <string name="shopping_item_name_required">Veuillez saisir le nom de l\'article</string>
     
     <!-- Other -->
@@ -229,17 +240,12 @@
     <string name="item_management">Gestion des objets</string>
     <string name="add_first_item">Ajouter le premier objet</string>
     <string name="no_matching_items">Aucun objet correspondant</string>
-    <string name="warehouse_not_found">Conteneur non trouvé</string>
-    <string name="warehouse_items_title">Objets de l\'conteneur</string>
-    <string name="warehouse_management">Gestion des conteneurs</string>
-    <string name="add_first_warehouse">Ajouter le premier conteneur</string>
     <string name="view_items">Voir les objets</string>
     <string name="category_management">Gestion des catégories</string>
     <string name="add_first_category">Ajouter la première catégorie</string>
     <string name="item_name_required">Nom de l\'objet *</string>
     <string name="description">Description</string>
     <string name="no_category_option">Aucune catégorie</string>
-    <string name="no_warehouse_option">Aucun conteneur</string>
     <string name="status_tags">Étiquettes d\'état</string>
     <string name="expired_tag">Expiré</string>
     <string name="price">Prix</string>
@@ -258,7 +264,6 @@
     <string name="select_color">Choisir la couleur</string>
     <string name="shopping_item_name_required_field">Nom de l\'article *</string>
     <string name="priority">Priorité</string>
-    <string name="warehouse_name_required_field">Nom de l\'conteneur *</string>
     <string name="capacity_limit_optional">Limite de capacité (facultatif)</string>
     <string name="capacity">Capacité</string>
     <string name="used_capacity">Utilisé : %1$d / %2$d</string>
@@ -266,5 +271,4 @@
     <string name="expires_on">Expire le : %1$s</string>
     <string name="quantity_with_value">Quantité : %1$d</string>
     <string name="price_with_value">%1$.2f €</string>
-    <string name="warehouse_empty_hint">Aucun objet dans cet conteneur</string>
 </resources>

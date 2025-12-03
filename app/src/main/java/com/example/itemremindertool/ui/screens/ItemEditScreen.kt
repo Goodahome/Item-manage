@@ -72,12 +72,15 @@ fun ItemEditScreen(
     onNavigateBack: () -> Unit,
     initialFeatureCode: String? = null, // 初始特征码（从识别页面传入）
     initialWarehouseId: Long? = null, // 初始容器ID（从容器页面传入）
+    returnToAllItemsTab: (() -> Unit)? = null, // 返回到所有物品标签页的回调（从所有物品页面进入时使用）
+    returnToWarehouseItemsTab: (() -> Unit)? = null, // 返回到容器物品标签页的回调（从容器物品页面进入时使用）
     modifier: Modifier = Modifier
 ) {
     // ==================== 基础字段 ====================
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
+    // 如果 initialWarehouseId 为 null，则不默认填充容器（问题2的修复）
     var selectedWarehouseId by remember { mutableStateOf<Long?>(initialWarehouseId) }
     var tags by remember { mutableStateOf(setOf<String>()) }
     var price by remember { mutableStateOf("") }
@@ -198,6 +201,10 @@ fun ItemEditScreen(
                             } else {
                                 viewModel.updateItem(item.copy(id = itemId!!))
                             }
+                            // 如果是从所有物品页面进入的，先调用返回到所有物品标签页的回调
+                            returnToAllItemsTab?.invoke()
+                            // 如果是从容器物品页面进入的，先调用返回到容器物品标签页的回调
+                            returnToWarehouseItemsTab?.invoke()
                             onNavigateBack()
                         }
                     ) {

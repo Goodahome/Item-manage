@@ -21,6 +21,7 @@
     <string name="now">Now</string>
     
     <!-- Navigation -->
+    <string name="menu">Menu</string>
     <string name="nav_home">Home</string>
     <string name="nav_all_items">All Items</string>
     <string name="nav_item_management">Item Management</string>
@@ -85,7 +86,7 @@
     
     <!-- Statistics Cards -->
     <string name="total_items">Total Items</string>
-    <string name="number_of_containers">Containers</string>
+    <string name="number_of_warehouses">Containers</string>
     <string name="shopping_items">Shopping Items</string>
     <string name="items_count">%d items</string>
     
@@ -154,6 +155,36 @@
     <string name="container_location">Location</string>
     <string name="container_items">Container Items</string>
     <string name="no_container">Unassigned</string>
+    
+    <!-- Warehouse (same as container, but using warehouse naming) -->
+    <string name="warehouse">Container</string>
+    <string name="warehouses">Container Management</string>
+    <string name="warehouse_settings">Container Settings</string>
+    <string name="add_warehouse">Add Container</string>
+    <string name="edit_warehouse">Edit Container</string>
+    <string name="delete_warehouse">Delete Container</string>
+    <string name="delete_warehouse_confirm">Are you sure you want to delete this container? Items in this container will become unassigned.</string>
+    <string name="warehouse_name">Container Name</string>
+    <string name="warehouse_description">Container Description</string>
+    <string name="warehouse_location">Location</string>
+    <string name="warehouse_items">Container Items</string>
+    <string name="no_warehouse">Unassigned</string>
+    <string name="child_containers">Child Containers</string>
+    <string name="parent_container">Parent Container</string>
+    <string name="max_level_reached">Maximum container level (5 levels) reached. Please enable unlimited container mode in settings.</string>
+    <string name="unlimited_containers">Unlimited Container Mode</string>
+    <string name="unlimited_containers_description">Allow creating container hierarchies beyond 5 levels</string>
+    <string name="no_warehouse_option">No Container</string>
+    <string name="warehouse_name_required_field">Container Name *</string>
+    <string name="warehouse_saved">Container saved</string>
+    <string name="warehouse_deleted">Container deleted</string>
+    <string name="warehouse_name_required">Please enter container name</string>
+    <string name="warehouse_not_found">Container not found</string>
+    <string name="warehouse_items_title">Container Items</string>
+    <string name="warehouse_management">Container Management</string>
+    <string name="add_first_warehouse">Add First Container</string>
+    <string name="warehouse_empty_hint">No items in this container</string>
+    <string name="no_warehouses">No containers</string>
     
     <!-- Tags -->
     <string name="tags">Tags</string>
@@ -267,5 +298,14 @@
     <string name="quantity_with_value">Quantity: %1$d</string>
     <string name="price_with_value">$%1$.2f</string>
     <string name="container_empty_hint">No items in this container</string>
+    
+    <!-- Icon switching -->
+    <string name="app_icon">App Icon</string>
+    <string name="icon_name_0">Icon 1</string>
+    <string name="icon_name_1">Icon 2</string>
+    <string name="icon_name_2">Icon 3</string>
+    <string name="icon_name_3">Icon 4</string>
+    <string name="icon_name_4">Icon 5</string>
+    <string name="icon_changed">Icon has been changed. You may need to restart the app to see the effect.</string>
 </resources>
 
