@@ -11,6 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -22,6 +25,7 @@ import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
+import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +43,8 @@ fun WarehouseItemsScreen(
 
     val warehouseItems by warehouseViewModel.uiState.collectAsState()
     val warehouse by warehouseViewModel.uiState.collectAsState()
+    var showMoveDialog by remember { mutableStateOf(false) }
+    var itemToMove by remember { mutableStateOf<Item?>(null) }
 
     Scaffold(
         topBar = {
@@ -88,11 +94,39 @@ fun WarehouseItemsScreen(
                     ItemCard(
                         item = item,
                         onEdit = { onEditItem(item.id) },
-                        onDelete = { itemViewModel.deleteItem(item) }
+                        onDelete = { itemViewModel.deleteItem(item) },
+                        onMoveToContainer = {
+                            itemToMove = item
+                            showMoveDialog = true
+                        }
                     )
                 }
             }
         }
+    }
+    
+    // 移动物品对话框
+    if (showMoveDialog && itemToMove != null) {
+        MoveItemDialog(
+            itemName = itemToMove!!.name,
+            currentWarehouseId = itemToMove!!.warehouseId,
+            warehouseViewModel = warehouseViewModel,
+            onDismiss = {
+                showMoveDialog = false
+                itemToMove = null
+            },
+            onConfirm = { targetWarehouseId ->
+                val updatedItem = itemToMove!!.copy(
+                    warehouseId = targetWarehouseId,
+                    updatedAt = Date()
+                )
+                itemViewModel.updateItem(updatedItem)
+                // 重新加载容器物品列表
+                warehouseViewModel.loadWarehouseItems(warehouseId)
+                showMoveDialog = false
+                itemToMove = null
+            }
+        )
     }
 }
 

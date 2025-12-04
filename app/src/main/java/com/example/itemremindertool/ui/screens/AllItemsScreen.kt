@@ -16,6 +16,7 @@ import com.example.itemremindertool.data.model.ShoppingItem
 import com.example.itemremindertool.data.model.Priority
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel
+import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import java.util.Date
@@ -25,11 +26,14 @@ import java.util.Date
 fun AllItemsScreen(
     itemViewModel: ItemViewModel,
     shoppingItemViewModel: ShoppingItemViewModel,
+    warehouseViewModel: WarehouseViewModel,
     onAddItem: () -> Unit,
     onEditItem: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val items by itemViewModel.items.collectAsState(initial = emptyList())
+    var showMoveDialog by remember { mutableStateOf(false) }
+    var itemToMove by remember { mutableStateOf<Item?>(null) }
 
     if (items.isEmpty()) {
         Box(
@@ -78,10 +82,36 @@ fun AllItemsScreen(
                             imageUri = item.imageUri
                         )
                         shoppingItemViewModel.insertShoppingItem(shoppingItem)
+                    },
+                    onMoveToContainer = {
+                        itemToMove = item
+                        showMoveDialog = true
                     }
                 )
             }
         }
+    }
+    
+    // 移动物品对话框
+    if (showMoveDialog && itemToMove != null) {
+        MoveItemDialog(
+            itemName = itemToMove!!.name,
+            currentWarehouseId = itemToMove!!.warehouseId,
+            warehouseViewModel = warehouseViewModel,
+            onDismiss = {
+                showMoveDialog = false
+                itemToMove = null
+            },
+            onConfirm = { targetWarehouseId ->
+                val updatedItem = itemToMove!!.copy(
+                    warehouseId = targetWarehouseId,
+                    updatedAt = Date()
+                )
+                itemViewModel.updateItem(updatedItem)
+                showMoveDialog = false
+                itemToMove = null
+            }
+        )
     }
 }
 

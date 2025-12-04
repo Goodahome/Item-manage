@@ -124,6 +124,7 @@ fun ItemCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onAddToShoppingCart: (() -> Unit)? = null,
+    onMoveToContainer: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -261,6 +262,16 @@ fun ItemCard(
                                     onAddToShoppingCart()
                                 },
                                 leadingIcon = { Icon(Icons.Default.ShoppingCart, null) }
+                            )
+                        }
+                        if (onMoveToContainer != null) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.move_to_container)) },
+                                onClick = {
+                                    showMenu = false
+                                    onMoveToContainer()
+                                },
+                                leadingIcon = { Icon(Icons.Default.CompareArrows, null) }
                             )
                         }
                         DropdownMenuItem(

@@ -618,6 +618,7 @@ fun ItemReminderToolApp(
                 AllItemsScreen(
                     itemViewModel = itemViewModel,
                     shoppingItemViewModel = shoppingItemViewModel,
+                    warehouseViewModel = warehouseViewModel,
                     onAddItem = { 
                         navController.navigate(Screen.AddItem.route)
                     },

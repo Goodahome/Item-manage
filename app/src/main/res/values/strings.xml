@@ -283,4 +283,10 @@
     <string name="icon_name_3">图标 4</string>
     <string name="icon_name_4">图标 5</string>
     <string name="icon_changed">图标已切换，可能需要重启应用才能看到效果</string>
+    
+    <!-- 移动物品 -->
+    <string name="move_to_container">移动到其他容器</string>
+    <string name="select_target_container">选择目标容器</string>
+    <string name="move_item_success">物品已移动到 %1$s</string>
+    <string name="move_item_failed">移动失败</string>
 </resources>
