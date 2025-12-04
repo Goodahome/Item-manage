@@ -25,6 +25,7 @@ data class Item(
     val barcode: String? = null,
     val imageUri: String? = null,
     val featureCode: String? = null, // 特征码（特征向量的字符串表示）
+    val enableStockAlert: Boolean = true, // 是否启用库存提醒，默认为true
     val createdAt: Date = Date(),
     val updatedAt: Date = Date()
 ) {

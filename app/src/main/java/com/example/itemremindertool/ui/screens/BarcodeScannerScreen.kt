@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import com.example.itemremindertool.utils.QRCodeUtils
 import java.util.concurrent.Executors
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.R
@@ -182,13 +183,9 @@ private fun processImageProxy(
         barcodeScanner.process(image)
             .addOnSuccessListener { barcodes ->
                 for (barcode in barcodes) {
-                    when (barcode.valueType) {
-                        Barcode.TYPE_PRODUCT,
-                        Barcode.TYPE_TEXT -> {
-                            barcode.rawValue?.let { value ->
-                                onBarcodeScanned(value)
-                            }
-                        }
+                    // 处理所有类型的条码和二维码
+                    barcode.rawValue?.let { value ->
+                        onBarcodeScanned(value)
                     }
                 }
             }

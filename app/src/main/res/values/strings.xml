@@ -37,6 +37,29 @@
     <string name="appearance_settings">外观设置</string>
     <string name="app_settings">应用设置</string>
     <string name="cloud_storage">云端存储</string>
+    <string name="alert_settings">提醒设置</string>
+    <string name="expiry_reminder_days">到期提醒期限</string>
+    <string name="expiry_reminder_days_desc">设置物品到期前多少天提醒</string>
+    <string name="low_stock_threshold">库存提醒阈值</string>
+    <string name="low_stock_threshold_desc">当物品数量低于此值时提醒</string>
+    <string name="forget_protection">防遗忘提醒</string>
+    <string name="forget_protection_desc">启用后会在物品长期未使用时提醒</string>
+    <string name="system_notification">系统通知</string>
+    <string name="system_notification_desc">启用后会在系统通知栏显示提醒</string>
+    <string name="days_format">%d 天</string>
+    <string name="filter_type_expiring">expiring</string>
+    <string name="filter_type_low_stock">low_stock</string>
+    <string name="filter_type_all_alerts">all_alerts</string>
+    <string name="expiring_items">即将到期物品</string>
+    <string name="low_stock_items">库存不足物品</string>
+    <string name="alert_items">提醒物品</string>
+    <string name="enable_stock_alert">启用库存提醒</string>
+    <string name="enable_stock_alert_desc">当物品数量低于阈值时提醒</string>
+    <string name="notification_time">提醒时间</string>
+    <string name="select_notification_time">选择提醒时间</string>
+    <string name="hour">小时</string>
+    <string name="minute">分钟</string>
+    <string name="threshold_value">阈值</string>
     
     <string name="theme">主题</string>
     <string name="theme_light">浅色</string>
@@ -104,6 +127,7 @@
     <string name="item_image">图片</string>
     <string name="item_feature_code">特征码</string>
     <string name="add_item">添加物品</string>
+    <string name="add_item_hint">选择容器后添加物品</string>
     <string name="edit_item">编辑物品</string>
     <string name="item_detail">物品详情</string>
     <string name="delete_item">删除物品</string>
@@ -148,9 +172,11 @@
     <string name="warehouses">容器管理</string>
     <string name="warehouse_settings">容器设置</string>
     <string name="add_warehouse">添加容器</string>
+    <string name="add_warehouse_hint">选择父容器后添加容器</string>
     <string name="edit_warehouse">编辑容器</string>
     <string name="delete_warehouse">删除容器</string>
-    <string name="delete_warehouse_confirm">确定要删除这个容器吗？删除后该容器下的物品将变为未分配容器。</string>
+    <string name="delete_warehouse_title">删除容器</string>
+    <string name="delete_warehouse_confirm">确定要删除容器「%1$s」吗？删除后该容器下的物品将变为未分配容器。</string>
     <string name="warehouse_name">容器名称</string>
     <string name="warehouse_description">容器描述</string>
     <string name="warehouse_location">位置</string>
@@ -164,7 +190,17 @@
     
     <!-- 标签 -->
     <string name="tags">标签</string>
+    <string name="nav_tag_management">标签管理</string>
+    <string name="tag_management">标签管理</string>
+    <string name="default_tag">默认</string>
+    <string name="tag_usage_count">使用次数：%1$d</string>
+    <string name="no_tags">暂无标签</string>
     <string name="add_tag">添加标签</string>
+    <string name="edit_tag">编辑标签</string>
+    <string name="delete_tag">删除标签</string>
+    <string name="tag_name">标签名称</string>
+    <string name="delete_tag_confirm">确定要删除标签「%1$s」吗？</string>
+    <string name="delete_tag_confirm_with_usage">确定要删除标签「%1$s」吗？该标签正在被 %2$d 个物品使用，删除后将从这些物品中移除。</string>
     <string name="tag_hint">输入标签（最多12个字符）</string>
     <string name="tag_limit_exceeded">标签长度不能超过12个字符</string>
     
@@ -182,7 +218,16 @@
     
     <!-- 条形码扫描 -->
     <string name="barcode_scanner">扫码添加</string>
+    <string name="generate_qr_code">生成二维码</string>
+    <string name="warehouse_qr_code">容器二维码</string>
+    <string name="qr_code">二维码</string>
+    <string name="qr_code_hint">扫描此二维码可快速打开此容器</string>
+    <string name="qr_code_generation_failed">二维码生成失败</string>
+    <string name="save_to_album">保存到相册</string>
+    <string name="qr_code_saved">二维码已保存到相册</string>
+    <string name="qr_code_save_failed">保存失败</string>
     <string name="scan_barcode">扫描条形码</string>
+    <string name="scan_barcode_to_add">扫描条形码快速添加物品</string>
     <string name="barcode_scanned">条形码：%s</string>
     
     <!-- 物品识别 -->
@@ -261,6 +306,8 @@
     <string name="extracting_features_progress">正在提取特征...</string>
     <string name="camera_permission_required">需要相机权限</string>
     <string name="camera_permission_for_scanner">需要相机权限才能使用扫码功能</string>
+    <string name="camera_frame_hint">请将物品放入框内</string>
+    <string name="drag_frame_to_crop">拖动框选择裁剪区域</string>
     <string name="category_name_required_field">分类名称 *</string>
     <string name="select_color">选择颜色</string>
     <string name="shopping_item_name_required_field">物品名称 *</string>
@@ -287,6 +334,29 @@
     <!-- 移动物品 -->
     <string name="move_to_container">移动到其他容器</string>
     <string name="select_target_container">选择目标容器</string>
+    
+    <!-- 首页新功能 -->
+    <string name="quick_add">快速添加</string>
+    <string name="voice_quick_note">语音快速记</string>
+    <string name="voice_quick_note_hint">使用语音快速记录物品</string>
+    <string name="search_all_items">搜索所有物品</string>
+    <string name="search_results">搜索结果：%1$d 项</string>
+    <string name="no_search_results">未找到匹配的物品</string>
+    <string name="greeting_today">你好，今天是 %1$s</string>
+    <string name="expiring_soon_alert">近%1$d天将到期/缺货  %2$d 件 →</string>
+    <string name="common_entries">常用入口</string>
+    <string name="quick_access">快捷入口</string>
+    <string name="shopping_list_entry">待购清单</string>
+    <string name="recently_opened">最近打开</string>
+    <string name="no_recently_opened">暂无最近打开的容器</string>
+    <string name="all_locations">所有容器</string>
+    <string name="items_count_format">%1$d件物品</string>
+    <string name="minutes_ago">%1$d分钟前</string>
+    <string name="hours_ago">%1$d小时前</string>
+    <string name="yesterday">昨天</string>
+    <string name="expiry_reminder">保质期到期</string>
+    <string name="stock_alert">库存预警</string>
+    <string name="document_expiry">证件到期</string>
     <string name="move_item_success">物品已移动到 %1$s</string>
     <string name="move_item_failed">移动失败</string>
 </resources>

@@ -20,7 +20,7 @@ import com.example.itemremindertool.data.model.Warehouse
 
 @Database(
     entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(DateConverters::class, StringListConverters::class)
@@ -41,7 +41,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "item_reminder_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
@@ -75,6 +75,12 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE warehouses ADD COLUMN parentId INTEGER")
                 database.execSQL("ALTER TABLE warehouses ADD COLUMN level INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+        
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE items ADD COLUMN enableStockAlert INTEGER NOT NULL DEFAULT 1")
             }
         }
     }

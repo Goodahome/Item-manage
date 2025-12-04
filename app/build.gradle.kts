@@ -87,6 +87,9 @@ dependencies {
     implementation(libs.mlkit.barcode.scanning) {
         exclude(group = "com.google.ai.edge.litert", module = "litert-api")
     }
+    // ZXing for QR code generation
+    implementation("com.google.zxing:core:3.5.2")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlinx.coroutines.android)
     // TensorFlow Lite for MobileNetV3 (使用最新版本以支持 16KB 页面大小)

@@ -182,7 +182,7 @@ fun ItemCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .matchParentSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.FillBounds // 使用 FillBounds 填充整个区域
                 )
                 // 根据图片亮度添加半透明遮罩，确保文字可读
                 // 如果图片较亮，使用浅色遮罩；如果较暗，使用深色遮罩

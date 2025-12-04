@@ -38,6 +38,15 @@ class TagManager(context: Context) {
         }
     }
     
+    fun updateTag(oldTag: String, newTag: String) {
+        val currentTags = _allTags.value.toMutableSet()
+        if (currentTags.remove(oldTag)) {
+            currentTags.add(newTag)
+            saveTags(currentTags)
+            _allTags.value = currentTags
+        }
+    }
+    
     private fun saveTags(tags: Set<String>) {
         prefs.edit()
             .putString(TAG_KEY, tags.joinToString(","))

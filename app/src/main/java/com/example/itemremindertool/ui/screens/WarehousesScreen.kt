@@ -1,19 +1,28 @@
 package com.example.itemremindertool.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.itemremindertool.data.model.Warehouse
+import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
+import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 
@@ -21,13 +30,38 @@ import androidx.compose.ui.res.stringResource
 @Composable
 fun WarehousesScreen(
     viewModel: WarehouseViewModel,
+    itemViewModel: ItemViewModel,
     onAddWarehouse: () -> Unit,
     onEditWarehouse: (Long) -> Unit,
     onViewItems: (Long) -> Unit,
     onNavigateBack: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val warehouses by viewModel.warehouses.collectAsState(initial = emptyList())
+    // 只获取顶层容器
+    val topLevelWarehouses by viewModel.topLevelWarehouses.collectAsState(initial = emptyList())
+    val allWarehouses by viewModel.warehouses.collectAsState(initial = emptyList())
+    val items by itemViewModel.items.collectAsState(initial = emptyList())
+    
+    // 计算每个容器的物品数量
+    val warehouseItemCounts = remember(allWarehouses, items) {
+        allWarehouses.associate { warehouse ->
+            warehouse.id to items.count { it.warehouseId == warehouse.id }
+        }
+    }
+    
+    // 递归计算每个容器的子容器数量（包括所有子容器的子容器）
+    val warehouseChildCounts = remember(topLevelWarehouses, allWarehouses) {
+        topLevelWarehouses.associate { warehouse ->
+            warehouse.id to countAllChildWarehouses(warehouse.id, allWarehouses)
+        }
+    }
+    
+    // 递归计算每个容器及其所有子容器中的物品数量
+    val warehouseTotalItemCounts = remember(topLevelWarehouses, allWarehouses, items, warehouseItemCounts) {
+        topLevelWarehouses.associate { warehouse ->
+            warehouse.id to countAllItemsInWarehouse(warehouse.id, allWarehouses, items, warehouseItemCounts)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -36,11 +70,6 @@ fun WarehousesScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onAddWarehouse) {
-                        Icon(Icons.Default.Add, stringResource(R.string.add_warehouse))
                     }
                 }
             )
@@ -51,7 +80,7 @@ fun WarehousesScreen(
             }
         }
     ) { paddingValues ->
-        if (warehouses.isEmpty()) {
+        if (topLevelWarehouses.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -79,19 +108,21 @@ fun WarehousesScreen(
                 }
             }
         } else {
-            LazyColumn(
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                items(warehouses, key = { it.id }) { warehouse ->
-                    WarehouseCard(
+                items(topLevelWarehouses, key = { it.id }) { warehouse ->
+                    SquareWarehouseCard(
                         warehouse = warehouse,
-                        onEdit = { onEditWarehouse(warehouse.id) },
-                        onDelete = { viewModel.deleteWarehouse(warehouse) },
-                        onViewItems = { onViewItems(warehouse.id) }
+                        warehouseCount = warehouseChildCounts[warehouse.id] ?: 0,
+                        itemCount = warehouseTotalItemCounts[warehouse.id] ?: 0,
+                        onClick = { onViewItems(warehouse.id) }
                     )
                 }
             }
@@ -99,110 +130,94 @@ fun WarehousesScreen(
     }
 }
 
+/**
+ * 正方形容器卡片（显示子容器数量和物品数量，使用图标）
+ */
 @Composable
-fun WarehouseCard(
+fun SquareWarehouseCard(
     warehouse: Warehouse,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-    onViewItems: () -> Unit,
+    warehouseCount: Int,
+    itemCount: Int,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var showMenu by remember { mutableStateOf(false) }
-
     Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = modifier
+            .aspectRatio(1f)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFEFEBE9)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+                .fillMaxSize()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
+            // 容器名称
+            Text(
+                text = warehouse.name,
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 22.sp),
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF5D4037),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // 统计信息（图标 + 数量）
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = warehouse.name,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                // 子容器数量统计
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warehouse,
+                        contentDescription = null,
+                        tint = Color(0xFF5D4037),
+                        modifier = Modifier.size(24.dp)
                     )
-                    if (warehouse.description.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = warehouse.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        )
-                    }
-                    if (warehouse.location.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                    Text(
+                        text = "$warehouseCount",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF5D4037)
+                    )
+                }
+                
+                // 物品数量统计
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Icon(
-                                Icons.Default.LocationOn,
+                        imageVector = Icons.Default.Inventory,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        tint = Color(0xFF5D4037),
+                        modifier = Modifier.size(24.dp)
                             )
                             Text(
-                                text = warehouse.location,
+                        text = "$itemCount",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        }
-                    }
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF5D4037)
+                    )
                 }
-                Box {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, stringResource(R.string.more_options))
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.view_items)) },
-                            onClick = {
-                                showMenu = false
-                                onViewItems()
-                            },
-                            leadingIcon = { Icon(Icons.Default.Inventory, null) }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.edit)) },
-                            onClick = {
-                                showMenu = false
-                                onEdit()
-                            },
-                            leadingIcon = { Icon(Icons.Default.Edit, null) }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.delete)) },
-                            onClick = {
-                                showMenu = false
-                                onDelete()
-                            },
-                            leadingIcon = { Icon(Icons.Default.Delete, null) }
-                        )
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Button(
-                onClick = onViewItems,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Inventory, null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.view_items))
             }
         }
     }
 }
+
 

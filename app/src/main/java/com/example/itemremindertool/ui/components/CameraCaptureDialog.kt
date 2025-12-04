@@ -9,9 +9,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -19,12 +21,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import com.example.itemremindertool.utils.ImageUtils
 import com.example.itemremindertool.R
@@ -33,18 +43,15 @@ import java.io.File
 import java.util.concurrent.Executors
 
 /**
- * 拍照对话框，显示物品卡片大小的预览窗口
+ * 拍照对话框，全屏相机预览，悬浮显示物品卡片大小的提示框
  */
 @Composable
 fun CameraCaptureDialog(
     onImageCaptured: (String?) -> Unit,
     onDismiss: () -> Unit,
-    cardWidth: Int = 400, // 物品卡片宽度（dp转px）
-    cardHeight: Int = 200 // 物品卡片高度（dp转px）
+    cardWidth: Int = 400, // 物品卡片宽度（px）
+    cardHeight: Int = 200 // 物品卡片高度（px）
 ) {
-    // 物品卡片是横向的，所以预览也应该是横向（宽大于高）
-    val previewWidth = cardWidth
-    val previewHeight = cardHeight
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var hasPermission by remember {
@@ -64,10 +71,10 @@ fun CameraCaptureDialog(
     
     var imageFile: File? by remember { mutableStateOf(null) }
     
-    // 创建 ImageCapture，设置为横向（90度旋转）
+    // 创建 ImageCapture，使用默认方向
     val imageCapture = remember { 
         ImageCapture.Builder()
-            .setTargetRotation(android.view.Surface.ROTATION_90) // 横向
+            .setTargetRotation(android.view.Surface.ROTATION_0)
             .build()
     }
     
@@ -84,9 +91,9 @@ fun CameraCaptureDialog(
         if (hasPermission) {
             val cameraProvider = cameraProviderFuture.get()
             
-            // 设置预览为横向
+            // 设置预览
             val preview = Preview.Builder()
-                .setTargetRotation(android.view.Surface.ROTATION_90) // 横向
+                .setTargetRotation(android.view.Surface.ROTATION_0)
                 .build().also {
                     it.setSurfaceProvider(previewView.surfaceProvider)
                 }
@@ -113,57 +120,144 @@ fun CameraCaptureDialog(
         }
     }
     
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false, // 全屏显示
+            decorFitsSystemWindows = false
+        )
+    ) {
+        val density = LocalDensity.current
+        val cardWidthDp = with(density) { cardWidth.toDp() }
+        val cardHeightDp = with(density) { cardHeight.toDp() }
+        
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp)
+                .fillMaxSize()
+                .background(Color.Black)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = "拍照（物品卡片大小预览）",
-                    style = MaterialTheme.typography.titleLarge
+            if (!hasPermission) {
+                // 无权限提示
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.camera_permission_required),
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = onDismiss) {
+                        Text(stringResource(R.string.close))
+                    }
+                }
+            } else {
+                // 全屏相机预览
+                AndroidView(
+                    factory = { previewView },
+                    modifier = Modifier.fillMaxSize()
                 )
                 
-                if (!hasPermission) {
-                    Text(stringResource(R.string.camera_permission_required))
-                } else {
-                    // 相机预览区域 - 显示物品卡片大小的框（横向）
-                    Box(
-                        modifier = Modifier
-                            .width(previewWidth.dp)
-                            .height(previewHeight.dp)
-                            .background(Color.Black)
-                    ) {
-                        AndroidView(
-                            factory = { previewView },
-                            modifier = Modifier.fillMaxSize()
+                // 悬浮的提示框 - 使用 Canvas 绘制半透明遮罩和虚线框
+                Canvas(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    val canvasWidth = size.width
+                    val canvasHeight = size.height
+                    
+                    // 物品卡片提示框的尺寸和位置（居中）
+                    val frameWidth = cardWidthDp.toPx()
+                    val frameHeight = cardHeightDp.toPx()
+                    val frameLeft = (canvasWidth - frameWidth) / 2
+                    val frameTop = (canvasHeight - frameHeight) / 2
+                    
+                    // 绘制半透明遮罩（除了提示框区域）
+                    drawRect(
+                        color = Color.Black.copy(alpha = 0.5f),
+                        size = Size(canvasWidth, frameTop) // 上方
+                    )
+                    drawRect(
+                        color = Color.Black.copy(alpha = 0.5f),
+                        topLeft = Offset(0f, frameTop + frameHeight),
+                        size = Size(canvasWidth, canvasHeight - frameTop - frameHeight) // 下方
+                    )
+                    drawRect(
+                        color = Color.Black.copy(alpha = 0.5f),
+                        topLeft = Offset(0f, frameTop),
+                        size = Size(frameLeft, frameHeight) // 左侧
+                    )
+                    drawRect(
+                        color = Color.Black.copy(alpha = 0.5f),
+                        topLeft = Offset(frameLeft + frameWidth, frameTop),
+                        size = Size(canvasWidth - frameLeft - frameWidth, frameHeight) // 右侧
+                    )
+                    
+                    // 绘制虚线边框
+                    drawRoundRect(
+                        color = Color.White,
+                        topLeft = Offset(frameLeft, frameTop),
+                        size = Size(frameWidth, frameHeight),
+                        cornerRadius = CornerRadius(24f, 24f),
+                        style = Stroke(
+                            width = 4f,
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 20f), 0f)
                         )
-                        
-                        // 显示物品卡片大小的边框提示
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .border(2.dp, Color.White, RoundedCornerShape(12.dp))
+                    )
+                }
+                
+                // 顶部提示文字
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 32.dp),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.Black.copy(alpha = 0.6f)
+                        )
+                    ) {
+                        Text(
+                            text = stringResource(R.string.camera_frame_hint),
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     }
-                    
-                    // 拍照按钮
+                }
+                
+                // 底部按钮
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                        horizontalArrangement = Arrangement.spacedBy(48.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.Close, stringResource(R.string.cancel))
+                        // 取消按钮
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(Color.White.copy(alpha = 0.3f), CircleShape)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = stringResource(R.string.cancel),
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
                         }
                         
+                        // 拍照按钮
                         FloatingActionButton(
                             onClick = {
                                 imageFile = ImageUtils.createImageFile(context)
@@ -185,9 +279,16 @@ fun CameraCaptureDialog(
                                         }
                                     }
                                 )
-                            }
+                            },
+                            modifier = Modifier.size(72.dp),
+                            containerColor = Color.White
                         ) {
-                            Icon(Icons.Default.CameraAlt, stringResource(R.string.take_photo))
+                            Icon(
+                                Icons.Default.CameraAlt,
+                                contentDescription = stringResource(R.string.take_photo),
+                                tint = Color.Black,
+                                modifier = Modifier.size(36.dp)
+                            )
                         }
                     }
                 }

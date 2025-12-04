@@ -45,6 +45,7 @@ import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.data.model.ItemStatus
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.ui.components.CameraCaptureDialog
+import com.example.itemremindertool.ui.components.ImageCropDialog
 import com.example.itemremindertool.utils.ImageUtils
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
@@ -86,8 +87,11 @@ fun ItemEditScreen(
     var barcode by remember { mutableStateOf("") }
     var expiryDate by remember { mutableStateOf<Date?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var enableStockAlert by remember { mutableStateOf(false) } // 库存提醒开关，默认为false
     var imageUri by remember { mutableStateOf<String?>(null) }
     var showCameraDialog by remember { mutableStateOf(false) }
+    var showCropDialog by remember { mutableStateOf(false) }
+    var bitmapToCrop by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     // 从 ViewModel 获取待处理的特征码
     val pendingFeatureCode by viewModel.pendingFeatureCode.collectAsState()
     var featureCode by remember { mutableStateOf<String?>(initialFeatureCode ?: pendingFeatureCode) }
@@ -140,6 +144,7 @@ fun ItemEditScreen(
             quantity = item.quantity.toString()
             barcode = item.barcode ?: ""
             expiryDate = item.expiryDate
+            enableStockAlert = item.enableStockAlert
                 imageUri = item.imageUri
                 featureCode = item.featureCode
                 // 初始化状态
@@ -192,7 +197,8 @@ fun ItemEditScreen(
                                 barcode = barcode.ifEmpty { null },
                                 expiryDate = expiryDate,
                                 imageUri = imageUri,
-                                featureCode = featureCode
+                                featureCode = featureCode,
+                                enableStockAlert = enableStockAlert
                             )
                             if (itemId == null) {
                                 viewModel.insertItem(item)
@@ -244,20 +250,9 @@ fun ItemEditScreen(
                         inputStream?.close()
                         
                         if (bitmap != null) {
-                            // 裁剪为物品卡片大小
-                            val croppedBitmap = ImageUtils.cropImageToCardSize(
-                                bitmap,
-                                cardWidthPx,
-                                cardHeightPx
-                            )
-                            // 保存裁剪后的图片
-                            val fileName = "item_${itemId ?: System.currentTimeMillis()}.jpg"
-                            val savedPath = ImageUtils.saveImageToInternalStorage(
-                                context,
-                                croppedBitmap,
-                                fileName
-                            )
-                            imageUri = savedPath
+                            // 显示裁剪对话框
+                            bitmapToCrop = bitmap
+                            showCropDialog = true
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -302,45 +297,6 @@ fun ItemEditScreen(
                 minLines = 3,
                 maxLines = 5
             )
-
-            // ==================== 分类选择 ====================
-            var expandedCategory by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = expandedCategory,
-                onExpandedChange = { expandedCategory = !expandedCategory }
-            ) {
-                OutlinedTextField(
-                    value = categories.find { it.id == selectedCategoryId }?.name ?: "",
-                    onValueChange = { },
-                    readOnly = true,
-                    label = { Text(stringResource(R.string.category)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
-                )
-                ExposedDropdownMenu(
-                    expanded = expandedCategory,
-                    onDismissRequest = { expandedCategory = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.no_category_option)) },
-                        onClick = {
-                            selectedCategoryId = null
-                            expandedCategory = false
-                        }
-                    )
-                    categories.forEach { category ->
-                        DropdownMenuItem(
-                            text = { Text(category.name) },
-                            onClick = {
-                                selectedCategoryId = category.id
-                                expandedCategory = false
-                            }
-                        )
-                    }
-                }
-            }
 
             // ==================== 容器选择 ====================
             var expandedWarehouse by remember { mutableStateOf(false) }
@@ -660,6 +616,35 @@ fun ItemEditScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             }
+            
+            // ==================== 库存提醒开关 ====================
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.enable_stock_alert),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = stringResource(R.string.enable_stock_alert_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                    Switch(
+                        checked = enableStockAlert,
+                        onCheckedChange = { enableStockAlert = it }
+                    )
+                }
+            }
 
             // ==================== 条形码 ====================
             OutlinedTextField(
@@ -742,7 +727,7 @@ fun ItemEditScreen(
                     onImageCaptured = { imagePath ->
                         showCameraDialog = false
                         if (imagePath != null) {
-                            // 加载图片并裁剪为物品卡片大小
+                            // 加载图片并自动裁剪（相机已有引导框，直接按框裁剪）
                             val bitmap = ImageUtils.loadBitmapFromPath(imagePath)
                             if (bitmap != null) {
                                 val croppedBitmap = ImageUtils.cropImageToCardSize(
@@ -760,10 +745,41 @@ fun ItemEditScreen(
                                 imageUri = savedPath
                                 // 删除原始临时文件
                                 ImageUtils.deleteImageFile(imagePath)
-        }
-    }
+                            }
+                        }
                     },
                     onDismiss = { showCameraDialog = false },
+                    cardWidth = cardWidthPx,
+                    cardHeight = cardHeightPx
+                )
+            }
+            
+            // 相册选择后的裁剪对话框
+            if (showCropDialog && bitmapToCrop != null) {
+                ImageCropDialog(
+                    bitmap = bitmapToCrop!!,
+                    onCropped = { croppedBitmap ->
+                        showCropDialog = false
+                        // 将裁剪后的图片缩放到目标卡片尺寸
+                        val scaledBitmap = ImageUtils.scaleCroppedBitmapToCardSize(
+                            croppedBitmap,
+                            cardWidthPx,
+                            cardHeightPx
+                        )
+                        // 保存裁剪后的图片
+                        val fileName = "item_${itemId ?: System.currentTimeMillis()}.jpg"
+                        val savedPath = ImageUtils.saveImageToInternalStorage(
+                            context,
+                            scaledBitmap,
+                            fileName
+                        )
+                        imageUri = savedPath
+                        bitmapToCrop = null
+                    },
+                    onDismiss = {
+                        showCropDialog = false
+                        bitmapToCrop = null
+                    },
                     cardWidth = cardWidthPx,
                     cardHeight = cardHeightPx
                 )

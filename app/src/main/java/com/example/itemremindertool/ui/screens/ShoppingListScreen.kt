@@ -210,7 +210,7 @@ fun ShoppingItemCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .matchParentSize(),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.FillBounds // 使用 FillBounds 填充整个区域
                     )
                     // 根据图片亮度添加半透明遮罩，确保文字可读
                     Box(

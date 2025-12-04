@@ -3,9 +3,11 @@ package com.example.itemremindertool.utils
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
 import android.os.Environment
 import androidx.core.content.FileProvider
+import androidx.exifinterface.media.ExifInterface
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -76,11 +78,30 @@ object ImageUtils {
     }
 
     /**
-     * 从文件路径加载 Bitmap
+     * 从文件路径加载 Bitmap，并自动处理 EXIF 旋转信息
      */
     fun loadBitmapFromPath(path: String): Bitmap? {
         return try {
-            BitmapFactory.decodeFile(path)
+            val bitmap = BitmapFactory.decodeFile(path) ?: return null
+            
+            // 读取 EXIF 信息并旋转图片
+            val exif = ExifInterface(path)
+            val orientation = exif.getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL
+            )
+            
+            val matrix = Matrix()
+            when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+                ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+                ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1f, 1f)
+                ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
+                else -> return bitmap // 无需旋转
+            }
+            
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -89,6 +110,7 @@ object ImageUtils {
 
     /**
      * 裁剪图片为指定尺寸（物品卡片大小）
+     * 此方法会自动居中裁剪
      */
     fun cropImageToCardSize(bitmap: Bitmap, cardWidth: Int, cardHeight: Int): Bitmap {
         val originalWidth = bitmap.width
@@ -111,6 +133,13 @@ object ImageUtils {
         val y = (scaledHeight - cardHeight) / 2
         
         return Bitmap.createBitmap(scaledBitmap, x, y, cardWidth, cardHeight)
+    }
+    
+    /**
+     * 将裁剪后的图片缩放到目标卡片尺寸
+     */
+    fun scaleCroppedBitmapToCardSize(bitmap: Bitmap, cardWidth: Int, cardHeight: Int): Bitmap {
+        return Bitmap.createScaledBitmap(bitmap, cardWidth, cardHeight, true)
     }
 
     /**

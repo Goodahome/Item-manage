@@ -21,24 +21,61 @@ class ItemNotificationWorker(
     override suspend fun doWork(): Result {
         val database = AppDatabase.getDatabase(applicationContext)
         val itemDao = database.itemDao()
+        val alertSettingsManager = com.example.itemremindertool.data.AlertSettingsManager(applicationContext)
 
-        // 检查过期物品
-        val currentTime = System.currentTimeMillis()
-        val expiredItems = itemDao.getExpiredItems(currentTime).first()
+        // 检查是否启用了系统通知
+        if (!alertSettingsManager.getSystemNotificationEnabled()) {
+            return Result.success()
+        }
 
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         // 创建通知渠道
         createNotificationChannel(notificationManager)
 
-        // 发送过期物品通知
-        if (expiredItems.isNotEmpty()) {
+        val currentTime = System.currentTimeMillis()
+        val expiryReminderDays = alertSettingsManager.getExpiryReminderDays()
+        val lowStockThreshold = alertSettingsManager.getLowStockThreshold()
+        
+        // 计算提醒结束时间
+        val calendar = java.util.Calendar.getInstance()
+        calendar.add(java.util.Calendar.DAY_OF_YEAR, expiryReminderDays)
+        val reminderEndTime = calendar.timeInMillis
+
+        // 获取所有物品
+        val allItems = itemDao.getAllItems().first()
+        
+        // 检查即将过期的物品
+        val expiringItems = allItems.filter { item ->
+            item.expiryDate != null &&
+            item.expiryDate.time >= currentTime &&
+            item.expiryDate.time <= reminderEndTime
+        }
+
+        // 检查低库存的物品
+        val lowStockItems = allItems.filter { item ->
+            item.enableStockAlert && item.quantity <= lowStockThreshold
+        }
+
+        // 发送即将过期物品通知
+        if (expiringItems.isNotEmpty()) {
             sendNotification(
                 context = applicationContext,
                 notificationManager = notificationManager,
-                title = "物品过期提醒",
-                message = "有 ${expiredItems.size} 个物品已过期",
-                id = NOTIFICATION_ID_EXPIRED
+                title = "物品即将过期",
+                message = "有 ${expiringItems.size} 个物品将在 $expiryReminderDays 天内过期",
+                id = NOTIFICATION_ID_EXPIRING
+            )
+        }
+
+        // 发送低库存物品通知
+        if (lowStockItems.isNotEmpty()) {
+            sendNotification(
+                context = applicationContext,
+                notificationManager = notificationManager,
+                title = "物品库存不足",
+                message = "有 ${lowStockItems.size} 个物品库存低于阈值",
+                id = NOTIFICATION_ID_LOW_STOCK
             )
         }
 
@@ -89,7 +126,8 @@ class ItemNotificationWorker(
 
     companion object {
         const val CHANNEL_ID = "item_reminder_channel"
-        const val NOTIFICATION_ID_EXPIRED = 1
+        const val NOTIFICATION_ID_EXPIRING = 1
+        const val NOTIFICATION_ID_LOW_STOCK = 2
     }
 }
 

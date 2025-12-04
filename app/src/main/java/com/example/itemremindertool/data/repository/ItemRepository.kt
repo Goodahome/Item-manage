@@ -16,6 +16,8 @@ class ItemRepository(private val itemDao: ItemDao) {
 
     fun getExpiredItems(currentTime: Long = System.currentTimeMillis()): Flow<List<Item>> = itemDao.getExpiredItems(currentTime)
 
+    fun getItemsExpiringBetween(startTime: Long, endTime: Long): Flow<List<Item>> = itemDao.getItemsExpiringBetween(startTime, endTime)
+
     suspend fun getItemByBarcode(barcode: String): Item? = itemDao.getItemByBarcode(barcode)
     
     fun searchItemsByName(query: String): Flow<List<Item>> = itemDao.searchItemsByName(query)

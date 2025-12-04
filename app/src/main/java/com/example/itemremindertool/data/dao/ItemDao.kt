@@ -22,6 +22,9 @@ interface ItemDao {
     @Query("SELECT * FROM items WHERE expiryDate IS NOT NULL AND expiryDate < :currentTime ORDER BY updatedAt DESC")
     fun getExpiredItems(currentTime: Long): Flow<List<Item>>
 
+    @Query("SELECT * FROM items WHERE expiryDate IS NOT NULL AND expiryDate >= :startTime AND expiryDate <= :endTime ORDER BY expiryDate ASC")
+    fun getItemsExpiringBetween(startTime: Long, endTime: Long): Flow<List<Item>>
+
     @Query("SELECT * FROM items WHERE barcode = :barcode LIMIT 1")
     suspend fun getItemByBarcode(barcode: String): Item?
     

@@ -23,6 +23,7 @@ fun SettingsScreen(
     onNavigateToWarehouse: () -> Unit = {},
     onNavigateToApp: () -> Unit = {},
     onNavigateToCloudStorage: () -> Unit = {},
+    onNavigateToAlert: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -92,6 +93,24 @@ fun SettingsScreen(
                 },
                 modifier = Modifier
                     .clickable { onNavigateToWarehouse() }
+                    .padding(vertical = 8.dp)
+            )
+            
+            Divider()
+            
+            // 提醒设置
+            ListItem(
+                headlineContent = { 
+                    Text(
+                        text = stringResource(R.string.alert_settings),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                },
+                trailingContent = { 
+                    Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                },
+                modifier = Modifier
+                    .clickable { onNavigateToAlert() }
                     .padding(vertical = 8.dp)
             )
             
