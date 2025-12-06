@@ -50,6 +50,7 @@ import com.example.itemremindertool.utils.ImageUtils
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
+import com.example.itemremindertool.ui.theme.ColorHelpers
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.Image
@@ -211,13 +212,20 @@ fun ItemEditScreen(
                     ) {
                         Text(stringResource(R.string.save))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    titleContentColor = ColorHelpers.getGroup4TextColor(),
+                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
+                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
+                )
             )
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
@@ -267,23 +275,29 @@ fun ItemEditScreen(
             ) {
                 Button(
                     onClick = { showCameraDialog = true },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ColorHelpers.getGroup2SettingsBtnColor()
+                    )
                 ) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = null)
+                    Icon(Icons.Default.CameraAlt, contentDescription = null, tint = ColorHelpers.getGroup4IconColor())
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.take_photo))
+                    Text(stringResource(R.string.take_photo), color = ColorHelpers.getGroup4TextColor())
                 }
                 Button(
                     onClick = { imagePickerLauncher.launch("image/*") },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ColorHelpers.getGroup2SettingsBtnColor()
+                    )
                 ) {
-                    Icon(Icons.Default.PhotoLibrary, contentDescription = null)
+                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = ColorHelpers.getGroup4IconColor())
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.select_from_gallery))
+                    Text(stringResource(R.string.select_from_gallery), color = ColorHelpers.getGroup4TextColor())
                 }
                 if (imageUri != null) {
                     IconButton(onClick = { imageUri = null }) {
-                        Icon(Icons.Default.Delete, stringResource(R.string.delete_image))
+                        Icon(Icons.Default.Delete, stringResource(R.string.delete_image), tint = ColorHelpers.getGroup4IconColor())
                     }
                 }
             }
@@ -337,7 +351,7 @@ fun ItemEditScreen(
                 }
             }
 
-            // ==================== 状态标签 + 自定义标签（核心改动）===================
+            // ==================== 标签 + 自定义标签（核心改动）===================
             Text(stringResource(R.string.status_tags), style = MaterialTheme.typography.labelLarge)
 
             // 获取所有已创建的标签
@@ -373,7 +387,7 @@ fun ItemEditScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // 1. 可切换的状态标签（正常、损坏、遗失）- 支持多选，选中高亮60%黄色，保持边框
+                // 1. 可切换的标签（正常、损坏、遗失）- 支持多选，选中高亮60%黄色，保持边框
                 items(listOf(ItemStatus.NORMAL, ItemStatus.DAMAGED, ItemStatus.LOST)) { status ->
                     val statusLabel = getStatusLabel(status)
                     val isSelected = tags.contains(statusLabel)

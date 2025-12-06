@@ -25,6 +25,8 @@ import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
+import com.example.itemremindertool.ui.theme.ColorHelpers
+import androidx.compose.foundation.background
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,11 +73,20 @@ fun WarehousesScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    titleContentColor = ColorHelpers.getGroup4TextColor(),
+                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
+                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
+                )
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddWarehouse) {
+            FloatingActionButton(
+                onClick = onAddWarehouse,
+                containerColor = ColorHelpers.getGroup5FabColor()
+            ) {
                         Icon(Icons.Default.Add, stringResource(R.string.add_warehouse))
             }
         }
@@ -84,6 +95,7 @@ fun WarehousesScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(ColorHelpers.getGroup2PageBgColor())
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
@@ -112,6 +124,7 @@ fun WarehousesScreen(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(ColorHelpers.getGroup2PageBgColor())
                     .padding(paddingValues),
                 contentPadding = PaddingValues(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -147,7 +160,7 @@ fun SquareWarehouseCard(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFEFEBE9)
+            containerColor = ColorHelpers.getGroup3CardBgColor()
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -163,7 +176,7 @@ fun SquareWarehouseCard(
                 text = warehouse.name,
                 style = MaterialTheme.typography.titleMedium.copy(fontSize = 22.sp),
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF5D4037),
+                color = ColorHelpers.getGroup4TextColor(),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
@@ -186,7 +199,7 @@ fun SquareWarehouseCard(
                     Icon(
                         imageVector = Icons.Default.Warehouse,
                         contentDescription = null,
-                        tint = Color(0xFF5D4037),
+                        tint = ColorHelpers.getGroup4IconColor(),
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
@@ -205,7 +218,7 @@ fun SquareWarehouseCard(
                             Icon(
                         imageVector = Icons.Default.Inventory,
                                 contentDescription = null,
-                        tint = Color(0xFF5D4037),
+                        tint = ColorHelpers.getGroup4IconColor(),
                         modifier = Modifier.size(24.dp)
                             )
                             Text(

@@ -13,6 +13,8 @@ import androidx.compose.ui.platform.LocalContext
 import android.content.Context
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
+import com.example.itemremindertool.ui.theme.ColorHelpers
+import androidx.compose.foundation.background
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,13 +39,20 @@ fun CloudStorageSettingsScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    titleContentColor = ColorHelpers.getGroup4TextColor(),
+                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
+                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
+                )
             )
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -54,12 +63,16 @@ fun CloudStorageSettingsScreen(
                     Text(
                         text = cloudServerUrl.ifEmpty { stringResource(R.string.cloud_server_not_set) },
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        color = ColorHelpers.getGroup4TextColor(0.7f),
                         maxLines = 1
                     )
                 },
                 trailingContent = { 
-                    TextButton(onClick = { showCloudServerDialog = true }) {
+                    TextButton(
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = ColorHelpers.getGroup4TextColor()
+                        ),
+                        onClick = { showCloudServerDialog = true }) {
                         Text(stringResource(R.string.settings))
                     }
                 }

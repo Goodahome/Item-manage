@@ -15,6 +15,8 @@ import com.example.itemremindertool.data.model.ShoppingItem
 import com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
+import com.example.itemremindertool.ui.theme.ColorHelpers
+import androidx.compose.foundation.background
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,6 +58,9 @@ fun ShoppingItemEditScreen(
                 },
                 actions = {
                     TextButton(
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = ColorHelpers.getGroup4TextColor()
+                        ),
                         onClick = {
                             val item = ShoppingItem(
                                 id = itemId ?: 0,
@@ -74,13 +79,20 @@ fun ShoppingItemEditScreen(
                     ) {
                         Text(stringResource(R.string.save))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    titleContentColor = ColorHelpers.getGroup4TextColor(),
+                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
+                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
+                )
             )
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
@@ -111,7 +123,11 @@ fun ShoppingItemEditScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
             )
 
-            Text(stringResource(R.string.priority), style = MaterialTheme.typography.labelLarge)
+            Text(
+                stringResource(R.string.priority), 
+                style = MaterialTheme.typography.labelLarge,
+                color = ColorHelpers.getGroup4TextColor()
+            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)

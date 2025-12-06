@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
+import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.data.model.Priority
 import com.example.itemremindertool.data.model.ShoppingItem
 import com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel
@@ -62,11 +63,20 @@ fun ShoppingListScreen(
                     IconButton(onClick = onAddItem) {
                         Icon(Icons.Default.Add, stringResource(R.string.add_shopping_item))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    titleContentColor = ColorHelpers.getGroup4TextColor(),
+                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
+                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
+                )
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddItem) {
+            FloatingActionButton(
+                onClick = onAddItem,
+                containerColor = ColorHelpers.getGroup5FabColor()
+            ) {
                 Icon(Icons.Default.Add, stringResource(R.string.add_shopping_item))
             }
         }
@@ -75,6 +85,7 @@ fun ShoppingListScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(ColorHelpers.getGroup2PageBgColor())
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
@@ -86,15 +97,20 @@ fun ShoppingListScreen(
                         Icons.Default.ShoppingCart,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        tint = ColorHelpers.getGroup4IconColor(0.6f)
                     )
                     Text(
                         stringResource(R.string.no_shopping_items),
                         style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = ColorHelpers.getGroup4TextColor(0.6f)
                     )
-                    Button(onClick = onAddItem) {
-                        Text(stringResource(R.string.add_first_shopping_item))
+                    Button(
+                        onClick = onAddItem,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = ColorHelpers.getGroup2SettingsBtnColor()
+                        )
+                    ) {
+                        Text(stringResource(R.string.add_first_shopping_item), color = ColorHelpers.getGroup4TextColor())
                     }
                 }
             }
@@ -102,6 +118,7 @@ fun ShoppingListScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(ColorHelpers.getGroup2PageBgColor())
                     .padding(paddingValues),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -187,7 +204,7 @@ fun ShoppingItemCard(
     }
 
     // 统一的灰色背景色（用于已完成状态）
-    val completedBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+    val completedBackgroundColor = ColorHelpers.getGroup3CardBgColor().copy(alpha = 0.6f)
     
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -196,8 +213,7 @@ fun ShoppingItemCard(
             defaultElevation = if (item.isCompleted) 1.dp else 1.dp // 已完成的不显示阴影，避免边框效果
         ),
         colors = CardDefaults.cardColors(
-            // 明确设置为白色背景
-            containerColor = Color.White
+            containerColor = if (item.isCompleted) completedBackgroundColor else ColorHelpers.getGroup3CardBgColor()
         )
     ) {
         Box {
@@ -264,13 +280,13 @@ fun ShoppingItemCard(
                             if (backgroundBitmap != null) {
                                 textColor.copy(alpha = 0.5f)
                             } else {
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                ColorHelpers.getGroup4TextColor(0.5f)
                             }
                         } else {
                             if (backgroundBitmap != null) {
                                 textColor
                             } else {
-                                MaterialTheme.colorScheme.onSurface
+                                ColorHelpers.getGroup4TextColor()
                             }
                         }
                     )
@@ -281,7 +297,7 @@ fun ShoppingItemCard(
                             color = if (backgroundBitmap != null) {
                                 textColor.copy(alpha = 0.9f)
                             } else {
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                ColorHelpers.getGroup4TextColor().copy(alpha = 0.7f)
                             }
                         )
                     }
@@ -336,9 +352,9 @@ fun ShoppingItemCard(
                                     if (isFocused) textColor else textColor.copy(alpha = 0.8f)
                                 } else {
                                     if (isFocused) {
-                                        MaterialTheme.colorScheme.onSurface
+                                        ColorHelpers.getGroup4TextColor()
                                     } else {
-                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                        ColorHelpers.getGroup4TextColor().copy(alpha = 0.8f)
                                     }
                                 }
                             ),

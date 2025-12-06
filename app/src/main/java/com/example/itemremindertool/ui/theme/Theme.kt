@@ -12,35 +12,250 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import android.content.SharedPreferences
 import com.example.itemremindertool.R
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+// ========== 1. 冷冽囤老板（首推）==========
+private val ColdBlueLightScheme = lightColorScheme(
+    primary = ColdBluePrimary,
+    onPrimary = androidx.compose.ui.graphics.Color.White,
+    primaryContainer = ColdBluePrimaryContainer,
+    onPrimaryContainer = ColdBlueOnPrimaryContainer,
+    secondary = ColdBlueSecondary,
+    onSecondary = androidx.compose.ui.graphics.Color.White,
+    tertiary = ColdBlueTertiary,                    // 到期提醒红色
+    onTertiary = androidx.compose.ui.graphics.Color.White,
+    error = ColdBlueTertiary,                       // 错误也用到期红
+    onError = androidx.compose.ui.graphics.Color.White,
+    background = ColdBlueBackground,
+    onBackground = androidx.compose.ui.graphics.Color(0xFF1A1C1E),
+    surface = ColdBlueSurface,
+    onSurface = androidx.compose.ui.graphics.Color(0xFF1A1C1E),
+    surfaceVariant = ColdBlueSurfaceVariant,
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF42474E)
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+private val ColdBlueDarkScheme = darkColorScheme(
+    primary = ColdBluePrimaryDark,
+    onPrimary = androidx.compose.ui.graphics.Color.Black,
+    primaryContainer = ColdBluePrimaryContainerDark,
+    onPrimaryContainer = androidx.compose.ui.graphics.Color(0xFFD8E2FF),
+    secondary = ColdBlueSecondaryDark,
+    onSecondary = androidx.compose.ui.graphics.Color.Black,
+    tertiary = ColdBlueTertiaryDark,
+    onTertiary = androidx.compose.ui.graphics.Color.White,
+    error = ColdBlueTertiaryDark,
+    onError = androidx.compose.ui.graphics.Color.White,
+    background = ColdBlueBackgroundDark,
+    onBackground = androidx.compose.ui.graphics.Color(0xFFE2E2E5),
+    surface = ColdBlueSurfaceDark,
+    onSurface = androidx.compose.ui.graphics.Color(0xFFE2E2E5),
+    surfaceVariant = ColdBlueSurfaceVariantDark,
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFC2C7CE)
+)
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+// ========== 2. 奶油治愈系 ==========
+private val CreamLightScheme = lightColorScheme(
+    primary = CreamPrimary,
+    onPrimary = androidx.compose.ui.graphics.Color.White,
+    primaryContainer = CreamPrimaryContainer,
+    onPrimaryContainer = CreamOnPrimaryContainer,
+    secondary = CreamSecondary,
+    onSecondary = androidx.compose.ui.graphics.Color.White,
+    tertiary = CreamTertiary,                       // 草莓粉强调色
+    onTertiary = androidx.compose.ui.graphics.Color.White,
+    error = androidx.compose.ui.graphics.Color(0xFFFF3B30),
+    onError = androidx.compose.ui.graphics.Color.White,
+    background = CreamBackground,
+    onBackground = androidx.compose.ui.graphics.Color(0xFF1F1B16),
+    surface = CreamSurface,
+    onSurface = androidx.compose.ui.graphics.Color(0xFF1F1B16),
+    surfaceVariant = CreamSurfaceVariant,
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF4F4539)
+)
+
+private val CreamDarkScheme = darkColorScheme(
+    primary = CreamPrimaryDark,
+    onPrimary = androidx.compose.ui.graphics.Color(0xFF3D2100),
+    primaryContainer = CreamPrimaryContainerDark,
+    onPrimaryContainer = CreamPrimaryContainer,
+    secondary = CreamSecondaryDark,
+    onSecondary = androidx.compose.ui.graphics.Color(0xFF3D1A00),
+    tertiary = CreamTertiaryDark,
+    onTertiary = androidx.compose.ui.graphics.Color.White,
+    error = androidx.compose.ui.graphics.Color(0xFFFF6B6B),
+    onError = androidx.compose.ui.graphics.Color.White,
+    background = CreamBackgroundDark,
+    onBackground = androidx.compose.ui.graphics.Color(0xFFEAE1D9),
+    surface = CreamSurfaceDark,
+    onSurface = androidx.compose.ui.graphics.Color(0xFFEAE1D9),
+    surfaceVariant = CreamSurfaceVariantDark,
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFD0C4B8)
+)
+
+// ========== 3. 薄荷冷感 ==========
+private val MintLightScheme = lightColorScheme(
+    primary = MintPrimary,
+    onPrimary = androidx.compose.ui.graphics.Color.White,
+    primaryContainer = MintPrimaryContainer,
+    onPrimaryContainer = MintOnPrimaryContainer,
+    secondary = MintSecondary,
+    onSecondary = androidx.compose.ui.graphics.Color.White,
+    tertiary = MintTertiary,                        // 冰蓝强调色
+    onTertiary = androidx.compose.ui.graphics.Color.Black,
+    error = androidx.compose.ui.graphics.Color(0xFFFF3B30),
+    onError = androidx.compose.ui.graphics.Color.White,
+    background = MintBackground,
+    onBackground = androidx.compose.ui.graphics.Color(0xFF191C1A),
+    surface = MintSurface,
+    onSurface = androidx.compose.ui.graphics.Color(0xFF191C1A),
+    surfaceVariant = MintSurfaceVariant,
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF40524B)
+)
+
+private val MintDarkScheme = darkColorScheme(
+    primary = MintPrimaryDark,
+    onPrimary = androidx.compose.ui.graphics.Color(0xFF003820),
+    primaryContainer = MintPrimaryContainerDark,
+    onPrimaryContainer = MintPrimaryContainer,
+    secondary = MintSecondaryDark,
+    onSecondary = androidx.compose.ui.graphics.Color(0xFF003311),
+    tertiary = MintTertiaryDark,
+    onTertiary = androidx.compose.ui.graphics.Color.Black,
+    error = androidx.compose.ui.graphics.Color(0xFFFF6B6B),
+    onError = androidx.compose.ui.graphics.Color.White,
+    background = MintBackgroundDark,
+    onBackground = androidx.compose.ui.graphics.Color(0xFFE0E3E0),
+    surface = MintSurfaceDark,
+    onSurface = androidx.compose.ui.graphics.Color(0xFFE0E3E0),
+    surfaceVariant = MintSurfaceVariantDark,
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFBFC9C3)
+)
+
+// ========== 4. 深空高级灰 ==========
+private val SpaceLightScheme = lightColorScheme(
+    primary = SpacePrimary,
+    onPrimary = androidx.compose.ui.graphics.Color.White,
+    primaryContainer = SpacePrimaryContainer,
+    onPrimaryContainer = SpaceOnPrimaryContainer,
+    secondary = SpaceSecondary,
+    onSecondary = androidx.compose.ui.graphics.Color.White,
+    tertiary = SpaceTertiary,                       // 紫色光强调色
+    onTertiary = androidx.compose.ui.graphics.Color.White,
+    error = androidx.compose.ui.graphics.Color(0xFFFF3B30),
+    onError = androidx.compose.ui.graphics.Color.White,
+    background = SpaceBackground,
+    onBackground = androidx.compose.ui.graphics.Color(0xFF0F172A),
+    surface = SpaceSurface,
+    onSurface = androidx.compose.ui.graphics.Color(0xFF0F172A),
+    surfaceVariant = SpaceSurfaceVariant,
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF475569)
+)
+
+private val SpaceDarkScheme = darkColorScheme(
+    primary = SpacePrimaryDark,
+    onPrimary = androidx.compose.ui.graphics.Color(0xFF0F172A),
+    primaryContainer = SpacePrimaryContainerDark,
+    onPrimaryContainer = SpacePrimaryContainer,
+    secondary = SpaceSecondaryDark,
+    onSecondary = androidx.compose.ui.graphics.Color(0xFF1E293B),
+    tertiary = SpaceTertiaryDark,
+    onTertiary = androidx.compose.ui.graphics.Color.Black,
+    error = androidx.compose.ui.graphics.Color(0xFFFF6B6B),
+    onError = androidx.compose.ui.graphics.Color.White,
+    background = SpaceBackgroundDark,
+    onBackground = androidx.compose.ui.graphics.Color(0xFFE2E8F0),
+    surface = SpaceSurfaceDark,
+    onSurface = androidx.compose.ui.graphics.Color(0xFFE2E8F0),
+    surfaceVariant = SpaceSurfaceVariantDark,
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFCBD5E1)
+)
+
+// ========== 5. 红酒沉稳 ==========
+private val WineLightScheme = lightColorScheme(
+    primary = WinePrimary,
+    onPrimary = androidx.compose.ui.graphics.Color.White,
+    primaryContainer = WinePrimaryContainer,
+    onPrimaryContainer = WineOnPrimaryContainer,
+    secondary = WineSecondary,
+    onSecondary = androidx.compose.ui.graphics.Color.White,
+    tertiary = WineTertiary,                        // 金色强调色
+    onTertiary = androidx.compose.ui.graphics.Color.Black,
+    error = androidx.compose.ui.graphics.Color(0xFFFF3B30),
+    onError = androidx.compose.ui.graphics.Color.White,
+    background = WineBackground,
+    onBackground = androidx.compose.ui.graphics.Color(0xFF201416),
+    surface = WineSurface,
+    onSurface = androidx.compose.ui.graphics.Color(0xFF201416),
+    surfaceVariant = WineSurfaceVariant,
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF524344)
+)
+
+private val WineDarkScheme = darkColorScheme(
+    primary = WinePrimaryDark,
+    onPrimary = androidx.compose.ui.graphics.Color(0xFF5C0A1A),
+    primaryContainer = WinePrimaryContainerDark,
+    onPrimaryContainer = WinePrimaryContainer,
+    secondary = WineSecondaryDark,
+    onSecondary = androidx.compose.ui.graphics.Color(0xFF680012),
+    tertiary = WineTertiaryDark,
+    onTertiary = androidx.compose.ui.graphics.Color.Black,
+    error = androidx.compose.ui.graphics.Color(0xFFFF6B6B),
+    onError = androidx.compose.ui.graphics.Color.White,
+    background = WineBackgroundDark,
+    onBackground = androidx.compose.ui.graphics.Color(0xFFECDFDF),
+    surface = WineSurfaceDark,
+    onSurface = androidx.compose.ui.graphics.Color(0xFFECDFDF),
+    surfaceVariant = WineSurfaceVariantDark,
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFD7C1C2)
+)
+
+// ========== 6. 节日限定·圣诞 ==========
+private val ChristmasLightScheme = lightColorScheme(
+    primary = ChristmasPrimary,
+    onPrimary = androidx.compose.ui.graphics.Color.White,
+    primaryContainer = ChristmasPrimaryContainer,
+    onPrimaryContainer = ChristmasOnPrimaryContainer,
+    secondary = ChristmasSecondary,
+    onSecondary = androidx.compose.ui.graphics.Color.White,
+    tertiary = ChristmasTertiary,                   // 金色铃铛
+    onTertiary = androidx.compose.ui.graphics.Color.Black,
+    error = ChristmasPrimary,                       // 圣诞红
+    onError = androidx.compose.ui.graphics.Color.White,
+    background = ChristmasBackground,
+    onBackground = androidx.compose.ui.graphics.Color(0xFF201A19),
+    surface = ChristmasSurface,
+    onSurface = androidx.compose.ui.graphics.Color(0xFF201A19),
+    surfaceVariant = ChristmasSurfaceVariant,
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF534341)
+)
+
+private val ChristmasDarkScheme = darkColorScheme(
+    primary = ChristmasPrimaryDark,
+    onPrimary = androidx.compose.ui.graphics.Color(0xFF690005),
+    primaryContainer = ChristmasPrimaryContainerDark,
+    onPrimaryContainer = ChristmasPrimaryContainer,
+    secondary = ChristmasSecondaryDark,
+    onSecondary = androidx.compose.ui.graphics.Color(0xFF003910),
+    tertiary = ChristmasTertiaryDark,
+    onTertiary = androidx.compose.ui.graphics.Color.Black,
+    error = ChristmasPrimaryDark,
+    onError = androidx.compose.ui.graphics.Color.White,
+    background = ChristmasBackgroundDark,
+    onBackground = androidx.compose.ui.graphics.Color(0xFFEDE0DE),
+    surface = ChristmasSurfaceDark,
+    onSurface = androidx.compose.ui.graphics.Color(0xFFEDE0DE),
+    surfaceVariant = ChristmasSurfaceVariantDark,
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFD8C2C0)
 )
 
 // 用于在 Compose 中访问应用设置的 CompositionLocal
@@ -49,14 +264,31 @@ val LocalAppSettings = compositionLocalOf<AppSettings> { error("No AppSettings p
 data class AppSettings(
     val appName: String,
     val theme: String, // "light", "dark", "system"
-    val language: String // "zh", "en"
+    val language: String, // "zh", "en"
+    val colorScheme: String = "cold_blue" // "cold_blue", "cream", "mint", "space", "wine", "christmas"
 )
+
+// 配色方案枚举
+enum class ColorSchemeType(val key: String, val displayName: String) {
+    COLD_BLUE("cold_blue", "冷冽囤老板"),
+    CREAM("cream", "奶油治愈系"),
+    MINT("mint", "薄荷冷感"),
+    SPACE("space", "深空高级灰"),
+    WINE("wine", "红酒沉稳"),
+    CHRISTMAS("christmas", "节日限定·圣诞");
+    
+    companion object {
+        fun fromKey(key: String): ColorSchemeType {
+            return values().find { it.key == key } ?: COLD_BLUE
+        }
+    }
+}
 
 @Composable
 fun ItemReminderToolTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, // 默认关闭动态取色，使用自定义配色
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
@@ -69,6 +301,7 @@ fun ItemReminderToolTheme(
     var themeSetting by remember { mutableStateOf(prefs.getString("theme", "system") ?: "system") }
     var appName by remember { mutableStateOf(prefs.getString("app_name", defaultAppName) ?: defaultAppName) }
     var language by remember { mutableStateOf(prefs.getString("language", "zh") ?: "zh") }
+    var colorSchemeSetting by remember { mutableStateOf(prefs.getString("color_scheme", "cold_blue") ?: "cold_blue") }
     
     // 监听 SharedPreferences 变化
     DisposableEffect(Unit) {
@@ -77,6 +310,7 @@ fun ItemReminderToolTheme(
                 "theme" -> themeSetting = prefs.getString("theme", "system") ?: "system"
                 "app_name" -> appName = prefs.getString("app_name", defaultAppName) ?: defaultAppName
                 "language" -> language = prefs.getString("language", "zh") ?: "zh"
+                "color_scheme" -> colorSchemeSetting = prefs.getString("color_scheme", "cold_blue") ?: "cold_blue"
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -94,20 +328,42 @@ fun ItemReminderToolTheme(
         else -> darkTheme // "system" 时跟随系统
     }
     
-    val appSettings = remember(themeSetting, appName, language) {
-        AppSettings(appName, themeSetting, language)
+    val appSettings = remember(themeSetting, appName, language, colorSchemeSetting) {
+        AppSettings(appName, themeSetting, language, colorSchemeSetting)
     }
     
+    // 根据配色方案选择对应的 ColorScheme
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             if (shouldUseDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
-        shouldUseDarkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        else -> {
+            val schemeType = ColorSchemeType.fromKey(colorSchemeSetting)
+            if (shouldUseDarkTheme) {
+                when (schemeType) {
+                    ColorSchemeType.COLD_BLUE -> ColdBlueDarkScheme
+                    ColorSchemeType.CREAM -> CreamDarkScheme
+                    ColorSchemeType.MINT -> MintDarkScheme
+                    ColorSchemeType.SPACE -> SpaceDarkScheme
+                    ColorSchemeType.WINE -> WineDarkScheme
+                    ColorSchemeType.CHRISTMAS -> ChristmasDarkScheme
+                }
+            } else {
+                when (schemeType) {
+                    ColorSchemeType.COLD_BLUE -> ColdBlueLightScheme
+                    ColorSchemeType.CREAM -> CreamLightScheme
+                    ColorSchemeType.MINT -> MintLightScheme
+                    ColorSchemeType.SPACE -> SpaceLightScheme
+                    ColorSchemeType.WINE -> WineLightScheme
+                    ColorSchemeType.CHRISTMAS -> ChristmasLightScheme
+                }
+            }
+        }
     }
 
-    CompositionLocalProvider(LocalAppSettings provides appSettings) {
+    CompositionLocalProvider(
+        LocalAppSettings provides appSettings
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,

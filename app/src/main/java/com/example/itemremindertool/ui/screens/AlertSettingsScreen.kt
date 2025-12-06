@@ -15,6 +15,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.R
 import com.example.itemremindertool.data.AlertSettingsManager
+import com.example.itemremindertool.ui.theme.ColorHelpers
+import androidx.compose.foundation.background
 import com.example.itemremindertool.notification.NotificationScheduler
 import java.util.Calendar
 
@@ -43,13 +45,20 @@ fun AlertSettingsScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    titleContentColor = ColorHelpers.getGroup4TextColor(),
+                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
+                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
+                )
             )
         }
     ) { paddingValues ->
         Column(
             modifier = modifier
                 .fillMaxSize()
+                .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
@@ -57,7 +66,10 @@ fun AlertSettingsScreen(
         ) {
             // 到期提醒期限
             Card(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = ColorHelpers.getGroup3CardBgColor()
+                )
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -71,18 +83,19 @@ fun AlertSettingsScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = stringResource(R.string.expiry_reminder_days),
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleMedium,
+                                color = ColorHelpers.getGroup4TextColor()
                             )
                             Text(
                                 text = stringResource(R.string.expiry_reminder_days_desc),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                color = ColorHelpers.getGroup4TextColor(0.6f)
                             )
                         }
                         Text(
                             text = stringResource(R.string.days_format, expiryReminderDays),
                             style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.primary
+                            color = ColorHelpers.getGroup4TextColor()
                         )
                     }
                     
@@ -103,12 +116,12 @@ fun AlertSettingsScreen(
                         Text(
                             text = "1",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            color = ColorHelpers.getGroup4TextColor(0.6f)
                         )
                         Text(
                             text = "30",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            color = ColorHelpers.getGroup4TextColor(0.6f)
                         )
                     }
                 }
@@ -116,7 +129,10 @@ fun AlertSettingsScreen(
             
             // 库存提醒阈值
             Card(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = ColorHelpers.getGroup3CardBgColor()
+                )
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -130,7 +146,7 @@ fun AlertSettingsScreen(
                         Text(
                             text = stringResource(R.string.low_stock_threshold_desc),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            color = ColorHelpers.getGroup4TextColor(0.6f),
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
                     }
@@ -180,7 +196,10 @@ fun AlertSettingsScreen(
             
             // 防遗忘提醒
             Card(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = ColorHelpers.getGroup3CardBgColor()
+                )
             ) {
                 Row(
                     modifier = Modifier
@@ -192,12 +211,13 @@ fun AlertSettingsScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.forget_protection),
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
+                            color = ColorHelpers.getGroup4TextColor()
                         )
                         Text(
                             text = stringResource(R.string.forget_protection_desc),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            color = ColorHelpers.getGroup4TextColor(0.6f)
                         )
                     }
                     Switch(
@@ -212,7 +232,10 @@ fun AlertSettingsScreen(
             
             // 系统通知开关
             Card(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = ColorHelpers.getGroup3CardBgColor()
+                )
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -226,12 +249,13 @@ fun AlertSettingsScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = stringResource(R.string.system_notification),
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleMedium,
+                                color = ColorHelpers.getGroup4TextColor()
                             )
                             Text(
                                 text = stringResource(R.string.system_notification_desc),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                color = ColorHelpers.getGroup4TextColor(0.6f)
                             )
                         }
                         Switch(
@@ -259,7 +283,8 @@ fun AlertSettingsScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = stringResource(R.string.notification_time),
-                                    style = MaterialTheme.typography.titleMedium
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = ColorHelpers.getGroup4TextColor()
                                 )
                                 Text(
                                     text = String.format("%02d:%02d", notificationHour, notificationMinute),
@@ -270,7 +295,7 @@ fun AlertSettingsScreen(
                             Icon(
                                 Icons.Default.Schedule,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = ColorHelpers.getGroup4IconColor()
                             )
                         }
                     }

@@ -193,7 +193,9 @@ fun ItemReminderToolApp(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                modifier = Modifier.width(280.dp) // 设置侧边菜单宽度
+                modifier = Modifier.width(280.dp), // 设置侧边菜单宽度
+                drawerContainerColor = com.example.itemremindertool.ui.theme.ColorHelpers.getGroup1DrawerColor(),
+                drawerContentColor = com.example.itemremindertool.ui.theme.ColorHelpers.getGroup4TextColor()
             ) {
                 Column(
                     modifier = Modifier

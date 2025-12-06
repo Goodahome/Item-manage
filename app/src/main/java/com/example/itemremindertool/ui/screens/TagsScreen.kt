@@ -20,6 +20,7 @@ import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
+import com.example.itemremindertool.ui.theme.ColorHelpers
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,7 +85,13 @@ fun TagsScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    titleContentColor = ColorHelpers.getGroup4TextColor(),
+                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
+                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
+                )
             )
         },
         floatingActionButton = {
@@ -99,6 +106,7 @@ fun TagsScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(ColorHelpers.getGroup2PageBgColor())
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
@@ -110,12 +118,12 @@ fun TagsScreen(
                         Icons.Default.Label,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        tint = ColorHelpers.getGroup4IconColor(0.6f)
                     )
                     Text(
                         stringResource(R.string.no_tags),
                         style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = ColorHelpers.getGroup4TextColor(0.6f)
                     )
                 }
             }
@@ -123,6 +131,7 @@ fun TagsScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(ColorHelpers.getGroup2PageBgColor())
                     .padding(paddingValues),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -309,7 +318,10 @@ fun TagCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = ColorHelpers.getGroup3CardBgColor()
+        )
     ) {
         Row(
             modifier = Modifier
@@ -326,7 +338,7 @@ fun TagCard(
                 Icon(
                     Icons.Default.Label,
                     contentDescription = null,
-                    tint = if (isDefaultTag) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    tint = ColorHelpers.getGroup4IconColor(),
                     modifier = Modifier.size(24.dp)
                 )
                 Column {
@@ -337,18 +349,19 @@ fun TagCard(
                         Text(
                             text = tag,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = ColorHelpers.getGroup4TextColor()
                         )
                         if (isDefaultTag) {
                             Surface(
                                 shape = RoundedCornerShape(4.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer
+                                color = ColorHelpers.getGroup3CardBgColor()
                             ) {
                                 Text(
                                     text = stringResource(R.string.default_tag),
                                     style = MaterialTheme.typography.labelSmall,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    color = ColorHelpers.getGroup4TextColor()
                                 )
                             }
                         }
@@ -356,14 +369,14 @@ fun TagCard(
                     Text(
                         text = stringResource(R.string.tag_usage_count, usageCount),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        color = ColorHelpers.getGroup4TextColor(0.7f)
                     )
                 }
             }
             if (!isDefaultTag) {
                 Box {
                     IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, stringResource(R.string.more_options))
+                        Icon(Icons.Default.MoreVert, stringResource(R.string.more_options), tint = ColorHelpers.getGroup4IconColor())
                     }
                     DropdownMenu(
                         expanded = showMenu,

@@ -65,6 +65,27 @@
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>
     <string name="theme_system">跟随系统</string>
+    <string name="basic_themes">基础主题</string>
+    <string name="color_themes">配色主题</string>
+    
+    <string name="color_scheme">配色主题</string>
+    <string name="custom_colors">自定义配色</string>
+    <string name="group1_nav_drawer">第一组：导航栏和侧边菜单</string>
+    <string name="group2_page_background">第二组：页面背景</string>
+    <string name="group3_card_background">第三组：卡片背景</string>
+    <string name="group4_text_icon">第四组：文字和图标</string>
+    <string name="group5_alert_fab">第五组：提醒和悬浮按钮</string>
+    <string name="enter_color_code">输入色号</string>
+    <string name="apply">应用</string>
+    <string name="reset">重置</string>
+    <string name="invalid_color">无效的颜色格式</string>
+    <string name="color_applied">颜色已应用</string>
+    <string name="color_scheme_cold_blue">🧊 冷冽囤老板</string>
+    <string name="color_scheme_cream">🍊 奶油治愈系</string>
+    <string name="color_scheme_mint">🌿 薄荷冷感</string>
+    <string name="color_scheme_space">🌌 深空高级灰</string>
+    <string name="color_scheme_wine">🍷 红酒沉稳</string>
+    <string name="color_scheme_christmas">🎄 节日限定·圣诞</string>
     
     <string name="language">语言</string>
     <string name="language_zh">简体中文</string>
@@ -292,7 +313,7 @@
     <string name="description">描述</string>
     <string name="no_category_option">无分类</string>
     <string name="no_warehouse_option">无容器</string>
-    <string name="status_tags">状态标签</string>
+    <string name="status_tags">标签</string>
     <string name="expired_tag">过期</string>
     <string name="price">价格</string>
     <string name="quantity">数量</string>

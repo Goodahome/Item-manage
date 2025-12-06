@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
+import com.example.itemremindertool.ui.theme.ColorHelpers
+import androidx.compose.foundation.background
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,13 +36,20 @@ fun SettingsScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    titleContentColor = ColorHelpers.getGroup4TextColor(),
+                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
+                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
+                )
             )
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -49,11 +58,12 @@ fun SettingsScreen(
                 headlineContent = { 
                     Text(
                         text = stringResource(R.string.appearance_settings),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        color = ColorHelpers.getGroup4TextColor()
                     )
                 },
                 trailingContent = { 
-                    Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                    Icon(Icons.Default.ChevronRight, null, tint = ColorHelpers.getGroup4IconColor(0.6f))
                 },
                 modifier = Modifier
                     .clickable { onNavigateToAppearance() }
@@ -67,11 +77,12 @@ fun SettingsScreen(
                 headlineContent = { 
                             Text(
                                 text = stringResource(R.string.language),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        color = ColorHelpers.getGroup4TextColor()
                     )
                 },
                 trailingContent = { 
-                    Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                    Icon(Icons.Default.ChevronRight, null, tint = ColorHelpers.getGroup4IconColor(0.6f))
                 },
                 modifier = Modifier
                     .clickable { onNavigateToLanguage() }
@@ -85,11 +96,12 @@ fun SettingsScreen(
                 headlineContent = { 
                     Text(
                         text = stringResource(R.string.warehouse_settings),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        color = ColorHelpers.getGroup4TextColor()
                     )
                 },
                 trailingContent = { 
-                    Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                    Icon(Icons.Default.ChevronRight, null, tint = ColorHelpers.getGroup4IconColor(0.6f))
                 },
                 modifier = Modifier
                     .clickable { onNavigateToWarehouse() }
@@ -103,11 +115,12 @@ fun SettingsScreen(
                 headlineContent = { 
                     Text(
                         text = stringResource(R.string.alert_settings),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        color = ColorHelpers.getGroup4TextColor()
                     )
                 },
                 trailingContent = { 
-                    Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                    Icon(Icons.Default.ChevronRight, null, tint = ColorHelpers.getGroup4IconColor(0.6f))
                 },
                 modifier = Modifier
                     .clickable { onNavigateToAlert() }
@@ -121,11 +134,12 @@ fun SettingsScreen(
                 headlineContent = { 
                     Text(
                         text = stringResource(R.string.app_settings),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        color = ColorHelpers.getGroup4TextColor()
                     )
                 },
                 trailingContent = { 
-                    Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                    Icon(Icons.Default.ChevronRight, null, tint = ColorHelpers.getGroup4IconColor(0.6f))
                 },
                 modifier = Modifier
                     .clickable { onNavigateToApp() }
@@ -139,11 +153,12 @@ fun SettingsScreen(
                 headlineContent = { 
                     Text(
                         text = stringResource(R.string.cloud_storage),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        color = ColorHelpers.getGroup4TextColor()
                     )
                 },
                 trailingContent = { 
-                    Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                    Icon(Icons.Default.ChevronRight, null, tint = ColorHelpers.getGroup4IconColor(0.6f))
                 },
                 modifier = Modifier
                     .clickable { onNavigateToCloudStorage() }

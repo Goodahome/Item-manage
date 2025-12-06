@@ -36,6 +36,8 @@ import com.example.itemremindertool.data.model.ItemStatus
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
+import com.example.itemremindertool.ui.theme.ColorHelpers
+import androidx.compose.foundation.background
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -61,11 +63,20 @@ fun ItemsScreen(
                     IconButton(onClick = onAddItem) {
                         Icon(Icons.Default.Add, stringResource(R.string.add_item))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    titleContentColor = ColorHelpers.getGroup4TextColor(),
+                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
+                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
+                )
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddItem) {
+            FloatingActionButton(
+                onClick = onAddItem,
+                containerColor = ColorHelpers.getGroup5FabColor()
+            ) {
                 Icon(Icons.Default.Add, stringResource(R.string.add_item))
             }
         }
@@ -74,6 +85,7 @@ fun ItemsScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(ColorHelpers.getGroup2PageBgColor())
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
@@ -171,7 +183,10 @@ fun ItemCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = ColorHelpers.getGroup3CardBgColor()
+        )
     ) {
         Box {
             // 背景图片
@@ -227,7 +242,7 @@ fun ItemCard(
                             color = if (backgroundBitmap != null) {
                                 textColor.copy(alpha = 0.9f)
                             } else {
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                ColorHelpers.getGroup4TextColor(0.7f)
                             },
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
@@ -239,7 +254,7 @@ fun ItemCard(
                         Icon(
                             Icons.Default.MoreVert,
                             stringResource(R.string.more_options),
-                            tint = if (backgroundBitmap != null) textColor else MaterialTheme.colorScheme.onSurface
+                            tint = if (backgroundBitmap != null) textColor else ColorHelpers.getGroup4IconColor()
                         )
                     }
                     DropdownMenu(
@@ -288,7 +303,7 @@ fun ItemCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 统一显示所有标签（状态标签 + 自定义标签），使用不同浅颜色背景高亮，单行横向滚动
+            // 统一显示所有标签（标签 + 自定义标签），使用不同浅颜色背景高亮，单行横向滚动
             val isExpired = item.expiryDate?.let { it.before(Date()) } ?: false
             val allTagsToShow = if (isExpired) {
                 item.tags + "过期"
@@ -387,7 +402,7 @@ fun ItemCard(
                             color = if (backgroundBitmap != null) {
                                 textColor.copy(alpha = 0.9f)
                             } else {
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                ColorHelpers.getGroup4TextColor(0.6f)
                             }
                         )
                     }
@@ -400,7 +415,7 @@ fun ItemCard(
                         color = if (backgroundBitmap != null) {
                             textColor
                         } else {
-                            MaterialTheme.colorScheme.primary
+                            ColorHelpers.getGroup4TextColor()
                         }
                     )
                 }

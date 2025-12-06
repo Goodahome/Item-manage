@@ -13,6 +13,8 @@ import androidx.compose.ui.platform.LocalContext
 import android.content.Context
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
+import com.example.itemremindertool.ui.theme.ColorHelpers
+import androidx.compose.foundation.background
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,13 +42,20 @@ fun AppSettingsScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    titleContentColor = ColorHelpers.getGroup4TextColor(),
+                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
+                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
+                )
             )
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -57,11 +66,15 @@ fun AppSettingsScreen(
                     Text(
                         text = appName,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        color = ColorHelpers.getGroup4TextColor(0.7f)
                     )
                 },
                 trailingContent = { 
-                    TextButton(onClick = { showAppNameDialog = true }) {
+                    TextButton(
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = ColorHelpers.getGroup4TextColor()
+                        ),
+                        onClick = { showAppNameDialog = true }) {
                         Text(stringResource(R.string.modify))
                     }
                 }
@@ -76,7 +89,7 @@ fun AppSettingsScreen(
                     Text(
                         text = if (isPasswordEnabled) stringResource(R.string.password_enabled) else stringResource(R.string.password_disabled),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        color = ColorHelpers.getGroup4TextColor(0.7f)
                     )
                 },
                 trailingContent = {
