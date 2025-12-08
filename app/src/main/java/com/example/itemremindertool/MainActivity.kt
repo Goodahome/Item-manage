@@ -5,11 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -194,7 +196,7 @@ fun ItemReminderToolApp(
         drawerContent = {
             ModalDrawerSheet(
                 modifier = Modifier.width(280.dp), // 设置侧边菜单宽度
-                drawerContainerColor = com.example.itemremindertool.ui.theme.ColorHelpers.getGroup1DrawerColor(),
+                drawerContainerColor = com.example.itemremindertool.ui.theme.ColorHelpers.getGroup2PageBgColor(), // 与页面背景一致
                 drawerContentColor = com.example.itemremindertool.ui.theme.ColorHelpers.getGroup4TextColor()
             ) {
                 Column(
@@ -370,9 +372,18 @@ fun ItemReminderToolApp(
                             launchSingleTop = true
                         }
                     },
+                    onAddWarehouse = {
+                        navController.navigate(Screen.AddWarehouse.route)
+                    },
                     onAddChildWarehouse = { parentId ->
                         selectedWarehouseId = parentId // 保存父容器ID
                         navController.navigate(Screen.AddChildWarehouse.createRoute(parentId))
+                    },
+                    onEditWarehouse = { warehouseId ->
+                        navController.navigate(Screen.EditWarehouse.createRoute(warehouseId))
+                    },
+                    onDeleteWarehouse = { warehouse ->
+                        warehouseViewModel.deleteWarehouse(warehouse)
                     },
                     onNavigateToWarehouseItemsTab = { warehouseId ->
                         selectedWarehouseId = warehouseId
@@ -381,8 +392,11 @@ fun ItemReminderToolApp(
                             launchSingleTop = true
                         }
                     },
-                    // 不再传递 initialSelectedWarehouseId，避免自动导航
-                    initialSelectedWarehouseId = null
+                    // 传递 selectedWarehouseId，确保返回时保持在当前容器页面
+                    initialSelectedWarehouseId = selectedWarehouseId,
+                    onSelectedWarehouseIdChanged = { warehouseId ->
+                        selectedWarehouseId = warehouseId
+                    }
                 )
             }
 
@@ -400,8 +414,7 @@ fun ItemReminderToolApp(
                     initialWarehouseId = if (selectedWarehouseId == null) null else selectedWarehouseId,
                     onNavigateBack = { 
                         itemViewModel.clearPendingFeatureCode()
-                        // 返回时清理 selectedWarehouseId，避免意外导航
-                        selectedWarehouseId = null
+                        // 不清理 selectedWarehouseId，保持在当前选中的容器页面
                         navController.popBackStack() 
                     }
                 )
@@ -428,6 +441,18 @@ fun ItemReminderToolApp(
             ) { backStackEntry ->
                 val itemId = backStackEntry.arguments?.getLong("itemId") ?: return@composable
                 val warehouses by warehouseViewModel.warehouses.collectAsState(initial = emptyList())
+                
+                // 加载物品并设置 selectedWarehouseId，以便返回时保持在当前容器页面
+                LaunchedEffect(itemId) {
+                    itemViewModel.loadItem(itemId)
+                }
+                val selectedItem by itemViewModel.uiState.collectAsState()
+                LaunchedEffect(selectedItem.selectedItem) {
+                    selectedItem.selectedItem?.warehouseId?.let { warehouseId ->
+                        selectedWarehouseId = warehouseId
+                    }
+                }
+                
                 ItemEditScreen(
                     itemId = itemId,
                     viewModel = itemViewModel,
@@ -435,8 +460,7 @@ fun ItemReminderToolApp(
                     warehouses = warehouses,
                     tagManager = tagManager,
                     onNavigateBack = { 
-                        // 返回时清理 selectedWarehouseId，避免意外导航
-                        selectedWarehouseId = null
+                        // 不清理 selectedWarehouseId，保持在当前选中的容器页面
                         navController.popBackStack() 
                     }
                 )
@@ -599,7 +623,10 @@ fun ItemReminderToolApp(
                 WarehouseEditScreen(
                     warehouseId = null,
                     viewModel = warehouseViewModel,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { 
+                        // 不清理 selectedWarehouseId，保持在当前选中的容器页面（如果是从容器页面添加）
+                        navController.popBackStack() 
+                    }
                 )
             }
 
@@ -612,8 +639,7 @@ fun ItemReminderToolApp(
                     warehouseId = null,
                     viewModel = warehouseViewModel,
                     onNavigateBack = { 
-                        // 返回时清理 selectedWarehouseId，避免意外导航
-                        selectedWarehouseId = null
+                        // 不清理 selectedWarehouseId，保持在当前选中的容器页面
                         navController.popBackStack()
                     },
                     initialParentId = parentId,
@@ -707,7 +733,8 @@ fun ItemReminderToolApp(
                         navController.navigate(Screen.AddItem.route)
                     },
                     onEditItem = { itemId ->
-                        // 不设置 selectedWarehouseId，避免返回时意外导航
+                        // 设置 selectedWarehouseId，以便返回时保持在当前容器页面
+                        selectedWarehouseId = warehouseId
                         navController.navigate(Screen.EditItem.createRoute(itemId))
                     },
                     onAddChildWarehouse = { parentId ->

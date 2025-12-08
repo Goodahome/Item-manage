@@ -73,11 +73,16 @@ fun ItemsScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddItem,
-                containerColor = ColorHelpers.getGroup5FabColor()
+            Column(
+                modifier = Modifier.padding(bottom = 70.dp)
             ) {
-                Icon(Icons.Default.Add, stringResource(R.string.add_item))
+                FloatingActionButton(
+                    onClick = onAddItem,
+                    containerColor = ColorHelpers.getGroup5FabColor(),
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Icon(Icons.Default.Add, stringResource(R.string.add_item))
+                }
             }
         }
     ) { paddingValues ->

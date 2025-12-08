@@ -48,6 +48,9 @@ fun WarehouseDetailScreen(
 ) {
     val context = LocalContext.current
     
+    // 获取当前布局风格
+    val homeLayoutStyle = rememberHomeLayoutStyle()
+    
     // 记录访问历史
     LaunchedEffect(warehouseId) {
         accessHistoryManager.recordAccess(warehouseId)
@@ -98,31 +101,31 @@ fun WarehouseDetailScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    // 如果有路径，显示面包屑；否则显示容器名称
-                    if (warehousePath.size > 1) {
+                    // 经典模式下显示面包屑导航，Discord模式下只显示当前容器名称
+                    if (homeLayoutStyle.value == HomeLayoutStyle.CLASSIC && warehousePath.isNotEmpty()) {
                         BreadcrumbNavigation(
                             path = warehousePath,
-                            onWarehouseClick = { clickedWarehouseId ->
-                                if (clickedWarehouseId != warehouseId) {
-                                    onNavigateToParentWarehouse(clickedWarehouseId)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth()
+                            onWarehouseClick = { targetWarehouseId ->
+                                onNavigateToParentWarehouse(targetWarehouseId)
+                            }
                         )
                     } else {
                         Text(warehouse?.name ?: stringResource(R.string.warehouse_items_title))
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        // 如果有父容器，导航到父容器；否则使用默认返回
-                        if (parentWarehouseId != null) {
+                    // 如果有父容器，显示返回按钮；否则不显示
+                    if (parentWarehouseId != null) {
+                        IconButton(onClick = {
                             onNavigateToParentWarehouse(parentWarehouseId)
-                        } else {
-                            onNavigateBack()
+                        }) {
+                            Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                         }
-                    }) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                    } else {
+                        // 没有父容器时，也显示返回按钮用于返回首页
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                        }
                     }
                 },
                 actions = {
@@ -182,6 +185,7 @@ fun WarehouseDetailScreen(
         floatingActionButton = {
             // 展开的 FAB 菜单
             Column(
+                modifier = Modifier.padding(bottom = 70.dp),
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {

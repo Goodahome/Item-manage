@@ -15,6 +15,8 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.isSystemInDarkTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,7 +43,7 @@ fun CloudStorageSettingsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    containerColor = Color.Transparent,
                     titleContentColor = ColorHelpers.getGroup4TextColor(),
                     navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
                     actionIconContentColor = ColorHelpers.getGroup4IconColor()
@@ -75,7 +77,8 @@ fun CloudStorageSettingsScreen(
                         onClick = { showCloudServerDialog = true }) {
                         Text(stringResource(R.string.settings))
                     }
-                }
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
             
             Divider()
@@ -99,9 +102,17 @@ fun CloudStorageSettingsScreen(
                         },
                         enabled = cloudServerUrl.isNotEmpty()
                     )
-                }
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
         }
+    }
+    
+    val isDarkTheme = isSystemInDarkTheme()
+    val dialogBackgroundColor = if (isDarkTheme) {
+        Color.Black.copy(alpha = 0.7f) // 深色模式：半透明黑色毛玻璃
+    } else {
+        Color.White.copy(alpha = 0.7f) // 浅色模式：半透明白色毛玻璃
     }
     
     // 云端服务器设置对话框
@@ -109,6 +120,7 @@ fun CloudStorageSettingsScreen(
         var newServerUrl by remember { mutableStateOf(cloudServerUrl) }
         AlertDialog(
             onDismissRequest = { showCloudServerDialog = false },
+            containerColor = dialogBackgroundColor,
             title = { Text(stringResource(R.string.set_cloud_server)) },
             text = {
                 OutlinedTextField(

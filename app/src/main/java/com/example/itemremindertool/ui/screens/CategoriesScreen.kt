@@ -55,8 +55,15 @@ fun CategoriesScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddCategory) {
-                        Icon(Icons.Default.Add, stringResource(R.string.add_category))
+            Column(
+                modifier = Modifier.padding(bottom = 70.dp)
+            ) {
+                FloatingActionButton(
+                    onClick = onAddCategory,
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Icon(Icons.Default.Add, stringResource(R.string.add_category))
+                }
             }
         }
     ) { paddingValues ->

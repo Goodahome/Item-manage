@@ -74,6 +74,22 @@ object ColorHelpers {
         return MaterialTheme.colorScheme.primary
     }
     
+    /**
+     * 根据背景颜色计算对比度，返回黑色或白色
+     * 使用相对亮度公式 (L = 0.299*R + 0.587*G + 0.114*B)
+     * 如果背景较亮（亮度 > 0.5），返回黑色；否则返回白色
+     */
+    fun getContrastColor(backgroundColor: Color): Color {
+        // 计算相对亮度
+        val luminance = 0.299 * backgroundColor.red + 0.587 * backgroundColor.green + 0.114 * backgroundColor.blue
+        // 如果背景较亮，返回黑色；否则返回白色
+        return if (luminance > 0.5f) {
+            Color.Black
+        } else {
+            Color.White
+        }
+    }
+    
     
     // ==================== 第三组：卡片 ====================
     

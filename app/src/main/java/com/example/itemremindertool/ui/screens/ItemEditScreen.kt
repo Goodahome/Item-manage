@@ -406,13 +406,25 @@ fun ItemEditScreen(
                                 }
                             }
                         },
-                        label = { Text(statusLabel) },
+                        label = { Text(statusLabel, color = ColorHelpers.getGroup4TextColor()) },
                         enabled = true,
+                        // 为选中/未选中状态都添加可见边框，选中使用主色，未选中使用轮廓色
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = isSelected && !isExpired,
+                            borderColor = if (isSelected && !isExpired)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
+                            selectedBorderColor = MaterialTheme.colorScheme.primary,
+                            borderWidth = 1.25.dp,
+                            selectedBorderWidth = 1.25.dp
+                        ),
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color.Yellow.copy(alpha = 0.6f),
-                            selectedLabelColor = Color.Black,
-                            containerColor = Color.White,
-                            labelColor = Color.Black
+                            selectedContainerColor = Color.Transparent,
+                            selectedLabelColor = ColorHelpers.getGroup4TextColor(),
+                            containerColor = Color.Transparent,
+                            labelColor = ColorHelpers.getGroup4TextColor()
                         )
                     )
                 }
@@ -424,10 +436,20 @@ fun ItemEditScreen(
                             selected = true,
                             onClick = { },
                             enabled = false,
-                            label = { Text(stringResource(R.string.expired_tag)) },
+                            label = { Text(stringResource(R.string.expired_tag), color = ColorHelpers.getGroup4TextColor()) },
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = false,
+                                selected = true,
+                                borderColor = Color(0xFFF3E5F5).copy(alpha = 0.8f),
+                                selectedBorderColor = Color(0xFFF3E5F5).copy(alpha = 0.8f),
+                                borderWidth = 1.25.dp,
+                                selectedBorderWidth = 1.25.dp
+                            ),
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color.White,
-                                selectedLabelColor = Color.Black
+                                selectedContainerColor = Color.Transparent,
+                                selectedLabelColor = ColorHelpers.getGroup4TextColor(),
+                                containerColor = Color.Transparent,
+                                labelColor = ColorHelpers.getGroup4TextColor()
                             )
                         )
                     }
@@ -437,7 +459,7 @@ fun ItemEditScreen(
                 items(customTags.toList()) { tag ->
                     val isSelected = tags.contains(tag)
                     if (isSelected) {
-                        // 选中状态：显示带删除按钮的 FilterChip，高亮60%黄色，保持边框
+                        // 选中状态：显示带删除按钮的 FilterChip，透明背景，主色边框
                         FilterChip(
                             selected = true,
                             onClick = { tags = tags - tag },
@@ -455,21 +477,39 @@ fun ItemEditScreen(
                                     )
                                 }
                             },
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = true,
+                                borderColor = MaterialTheme.colorScheme.primary,
+                                selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                borderWidth = 1.25.dp,
+                                selectedBorderWidth = 1.25.dp
+                            ),
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color.Yellow.copy(alpha = 0.6f),
-                                selectedLabelColor = Color.Black
+                                selectedContainerColor = Color.Transparent,
+                                selectedLabelColor = ColorHelpers.getGroup4TextColor(),
+                                containerColor = Color.Transparent,
+                                labelColor = ColorHelpers.getGroup4TextColor()
                             )
                         )
                     } else {
-                        // 未选中状态：显示 FilterChip，使用默认边框
-                    FilterChip(
+                        // 未选中状态：显示 FilterChip，透明背景，轮廓色边框
+                        FilterChip(
                             selected = false,
                             onClick = { tags = tags + tag },
                             enabled = true,
                             label = { Text(tag) },
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = false,
+                                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
+                                selectedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
+                                borderWidth = 1.25.dp,
+                                selectedBorderWidth = 1.25.dp
+                            ),
                             colors = FilterChipDefaults.filterChipColors(
-                                containerColor = Color.White,
-                                labelColor = Color.Black
+                                containerColor = Color.Transparent,
+                                labelColor = ColorHelpers.getGroup4TextColor()
                             )
                         )
                     }

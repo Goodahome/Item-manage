@@ -15,6 +15,8 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.isSystemInDarkTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +46,7 @@ fun AppSettingsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    containerColor = Color.Transparent,
                     titleContentColor = ColorHelpers.getGroup4TextColor(),
                     navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
                     actionIconContentColor = ColorHelpers.getGroup4IconColor()
@@ -77,7 +79,8 @@ fun AppSettingsScreen(
                         onClick = { showAppNameDialog = true }) {
                         Text(stringResource(R.string.modify))
                     }
-                }
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
             
             Divider()
@@ -103,9 +106,17 @@ fun AppSettingsScreen(
                             }
                         }
                     )
-                }
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
         }
+    }
+    
+    val isDarkTheme = isSystemInDarkTheme()
+    val dialogBackgroundColor = if (isDarkTheme) {
+        Color.Black.copy(alpha = 0.7f) // 深色模式：半透明黑色毛玻璃
+    } else {
+        Color.White.copy(alpha = 0.7f) // 浅色模式：半透明白色毛玻璃
     }
     
     // 程序名称对话框
@@ -113,6 +124,7 @@ fun AppSettingsScreen(
         var newAppName by remember { mutableStateOf(appName) }
         AlertDialog(
             onDismissRequest = { showAppNameDialog = false },
+            containerColor = dialogBackgroundColor,
             title = { Text(stringResource(R.string.modify_app_name)) },
             text = {
                 OutlinedTextField(
@@ -157,6 +169,7 @@ fun AppSettingsScreen(
                     prefs.edit().putBoolean("password_enabled", false).apply()
                 }
             },
+            containerColor = dialogBackgroundColor,
             title = { Text(stringResource(R.string.set_password)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -210,6 +223,7 @@ fun AppSettingsScreen(
     if (showRestartDialog) {
         AlertDialog(
             onDismissRequest = { showRestartDialog = false },
+            containerColor = dialogBackgroundColor,
             title = { Text(stringResource(R.string.restart_app)) },
             text = {
                 Text(context.getString(R.string.app_name_changed))

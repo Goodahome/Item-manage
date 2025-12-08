@@ -27,6 +27,10 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.TextUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,11 +87,16 @@ fun WarehousesScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddWarehouse,
-                containerColor = ColorHelpers.getGroup5FabColor()
+            Column(
+                modifier = Modifier.padding(bottom = 70.dp)
             ) {
-                        Icon(Icons.Default.Add, stringResource(R.string.add_warehouse))
+                FloatingActionButton(
+                    onClick = onAddWarehouse,
+                    containerColor = ColorHelpers.getGroup5FabColor(),
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Icon(Icons.Default.Add, stringResource(R.string.add_warehouse))
+                }
             }
         }
     ) { paddingValues ->
@@ -156,80 +165,109 @@ fun SquareWarehouseCard(
 ) {
     Card(
         modifier = modifier
+            .width(96.dp)
             .aspectRatio(1f)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = ColorHelpers.getGroup3CardBgColor()
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp,
+            pressedElevation = 8.dp,
+            hoveredElevation = 7.dp,
+            focusedElevation = 7.dp
+        )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(9.6.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             // 容器名称
-            Text(
+            ScrollingText(
                 text = warehouse.name,
-                style = MaterialTheme.typography.titleMedium.copy(fontSize = 22.sp),
+                fontSize = 13.2.sp,
                 fontWeight = FontWeight.Bold,
-                color = ColorHelpers.getGroup4TextColor(),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                textAlign = TextAlign.Center
             )
             
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(3.6.dp))
             
-            // 统计信息（图标 + 数量）
+            // 统计信息（图标 + 数量）- 单行显示
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.spacedBy(7.2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // 子容器数量统计
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(2.4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Text(
+                        text = "$warehouseCount",
+                        fontSize = 10.8.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                     Icon(
                         imageVector = Icons.Default.Warehouse,
                         contentDescription = null,
-                        tint = ColorHelpers.getGroup4IconColor(),
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = "$warehouseCount",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF5D4037)
+                        modifier = Modifier.size(14.4.dp),
+                        tint = ColorHelpers.getGroup4IconColor()
                     )
                 }
                 
                 // 物品数量统计
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                        imageVector = Icons.Default.Inventory,
-                                contentDescription = null,
-                        tint = ColorHelpers.getGroup4IconColor(),
-                        modifier = Modifier.size(24.dp)
-                            )
-                            Text(
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(2.4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
                         text = "$itemCount",
-                                style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF5D4037)
+                        fontSize = 10.8.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Inventory,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.4.dp),
+                        tint = ColorHelpers.getGroup4IconColor()
                     )
                 }
             }
         }
+    }
+}
+
+/**
+ * 滚动文本组件（支持手动滚动）
+ */
+@Composable
+fun ScrollingText(
+    text: String,
+    modifier: Modifier = Modifier,
+    fontSize: TextUnit,
+    fontWeight: FontWeight = FontWeight.Normal,
+    textAlign: TextAlign = TextAlign.Start,
+    color: Color = Color.Unspecified
+) {
+    val scrollState = rememberScrollState()
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(scrollState)
+    ) {
+        Text(
+            text = text,
+            fontSize = fontSize,
+            fontWeight = fontWeight,
+            textAlign = textAlign,
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Clip
+        )
     }
 }
 

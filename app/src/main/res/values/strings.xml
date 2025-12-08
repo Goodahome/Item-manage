@@ -154,6 +154,7 @@
     <string name="delete_item">删除物品</string>
     <string name="delete_item_confirm">确定要删除这个物品吗？</string>
     <string name="add_to_shopping_cart">加入购物篮</string>
+    <string name="add_reminder">添加提醒</string>
     
     <!-- 物品状态 -->
     <string name="status_normal">正常</string>
@@ -239,6 +240,7 @@
     
     <!-- 条形码扫描 -->
     <string name="barcode_scanner">扫码添加</string>
+    <string name="switch_layout_style">切换布局风格</string>
     <string name="generate_qr_code">生成二维码</string>
     <string name="warehouse_qr_code">容器二维码</string>
     <string name="qr_code">二维码</string>

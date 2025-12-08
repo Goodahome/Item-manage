@@ -17,6 +17,8 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.isSystemInDarkTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +44,7 @@ fun LanguageSettingsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    containerColor = Color.Transparent,
                     titleContentColor = ColorHelpers.getGroup4TextColor(),
                     navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
                     actionIconContentColor = ColorHelpers.getGroup4IconColor()
@@ -84,6 +86,7 @@ fun LanguageSettingsScreen(
                             }
                         )
                     },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
                         selectedLanguage = lang
                         prefs.edit().putString("language", lang).apply()
@@ -97,10 +100,18 @@ fun LanguageSettingsScreen(
         }
     }
     
+    val isDarkTheme = isSystemInDarkTheme()
+    val dialogBackgroundColor = if (isDarkTheme) {
+        Color.Black.copy(alpha = 0.7f) // 深色模式：半透明黑色毛玻璃
+    } else {
+        Color.White.copy(alpha = 0.7f) // 浅色模式：半透明白色毛玻璃
+    }
+    
     // 重启提示对话框
     if (showRestartDialog) {
         AlertDialog(
             onDismissRequest = { showRestartDialog = false },
+            containerColor = dialogBackgroundColor,
             title = { Text(stringResource(R.string.restart_app)) },
             text = {
                 Text(stringResource(R.string.restart_app))

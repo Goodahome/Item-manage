@@ -15,6 +15,7 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +40,7 @@ fun WarehouseSettingsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    containerColor = Color.Transparent,
                     titleContentColor = ColorHelpers.getGroup4TextColor(),
                     navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
                     actionIconContentColor = ColorHelpers.getGroup4IconColor()
@@ -72,7 +73,8 @@ fun WarehouseSettingsScreen(
                             prefs.edit().putBoolean("unlimited_containers", enabled).apply()
                         }
                     )
-                }
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
         }
     }

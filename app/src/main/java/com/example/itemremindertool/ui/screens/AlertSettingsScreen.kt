@@ -17,6 +17,8 @@ import com.example.itemremindertool.R
 import com.example.itemremindertool.data.AlertSettingsManager
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.isSystemInDarkTheme
 import com.example.itemremindertool.notification.NotificationScheduler
 import java.util.Calendar
 
@@ -47,7 +49,7 @@ fun AlertSettingsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ColorHelpers.getGroup1NavBarColor(),
+                    containerColor = Color.Transparent,
                     titleContentColor = ColorHelpers.getGroup4TextColor(),
                     navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
                     actionIconContentColor = ColorHelpers.getGroup4IconColor()

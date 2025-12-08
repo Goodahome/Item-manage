@@ -95,10 +95,15 @@ fun TagsScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true }
+            Column(
+                modifier = Modifier.padding(bottom = 70.dp)
             ) {
-                Icon(Icons.Default.Add, stringResource(R.string.add_tag))
+                FloatingActionButton(
+                    onClick = { showAddDialog = true },
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Icon(Icons.Default.Add, stringResource(R.string.add_tag))
+                }
             }
         }
     ) { paddingValues ->
