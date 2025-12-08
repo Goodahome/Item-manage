@@ -21,6 +21,7 @@ import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import java.time.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,9 +48,18 @@ fun TagsScreen(
     val allItemTags = remember(items) {
         items.flatMap { item ->
             val tags = item.tags.toMutableList()
-            // 如果物品过期，添加"过期"标签
-            if (item.expiryDate != null && item.expiryDate.before(java.util.Date())) {
-                if (!tags.contains("过期")) {
+            // 如果物品过期，添加"过期"标签：到期日结束后（次日00:01起）才算过期
+            if (item.expiryDate != null) {
+                val zone = ZoneId.systemDefault()
+                val nowZoned = Instant.now().atZone(zone)
+                val expiryEnd = Instant.ofEpochMilli(item.expiryDate.time)
+                    .atZone(zone)
+                    .toLocalDate()
+                    .plusDays(1)          // 次日
+                    .atStartOfDay(zone)   // 00:00
+                    .plusMinutes(1)       // 00:01 后开始算过期
+                val isExpired = !nowZoned.isBefore(expiryEnd)
+                if (isExpired && !tags.contains("过期")) {
                     tags.add("过期")
                 }
             }
@@ -67,8 +77,18 @@ fun TagsScreen(
         allDisplayTags.associateWith { tag ->
             items.count { item ->
                 val itemTags = item.tags.toMutableList()
-                if (item.expiryDate != null && item.expiryDate.before(java.util.Date())) {
-                    if (!itemTags.contains("过期")) {
+                // 到期日结束后（次日00:01起）才算过期
+                if (item.expiryDate != null) {
+                    val zone = ZoneId.systemDefault()
+                    val nowZoned = Instant.now().atZone(zone)
+                    val expiryEnd = Instant.ofEpochMilli(item.expiryDate.time)
+                        .atZone(zone)
+                        .toLocalDate()
+                        .plusDays(1)          // 次日
+                        .atStartOfDay(zone)   // 00:00
+                        .plusMinutes(1)       // 00:01 后开始算过期
+                    val isExpired = !nowZoned.isBefore(expiryEnd)
+                    if (isExpired && !itemTags.contains("过期")) {
                         itemTags.add("过期")
                     }
                 }

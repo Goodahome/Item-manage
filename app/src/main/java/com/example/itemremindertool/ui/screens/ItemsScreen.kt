@@ -40,6 +40,7 @@ import com.example.itemremindertool.ui.theme.ColorHelpers
 import androidx.compose.foundation.background
 import java.text.SimpleDateFormat
 import java.util.*
+import java.time.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -309,7 +310,18 @@ fun ItemCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             // 统一显示所有标签（标签 + 自定义标签），使用不同浅颜色背景高亮，单行横向滚动
-            val isExpired = item.expiryDate?.let { it.before(Date()) } ?: false
+            // 到期日结束后（次日00:01起）才算过期
+            val isExpired = item.expiryDate?.let { date ->
+                val zone = ZoneId.systemDefault()
+                val nowZoned = Instant.now().atZone(zone)
+                val expiryEnd = Instant.ofEpochMilli(date.time)
+                    .atZone(zone)
+                    .toLocalDate()
+                    .plusDays(1)          // 次日
+                    .atStartOfDay(zone)   // 00:00
+                    .plusMinutes(1)       // 00:01 后开始算过期
+                !nowZoned.isBefore(expiryEnd)
+            } ?: false
             val allTagsToShow = if (isExpired) {
                 item.tags + "过期"
             } else {

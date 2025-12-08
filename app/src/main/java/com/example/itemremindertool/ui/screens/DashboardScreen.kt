@@ -71,6 +71,10 @@ import com.example.itemremindertool.data.AlertSettingsManager
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.Calendar
+import java.time.Instant
+import java.time.ZoneId
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import android.content.SharedPreferences
 
 /**
@@ -180,6 +184,19 @@ fun DashboardScreen(
             selectedWarehouseId = null // 返回首页
         }
     }
+
+    // Discord 风格下按系统返回键：若在子容器则返回父容器，否则回到首页
+    if (homeLayoutStyle == HomeLayoutStyle.DISCORD) {
+        val currentWarehouse = allWarehouses.find { it.id == selectedWarehouseId }
+        val parentId = currentWarehouse?.parentId
+        BackHandler(enabled = selectedWarehouseId != null) {
+            if (parentId != null) {
+                selectedWarehouseId = parentId
+            } else {
+                selectedWarehouseId = null
+            }
+        }
+    }
     
     // 搜索框显示状态（需要在 Scaffold 之前定义，以便在 topBar 中使用）
     var showSearchBox by remember { mutableStateOf(false) }
@@ -245,12 +262,12 @@ fun DashboardScreen(
             // 直接跳转到添加物品页面
     Column(
                 modifier = Modifier.padding(bottom = 70.dp)
-            ) {
+                    ) {
                         FloatingActionButton(
                         onClick = {
                         // 如果当前选中了容器，则带入容器ID
                         onAddItem(selectedWarehouseId)
-                    },
+                            },
                     modifier = Modifier.size(56.dp),
                     containerColor = ColorHelpers.getGroup5FabColor()
                 ) {
@@ -346,7 +363,7 @@ fun DashboardScreen(
                         searchQuery = ""
                         showSearchBox = false
                     }
-                )
+            )
             }
                     }
                     }
@@ -1667,8 +1684,8 @@ fun LocationCard(
             }
         }
     }
-}
-
+                }
+                
 // ============================================================================
 // Discord风格新布局组件
 // ============================================================================
@@ -2255,8 +2272,18 @@ fun ItemListRow(
                     )
                 }
                 
-                // 标签显示
-                val isExpired = item.expiryDate?.let { it.before(Date()) } ?: false
+                // 标签显示：到期日结束后（次日00:01起）才算过期
+                val isExpired = item.expiryDate?.let { date ->
+                    val zone = ZoneId.systemDefault()
+                    val nowZoned = Instant.now().atZone(zone)
+                    val expiryEnd = Instant.ofEpochMilli(date.time)
+                        .atZone(zone)
+                        .toLocalDate()
+                        .plusDays(1)          // 次日
+                        .atStartOfDay(zone)   // 00:00
+                        .plusMinutes(1)       // 00:01 后开始算过期
+                    !nowZoned.isBefore(expiryEnd)
+                } ?: false
                 val allTagsToShow = if (isExpired) {
                     item.tags + "过期"
                 } else {
@@ -2328,7 +2355,7 @@ fun ItemListRow(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (item.expiryDate != null) {
-                        val dateFormat = remember { SimpleDateFormat("MM-dd", Locale.getDefault()) }
+                        val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
                         val dateStr = remember(item.expiryDate) { dateFormat.format(item.expiryDate) }
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -2976,18 +3003,31 @@ fun AlertListSection(
                 
                 when (alert.type) {
                     "expiring" -> {
-                        val daysUntilExpiry = remember(alert.item.expiryDate) {
+                        // 使用统一的过期判定逻辑和天数计算
+                        val (isExpired, daysUntilExpiry) = remember(alert.item.expiryDate) {
                             if (alert.item.expiryDate != null) {
-                                val days = (alert.item.expiryDate.time - currentTime) / (1000 * 60 * 60 * 24)
-                                days.toInt()
+                                val zone = ZoneId.systemDefault()
+                                val nowZoned = Instant.now().atZone(zone)
+                                val expiryDateLocal = Instant.ofEpochMilli(alert.item.expiryDate.time)
+                                    .atZone(zone)
+                                    .toLocalDate()
+                                val expiryEnd = expiryDateLocal
+                                    .plusDays(1)          // 次日
+                                    .atStartOfDay(zone)   // 00:00
+                                    .plusMinutes(1)       // 00:01 后开始算过期
+                                val expired = !nowZoned.isBefore(expiryEnd)
+                                // 计算剩余天数（基于日期，不是小时）
+                                val todayLocal = nowZoned.toLocalDate()
+                                val daysLeft = java.time.temporal.ChronoUnit.DAYS.between(todayLocal, expiryDateLocal).toInt()
+                                Pair(expired, daysLeft)
                             } else {
-                                0
+                                Pair(false, 0)
                             }
                         }
                         
                         AlertListItem(
                             title = alert.item.name,
-                            description = if (daysUntilExpiry <= 0) "已过期" else "还剩 $daysUntilExpiry 天过期",
+                            description = if (isExpired) "已过期" else "还剩 $daysUntilExpiry 天过期",
                             icon = Icons.Default.Warning,
                             time = timeStr,
                             onClick = { onEditItem(alert.item.id) }

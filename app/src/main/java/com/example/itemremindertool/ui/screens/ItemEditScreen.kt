@@ -58,6 +58,9 @@ import androidx.compose.ui.graphics.ImageBitmap
 import android.graphics.BitmapFactory
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.util.Date
 import java.util.*
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -105,7 +108,18 @@ fun ItemEditScreen(
 
     // ==================== 状态判断 ====================
     var selectedStatus by remember { mutableStateOf<ItemStatus?>(null) }
-    val isExpired = expiryDate?.let { it.before(Date()) } ?: false
+    // 到期日结束后（次日00:01起）才算过期
+    val isExpired = expiryDate?.let { date ->
+        val zone = ZoneId.systemDefault()
+        val nowZoned = Instant.now().atZone(zone)
+        val expiryEnd = Instant.ofEpochMilli(date.time)
+            .atZone(zone)
+            .toLocalDate()
+            .plusDays(1)          // 次日
+            .atStartOfDay(zone)   // 00:00
+            .plusMinutes(1)       // 00:01 后开始算过期
+        !nowZoned.isBefore(expiryEnd)
+    } ?: false
     val displayStatus = if (isExpired) ItemStatus.EXPIRED else (selectedStatus ?: ItemStatus.NORMAL)
 
     // ==================== 监听待处理特征码变化 ====================
@@ -757,8 +771,11 @@ fun ItemEditScreen(
                     onDismissRequest = { showDatePicker = false },
                     confirmButton = {
                         TextButton(onClick = {
-                            datePickerState.selectedDateMillis?.let {
-                                expiryDate = Date(it)
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                val zone = ZoneId.systemDefault()
+                                val localDate = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
+                                val startOfDay = localDate.atStartOfDay(zone).toInstant().toEpochMilli()
+                                expiryDate = Date(startOfDay)
                             }
                             showDatePicker = false
                         }) {

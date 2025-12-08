@@ -344,6 +344,30 @@
     <string name="capacity">容量</string>
     <string name="used_capacity">已使用: %1$d / %2$d</string>
     <string name="items_unit">件</string>
+    <!-- 容器（为与多语言文件保持键一致，补充默认值） -->
+    <string name="item_container">容器</string>
+    <string name="container">容器</string>
+    <string name="containers">容器管理</string>
+    <string name="add_container">添加容器</string>
+    <string name="edit_container">编辑容器</string>
+    <string name="delete_container">删除容器</string>
+    <string name="delete_container_confirm">确定要删除这个容器吗？删除后该容器下的物品将变为未分配容器。</string>
+    <string name="container_name">容器名称</string>
+    <string name="container_description">容器描述</string>
+    <string name="container_location">位置</string>
+    <string name="container_items">容器物品</string>
+    <string name="no_container">未分配容器</string>
+    <string name="no_containers">暂无容器</string>
+    <string name="container_saved">容器已保存</string>
+    <string name="container_deleted">容器已删除</string>
+    <string name="container_name_required">请输入容器名称</string>
+    <string name="container_name_required_field">容器名称 *</string>
+    <string name="container_not_found">容器不存在</string>
+    <string name="container_items_title">容器物品</string>
+    <string name="container_management">容器管理</string>
+    <string name="add_first_container">添加第一个容器</string>
+    <string name="no_container_option">无容器</string>
+    <string name="container_empty_hint">该容器暂无物品</string>
     
     <!-- 图标切换 -->
     <string name="app_icon">应用图标</string>
