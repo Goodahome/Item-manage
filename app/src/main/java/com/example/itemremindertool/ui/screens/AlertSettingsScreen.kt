@@ -20,6 +20,7 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.isSystemInDarkTheme
 import com.example.itemremindertool.notification.NotificationScheduler
+import com.example.itemremindertool.ui.components.GradientTopAppBar
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,19 +42,13 @@ fun AlertSettingsScreen(
     
     Scaffold(
         topBar = {
-            TopAppBar(
+            GradientTopAppBar(
                 title = { Text(stringResource(R.string.alert_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = ColorHelpers.getGroup4TextColor(),
-                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
-                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
-                )
+                }
             )
         }
     ) { paddingValues ->

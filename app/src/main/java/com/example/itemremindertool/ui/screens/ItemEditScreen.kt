@@ -51,6 +51,7 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.ui.components.GradientTopAppBar
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.Image
@@ -85,6 +86,7 @@ fun ItemEditScreen(
     var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
     // 如果 initialWarehouseId 为 null，则不默认填充容器（问题2的修复）
     var selectedWarehouseId by remember { mutableStateOf<Long?>(initialWarehouseId) }
+    var warehouseError by remember { mutableStateOf(false) }
     var tags by remember { mutableStateOf(setOf<String>()) }
     var price by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("1") }
@@ -190,7 +192,7 @@ fun ItemEditScreen(
     // ==================== Scaffold ====================
     Scaffold(
         topBar = {
-            TopAppBar(
+            GradientTopAppBar(
                 title = { Text(if (itemId == null) stringResource(R.string.add_item) else stringResource(R.string.edit_item)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -200,6 +202,12 @@ fun ItemEditScreen(
                 actions = {
                     TextButton(
                         onClick = {
+                            if (selectedWarehouseId == null) {
+                                warehouseError = true
+                                return@TextButton
+                            } else {
+                                warehouseError = false
+                            }
                             val item = Item(
                                 id = itemId ?: 0L,
                                 name = name,
@@ -226,13 +234,7 @@ fun ItemEditScreen(
                     ) {
                         Text(stringResource(R.string.save))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ColorHelpers.getGroup1NavBarColor(),
-                    titleContentColor = ColorHelpers.getGroup4TextColor(),
-                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
-                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
-                )
+                }
             )
         }
     ) { paddingValues ->
@@ -337,6 +339,7 @@ fun ItemEditScreen(
                     onValueChange = { },
                     readOnly = true,
                     label = { Text(stringResource(R.string.warehouse)) },
+                    isError = warehouseError,
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedWarehouse) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -346,23 +349,24 @@ fun ItemEditScreen(
                     expanded = expandedWarehouse,
                     onDismissRequest = { expandedWarehouse = false }
                 ) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.no_warehouse_option)) },
-                        onClick = {
-                            selectedWarehouseId = null
-                            expandedWarehouse = false
-                        }
-                    )
                     warehouses.forEach { warehouse ->
                         DropdownMenuItem(
                             text = { Text(warehouse.name) },
                             onClick = {
                                 selectedWarehouseId = warehouse.id
+                                warehouseError = false
                                 expandedWarehouse = false
                             }
                         )
                     }
                 }
+            }
+            if (warehouseError) {
+                Text(
+                    text = stringResource(R.string.warehouse) + " 必填，请选择容器",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
 
             // ==================== 标签 + 自定义标签（核心改动）===================

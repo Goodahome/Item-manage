@@ -21,6 +21,7 @@ import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.ui.components.GradientTopAppBar
 import java.time.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,19 +100,13 @@ fun TagsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            GradientTopAppBar(
                 title = { Text(stringResource(R.string.tag_management)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ColorHelpers.getGroup1NavBarColor(),
-                    titleContentColor = ColorHelpers.getGroup4TextColor(),
-                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
-                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
-                )
+                }
             )
         },
         floatingActionButton = {

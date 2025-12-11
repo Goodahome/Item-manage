@@ -198,7 +198,7 @@ fun WarehouseDetailScreen(
                         },
                         modifier = Modifier.size(56.dp)
                     ) {
-                        Icon(Icons.Default.Inventory, stringResource(R.string.add_item))
+                        Icon(Icons.Default.Category, stringResource(R.string.add_item))
                     }
                     
                     // 添加子容器按钮
@@ -215,7 +215,7 @@ fun WarehouseDetailScreen(
                             },
                             modifier = Modifier.size(56.dp)
                         ) {
-                            Icon(Icons.Default.Warehouse, stringResource(R.string.add_warehouse))
+                            Icon(Icons.Default.Inventory2, stringResource(R.string.add_warehouse))
                         }
                     }
                 }

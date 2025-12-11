@@ -37,6 +37,7 @@ import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.ui.components.GradientTopAppBar
 import androidx.compose.foundation.background
 import java.text.SimpleDateFormat
 import java.util.*
@@ -55,7 +56,7 @@ fun ItemsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            GradientTopAppBar(
                 title = { Text(stringResource(R.string.item_management)) },
                 actions = {
                     IconButton(onClick = onScanBarcode) {
@@ -64,13 +65,7 @@ fun ItemsScreen(
                     IconButton(onClick = onAddItem) {
                         Icon(Icons.Default.Add, stringResource(R.string.add_item))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ColorHelpers.getGroup1NavBarColor(),
-                    titleContentColor = ColorHelpers.getGroup4TextColor(),
-                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
-                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
-                )
+                }
             )
         },
         floatingActionButton = {
@@ -100,7 +95,7 @@ fun ItemsScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Icon(
-                        Icons.Default.Inventory,
+                        Icons.Default.Category,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp),
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)

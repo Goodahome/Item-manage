@@ -115,7 +115,7 @@ fun MoveItemDialog(
                                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    Icons.Default.Warehouse,
+                                    Icons.Default.Inventory2,
                                     contentDescription = null,
                                     tint = if (selectedWarehouseId == warehouse.id) {
                                         MaterialTheme.colorScheme.onPrimaryContainer

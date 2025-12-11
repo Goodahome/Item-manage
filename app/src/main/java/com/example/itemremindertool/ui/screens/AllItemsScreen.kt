@@ -20,6 +20,7 @@ import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.ui.components.GradientTopAppBar
 import androidx.compose.foundation.background
 import com.example.itemremindertool.data.AlertSettingsManager
 import androidx.compose.ui.platform.LocalContext
@@ -109,7 +110,7 @@ fun AllItemsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            GradientTopAppBar(
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -120,13 +121,7 @@ fun AllItemsScreen(
                     IconButton(onClick = onAddItem) {
                         Icon(Icons.Default.Add, stringResource(R.string.add_item))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ColorHelpers.getGroup1NavBarColor(),
-                    titleContentColor = ColorHelpers.getGroup4TextColor(),
-                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
-                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
-                )
+                }
             )
         }
     ) { paddingValues ->
@@ -143,7 +138,7 @@ fun AllItemsScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Icon(
-                    Icons.Default.Inventory,
+                    Icons.Default.Category,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)

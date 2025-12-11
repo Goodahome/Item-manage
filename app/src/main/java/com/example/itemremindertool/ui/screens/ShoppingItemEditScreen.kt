@@ -16,6 +16,7 @@ import com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.ui.components.GradientTopAppBar
 import androidx.compose.foundation.background
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,7 +50,7 @@ fun ShoppingItemEditScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            GradientTopAppBar(
                 title = { Text(if (itemId == null) stringResource(R.string.add_shopping_item) else stringResource(R.string.edit_shopping_item)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -79,13 +80,7 @@ fun ShoppingItemEditScreen(
                     ) {
                         Text(stringResource(R.string.save))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ColorHelpers.getGroup1NavBarColor(),
-                    titleContentColor = ColorHelpers.getGroup4TextColor(),
-                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
-                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
-                )
+                }
             )
         }
     ) { paddingValues ->

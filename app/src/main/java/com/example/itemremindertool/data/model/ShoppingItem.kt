@@ -15,7 +15,8 @@ data class ShoppingItem(
     val priority: Priority = Priority.MEDIUM,
     val createdAt: Date = Date(),
     val completedAt: Date? = null,
-    val imageUri: String? = null // 从物品添加时的图片URI
+    val imageUri: String? = null, // 从物品添加时的图片URI
+    val itemId: Long? = null // 关联的物品ID（可选，用于完成购买时补充库存）
 )
 
 enum class Priority {

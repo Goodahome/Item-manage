@@ -9,10 +9,10 @@ import com.example.itemremindertool.R
 
 sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon: ImageVector, val selectedIcon: ImageVector) {
     object Dashboard : Screen("dashboard", R.string.nav_home, Icons.Outlined.Dashboard, Icons.Filled.Dashboard)
-    object Items : Screen("items", R.string.nav_item_management, Icons.Outlined.Inventory, Icons.Filled.Inventory)
+    object Items : Screen("items", R.string.nav_item_management, Icons.Outlined.Category, Icons.Filled.Category)
     object Tags : Screen("tags", R.string.nav_tag_management, Icons.Outlined.Label, Icons.Filled.Label)
     object ShoppingList : Screen("shopping_list", R.string.nav_shopping_basket, Icons.Outlined.ShoppingCart, Icons.Filled.ShoppingCart)
-    object Warehouses : Screen("warehouses", R.string.nav_warehouse_management, Icons.Outlined.Warehouse, Icons.Filled.Warehouse)
+    object Warehouses : Screen("warehouses", R.string.nav_warehouse_management, Icons.Outlined.Inventory2, Icons.Filled.Inventory2)
     object Settings : Screen("settings", R.string.settings, Icons.Outlined.Settings, Icons.Filled.Settings)
 
     object ItemDetail : Screen("item_detail/{itemId}", R.string.item_detail, Icons.Default.Info, Icons.Default.Info) {
@@ -23,7 +23,10 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
     object EditItem : Screen("edit_item/{itemId}", R.string.edit_item, Icons.Default.Edit, Icons.Default.Edit) {
         fun createRoute(itemId: Long) = "edit_item/$itemId"
     }
-
+    
+    object ItemReminderSettings : Screen("item_reminder_settings/{itemId}", R.string.item_reminder_settings, Icons.Default.Notifications, Icons.Default.Notifications) {
+        fun createRoute(itemId: Long) = "item_reminder_settings/$itemId"
+    }
 
     object AddShoppingItem : Screen("add_shopping_item", R.string.add_shopping_item, Icons.Default.Add, Icons.Default.Add)
     object EditShoppingItem : Screen("edit_shopping_item/{itemId}", R.string.edit_shopping_item, Icons.Default.Edit, Icons.Default.Edit) {
@@ -38,12 +41,12 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
         fun createRoute(warehouseId: Long) = "edit_warehouse/$warehouseId"
     }
 
-    object WarehouseItems : Screen("warehouse_items/{warehouseId}", R.string.warehouse_items, Icons.Default.Inventory, Icons.Default.Inventory) {
+    object WarehouseItems : Screen("warehouse_items/{warehouseId}", R.string.warehouse_items, Icons.Default.Category, Icons.Default.Category) {
         fun createRoute(warehouseId: Long) = "warehouse_items/$warehouseId"
     }
     
-    object AllItems : Screen("all_items", R.string.nav_all_items, Icons.Default.Inventory, Icons.Default.Inventory)
-    object WarehouseItemsTab : Screen("warehouse_items_tab/{warehouseId}", R.string.nav_items, Icons.Default.Inventory, Icons.Default.Inventory) {
+    object AllItems : Screen("all_items", R.string.nav_all_items, Icons.Default.Category, Icons.Default.Category)
+    object WarehouseItemsTab : Screen("warehouse_items_tab/{warehouseId}", R.string.nav_items, Icons.Default.Category, Icons.Default.Category) {
         fun createRoute(warehouseId: Long) = "warehouse_items_tab/$warehouseId"
     }
 
@@ -52,14 +55,14 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
     
     // 设置子页面
     object AppearanceSettings : Screen("appearance_settings", R.string.appearance_settings, Icons.Default.Palette, Icons.Default.Palette)
-    object WarehouseSettings : Screen("warehouse_settings", R.string.warehouse_settings, Icons.Default.Warehouse, Icons.Default.Warehouse)
+    object WarehouseSettings : Screen("warehouse_settings", R.string.warehouse_settings, Icons.Default.Inventory2, Icons.Default.Inventory2)
     object AppSettings : Screen("app_settings", R.string.app_settings, Icons.Default.Apps, Icons.Default.Apps)
     object CloudStorageSettings : Screen("cloud_storage_settings", R.string.cloud_storage, Icons.Default.Cloud, Icons.Default.Cloud)
     object LanguageSettings : Screen("language_settings", R.string.language, Icons.Default.Language, Icons.Default.Language)
     object AlertSettings : Screen("alert_settings", R.string.alert_settings, Icons.Default.Notifications, Icons.Default.Notifications)
     
     // 筛选后的物品列表
-    object FilteredItems : Screen("filtered_items/{filterType}", R.string.nav_all_items, Icons.Default.Inventory, Icons.Default.Inventory) {
+    object FilteredItems : Screen("filtered_items/{filterType}", R.string.nav_all_items, Icons.Default.Category, Icons.Default.Category) {
         fun createRoute(filterType: String) = "filtered_items/$filterType"
     }
 }

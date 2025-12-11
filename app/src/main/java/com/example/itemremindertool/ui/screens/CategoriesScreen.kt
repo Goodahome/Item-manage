@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.data.model.Category
 import com.example.itemremindertool.ui.viewmodel.CategoryViewModel
+import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 
@@ -34,7 +35,7 @@ fun CategoriesScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            GradientTopAppBar(
                 title = { Text(stringResource(R.string.category_management)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -45,13 +46,7 @@ fun CategoriesScreen(
                     IconButton(onClick = onAddCategory) {
                         Icon(Icons.Default.Add, stringResource(R.string.add_category))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                }
             )
         },
         floatingActionButton = {

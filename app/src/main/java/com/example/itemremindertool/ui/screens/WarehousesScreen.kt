@@ -26,11 +26,13 @@ import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.ui.components.GradientTopAppBar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.layout.onSizeChanged
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,19 +73,13 @@ fun WarehousesScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            GradientTopAppBar(
                 title = { Text(stringResource(R.string.warehouse_management)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ColorHelpers.getGroup1NavBarColor(),
-                    titleContentColor = ColorHelpers.getGroup4TextColor(),
-                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
-                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
-                )
+                }
             )
         },
         floatingActionButton = {
@@ -113,7 +109,7 @@ fun WarehousesScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Icon(
-                        Icons.Default.Warehouse,
+                        Icons.Default.Inventory2,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp),
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -212,7 +208,7 @@ fun SquareWarehouseCard(
                         fontWeight = FontWeight.Bold
                     )
                     Icon(
-                        imageVector = Icons.Default.Warehouse,
+                        imageVector = Icons.Default.Inventory2,
                         contentDescription = null,
                         modifier = Modifier.size(14.4.dp),
                         tint = ColorHelpers.getGroup4IconColor()
@@ -230,7 +226,7 @@ fun SquareWarehouseCard(
                         fontWeight = FontWeight.Bold
                     )
                     Icon(
-                        imageVector = Icons.Default.Inventory,
+                        imageVector = Icons.Default.Category,
                         contentDescription = null,
                         modifier = Modifier.size(14.4.dp),
                         tint = ColorHelpers.getGroup4IconColor()
@@ -254,20 +250,55 @@ fun ScrollingText(
     color: Color = Color.Unspecified
 ) {
     val scrollState = rememberScrollState()
-    Row(
+    var textWidth by remember { mutableStateOf(0) }
+    var containerWidth by remember { mutableStateOf(0) }
+    val needsScroll = textWidth > containerWidth && containerWidth > 0
+    
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .horizontalScroll(scrollState)
+            .onSizeChanged { containerWidth = it.width },
+        contentAlignment = if (!needsScroll && textAlign == TextAlign.Center) {
+            Alignment.Center
+        } else {
+            Alignment.CenterStart
+        }
     ) {
-        Text(
-            text = text,
-            fontSize = fontSize,
-            fontWeight = fontWeight,
-            textAlign = textAlign,
-            color = color,
-            maxLines = 1,
-            overflow = TextOverflow.Clip
-        )
+        if (needsScroll) {
+            // 文本较长，需要滚动
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(scrollState)
+            ) {
+                Text(
+                    text = text,
+                    fontSize = fontSize,
+                    fontWeight = fontWeight,
+                    textAlign = TextAlign.Start,
+                    color = color,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip,
+                    onTextLayout = { textLayoutResult ->
+                        textWidth = textLayoutResult.size.width
+                    }
+                )
+            }
+        } else {
+            // 文本较短，居中显示
+            Text(
+                text = text,
+                fontSize = fontSize,
+                fontWeight = fontWeight,
+                textAlign = textAlign,
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                onTextLayout = { textLayoutResult ->
+                    textWidth = textLayoutResult.size.width
+                }
+            )
+        }
     }
 }
 

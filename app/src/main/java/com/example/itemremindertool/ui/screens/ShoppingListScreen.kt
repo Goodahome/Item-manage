@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.data.model.Priority
 import com.example.itemremindertool.data.model.ShoppingItem
 import com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel
@@ -52,7 +53,7 @@ fun ShoppingListScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            GradientTopAppBar(
                 title = { Text(stringResource(R.string.shopping_basket)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -63,13 +64,7 @@ fun ShoppingListScreen(
                     IconButton(onClick = onAddItem) {
                         Icon(Icons.Default.Add, stringResource(R.string.add_shopping_item))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ColorHelpers.getGroup1NavBarColor(),
-                    titleContentColor = ColorHelpers.getGroup4TextColor(),
-                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
-                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
-                )
+                }
             )
         },
         floatingActionButton = {

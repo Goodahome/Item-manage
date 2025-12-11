@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.data.model.Category
 import com.example.itemremindertool.ui.viewmodel.CategoryViewModel
+import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 
@@ -54,7 +55,7 @@ fun CategoryEditScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            GradientTopAppBar(
                 title = { Text(if (categoryId == null) stringResource(R.string.add_category) else stringResource(R.string.edit_category)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -80,13 +81,7 @@ fun CategoryEditScreen(
                     ) {
                         Text(stringResource(R.string.save))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                }
             )
         }
     ) { paddingValues ->

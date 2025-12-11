@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -58,6 +59,7 @@ import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
 import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.data.model.Warehouse
+import com.example.itemremindertool.data.model.ShoppingItem
 import com.example.itemremindertool.ui.viewmodel.DashboardViewModel
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
@@ -65,6 +67,8 @@ import com.example.itemremindertool.ui.screens.ItemSearchByImageDialog
 import com.example.itemremindertool.ui.theme.LocalAppSettings
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.QuickAddBottomSheet
+import androidx.compose.foundation.BorderStroke
+import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.R
 import com.example.itemremindertool.data.AlertSettingsManager
 
@@ -132,6 +136,7 @@ fun DashboardScreen(
     onEditWarehouse: (Long) -> Unit = {}, // 编辑容器回调
     onDeleteWarehouse: (com.example.itemremindertool.data.model.Warehouse) -> Unit = {}, // 删除容器回调
     onDeleteItem: (Item) -> Unit = {}, // 删除物品回调
+    onAddAlert: (Item) -> Unit = {}, // 添加提醒回调
     onNavigateToWarehouseItemsTab: (Long) -> Unit = {}, // 导航到容器物品页面
     initialSelectedWarehouseId: Long? = null, // 初始选中的容器ID
     onSelectedWarehouseIdChanged: (Long?) -> Unit = {}, // 选中容器ID变化时的回调
@@ -199,14 +204,14 @@ fun DashboardScreen(
     }
     
     // 搜索框显示状态（需要在 Scaffold 之前定义，以便在 topBar 中使用）
-    var showSearchBox by remember { mutableStateOf(false) }
+    var showSearchBox by remember { mutableStateOf(true) }
     var searchQuery by remember { mutableStateOf("") }
     val isSearching = searchQuery.isNotBlank()
     
     Scaffold(
         topBar = {
             val appSettings = LocalAppSettings.current
-            TopAppBar(
+            GradientTopAppBar(
                 title = { 
                     Text(appSettings.appName)
                 },
@@ -231,7 +236,7 @@ fun DashboardScreen(
                             if (homeLayoutStyle == HomeLayoutStyle.DISCORD) {
                                 Icons.Default.ViewModule // 切换到经典风格图标
                             } else {
-                                Icons.Default.ViewList // 切换到Discord风格图标
+                                Icons.Default.ViewColumn // 切换到Discord风格图标
                             },
                             contentDescription = stringResource(R.string.switch_layout_style)
                         )
@@ -249,13 +254,7 @@ fun DashboardScreen(
                         IconButton(onClick = onScanBarcode) {
                         Icon(Icons.Default.QrCodeScanner, stringResource(R.string.barcode_scanner))
                         }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = ColorHelpers.getGroup4TextColor(),
-                    navigationIconContentColor = ColorHelpers.getGroup4IconColor(),
-                    actionIconContentColor = ColorHelpers.getGroup4IconColor()
-                )
+                }
             )
         },
         floatingActionButton = {
@@ -326,6 +325,7 @@ fun DashboardScreen(
                         onDeleteItem = { item ->
                             itemViewModel.deleteItem(item)
                         },
+                        onAddAlert = onAddAlert,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(top = if (showSearchBox) 80.dp else 0.dp) // 仅在搜索框显示时为搜索框留出空间
@@ -459,7 +459,7 @@ fun WarehouseStatCard(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Icon(
-                imageVector = Icons.Default.Warehouse,
+                imageVector = Icons.Default.Inventory2,
                 contentDescription = warehouse.name,
                 tint = ColorHelpers.getGroup4IconColor(),
                 modifier = Modifier.size(32.dp)
@@ -566,7 +566,7 @@ fun WarehouseInfoScreen(
                     verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Default.Warehouse,
+                    imageVector = Icons.Default.Inventory2,
                     contentDescription = null,
                     tint = ColorHelpers.getGroup4IconColor(),
                         modifier = Modifier.size(48.dp)
@@ -686,10 +686,12 @@ fun WarehouseInfoScreen(
                         )
                         // 显示容量使用情况
                         LinearProgressIndicator(
-                            progress = if (warehouse.capacity > 0) {
+                            progress = {
+                                if (warehouse.capacity > 0) {
                                 (itemCount.toFloat() / warehouse.capacity).coerceIn(0f, 1f)
                             } else {
                                 0f
+                                }
                             },
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -759,7 +761,7 @@ fun WarehouseInfoScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        Icons.Default.Inventory,
+                        Icons.Default.Category,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -793,7 +795,8 @@ fun WarehouseInfoScreen(
                                     isCompleted = false,
                                     priority = com.example.itemremindertool.data.model.Priority.MEDIUM,
                                     createdAt = Date(),
-                                    imageUri = item.imageUri
+                                    imageUri = item.imageUri,
+                                    itemId = item.id // 关联物品ID，用于完成购买时补充库存
                                 )
                                 shoppingItemViewModel.insertShoppingItem(shoppingItem)
                         }
@@ -891,13 +894,13 @@ fun ChildWarehouseCard(
                     horizontalArrangement = Arrangement.spacedBy(2.4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
+            Text(
                         text = "$warehouseCount",
                         fontSize = 10.8.sp,
                         fontWeight = FontWeight.Bold
                     )
             Icon(
-                imageVector = Icons.Default.Warehouse,
+                imageVector = Icons.Default.Inventory2,
                 contentDescription = null,
                         modifier = Modifier.size(14.4.dp),
                         tint = MaterialTheme.colorScheme.primary
@@ -915,7 +918,7 @@ fun ChildWarehouseCard(
                         fontWeight = FontWeight.Bold
                     )
                     Icon(
-                        imageVector = Icons.Default.Inventory,
+                        imageVector = Icons.Default.Category,
                         contentDescription = null,
                         modifier = Modifier.size(14.4.dp),
                         tint = ColorHelpers.getGroup4IconColor()
@@ -1519,7 +1522,7 @@ fun RecentlyOpenedItem(
                         fontWeight = FontWeight.Bold
                     )
                     Icon(
-                        imageVector = Icons.Default.Warehouse,
+                        imageVector = Icons.Default.Inventory2,
                         contentDescription = null,
                         modifier = Modifier.size(14.4.dp),
                         tint = MaterialTheme.colorScheme.primary
@@ -1537,7 +1540,7 @@ fun RecentlyOpenedItem(
                         fontWeight = FontWeight.Bold
                     )
                     Icon(
-                        imageVector = Icons.Default.Inventory,
+                        imageVector = Icons.Default.Category,
                         contentDescription = null,
                         modifier = Modifier.size(14.4.dp),
                         tint = MaterialTheme.colorScheme.primary
@@ -1657,7 +1660,7 @@ fun LocationCard(
                         fontWeight = FontWeight.Bold
                     )
                     Icon(
-                        imageVector = Icons.Default.Warehouse,
+                        imageVector = Icons.Default.Inventory2,
                         contentDescription = null,
                         modifier = Modifier.size(14.4.dp),
                         tint = MaterialTheme.colorScheme.primary
@@ -1675,7 +1678,7 @@ fun LocationCard(
                         fontWeight = FontWeight.Bold
                     )
                     Icon(
-                        imageVector = Icons.Default.Inventory,
+                        imageVector = Icons.Default.Category,
                         contentDescription = null,
                         modifier = Modifier.size(14.4.dp),
                         tint = MaterialTheme.colorScheme.primary
@@ -2327,24 +2330,22 @@ fun ItemListRow(
                                 else -> tag
                             }
                             
-                            // 使用 AssistChip 显示标签（透明背景，使用默认边框）
-                            AssistChip(
-                                onClick = { },
-                                label = { 
-                                    Text(
-                                        displayTag, 
-                                        color = ColorHelpers.getGroup4TextColor(),
-                                        fontSize = 9.sp
-                                    ) 
-                                },
-                                enabled = false,
-                                colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = Color.Transparent,
-                                    labelColor = ColorHelpers.getGroup4TextColor(),
-                                    disabledContainerColor = Color.Transparent,
-                                    disabledLabelColor = ColorHelpers.getGroup4TextColor()
+                            // 更紧凑的自定义标签视图，缩小文字与边框间距
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = Color.Transparent,
+                                border = BorderStroke(1.dp, ColorHelpers.getGroup4TextColor().copy(alpha = 0.6f))
+                            ) {
+                                Text(
+                                    displayTag, 
+                                    color = ColorHelpers.getGroup4TextColor(),
+                                    fontSize = 10.sp,
+                                    // 控制行高，避免额外的上下空间；padding 保持最小
+                                    lineHeight = 11.sp,
+                                    modifier = Modifier.padding(horizontal = 2.dp, vertical = 0.dp),
+                                    style = MaterialTheme.typography.labelSmall.copy(lineHeight = 9.sp, fontSize = 8.sp)
                                 )
-                            )
+                            }
                         }
                     }
                 }
@@ -2449,6 +2450,7 @@ fun ItemListSection(
     itemViewModel: ItemViewModel? = null,
     alertSettingsManager: AlertSettingsManager? = null,
     onDeleteItem: (Item) -> Unit = {},
+    onAddAlert: (Item) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     if (items.isEmpty()) {
@@ -2462,7 +2464,7 @@ fun ItemListSection(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    Icons.Default.Inventory,
+                    Icons.Default.Category,
                         contentDescription = null,
                     tint = ColorHelpers.getGroup4IconColor(0.4f),
                     modifier = Modifier.size(64.dp)
@@ -2491,7 +2493,8 @@ fun ItemListSection(
                                 name = item.name,
                                 description = item.description,
                                 quantity = item.quantity,
-                                priority = com.example.itemremindertool.data.model.Priority.MEDIUM
+                                priority = com.example.itemremindertool.data.model.Priority.MEDIUM,
+                                itemId = item.id // 关联物品ID，用于完成购买时补充库存
                             )
                             vm.insertShoppingItem(shoppingItem)
                         }
@@ -2503,7 +2506,7 @@ fun ItemListSection(
                             itemViewModel?.deleteItem(toDelete)
                         }
                     },
-                    onAddAlert = { _ -> /* TODO: 接入提醒设置 */ }
+                    onAddAlert = onAddAlert
                 )
             }
         }
@@ -2533,6 +2536,7 @@ fun DiscordStyleMainLayout(
     onDeleteWarehouse: (Warehouse) -> Unit = {},
     onEditItem: (Long) -> Unit,
     onDeleteItem: (Item) -> Unit = {},
+    onAddAlert: (Item) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // 计算当前容器的根容器（顶级容器）ID，用于侧边栏选中状态
@@ -2627,23 +2631,37 @@ fun DiscordStyleMainLayout(
         ) {
             // 首页状态（selectedWarehouseId == null）
             if (selectedWarehouseId == null) {
+                // 添加待购列表切换状态
+                var showShoppingList by remember { mutableStateOf(false) }
+                
                 // 右上：统计卡片
                 HomeStatisticCards(
                     totalWarehouses = warehouses.size,
                     totalItems = allItems.size,
-                    shoppingItemsCount = shoppingItemsCount
+                    shoppingItemsCount = shoppingItemsCount,
+                    onShoppingClick = { showShoppingList = !showShoppingList }
                 )
                 
-                // 右下：提醒列表
-                AlertListSection(
-                    items = allItems,
-                    alertSettingsManager = alertSettingsManager,
-                    onEditItem = onEditItem,
-                    modifier = Modifier.weight(1f)
-                )
+                // 右下：提醒列表或待购列表
+                if (showShoppingList) {
+                    // 待购列表
+                    ShoppingListSection(
+                        shoppingItemViewModel = shoppingItemViewModel,
+                        itemViewModel = itemViewModel,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    // 提醒列表
+                    AlertListSection(
+                        items = allItems,
+                        alertSettingsManager = alertSettingsManager,
+                        onEditItem = onEditItem,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
             // 如果有选中的容器，显示子容器和物品
-            else if (selectedWarehouseId != null) {
+            else {
                 // 面包屑导航（显示层级路径）- 只要选中容器就显示
                 // 合并所有容器列表，确保能找到容器
                 val allContainers = remember(allWarehouses, warehouses) {
@@ -2693,6 +2711,7 @@ fun DiscordStyleMainLayout(
                     itemViewModel = itemViewModel,
                     alertSettingsManager = alertSettingsManager,
                     onDeleteItem = onDeleteItem,
+                    onAddAlert = onAddAlert,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -2708,6 +2727,7 @@ fun HomeStatisticCards(
     totalWarehouses: Int,
     totalItems: Int,
     shoppingItemsCount: Int,
+    onShoppingClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -2787,9 +2807,11 @@ fun HomeStatisticCards(
                 )
             }
             
-            // 待购物品 - 圆形样式
+            // 待购物品 - 圆形样式（可点击）
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onShoppingClick),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
@@ -3111,6 +3133,331 @@ fun WarehouseLevelHeader(
                         modifier = Modifier
                             .size(16.dp)
                             .padding(horizontal = 4.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 待购列表（右下）- Discord 风格首页
+ */
+@Composable
+fun ShoppingListSection(
+    shoppingItemViewModel: com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel?,
+    itemViewModel: ItemViewModel?,
+    modifier: Modifier = Modifier
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val shoppingItems by (shoppingItemViewModel?.shoppingItems?.collectAsState(initial = emptyList()) 
+        ?: remember { mutableStateOf(emptyList()) })
+    val completedItems = remember(shoppingItems) {
+        shoppingItems.filter { it.isCompleted }
+    }
+    
+    var showCompletePurchaseDialog by remember { mutableStateOf(false) }
+    
+                Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(12.dp)
+    ) {
+        // 标题栏
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "待购列表",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = ColorHelpers.getGroup4TextColor()
+            )
+            
+            // 完成购买按钮（只在有已勾选的物品时显示）
+            if (completedItems.isNotEmpty()) {
+                Button(
+                    onClick = { showCompletePurchaseDialog = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Icon(
+                        Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("完成购买", fontSize = 14.sp)
+                }
+            }
+        }
+        
+        // 待购物品列表（显示所有物品）
+        if (shoppingItems.isEmpty()) {
+            // 空状态
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                    Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = ColorHelpers.getGroup4IconColor(0.4f)
+                    )
+                Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                    "待购清单为空",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = ColorHelpers.getGroup4TextColor(0.6f)
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
+                items(shoppingItems) { shoppingItem ->
+                    ShoppingItemCard(
+                        shoppingItem = shoppingItem,
+                        onQuantityChange = { newQuantity ->
+                            shoppingItemViewModel?.updateShoppingItem(
+                                shoppingItem.copy(quantity = newQuantity.coerceAtLeast(1))
+                            )
+                        },
+                        onToggleComplete = {
+                            shoppingItemViewModel?.updateShoppingItem(
+                                shoppingItem.copy(
+                                    isCompleted = !shoppingItem.isCompleted,
+                                    completedAt = if (!shoppingItem.isCompleted) Date() else null
+                                )
+                            )
+                        },
+                        onDelete = {
+                            shoppingItemViewModel?.deleteShoppingItem(shoppingItem)
+                        }
+                    )
+                }
+            }
+        }
+    }
+    
+    // 完成购买确认对话框
+    if (showCompletePurchaseDialog) {
+        AlertDialog(
+            onDismissRequest = { showCompletePurchaseDialog = false },
+            title = { Text("完成购买") },
+            text = {
+                Text("确认完成购买？这将清空待购清单并将购买数量补充到对应物品的库存中。")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // 处理完成购买逻辑 - 只处理已勾选的物品
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                            val itemDao = com.example.itemremindertool.data.database.AppDatabase
+                                .getDatabase(context)
+                                .itemDao()
+                            
+                            completedItems.forEach { shoppingItem ->
+                                // 如果有关联的物品，补充库存
+                                shoppingItem.itemId?.let { itemId ->
+                                    try {
+                                        val item = itemDao.getItemById(itemId)
+                                        item?.let {
+                                            val updatedItem = it.copy(
+                                                quantity = it.quantity + shoppingItem.quantity
+                                            )
+                                            itemDao.updateItem(updatedItem)
+                                        } ?: run {
+                                            // 如果物品不存在，记录错误但不阻止删除购物项
+                                            android.util.Log.e("ShoppingList", "物品不存在: itemId=$itemId")
+                                        }
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("ShoppingList", "更新物品库存失败: itemId=$itemId", e)
+                                    }
+                                } ?: run {
+                                    // 如果没有关联的物品ID，记录警告
+                                    android.util.Log.w("ShoppingList", "购物项没有关联的物品ID: ${shoppingItem.name}")
+                                }
+                                // 删除已完成的待购物品
+                                shoppingItemViewModel?.deleteShoppingItem(shoppingItem)
+                            }
+                        }
+                        showCompletePurchaseDialog = false
+                    }
+                ) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCompletePurchaseDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+}
+
+/**
+ * 待购物品卡片
+ */
+@Composable
+fun ShoppingItemCard(
+    shoppingItem: ShoppingItem,
+    onQuantityChange: (Int) -> Unit,
+    onToggleComplete: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = ColorHelpers.getGroup3CardBgColor()
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 左侧：勾选框和物品信息
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 勾选框
+                Checkbox(
+                    checked = shoppingItem.isCompleted,
+                    onCheckedChange = { onToggleComplete() }
+                )
+                
+                // 物品信息
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = shoppingItem.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = if (shoppingItem.isCompleted) {
+                            ColorHelpers.getGroup4TextColor(0.5f)
+                        } else {
+                            ColorHelpers.getGroup4TextColor()
+                        },
+                        textDecoration = if (shoppingItem.isCompleted) {
+                            androidx.compose.ui.text.style.TextDecoration.LineThrough
+                        } else {
+                            androidx.compose.ui.text.style.TextDecoration.None
+                        }
+                    )
+                    if (shoppingItem.description.isNotBlank()) {
+                        Text(
+                            text = shoppingItem.description,
+                        style = MaterialTheme.typography.bodySmall,
+                            color = if (shoppingItem.isCompleted) {
+                                ColorHelpers.getGroup4TextColor(0.4f)
+                            } else {
+                                ColorHelpers.getGroup4TextColor(0.7f)
+                            },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textDecoration = if (shoppingItem.isCompleted) {
+                                androidx.compose.ui.text.style.TextDecoration.LineThrough
+                            } else {
+                                androidx.compose.ui.text.style.TextDecoration.None
+                            }
+                        )
+                    }
+                }
+            }
+            
+            // 右侧：数量编辑和删除按钮
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 数量编辑
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // 减少按钮
+                    IconButton(
+                        onClick = { onQuantityChange(shoppingItem.quantity - 1) },
+                        modifier = Modifier.size(32.dp),
+                        enabled = !shoppingItem.isCompleted && shoppingItem.quantity > 1
+                    ) {
+                        Icon(
+                            Icons.Default.Remove,
+                            contentDescription = "减少数量",
+                            modifier = Modifier.size(18.dp),
+                            tint = if (shoppingItem.isCompleted || shoppingItem.quantity <= 1) {
+                                ColorHelpers.getGroup4IconColor(0.3f)
+                            } else {
+                                ColorHelpers.getGroup4IconColor()
+                            }
+                        )
+                    }
+                    
+                    // 数量显示
+                    Text(
+                        text = shoppingItem.quantity.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (shoppingItem.isCompleted) {
+                            ColorHelpers.getGroup4TextColor(0.5f)
+                        } else {
+                            ColorHelpers.getGroup4TextColor()
+                        },
+                        modifier = Modifier.widthIn(min = 24.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    
+                    // 增加按钮
+                    IconButton(
+                        onClick = { onQuantityChange(shoppingItem.quantity + 1) },
+                        modifier = Modifier.size(32.dp),
+                        enabled = !shoppingItem.isCompleted
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "增加数量",
+                            modifier = Modifier.size(18.dp),
+                            tint = if (shoppingItem.isCompleted) {
+                                ColorHelpers.getGroup4IconColor(0.3f)
+                            } else {
+                                ColorHelpers.getGroup4IconColor()
+                            }
+                        )
+                    }
+                }
+                
+                // 删除按钮
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "删除",
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.error
                     )
                 }
             }

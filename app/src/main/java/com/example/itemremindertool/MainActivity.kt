@@ -4,8 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -22,8 +24,10 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import android.content.Context
 import androidx.compose.runtime.DisposableEffect
 import androidx.navigation.NavType
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.itemremindertool.data.TagManager
@@ -53,6 +57,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
+        // 设置窗口背景色，避免转场动画时显示白色
+        window.setBackgroundDrawableResource(android.R.color.transparent)
+        
         // 确保语言设置已应用
         val language = LocaleHelper.getCurrentLanguage(this)
         LocaleHelper.setLocale(this, language)
@@ -65,8 +72,23 @@ class MainActivity : ComponentActivity() {
         val tagManager = TagManager(applicationContext)
         val accessHistoryManager = AccessHistoryManager(applicationContext)
 
-        // 启动通知调度
+        // 创建通知渠道（Android 8.0+）
+        com.example.itemremindertool.utils.NotificationHelper.createNotificationChannel(this)
+        
+        // 请求通知权限（Android 13+）
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (android.content.pm.PackageManager.PERMISSION_GRANTED != checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1001)
+            }
+        }
+        
+        // 启动通知调度（旧的，保留兼容性）
         NotificationScheduler.scheduleNotifications(this)
+        
+        // 重新调度所有提醒
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            com.example.itemremindertool.utils.ReminderScheduler.rescheduleAllReminders(this@MainActivity)
+        }
         
         // 初始化应用图标
         IconManager.initializeIcon(applicationContext)
@@ -105,7 +127,24 @@ fun ItemReminderToolApp(
     accessHistoryManager: AccessHistoryManager
 ) {
     val navController = rememberNavController()
-    var currentDestination by remember { mutableStateOf<Screen>(Screen.Dashboard) }
+    
+    // 从导航控制器的当前状态获取实际的目标路由
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    
+    // 根据路由找到对应的 Screen，如果找不到则默认为 Dashboard
+    val currentDestination = remember(currentRoute) {
+        when {
+            currentRoute == Screen.Dashboard.route -> Screen.Dashboard
+            currentRoute == Screen.AllItems.route -> Screen.AllItems
+            currentRoute == Screen.Tags.route -> Screen.Tags
+            currentRoute == Screen.ShoppingList.route -> Screen.ShoppingList
+            currentRoute == Screen.Warehouses.route -> Screen.Warehouses
+            currentRoute == Screen.Settings.route -> Screen.Settings
+            currentRoute?.startsWith(Screen.FilteredItems.route.split("/")[0]) == true -> Screen.AllItems
+            else -> Screen.Dashboard // 默认返回首页
+        }
+    }
     
     // 密码保护相关状态
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -173,6 +212,17 @@ fun ItemReminderToolApp(
         )
     )
 
+    // 安全返回：若无法再出栈，则回到首页，避免栈空导致白屏/卡动画
+    fun NavController.popBackOrDashboard() {
+        val popped = popBackStack()
+        if (!popped) {
+            navigate(Screen.Dashboard.route) {
+                popUpTo(Screen.Dashboard.route) { inclusive = false }
+                launchSingleTop = true
+            }
+        }
+    }
+
     val categoryViewModel: CategoryViewModel = viewModel(
         factory = CategoryViewModelFactory(categoryRepository)
     )
@@ -217,7 +267,6 @@ fun ItemReminderToolApp(
                         label = { Text(stringResource(R.string.nav_all_items)) },
                         selected = currentDestination == Screen.AllItems,
                         onClick = {
-                            currentDestination = Screen.AllItems
                             navController.navigate(Screen.AllItems.route) {
                                 popUpTo(Screen.Dashboard.route) {
                                     inclusive = false
@@ -234,8 +283,7 @@ fun ItemReminderToolApp(
                         icon = { Icon(Screen.Tags.icon, null) },
                         label = { Text(stringResource(R.string.nav_tag_management)) },
                         selected = currentDestination == Screen.Tags,
-                    onClick = {
-                            currentDestination = Screen.Tags
+                        onClick = {
                             navController.navigate(Screen.Tags.route) {
                                 popUpTo(Screen.Dashboard.route) {
                                     inclusive = false
@@ -253,12 +301,11 @@ fun ItemReminderToolApp(
                         label = { Text(stringResource(R.string.nav_shopping_basket)) },
                         selected = currentDestination == Screen.ShoppingList,
                         onClick = {
-                            currentDestination = Screen.ShoppingList
                             navController.navigate(Screen.ShoppingList.route) {
                                 popUpTo(Screen.Dashboard.route) {
                                     inclusive = false
-                            }
-                            launchSingleTop = true
+                                }
+                                launchSingleTop = true
                             }
                             scope.launch {
                                 drawerState.close()
@@ -271,7 +318,6 @@ fun ItemReminderToolApp(
                         label = { Text(stringResource(R.string.nav_warehouse_management)) },
                         selected = currentDestination == Screen.Warehouses,
                         onClick = {
-                            currentDestination = Screen.Warehouses
                             navController.navigate(Screen.Warehouses.route) {
                                 popUpTo(Screen.Dashboard.route) {
                                     inclusive = false
@@ -291,7 +337,6 @@ fun ItemReminderToolApp(
                         label = { Text(stringResource(R.string.settings)) },
                         selected = currentDestination == Screen.Settings,
                         onClick = {
-                            currentDestination = Screen.Settings
                             navController.navigate(Screen.Settings.route) {
                                 popUpTo(Screen.Dashboard.route) {
                                     inclusive = false
@@ -307,13 +352,17 @@ fun ItemReminderToolApp(
             }
         }
     ) {
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Dashboard.route,
-            modifier = Modifier.fillMaxSize()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
         ) {
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Dashboard.route,
+                modifier = Modifier.fillMaxSize()
+            ) {
             composable(Screen.Dashboard.route) {
-                currentDestination = Screen.Dashboard
                 DashboardScreen(
                     dashboardViewModel = dashboardViewModel,
                     itemViewModel = itemViewModel,
@@ -355,7 +404,6 @@ fun ItemReminderToolApp(
                         }
                     },
                     onNavigateToShoppingList = {
-                        currentDestination = Screen.ShoppingList
                         navController.navigate(Screen.ShoppingList.route) {
                             popUpTo(Screen.Dashboard.route) {
                                 inclusive = false
@@ -364,7 +412,6 @@ fun ItemReminderToolApp(
                         }
                     },
                     onNavigateToWarehouses = {
-                        currentDestination = Screen.Warehouses
                         navController.navigate(Screen.Warehouses.route) {
                             popUpTo(Screen.Dashboard.route) {
                                 inclusive = false
@@ -384,6 +431,9 @@ fun ItemReminderToolApp(
                     },
                     onDeleteWarehouse = { warehouse ->
                         warehouseViewModel.deleteWarehouse(warehouse)
+                    },
+                    onAddAlert = { item ->
+                        navController.navigate(Screen.ItemReminderSettings.createRoute(item.id))
                     },
                     onNavigateToWarehouseItemsTab = { warehouseId ->
                         selectedWarehouseId = warehouseId
@@ -414,8 +464,7 @@ fun ItemReminderToolApp(
                     initialWarehouseId = if (selectedWarehouseId == null) null else selectedWarehouseId,
                     onNavigateBack = { 
                         itemViewModel.clearPendingFeatureCode()
-                        // 不清理 selectedWarehouseId，保持在当前选中的容器页面
-                        navController.popBackStack() 
+                        navController.popBackOrDashboard()
                     }
                 )
             }
@@ -427,11 +476,12 @@ fun ItemReminderToolApp(
                         itemViewModel.setPendingFeatureCode(featureCode)
                         android.util.Log.d("MainActivity", "特征提取完成，featureCode: ${featureCode?.substring(0, minOf(50, featureCode?.length ?: 0)) ?: "null"}...")
                         // 跳转到添加物品页面
+                        val popped = navController.popBackStack()
                         navController.navigate(Screen.AddItem.route) {
                             popUpTo(Screen.Dashboard.route)
                         }
                     },
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
 
@@ -461,9 +511,32 @@ fun ItemReminderToolApp(
                     tagManager = tagManager,
                     onNavigateBack = { 
                         // 不清理 selectedWarehouseId，保持在当前选中的容器页面
-                        navController.popBackStack() 
+                        navController.popBackOrDashboard() 
                     }
                 )
+            }
+
+            composable(
+                route = Screen.ItemReminderSettings.route,
+                arguments = listOf(navArgument("itemId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val itemId = backStackEntry.arguments?.getLong("itemId") ?: return@composable
+                val itemReminderViewModel = androidx.lifecycle.viewmodel.compose.viewModel<com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel>()
+                
+                // 加载物品信息
+                LaunchedEffect(itemId) {
+                    itemViewModel.loadItem(itemId)
+                }
+                val selectedItem by itemViewModel.uiState.collectAsState()
+                val item = selectedItem.selectedItem
+                
+                if (item != null) {
+                    com.example.itemremindertool.ui.screens.ItemReminderSettingsScreen(
+                        item = item,
+                        viewModel = itemReminderViewModel,
+                        onNavigateBack = { navController.popBackOrDashboard() }
+                    )
+                }
             }
 
             composable(Screen.BarcodeScanner.route) {
@@ -495,35 +568,21 @@ fun ItemReminderToolApp(
             }
 
             composable(Screen.Tags.route) {
-                currentDestination = Screen.Tags
                 TagsScreen(
                     itemViewModel = itemViewModel,
                     tagManager = tagManager,
-                    onNavigateBack = {
-                        navController.navigate(Screen.Dashboard.route) {
-                            popUpTo(Screen.Dashboard.route) {
-                                inclusive = true
-                            }
-                        }
-                    }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
 
             composable(Screen.ShoppingList.route) {
-                currentDestination = Screen.ShoppingList
                 ShoppingListScreen(
                     viewModel = shoppingItemViewModel,
                     onAddItem = { navController.navigate(Screen.AddShoppingItem.route) },
                     onEditItem = { itemId ->
                         navController.navigate(Screen.EditShoppingItem.createRoute(itemId))
                     },
-                    onNavigateBack = {
-                        navController.navigate(Screen.Dashboard.route) {
-                            popUpTo(Screen.Dashboard.route) {
-                                inclusive = true
-                            }
-                        }
-                    }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
 
@@ -531,7 +590,7 @@ fun ItemReminderToolApp(
                 ShoppingItemEditScreen(
                     itemId = null,
                     viewModel = shoppingItemViewModel,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
 
@@ -543,14 +602,13 @@ fun ItemReminderToolApp(
                 ShoppingItemEditScreen(
                     itemId = itemId,
                     viewModel = shoppingItemViewModel,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
 
             composable(Screen.Settings.route) {
-                currentDestination = Screen.Settings
                 SettingsScreen(
-                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateBack = { navController.popBackOrDashboard() },
                     onNavigateToAppearance = { navController.navigate(Screen.AppearanceSettings.route) },
                     onNavigateToLanguage = { navController.navigate(Screen.LanguageSettings.route) },
                     onNavigateToWarehouse = { navController.navigate(Screen.WarehouseSettings.route) },
@@ -562,42 +620,41 @@ fun ItemReminderToolApp(
             
             composable(Screen.AppearanceSettings.route) {
                 AppearanceSettingsScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
             
             composable(Screen.LanguageSettings.route) {
                 LanguageSettingsScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
             
             composable(Screen.WarehouseSettings.route) {
                 WarehouseSettingsScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
             
             composable(Screen.AppSettings.route) {
                 AppSettingsScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
             
             composable(Screen.CloudStorageSettings.route) {
                 CloudStorageSettingsScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
             
             composable(Screen.AlertSettings.route) {
                 AlertSettingsScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
 
             composable(Screen.Warehouses.route) {
-                currentDestination = Screen.Warehouses
                 WarehousesScreen(
                     viewModel = warehouseViewModel,
                     itemViewModel = itemViewModel,
@@ -609,13 +666,7 @@ fun ItemReminderToolApp(
                         // 导航到容器详情页面，与首页点击容器卡片的行为一致
                         navController.navigate(Screen.WarehouseItemsTab.createRoute(warehouseId))
                     },
-                    onNavigateBack = {
-                        navController.navigate(Screen.Dashboard.route) {
-                            popUpTo(Screen.Dashboard.route) {
-                                inclusive = true
-                            }
-                        }
-                    }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
 
@@ -625,7 +676,7 @@ fun ItemReminderToolApp(
                     viewModel = warehouseViewModel,
                     onNavigateBack = { 
                         // 不清理 selectedWarehouseId，保持在当前选中的容器页面（如果是从容器页面添加）
-                        navController.popBackStack() 
+                        navController.popBackOrDashboard() 
                     }
                 )
             }
@@ -640,7 +691,7 @@ fun ItemReminderToolApp(
                     viewModel = warehouseViewModel,
                     onNavigateBack = { 
                         // 不清理 selectedWarehouseId，保持在当前选中的容器页面
-                        navController.popBackStack()
+                        navController.popBackOrDashboard()
                     },
                     initialParentId = parentId,
                     onSaveSuccess = { savedParentId ->
@@ -658,7 +709,7 @@ fun ItemReminderToolApp(
                 WarehouseEditScreen(
                     warehouseId = warehouseId,
                     viewModel = warehouseViewModel,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
 
@@ -674,12 +725,11 @@ fun ItemReminderToolApp(
                     onEditItem = { itemId ->
                         navController.navigate(Screen.EditItem.createRoute(itemId))
                     },
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
 
             composable(Screen.AllItems.route) {
-                currentDestination = Screen.AllItems
                 AllItemsScreen(
                     itemViewModel = itemViewModel,
                     shoppingItemViewModel = shoppingItemViewModel,
@@ -690,7 +740,7 @@ fun ItemReminderToolApp(
                     onEditItem = { itemId ->
                         navController.navigate(Screen.EditItem.createRoute(itemId))
                     },
-                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateBack = { navController.popBackOrDashboard() },
                     filterType = null
                 )
             }
@@ -710,7 +760,7 @@ fun ItemReminderToolApp(
                     onEditItem = { itemId ->
                         navController.navigate(Screen.EditItem.createRoute(itemId))
                     },
-                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateBack = { navController.popBackOrDashboard() },
                     filterType = filterType
                 )
             }
@@ -745,7 +795,7 @@ fun ItemReminderToolApp(
                     },
                     onDeleteWarehouse = { warehouse ->
                         warehouseViewModel.deleteWarehouse(warehouse)
-                        navController.popBackStack()
+                        navController.popBackOrDashboard()
                     },
                     onNavigateToWarehouseItemsTab = { childWarehouseId ->
                         // 正常导航到子容器详情页面，保持导航栈，让返回按钮能够正常工作
@@ -754,7 +804,7 @@ fun ItemReminderToolApp(
                     onNavigateBack = { 
                         // 返回时清理 selectedWarehouseId，避免意外导航到容器页面
                         selectedWarehouseId = null
-                        navController.popBackStack() 
+                        navController.popBackOrDashboard() 
                     },
                     onNavigateToParentWarehouse = { targetWarehouseId ->
                         // 导航到目标容器（可能是父容器或更上层的容器）
@@ -767,12 +817,13 @@ fun ItemReminderToolApp(
                         if (!popped) {
                             // 如果目标路由不在栈中，直接导航到它
                             // 先弹出当前页面，然后导航到目标
-                            navController.popBackStack()
+                            navController.popBackOrDashboard()
                             navController.navigate(targetRoute)
                         }
                     }
                 )
             }
+        }
         }
     }
 }

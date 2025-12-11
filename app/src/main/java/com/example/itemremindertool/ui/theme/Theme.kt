@@ -20,9 +20,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import android.content.SharedPreferences
+import android.view.WindowManager
 import com.example.itemremindertool.R
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 
 // ========== 1. 冷冽囤老板（首推）==========
 private val ColdBlueLightScheme = lightColorScheme(
@@ -367,7 +370,23 @@ fun ItemReminderToolTheme(
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,
-            content = content
+            content = {
+                // 设置窗口背景色，避免转场动画时显示白色
+                val view = LocalView.current
+                DisposableEffect(colorScheme.background) {
+                    val window = (view.context as? Activity)?.window
+                    window?.let {
+                        // 状态栏透明，让顶部渐变能延伸到状态栏
+                        it.statusBarColor = Color.Transparent.toArgb()
+                        // 导航栏与背景一致，避免闪白
+                        it.navigationBarColor = colorScheme.background.toArgb()
+                        // 设置窗口背景色为透明，避免转场时白屏
+                        it.setBackgroundDrawableResource(android.R.color.transparent)
+                    }
+                    onDispose { }
+                }
+                content()
+            }
         )
     }
 }

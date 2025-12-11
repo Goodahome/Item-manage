@@ -50,7 +50,7 @@ fun WarehouseItemsTabScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Icon(
-                    Icons.Default.Inventory,
+                    Icons.Default.Category,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)

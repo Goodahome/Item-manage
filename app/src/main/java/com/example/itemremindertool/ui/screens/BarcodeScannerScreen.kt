@@ -24,6 +24,7 @@ import com.example.itemremindertool.utils.QRCodeUtils
 import java.util.concurrent.Executors
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.R
+import com.example.itemremindertool.ui.components.GradientTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,19 +53,13 @@ fun BarcodeScannerScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            GradientTopAppBar(
                 title = { Text(stringResource(R.string.barcode_scanner)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                }
             )
         }
     ) { paddingValues ->

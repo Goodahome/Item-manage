@@ -155,6 +155,7 @@
     <string name="delete_item_confirm">确定要删除这个物品吗？</string>
     <string name="add_to_shopping_cart">加入购物篮</string>
     <string name="add_reminder">添加提醒</string>
+    <string name="item_reminder_settings">物品提醒设置</string>
     
     <!-- 物品状态 -->
     <string name="status_normal">正常</string>

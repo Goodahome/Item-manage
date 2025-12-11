@@ -56,7 +56,7 @@ fun QuickAddBottomSheet(
             
             // 添加容器
             QuickAddItem(
-                icon = Icons.Default.Warehouse,
+                icon = Icons.Default.Inventory2,
                 title = stringResource(R.string.add_warehouse),
                 subtitle = stringResource(R.string.add_warehouse_hint),
                 onClick = {
