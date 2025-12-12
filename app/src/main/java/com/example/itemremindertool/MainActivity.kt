@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -243,6 +244,7 @@ fun ItemReminderToolApp(
     
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = false,
         drawerContent = {
             ModalDrawerSheet(
                 modifier = Modifier.width(280.dp), // 设置侧边菜单宽度
@@ -253,13 +255,35 @@ fun ItemReminderToolApp(
                     modifier = Modifier
                         .fillMaxHeight()
                         .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.menu),
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.padding(16.dp)
-                    )
+                    // 标题行，包含标题和关闭按钮
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.menu),
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    drawerState.close()
+                                }
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = stringResource(R.string.close),
+                                tint = com.example.itemremindertool.ui.theme.ColorHelpers.getGroup4TextColor()
+                            )
+                        }
+                    }
                     Divider()
                     
                     NavigationDrawerItem(

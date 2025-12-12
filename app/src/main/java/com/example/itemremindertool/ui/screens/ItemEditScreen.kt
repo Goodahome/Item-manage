@@ -296,9 +296,12 @@ fun ItemEditScreen(
                         containerColor = ColorHelpers.getGroup2SettingsBtnColor()
                     )
                 ) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = null, tint = ColorHelpers.getGroup4IconColor())
+                    val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
+                    val iconColor = ColorHelpers.getContrastColor(backgroundColor)
+                    val textColor = ColorHelpers.getContrastColor(backgroundColor)
+                    Icon(Icons.Default.CameraAlt, contentDescription = null, tint = iconColor)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.take_photo), color = ColorHelpers.getGroup4TextColor())
+                    Text(stringResource(R.string.take_photo), color = textColor)
                 }
                 Button(
                     onClick = { imagePickerLauncher.launch("image/*") },
@@ -307,9 +310,12 @@ fun ItemEditScreen(
                         containerColor = ColorHelpers.getGroup2SettingsBtnColor()
                     )
                 ) {
-                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = ColorHelpers.getGroup4IconColor())
+                    val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
+                    val iconColor = ColorHelpers.getContrastColor(backgroundColor)
+                    val textColor = ColorHelpers.getContrastColor(backgroundColor)
+                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = iconColor)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.select_from_gallery), color = ColorHelpers.getGroup4TextColor())
+                    Text(stringResource(R.string.select_from_gallery), color = textColor)
                 }
                 if (imageUri != null) {
                     IconButton(onClick = { imageUri = null }) {
@@ -478,38 +484,49 @@ fun ItemEditScreen(
                     val isSelected = tags.contains(tag)
                     if (isSelected) {
                         // 选中状态：显示带删除按钮的 FilterChip，透明背景，主色边框
-                        FilterChip(
-                            selected = true,
-                            onClick = { tags = tags - tag },
-                            enabled = true,
-                            label = { 
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(tag)
-                                    Icon(
-                                        Icons.Default.Close,
-                                        contentDescription = "删除",
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            },
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
+                        // 使用 Row 包裹 FilterChip 和 X 图标，让 X 图标可以单独点击
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            FilterChip(
                                 selected = true,
-                                borderColor = MaterialTheme.colorScheme.primary,
-                                selectedBorderColor = MaterialTheme.colorScheme.primary,
-                                borderWidth = 1.25.dp,
-                                selectedBorderWidth = 1.25.dp
-                            ),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color.Transparent,
-                                selectedLabelColor = ColorHelpers.getGroup4TextColor(),
-                                containerColor = Color.Transparent,
-                                labelColor = ColorHelpers.getGroup4TextColor()
+                                onClick = { tags = tags - tag }, // 点击标签文本时取消选中
+                                enabled = true,
+                                label = { Text(tag) },
+                                border = FilterChipDefaults.filterChipBorder(
+                                    enabled = true,
+                                    selected = true,
+                                    borderColor = MaterialTheme.colorScheme.primary,
+                                    selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                    borderWidth = 1.25.dp,
+                                    selectedBorderWidth = 1.25.dp
+                                ),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color.Transparent,
+                                    selectedLabelColor = ColorHelpers.getGroup4TextColor(),
+                                    containerColor = Color.Transparent,
+                                    labelColor = ColorHelpers.getGroup4TextColor()
+                                )
                             )
-                        )
+                            // X 图标单独可点击，点击时删除标签
+                            IconButton(
+                                onClick = {
+                                    // 从标签管理器中删除标签
+                                    tagManager.removeTag(tag)
+                                    // 从当前选中标签中移除
+                                    tags = tags - tag
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "删除",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = ColorHelpers.getGroup4IconColor()
+                                )
+                            }
+                        }
                     } else {
                         // 未选中状态：显示 FilterChip，透明背景，轮廓色边框
                         FilterChip(

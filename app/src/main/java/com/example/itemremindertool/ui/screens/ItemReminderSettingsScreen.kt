@@ -40,7 +40,7 @@ fun ItemReminderSettingsScreen(
     Scaffold(
         topBar = {
             GradientTopAppBar(
-                title = { Text("${item.name} - 提醒设置") },
+                title = { Text("${item.name} - 添加提醒") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "返回")

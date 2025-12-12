@@ -47,10 +47,31 @@ fun WarehouseEditScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    // 过滤可用的父容器（排除当前容器和层级>=5的容器）
+    // 递归查找所有子容器ID（包括子容器的子容器等）
+    fun getAllChildIds(parentId: Long, warehouses: List<Warehouse>): Set<Long> {
+        val childIds = mutableSetOf<Long>()
+        val directChildren = warehouses.filter { it.parentId == parentId }
+        childIds.addAll(directChildren.map { it.id })
+        directChildren.forEach { child ->
+            childIds.addAll(getAllChildIds(child.id, warehouses))
+        }
+        return childIds
+    }
+
+    // 过滤可用的父容器（排除当前容器、当前容器的所有子容器和层级>=5的容器）
     val availableParents = remember(allWarehouses, warehouseId) {
-        allWarehouses.filter { 
-            it.id != warehouseId && it.level < 5
+        if (warehouseId == null) {
+            // 添加模式：只排除层级>=5的容器
+            allWarehouses.filter { it.level < 5 }
+        } else {
+            // 编辑模式：排除当前容器、当前容器的所有子容器和层级>=5的容器
+            val excludedIds = mutableSetOf<Long>()
+            excludedIds.add(warehouseId)
+            excludedIds.addAll(getAllChildIds(warehouseId, allWarehouses))
+            
+            allWarehouses.filter { 
+                it.id !in excludedIds && it.level < 5
+            }
         }
     }
 

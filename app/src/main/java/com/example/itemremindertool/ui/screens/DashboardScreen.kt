@@ -53,6 +53,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.clipToBounds
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
@@ -259,20 +263,30 @@ fun DashboardScreen(
         },
         floatingActionButton = {
             // 直接跳转到添加物品页面
-    Column(
+            Column(
                 modifier = Modifier.padding(bottom = 70.dp)
-                    ) {
-                        FloatingActionButton(
-                        onClick = {
+            ) {
+                // Discord 风格下，使用与左侧圆形容器图标一致的背景色；否则保持原有 FAB 颜色
+                val fabBackground = if (homeLayoutStyle == HomeLayoutStyle.DISCORD) {
+                    ColorHelpers.getGroup2SettingsBtnColor()
+                } else {
+                    ColorHelpers.getGroup5FabColor()
+                }
+                val fabIconColor = ColorHelpers.getContrastColor(fabBackground)
+
+                FloatingActionButton(
+                    onClick = {
                         // 如果当前选中了容器，则带入容器ID
                         onAddItem(selectedWarehouseId)
-                            },
+                    },
                     modifier = Modifier.size(56.dp),
-                    containerColor = ColorHelpers.getGroup5FabColor()
+                    containerColor = fabBackground,
+                    contentColor = fabIconColor
                 ) {
                     Icon(
                         Icons.Default.Add,
-                        contentDescription = stringResource(R.string.add_item)
+                        contentDescription = stringResource(R.string.add_item),
+                        tint = fabIconColor
                     )
                 }
             }
@@ -1694,6 +1708,200 @@ fun LocationCard(
 // ============================================================================
 
 /**
+ * 容器信息底部弹出对话框
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WarehouseInfoBottomSheet(
+    warehouse: Warehouse?,
+    allWarehouses: List<Warehouse>,
+    allItems: List<Item>,
+    warehouseItemCounts: Map<Long, Int>,
+    onDismiss: () -> Unit,
+    onNavigateToWarehouse: (Long) -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    if (warehouse == null) return
+    
+    // 获取子容器
+    val childWarehouses = remember(warehouse.id, allWarehouses) {
+        allWarehouses.filter { it.parentId == warehouse.id }
+    }
+    
+    val itemCount = warehouseItemCounts[warehouse.id] ?: 0
+    
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        modifier = modifier,
+        containerColor = ColorHelpers.getGroup2PageBgColor(),
+        contentColor = ColorHelpers.getGroup4TextColor(),
+        dragHandle = {
+            // 添加拖动手柄，方便用户知道可以拖动
+            Box(
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(4.dp)
+                    .padding(vertical = 12.dp)
+                    .background(
+                        ColorHelpers.getGroup4IconColor(0.3f),
+                        shape = RoundedCornerShape(2.dp)
+                    )
+            )
+        }
+    ) {
+        // 使用 BoxWithConstraints 来获取可用高度，设置更大的高度限制
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // maxHeight 已经是 Dp 类型，使用 value 属性进行计算
+            // 使用屏幕高度的90%，但限制在600dp到900dp之间
+            val contentMaxHeight = (maxHeight.value * 0.9f).dp.coerceIn(600.dp, 900.dp)
+            
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = contentMaxHeight)
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 32.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+            // 标题栏（容器名称居中显示）
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = warehouse.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = ColorHelpers.getGroup4TextColor()
+                )
+            }
+            
+            Divider()
+            
+            // 容器描述
+            if (warehouse.description.isNotEmpty()) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.description),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = ColorHelpers.getGroup4TextColor(0.7f)
+                    )
+                    Text(
+                        text = warehouse.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = ColorHelpers.getGroup4TextColor()
+                    )
+                }
+            }
+            
+            // 容器位置
+            if (warehouse.location.isNotEmpty()) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.warehouse_location),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = ColorHelpers.getGroup4TextColor(0.7f)
+                    )
+                    Text(
+                        text = warehouse.location,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = ColorHelpers.getGroup4TextColor()
+                    )
+                }
+            }
+            
+            // 容器容量
+            if (warehouse.capacity != null) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.capacity),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = ColorHelpers.getGroup4TextColor(0.7f)
+                    )
+                    Text(
+                        text = "${warehouse.capacity}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = ColorHelpers.getGroup4TextColor()
+                    )
+                    LinearProgressIndicator(
+                        progress = {
+                            if (warehouse.capacity > 0) {
+                                (itemCount.toFloat() / warehouse.capacity).coerceIn(0f, 1f)
+                            } else {
+                                0f
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.used_capacity,
+                            itemCount,
+                            warehouse.capacity
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ColorHelpers.getGroup4TextColor(0.6f)
+                    )
+                }
+            }
+            
+            // 统计信息
+            Divider()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = childWarehouses.size.toString(),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = ColorHelpers.getGroup4TextColor()
+                    )
+                    Text(
+                        text = stringResource(R.string.child_containers),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ColorHelpers.getGroup4TextColor(0.7f)
+                    )
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = itemCount.toString(),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = ColorHelpers.getGroup4TextColor()
+                    )
+                    Text(
+                        text = stringResource(R.string.warehouse_items),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ColorHelpers.getGroup4TextColor(0.7f)
+                    )
+                }
+            }
+            }
+        }
+    }
+}
+
+/**
  * 左侧容器图标列表项
  */
 @OptIn(ExperimentalFoundationApi::class)
@@ -1705,6 +1913,7 @@ fun WarehouseIconItem(
     onClick: () -> Unit,
     onEditWarehouse: (Warehouse) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
+    onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -1735,16 +1944,44 @@ fun WarehouseIconItem(
         ) {
             val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
             val textColor = ColorHelpers.getContrastColor(backgroundColor)
+            
+            // 优化的点击检测：立即响应单击，延迟检测双击
+            val scope = rememberCoroutineScope()
+            var pendingClick by remember { mutableStateOf(false) }
+            var clickJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+            
             Box {
                 Box(
                     modifier = Modifier
-                        .size(40.dp) // 与右侧子容器大小一致
+                        .size(44.dp) // 略增尺寸
                         .clip(CircleShape)
                         .background(backgroundColor) // 与右侧容器按钮一致
-                        .combinedClickable(
-                            onClick = onClick,
-                            onLongClick = { showMenu = true }
-                        ),
+                        .pointerInput(warehouse.id) {
+                            detectTapGestures(
+                                onTap = {
+                                    // 取消之前的延迟任务
+                                    clickJob?.cancel()
+                                    
+                                    // 如果已经有待处理的单击，说明是双击
+                                    if (pendingClick) {
+                                        pendingClick = false
+                                        onViewInfo?.invoke(warehouse)
+                                    } else {
+                                        // 立即执行单击
+                                        onClick()
+                                        // 设置待处理标志，延迟检测双击
+                                        pendingClick = true
+                                        clickJob = scope.launch {
+                                            delay(300) // 300ms内检测双击
+                                            if (pendingClick) {
+                                                pendingClick = false
+                                            }
+                                        }
+                                    }
+                                },
+                                onLongPress = { showMenu = true }
+                            )
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     // 显示容器首字母或图标
@@ -1799,13 +2036,16 @@ fun WarehouseSidebarColumn(
     onAddWarehouse: () -> Unit,
     onEditWarehouse: (Warehouse) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
+    onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
     modifier: Modifier = Modifier
 ) {
-                Column(
+    Column(
         modifier = modifier
-            .width(60.dp) // 减小：70dp → 60dp
+            .width(60.dp) // 保持宽度
             .fillMaxHeight()
-            .background(Color.Transparent)
+            // 为左侧容器列表添加浅色背景，圆角与其它卡片一致
+            .clip(RoundedCornerShape(8.dp))
+            .background(ColorHelpers.getGroup3CardBgColor())
             .padding(vertical = 6.dp), // 减小：8dp → 6dp
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp) // 减小：12dp → 8dp
@@ -1839,7 +2079,7 @@ fun WarehouseSidebarColumn(
                 val iconColor = ColorHelpers.getContrastColor(backgroundColor)
                 Box(
                     modifier = Modifier
-                        .size(40.dp) // 与右侧子容器大小一致
+                        .size(44.dp) // 略增尺寸，提升点击面积
                         .clip(CircleShape)
                         .background(backgroundColor) // 与右侧容器按钮一致
                         .clickable(onClick = onHomeClick),
@@ -1849,7 +2089,7 @@ fun WarehouseSidebarColumn(
                         Icons.Default.Home,
                         contentDescription = "首页",
                         tint = iconColor, // 根据背景颜色对比度自动切换
-                        modifier = Modifier.size(20.dp) // 与右侧子容器图标大小一致
+                        modifier = Modifier.size(22.dp) // 与外圈同比增大
                     )
                 }
             }
@@ -1876,7 +2116,8 @@ fun WarehouseSidebarColumn(
                     itemCount = warehouseItemCounts[warehouse.id] ?: 0,
                     onClick = { onWarehouseClick(warehouse) },
                     onEditWarehouse = onEditWarehouse,
-                    onDeleteWarehouse = onDeleteWarehouse
+                    onDeleteWarehouse = onDeleteWarehouse,
+                    onViewInfo = onViewInfo
                 )
             }
             
@@ -1886,7 +2127,7 @@ fun WarehouseSidebarColumn(
                 val iconColor = ColorHelpers.getContrastColor(backgroundColor)
                 Box(
                     modifier = Modifier
-                        .size(40.dp) // 与容器图标大小一致
+                        .size(44.dp) // 与容器图标同步增大
                         .clip(CircleShape)
                         .background(backgroundColor) // 与容器图标颜色一致
                         .clickable(onClick = onAddWarehouse),
@@ -1896,7 +2137,7 @@ fun WarehouseSidebarColumn(
                         Icons.Default.Add,
                         contentDescription = "添加容器",
                         tint = iconColor, // 根据背景颜色对比度自动切换
-                        modifier = Modifier.size(20.dp) // 与容器图标大小一致
+                        modifier = Modifier.size(22.dp) // 与容器图标大小一致
                     )
                 }
             }
@@ -1915,16 +2156,46 @@ fun SubWarehouseIcon(
     onClick: () -> Unit,
     onEditWarehouse: (Warehouse) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
+    onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    
+    // 优化的点击检测：延迟执行单击，以便检测双击
+    val scope = rememberCoroutineScope()
+    var clickJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    var hasPendingClick by remember { mutableStateOf(false) }
+    
     Box {
         Column(
             modifier = modifier
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = { showMenu = true }
-                )
+                .pointerInput(warehouse.id) {
+                    detectTapGestures(
+                        onTap = {
+                            // 如果已经有待处理的单击，说明是双击
+                            if (hasPendingClick) {
+                                // 取消单击任务，执行双击操作
+                                clickJob?.cancel()
+                                clickJob = null
+                                hasPendingClick = false
+                                onViewInfo?.invoke(warehouse)
+                            } else {
+                                // 设置待处理标志
+                                hasPendingClick = true
+                                // 延迟执行单击，以便检测双击
+                                clickJob = scope.launch {
+                                    delay(250) // 250ms延迟，如果期间有第二次点击则取消
+                                    if (hasPendingClick) {
+                                        onClick()
+                                        hasPendingClick = false
+                                    }
+                                    clickJob = null
+                                }
+                            }
+                        },
+                        onLongPress = { showMenu = true }
+                    )
+                }
                 .padding(horizontal = 6.dp), // 减小：8dp → 6dp
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(3.dp) // 减小：4dp → 3dp
@@ -1997,6 +2268,9 @@ fun SubWarehouseRow(
     onAddSubWarehouse: () -> Unit,
     onEditWarehouse: (Warehouse) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
+    warehousePath: List<Warehouse> = emptyList(), // 新增：面包屑导航路径
+    onNavigateToWarehouse: ((Warehouse) -> Unit)? = null, // 新增：面包屑导航回调
+    onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -2009,53 +2283,122 @@ fun SubWarehouseRow(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp) // 减小：2dp → 1dp
     ) {
-        LazyRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 6.dp), // 减小：12dp,8dp → 8dp,6dp
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            items(subWarehouses) { subWarehouse ->
-                SubWarehouseIcon(
-                    warehouse = subWarehouse,
-                    itemCount = warehouseItemCounts[subWarehouse.id] ?: 0,
-                    onClick = { onSubWarehouseClick(subWarehouse) },
-                    onEditWarehouse = onEditWarehouse,
-                    onDeleteWarehouse = onDeleteWarehouse
+            // 面包屑导航（如果有路径）
+            if (warehousePath.isNotEmpty() && onNavigateToWarehouse != null) {
+                // 使用 LazyRow 实现横向滚动
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    items(warehousePath.size) { index ->
+                        val warehouse = warehousePath[index]
+                        val isLast = index == warehousePath.size - 1
+                        
+                        // 容器名称（可点击），最后一个添加"里的物品"后缀
+                        val displayText = if (isLast) {
+                            "${warehouse.name.ifEmpty { "未命名容器" }}里的物品"
+                        } else {
+                            warehouse.name.ifEmpty { "未命名容器" }
+                        }
+                        
+                        Text(
+                            text = displayText,
+                            style = if (isLast) {
+                                MaterialTheme.typography.titleMedium
+                            } else {
+                                MaterialTheme.typography.bodyMedium
+                            },
+                            fontWeight = if (isLast) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isLast) {
+                                ColorHelpers.getGroup4TextColor()
+                            } else {
+                                ColorHelpers.getGroup4TextColor(0.7f)
+                            },
+                            modifier = Modifier
+                                .clickable { onNavigateToWarehouse(warehouse) }
+                                .padding(vertical = 4.dp),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        
+                        // 如果不是最后一个，显示箭头分隔符
+                        if (!isLast) {
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = ColorHelpers.getGroup4IconColor(0.5f),
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .padding(horizontal = 4.dp)
+                            )
+                        }
+                    }
+                }
+                
+                // 横线分隔符
+                Divider(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    color = ColorHelpers.getGroup4IconColor(0.2f),
+                    thickness = 1.dp
                 )
             }
             
-            // 添加子容器按钮
-            item {
-                Column(
-                    modifier = Modifier
-                        .clickable(onClick = onAddSubWarehouse)
-                        .padding(horizontal = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                    val iconColor = ColorHelpers.getContrastColor(backgroundColor)
-                    Box(
+            // 子容器图标行
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 6.dp), // 减小：12dp,8dp → 8dp,6dp
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(subWarehouses) { subWarehouse ->
+                    SubWarehouseIcon(
+                        warehouse = subWarehouse,
+                        itemCount = warehouseItemCounts[subWarehouse.id] ?: 0,
+                        onClick = { onSubWarehouseClick(subWarehouse) },
+                        onEditWarehouse = onEditWarehouse,
+                        onDeleteWarehouse = onDeleteWarehouse,
+                        onViewInfo = onViewInfo
+                    )
+                }
+                
+                // 添加子容器按钮
+                item {
+                    Column(
                         modifier = Modifier
-                            .size(40.dp) // 与子容器大小一致
-                            .clip(CircleShape)
-                            .background(backgroundColor), // 与子容器颜色一致
-                        contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                            Icons.Default.Add,
-                            contentDescription = "添加子容器",
-                            tint = iconColor, // 根据背景颜色对比度自动切换
-                            modifier = Modifier.size(20.dp)
+                            .clickable(onClick = onAddSubWarehouse)
+                            .padding(horizontal = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
+                        val iconColor = ColorHelpers.getContrastColor(backgroundColor)
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp) // 与子容器大小一致
+                                .clip(CircleShape)
+                                .background(backgroundColor), // 与子容器颜色一致
+                            contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                                Icons.Default.Add,
+                                contentDescription = "添加子容器",
+                                tint = iconColor, // 根据背景颜色对比度自动切换
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        
+                        Text(
+                            text = "添加容器",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = ColorHelpers.getGroup4TextColor()
                         )
                     }
-                    
-                    Text(
-                        text = "添加容器",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = ColorHelpers.getGroup4TextColor()
-                    )
                 }
             }
         }
@@ -2063,9 +2406,8 @@ fun SubWarehouseRow(
 }
 
 /**
- * 右下物品列表项（滑动展开操作按钮）
+ * 右下物品列表项（带三个点菜单按钮）
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ItemListRow(
     item: Item,
@@ -2076,154 +2418,20 @@ fun ItemListRow(
     onAddAlert: (Item) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val density = LocalDensity.current
-    val buttonWidthDp = 38.dp
-    val buttonCount = 4
-    val maxOffsetPx: Float = remember(density) {
-        -with(density) { (buttonWidthDp * buttonCount).toPx() }
-    }
-    // 滑动偏移状态（像素）
-    var offsetX by remember { mutableStateOf(0f) }
+    // 菜单展开状态
+    var showMenu by remember { mutableStateOf(false) }
     
-    // 动画偏移
-    val animatedOffset by animateFloatAsState(
-        targetValue = offsetX,
-        label = "swipe"
-    )
-    
-    // 使用 BoxWithConstraints 来限制滑动范围，不超出父容器
-    BoxWithConstraints(
+    Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 3.dp) // 与其他卡片对齐
-            .clipToBounds() // 防止滑出容器区域（左侧保持对齐）
+            .padding(horizontal = 12.dp, vertical = 3.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = ColorHelpers.getGroup3CardBgColor()
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        val containerWidth = maxWidth
-        
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clipToBounds() // 再裁剪一次，确保卡片不超出自身容器
-        ) {
-            // 背景操作按钮 - 使用 matchParentSize 来匹配卡片高度
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .height(40.dp) // 固定高度
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .padding(end = 0.dp),
-                    horizontalArrangement = Arrangement.spacedBy(1.dp), // 更紧凑，仅留极小间距
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val circleSize = 30.dp
-                    val iconSize = 16.dp
-
-                    @Composable
-                    fun ActionButton(
-                        color: Color,
-                        icon: ImageVector,
-                        contentDescription: String,
-                        onClick: () -> Unit
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(buttonWidthDp)
-                                .fillMaxHeight(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(circleSize)
-                                    .clip(CircleShape)
-                                    .background(color)
-                                    .clickable { onClick() },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    icon,
-                                    contentDescription = contentDescription,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(iconSize)
-                                )
-                            }
-                        }
-                    }
-
-                    ActionButton(
-                        color = Color(0xFF4CAF50),
-                        icon = Icons.Default.Edit,
-                        contentDescription = "编辑"
-                    ) {
-                        onEditItem(item.id); offsetX = 0f
-                    }
-
-                    ActionButton(
-                        color = Color(0xFF2196F3),
-                        icon = Icons.Default.ShoppingCart,
-                        contentDescription = "购物车"
-                    ) {
-                        onAddToShoppingCart(item); offsetX = 0f
-                    }
-
-                    ActionButton(
-                        color = Color(0xFFFF9800),
-                        icon = Icons.Default.Notifications,
-                        contentDescription = "提醒"
-                    ) {
-                        onAddAlert(item); offsetX = 0f
-                    }
-
-                    ActionButton(
-                        color = Color(0xFFF44336),
-                        icon = Icons.Default.Delete,
-                        contentDescription = "删除"
-                    ) {
-                        onDeleteItem(item); offsetX = 0f
-                    }
-                }
-            }
-            
-            // 前景物品卡片
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .offset { IntOffset(animatedOffset.roundToInt(), 0) }
-                    .pointerInput(Unit) {
-                        detectHorizontalDragGestures(
-                            onDragEnd = {
-                                // 判断是否展开（超过1/3就展开）
-                                offsetX = if (offsetX < maxOffsetPx / 3f) {
-                                    maxOffsetPx // 完全展开
-                                } else {
-                                    0f // 收起
-                                }
-                            },
-                            onHorizontalDrag = { _, dragAmount ->
-                                // 只允许向左滑动，限制滑动范围
-                                val newOffset = (offsetX + dragAmount).coerceIn(maxOffsetPx, 0f)
-                                // 确保不会滑出左侧边界（留出12dp的margin）
-                                offsetX = newOffset
-                            }
-                        )
-                    }
-                    .clickable {
-                        if (offsetX < 0f) {
-                            // 如果已展开，点击收起
-                            offsetX = 0f
-                        } else {
-                            // 否则执行点击事件
-                            onClick()
-                        }
-                    },
-                shape = RoundedCornerShape(8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = ColorHelpers.getGroup3CardBgColor()
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -2399,43 +2607,96 @@ fun ItemListRow(
                 }
             }
             
-            // 右侧数量和价格信息
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+            // 右侧数量和价格信息 + 三个点菜单按钮
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // 价格显示
-                if (item.price != null) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    // 价格显示
+                    if (item.price != null) {
+                        Text(
+                            text = stringResource(R.string.price_with_value, item.price),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = ColorHelpers.getGroup4TextColor()
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                    
+                    // 数量显示
                     Text(
-                        text = stringResource(R.string.price_with_value, item.price),
+                        text = "数量",
                         style = MaterialTheme.typography.labelSmall,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontSize = 10.sp, // 进一步减小
+                        color = ColorHelpers.getGroup4TextColor(0.6f)
+                    )
+                    Text(
+                        text = item.quantity.toString(),
+                        style = MaterialTheme.typography.titleSmall, // 减小字体
+                        fontWeight = FontWeight.Bold,
                         color = ColorHelpers.getGroup4TextColor()
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
                 }
                 
-                // 数量显示
-                Text(
-                    text = "数量",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontSize = 10.sp, // 进一步减小
-                    color = ColorHelpers.getGroup4TextColor(0.6f)
-                )
-                Text(
-                    text = item.quantity.toString(),
-                    style = MaterialTheme.typography.titleSmall, // 减小字体
-                    fontWeight = FontWeight.Bold,
-                    color = ColorHelpers.getGroup4TextColor()
-                )
+                // 三个点菜单按钮
+                Box {
+                    IconButton(
+                        onClick = { showMenu = true },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "更多操作",
+                            tint = ColorHelpers.getGroup4IconColor(),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.edit)) },
+                            onClick = {
+                                showMenu = false
+                                onEditItem(item.id)
+                            },
+                            leadingIcon = { Icon(Icons.Default.Edit, null) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.nav_shopping_basket)) },
+                            onClick = {
+                                showMenu = false
+                                onAddToShoppingCart(item)
+                            },
+                            leadingIcon = { Icon(Icons.Default.ShoppingCart, null) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.alert_settings)) },
+                            onClick = {
+                                showMenu = false
+                                onAddAlert(item)
+                            },
+                            leadingIcon = { Icon(Icons.Default.Notifications, null) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.delete)) },
+                            onClick = {
+                                showMenu = false
+                                onDeleteItem(item)
+                            },
+                            leadingIcon = { Icon(Icons.Default.Delete, null) }
+                        )
+                    }
+                }
             }
         }
-        // 结束 Card 内容
-        }
-        // 结束内层 Box
-        }
-    // 结束 BoxWithConstraints
     }
 }
 
@@ -2453,6 +2714,9 @@ fun ItemListSection(
     onAddAlert: (Item) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    // LazyColumn 的状态
+    val listState = rememberLazyListState()
+    
     if (items.isEmpty()) {
         // 空状态
         Box(
@@ -2478,9 +2742,10 @@ fun ItemListSection(
         }
     } else {
         LazyColumn(
+            state = listState,
             modifier = modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(3.dp), // 减小：4dp → 3dp
-            contentPadding = PaddingValues(bottom = 80.dp) // 为 FAB 留出空间
+            verticalArrangement = Arrangement.spacedBy(3.dp), // 增加间距为阴影留出空间
+            contentPadding = PaddingValues(bottom = 80.dp, top = 4.dp, start = 0.dp, end = 0.dp) // 为 FAB 和阴影留出空间
         ) {
             items(items) { item ->
                 ItemListRow(
@@ -2607,20 +2872,37 @@ fun DiscordStyleMainLayout(
         }
     }
     
-    Row(
-        modifier = modifier.fillMaxSize()
-    ) {
-        // 左侧容器图标列
-        WarehouseSidebarColumn(
-            warehouses = warehouses,
-            selectedWarehouseId = rootWarehouseId, // 使用根容器ID保持选中状态
-            warehouseItemCounts = warehouseItemCounts,
-            onWarehouseClick = onWarehouseSelect,
-            onHomeClick = onHomeClick,
-            onAddWarehouse = onAddWarehouse,
-            onEditWarehouse = { warehouse -> onEditWarehouse(warehouse.id) },
-            onDeleteWarehouse = onDeleteWarehouse
-        )
+    // 容器信息对话框状态
+    var showWarehouseInfoDialog by remember { mutableStateOf(false) }
+    var selectedWarehouseForInfo by remember { mutableStateOf<Warehouse?>(null) }
+    
+    // 合并所有容器列表
+    val allContainers = remember(allWarehouses, warehouses) {
+        (allWarehouses + warehouses).distinctBy { it.id }
+    }
+    
+    // 查看容器信息的回调
+    val onViewWarehouseInfo: (Warehouse) -> Unit = { warehouse ->
+        selectedWarehouseForInfo = warehouse
+        showWarehouseInfoDialog = true
+    }
+    
+    Box(modifier = modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // 左侧容器图标列
+            WarehouseSidebarColumn(
+                warehouses = warehouses,
+                selectedWarehouseId = rootWarehouseId, // 使用根容器ID保持选中状态
+                warehouseItemCounts = warehouseItemCounts,
+                onWarehouseClick = onWarehouseSelect,
+                onHomeClick = onHomeClick,
+                onAddWarehouse = onAddWarehouse,
+                onEditWarehouse = { warehouse -> onEditWarehouse(warehouse.id) },
+                onDeleteWarehouse = onDeleteWarehouse,
+                onViewInfo = onViewWarehouseInfo
+            )
         
         // 右侧内容区
         Column(
@@ -2662,7 +2944,6 @@ fun DiscordStyleMainLayout(
             }
             // 如果有选中的容器，显示子容器和物品
             else {
-                // 面包屑导航（显示层级路径）- 只要选中容器就显示
                 // 合并所有容器列表，确保能找到容器
                 val allContainers = remember(allWarehouses, warehouses) {
                     (allWarehouses + warehouses).distinctBy { it.id }
@@ -2679,19 +2960,7 @@ fun DiscordStyleMainLayout(
                     }
                 }
                 
-                // 显示容器层级信息（替代面包屑）
-                if (displayPath.isNotEmpty()) {
-                    WarehouseLevelHeader(
-                        warehousePath = displayPath,
-                        onNavigateToWarehouse = { warehouse ->
-                            // 点击容器，导航到该容器
-                            onWarehouseSelect(warehouse)
-                        },
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                    )
-                }
-                
-                // 右上：子容器横向滚动区
+                // 右上：子容器横向滚动区（包含面包屑导航）
                 if (childWarehouses.isNotEmpty() || true) { // 总是显示，即使为空也显示添加按钮
                     SubWarehouseRow(
                         subWarehouses = childWarehouses,
@@ -2699,7 +2968,13 @@ fun DiscordStyleMainLayout(
                         onSubWarehouseClick = onSubWarehouseClick,
                         onAddSubWarehouse = { onAddChildWarehouse(selectedWarehouseId) },
                         onEditWarehouse = { warehouse -> onEditWarehouse(warehouse.id) },
-                        onDeleteWarehouse = onDeleteWarehouse
+                        onDeleteWarehouse = onDeleteWarehouse,
+                        warehousePath = displayPath, // 传入面包屑路径
+                        onNavigateToWarehouse = { warehouse ->
+                            // 点击容器，导航到该容器
+                            onWarehouseSelect(warehouse)
+                        },
+                        onViewInfo = onViewWarehouseInfo
                     )
                 }
                 
@@ -2715,6 +2990,27 @@ fun DiscordStyleMainLayout(
                     modifier = Modifier.weight(1f)
                 )
             }
+        }
+        
+        // 容器信息对话框
+        if (showWarehouseInfoDialog) {
+            WarehouseInfoBottomSheet(
+                warehouse = selectedWarehouseForInfo,
+                allWarehouses = allContainers,
+                allItems = allItems,
+                warehouseItemCounts = warehouseItemCounts,
+                onDismiss = {
+                    showWarehouseInfoDialog = false
+                    selectedWarehouseForInfo = null
+                },
+                onNavigateToWarehouse = { warehouseId ->
+                    // 导航到指定容器
+                    allContainers.find { it.id == warehouseId }?.let { warehouse ->
+                        onWarehouseSelect(warehouse)
+                    }
+                }
+            )
+        }
         }
     }
 }
@@ -3003,11 +3299,6 @@ fun AlertListSection(
                     text = "暂无提醒",
                     style = MaterialTheme.typography.bodyLarge,
                     color = ColorHelpers.getGroup4TextColor(0.6f)
-                )
-                Text(
-                    text = "一切正常！",
-                        style = MaterialTheme.typography.bodySmall,
-                    color = ColorHelpers.getGroup4TextColor(0.5f)
                 )
             }
         }
