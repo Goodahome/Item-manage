@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.Flow
 interface ShoppingItemDao {
     @Query("SELECT * FROM shopping_items ORDER BY priority DESC, createdAt DESC")
     fun getAllShoppingItems(): Flow<List<ShoppingItem>>
+    
+    @Query("SELECT * FROM shopping_items ORDER BY priority DESC, createdAt DESC")
+    suspend fun getAllShoppingItemsSync(): List<ShoppingItem>
 
     @Query("SELECT * FROM shopping_items WHERE isCompleted = 0 ORDER BY priority DESC, createdAt DESC")
     fun getActiveShoppingItems(): Flow<List<ShoppingItem>>

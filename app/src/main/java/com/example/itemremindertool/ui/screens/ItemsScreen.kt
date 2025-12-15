@@ -38,6 +38,7 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
 import androidx.compose.foundation.background
 import java.text.SimpleDateFormat
 import java.util.*
@@ -53,8 +54,10 @@ fun ItemsScreen(
     modifier: Modifier = Modifier
 ) {
     val items by viewModel.items.collectAsState(initial = emptyList())
+    val operationState by viewModel.operationState.collectAsState()
 
-    Scaffold(
+    Box(modifier = modifier.fillMaxSize()) {
+        Scaffold(
         topBar = {
             GradientTopAppBar(
                 title = { Text(stringResource(R.string.item_management)) },
@@ -81,7 +84,7 @@ fun ItemsScreen(
                 }
             }
         }
-    ) { paddingValues ->
+        ) { paddingValues ->
         if (items.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -127,7 +130,14 @@ fun ItemsScreen(
                 }
             }
         }
-    }
+        } // 关闭 Scaffold 的 content lambda
+        
+        // 底部状态指示器
+        BottomOperationStatusIndicator(
+            operationState = operationState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    } // 关闭外层 Box
 }
 
 @OptIn(ExperimentalLayoutApi::class)

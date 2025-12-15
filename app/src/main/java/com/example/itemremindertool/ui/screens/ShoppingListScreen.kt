@@ -35,6 +35,7 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
 import com.example.itemremindertool.data.model.Priority
 import com.example.itemremindertool.data.model.ShoppingItem
 import com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel
@@ -50,8 +51,10 @@ fun ShoppingListScreen(
 ) {
     // 显示所有购物项（包括已完成的），而不是只显示未完成的
     val shoppingItems by viewModel.shoppingItems.collectAsState(initial = emptyList())
+    val operationState by viewModel.operationState.collectAsState()
 
-    Scaffold(
+    Box(modifier = modifier.fillMaxSize()) {
+        Scaffold(
         topBar = {
             GradientTopAppBar(
                 title = { Text(stringResource(R.string.shopping_basket)) },
@@ -138,7 +141,14 @@ fun ShoppingListScreen(
                 }
             }
         }
-    }
+        } // 关闭 Scaffold 的 content lambda
+        
+        // 底部状态指示器
+        BottomOperationStatusIndicator(
+            operationState = operationState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    } // 关闭外层 Box
 }
 
 @Composable

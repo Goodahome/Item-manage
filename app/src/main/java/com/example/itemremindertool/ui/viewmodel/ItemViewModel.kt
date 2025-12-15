@@ -25,6 +25,10 @@ class ItemViewModel(
     private val _uiState = MutableStateFlow<ItemUiState>(ItemUiState())
     val uiState: StateFlow<ItemUiState> = _uiState.asStateFlow()
 
+    // 操作状态
+    private val _operationState = MutableStateFlow<OperationState>(OperationState.Idle)
+    val operationState: StateFlow<OperationState> = _operationState.asStateFlow()
+
     // 临时存储识别得到的特征码
     private val _pendingFeatureCode = MutableStateFlow<String?>(null)
     val pendingFeatureCode: StateFlow<String?> = _pendingFeatureCode.asStateFlow()
@@ -46,19 +50,79 @@ class ItemViewModel(
 
     fun insertItem(item: Item) {
         viewModelScope.launch {
-            itemRepository.insertItem(item.copy(updatedAt = Date()))
+            try {
+                _operationState.value = OperationState.Saving
+                itemRepository.insertItem(item.copy(updatedAt = Date()))
+                _operationState.value = OperationState.Success("保存成功")
+                kotlinx.coroutines.delay(2000) // 成功消息显示2秒
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                // 如果是连接池关闭错误，等待一下然后重试（可能是数据库正在恢复）
+                if (e.message?.contains("connection pool has been closed") == true) {
+                    kotlinx.coroutines.delay(1000) // 等待1秒让数据库恢复
+                    try {
+                        itemRepository.insertItem(item.copy(updatedAt = Date()))
+                        _operationState.value = OperationState.Success("保存成功")
+                        kotlinx.coroutines.delay(2000)
+                        _operationState.value = OperationState.Idle
+                    } catch (retryException: Exception) {
+                        _operationState.value = OperationState.Error("保存失败: ${retryException.message}")
+                        kotlinx.coroutines.delay(2000)
+                        _operationState.value = OperationState.Idle
+                    }
+                } else {
+                    _operationState.value = OperationState.Error("保存失败: ${e.message}")
+                    kotlinx.coroutines.delay(2000) // 错误消息也显示2秒
+                    _operationState.value = OperationState.Idle
+                }
+            }
         }
     }
 
     fun updateItem(item: Item) {
         viewModelScope.launch {
-            itemRepository.updateItem(item.copy(updatedAt = Date()))
+            try {
+                _operationState.value = OperationState.Saving
+                itemRepository.updateItem(item.copy(updatedAt = Date()))
+                _operationState.value = OperationState.Success("更新成功")
+                kotlinx.coroutines.delay(2000) // 成功消息显示2秒
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                // 如果是连接池关闭错误，等待一下然后重试（可能是数据库正在恢复）
+                if (e.message?.contains("connection pool has been closed") == true) {
+                    kotlinx.coroutines.delay(1000) // 等待1秒让数据库恢复
+                    try {
+                        itemRepository.updateItem(item.copy(updatedAt = Date()))
+                        _operationState.value = OperationState.Success("更新成功")
+                        kotlinx.coroutines.delay(2000)
+                        _operationState.value = OperationState.Idle
+                    } catch (retryException: Exception) {
+                        _operationState.value = OperationState.Error("更新失败: ${retryException.message}")
+                        kotlinx.coroutines.delay(2000)
+                        _operationState.value = OperationState.Idle
+                    }
+                } else {
+                    _operationState.value = OperationState.Error("更新失败: ${e.message}")
+                    kotlinx.coroutines.delay(2000) // 错误消息也显示2秒
+                    _operationState.value = OperationState.Idle
+                }
+            }
         }
     }
 
     fun deleteItem(item: Item) {
         viewModelScope.launch {
-            itemRepository.deleteItem(item)
+            try {
+                _operationState.value = OperationState.Deleting
+                itemRepository.deleteItem(item)
+                _operationState.value = OperationState.Success("删除成功")
+                kotlinx.coroutines.delay(2000) // 成功消息显示2秒
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                _operationState.value = OperationState.Error("删除失败: ${e.message}")
+                kotlinx.coroutines.delay(2000) // 错误消息也显示2秒
+                _operationState.value = OperationState.Idle
+            }
         }
     }
 
@@ -79,6 +143,15 @@ data class ItemUiState(
     val isLoading: Boolean = false,
     val error: String? = null
 )
+
+sealed class OperationState {
+    object Idle : OperationState()
+    object Saving : OperationState()
+    object Deleting : OperationState()
+    object Syncing : OperationState() // 云端同步中
+    data class Success(val message: String) : OperationState()
+    data class Error(val message: String) : OperationState()
+}
 
 class ItemViewModelFactory(
     private val itemRepository: ItemRepository,

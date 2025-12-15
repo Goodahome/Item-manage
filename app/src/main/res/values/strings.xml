@@ -38,6 +38,12 @@
     <string name="app_settings">应用设置</string>
     <string name="cloud_storage">云端存储</string>
     <string name="alert_settings">提醒设置</string>
+    <string name="backup_restore">备份与恢复</string>
+    <string name="backup_data">备份数据</string>
+    <string name="restore_data">恢复数据</string>
+    <string name="backup_files">备份文件列表</string>
+    <string name="data_backup_restore">备份与恢复</string>
+    <string name="backup_restore_description">备份将保存所有物品、分类、容器、购物清单和提醒设置等数据。恢复后将替换当前所有数据，请谨慎操作。</string>
     <string name="expiry_reminder_days">到期提醒期限</string>
     <string name="expiry_reminder_days_desc">设置物品到期前多少天提醒</string>
     <string name="low_stock_threshold">库存提醒阈值</string>
@@ -106,6 +112,17 @@
     <string name="auto_sync">自动同步</string>
     <string name="auto_sync_enabled">已启用</string>
     <string name="auto_sync_disabled">已禁用</string>
+    <string name="nextcloud_settings">Nextcloud 设置</string>
+    <string name="nextcloud_configured">已配置</string>
+    <string name="nextcloud_not_configured">未配置</string>
+    <string name="nextcloud_server_url">Nextcloud 服务器地址</string>
+    <string name="nextcloud_username">用户名</string>
+    <string name="nextcloud_password">密码/应用密码</string>
+    <string name="nextcloud_password_hint">建议使用应用专用密码</string>
+    <string name="test_connection">测试连接</string>
+    <string name="cloud_operations">云端操作</string>
+    <string name="upload_backup">上传备份到云端</string>
+    <string name="cloud_backup_files">云端备份文件</string>
     
     <!-- 密码锁屏 -->
     <string name="enter_password">请输入密码</string>

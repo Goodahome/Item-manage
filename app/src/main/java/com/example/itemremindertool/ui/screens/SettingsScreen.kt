@@ -28,6 +28,7 @@ fun SettingsScreen(
     onNavigateToApp: () -> Unit = {},
     onNavigateToCloudStorage: () -> Unit = {},
     onNavigateToAlert: () -> Unit = {},
+    onNavigateToBackupRestore: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -164,6 +165,26 @@ fun SettingsScreen(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier
                     .clickable { onNavigateToCloudStorage() }
+                    .padding(vertical = 8.dp)
+            )
+            
+            Divider()
+            
+            // 数据备份和恢复
+            ListItem(
+                headlineContent = { 
+                    Text(
+                        text = stringResource(R.string.backup_restore),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = ColorHelpers.getGroup4TextColor()
+                    )
+                },
+                trailingContent = { 
+                    Icon(Icons.Default.ChevronRight, null, tint = ColorHelpers.getGroup4IconColor(0.6f))
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                modifier = Modifier
+                    .clickable { onNavigateToBackupRestore() }
                     .padding(vertical = 8.dp)
             )
                 }

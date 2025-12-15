@@ -9,6 +9,9 @@ interface ItemReminderDao {
     @Query("SELECT * FROM item_reminders WHERE isEnabled = 1 ORDER BY createdAt DESC")
     fun getAllActiveReminders(): Flow<List<ItemReminder>>
     
+    @Query("SELECT * FROM item_reminders ORDER BY createdAt DESC")
+    suspend fun getAllRemindersSync(): List<ItemReminder>
+    
     @Query("SELECT * FROM item_reminders WHERE itemId = :itemId ORDER BY createdAt DESC")
     fun getRemindersByItemId(itemId: Long): Flow<List<ItemReminder>>
     

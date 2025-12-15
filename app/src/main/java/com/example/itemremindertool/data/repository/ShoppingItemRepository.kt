@@ -9,6 +9,8 @@ class ShoppingItemRepository(private val shoppingItemDao: ShoppingItemDao) {
 
     fun getActiveShoppingItems(): Flow<List<ShoppingItem>> = shoppingItemDao.getActiveShoppingItems()
 
+    suspend fun getAllShoppingItemsSync(): List<ShoppingItem> = shoppingItemDao.getAllShoppingItemsSync()
+
     suspend fun getShoppingItemById(id: Long): ShoppingItem? = shoppingItemDao.getShoppingItemById(id)
 
     suspend fun insertShoppingItem(item: ShoppingItem): Long = shoppingItemDao.insertShoppingItem(item)

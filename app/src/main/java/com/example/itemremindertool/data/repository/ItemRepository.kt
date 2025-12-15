@@ -1,11 +1,18 @@
 package com.example.itemremindertool.data.repository
 
+import androidx.room.Transaction
 import com.example.itemremindertool.data.dao.ItemDao
+import com.example.itemremindertool.data.dao.DeletedRecordDao
 import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.data.model.ItemStatus
+import com.example.itemremindertool.data.model.DeletedRecord
+import java.util.Date
 import kotlinx.coroutines.flow.Flow
 
-class ItemRepository(private val itemDao: ItemDao) {
+class ItemRepository(
+    private val itemDao: ItemDao,
+    private val deletedRecordDao: DeletedRecordDao? = null
+) {
     fun getAllItems(): Flow<List<Item>> = itemDao.getAllItems()
 
     suspend fun getItemById(id: Long): Item? = itemDao.getItemById(id)
@@ -34,8 +41,32 @@ class ItemRepository(private val itemDao: ItemDao) {
 
     suspend fun updateItem(item: Item) = itemDao.updateItem(item)
 
-    suspend fun deleteItem(item: Item) = itemDao.deleteItem(item)
+    @androidx.room.Transaction
+    suspend fun deleteItem(item: Item) {
+        // 在事务中删除数据和记录删除操作，确保原子性
+        itemDao.deleteItem(item)
+        // 记录删除操作
+        deletedRecordDao?.insertDeletedRecord(
+            DeletedRecord(
+                entityType = "item",
+                entityId = item.id,
+                deletedAt = Date()
+            )
+        )
+    }
 
-    suspend fun deleteItemById(id: Long) = itemDao.deleteItemById(id)
+    @androidx.room.Transaction
+    suspend fun deleteItemById(id: Long) {
+        // 在事务中删除数据和记录删除操作，确保原子性
+        itemDao.deleteItemById(id)
+        // 记录删除操作
+        deletedRecordDao?.insertDeletedRecord(
+            DeletedRecord(
+                entityType = "item",
+                entityId = id,
+                deletedAt = Date()
+            )
+        )
+    }
 }
 

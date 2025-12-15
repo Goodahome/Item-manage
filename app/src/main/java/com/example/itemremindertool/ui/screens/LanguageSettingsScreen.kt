@@ -25,6 +25,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 @Composable
 fun LanguageSettingsScreen(
     onNavigateBack: () -> Unit,
+    onApply: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -45,6 +46,21 @@ fun LanguageSettingsScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            Column(
+                modifier = Modifier.padding(bottom = 70.dp)
+            ) {
+                FloatingActionButton(
+                    onClick = {
+                        prefs.edit().putString("language", selectedLanguage).apply()
+                        showRestartDialog = true
+                    },
+                    containerColor = ColorHelpers.getGroup5FabColor()
+                ) {
+                    Icon(Icons.Default.Check, stringResource(R.string.apply))
+                }
+            }
         }
     ) { paddingValues ->
         Column(
@@ -76,16 +92,12 @@ fun LanguageSettingsScreen(
                             selected = selectedLanguage == lang,
                             onClick = {
                                 selectedLanguage = lang
-                                prefs.edit().putString("language", lang).apply()
-                                showRestartDialog = true
                             }
                         )
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
                         selectedLanguage = lang
-                        prefs.edit().putString("language", lang).apply()
-                        showRestartDialog = true
                     }
                 )
                 if (lang != languages.last()) {
@@ -121,7 +133,12 @@ fun LanguageSettingsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showRestartDialog = false }) {
+                TextButton(
+                    onClick = {
+                        showRestartDialog = false
+                        onApply()
+                    }
+                ) {
                     Text(stringResource(R.string.later))
                 }
             }

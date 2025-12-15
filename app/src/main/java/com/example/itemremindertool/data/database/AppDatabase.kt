@@ -15,15 +15,17 @@ import com.example.itemremindertool.data.dao.ItemDao
 import com.example.itemremindertool.data.dao.ShoppingItemDao
 import com.example.itemremindertool.data.dao.WarehouseDao
 import com.example.itemremindertool.data.dao.ItemReminderDao
+import com.example.itemremindertool.data.dao.DeletedRecordDao
 import com.example.itemremindertool.data.model.Category
 import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.data.model.ShoppingItem
 import com.example.itemremindertool.data.model.Warehouse
 import com.example.itemremindertool.data.model.ItemReminder
+import com.example.itemremindertool.data.model.DeletedRecord
 
 @Database(
-    entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class, ItemReminder::class],
-    version = 8,
+    entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class, ItemReminder::class, DeletedRecord::class],
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(DateConverters::class, StringListConverters::class, ReminderTypeConverters::class)
@@ -33,23 +35,90 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun shoppingItemDao(): ShoppingItemDao
     abstract fun warehouseDao(): WarehouseDao
     abstract fun itemReminderDao(): ItemReminderDao
+    abstract fun deletedRecordDao(): DeletedRecordDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
         fun getDatabase(context: Context): AppDatabase {
-            return INSTANCE ?: synchronized(this) {
+            // 先检查现有实例是否有效
+            val currentInstance = INSTANCE
+            if (currentInstance != null) {
+                // 尝试验证连接是否有效
+                try {
+                    // 通过尝试打开数据库来验证连接
+                    currentInstance.openHelper.readableDatabase
+                    return currentInstance
+                } catch (e: Exception) {
+                    // 连接已关闭，需要重新创建
+                    android.util.Log.w("AppDatabase", "数据库连接已关闭，重新创建实例", e)
+                    synchronized(this) {
+                        // 双重检查
+                        if (INSTANCE === currentInstance) {
+                            try {
+                                INSTANCE?.close()
+                            } catch (e: Exception) {
+                                // 忽略关闭时的异常
+                            }
+                            INSTANCE = null
+                        }
+                    }
+                }
+            }
+            
+            return synchronized(this) {
+                // 再次检查，避免重复创建
+                val existingInstance = INSTANCE
+                if (existingInstance != null) {
+                    try {
+                        existingInstance.openHelper.readableDatabase
+                        return@synchronized existingInstance
+                    } catch (e: Exception) {
+                        // 连接无效，需要重新创建
+                        try {
+                            existingInstance.close()
+                        } catch (e: Exception) {
+                            // 忽略关闭时的异常
+                        }
+                        INSTANCE = null
+                    }
+                }
+                
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "item_reminder_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                    .addCallback(object : RoomDatabase.Callback() {
+                        override fun onOpen(db: SupportSQLiteDatabase) {
+                            super.onOpen(db)
+                            // 确保 Room 内部的 invalidation 表存在，避免 "no such table: room_table_modification_log"
+                            db.execSQL(
+                                """
+                                CREATE TABLE IF NOT EXISTS room_table_modification_log (
+                                    table_id INTEGER PRIMARY KEY,
+                                    invalidated INTEGER NOT NULL DEFAULT 0
+                                )
+                                """.trimIndent()
+                            )
+                        }
+                    })
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
+            }
+        }
+        
+        /**
+         * 重置数据库实例（用于数据库恢复后重新初始化）
+         */
+        fun resetInstance() {
+            synchronized(this) {
+                INSTANCE?.close()
+                INSTANCE = null
             }
         }
 
@@ -115,6 +184,21 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // 为 shopping_items 表添加 itemId 字段
                 database.execSQL("ALTER TABLE shopping_items ADD COLUMN itemId INTEGER")
+            }
+        }
+        
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // 创建删除记录表
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS deleted_records (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        entityType TEXT NOT NULL,
+                        entityId INTEGER NOT NULL,
+                        deletedAt INTEGER NOT NULL,
+                        UNIQUE(entityType, entityId)
+                    )
+                """)
             }
         }
     }

@@ -50,6 +50,7 @@ import com.example.itemremindertool.utils.ImageUtils
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import androidx.compose.ui.platform.LocalDensity
@@ -58,6 +59,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.ImageBitmap
 import android.graphics.BitmapFactory
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -98,6 +101,10 @@ fun ItemEditScreen(
     var showCameraDialog by remember { mutableStateOf(false) }
     var showCropDialog by remember { mutableStateOf(false) }
     var bitmapToCrop by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    // 获取 Context 和协程作用域
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    
     // 从 ViewModel 获取待处理的特征码
     val pendingFeatureCode by viewModel.pendingFeatureCode.collectAsState()
     var featureCode by remember { mutableStateOf<String?>(initialFeatureCode ?: pendingFeatureCode) }
@@ -223,9 +230,49 @@ fun ItemEditScreen(
                                 featureCode = featureCode,
                                 enableStockAlert = enableStockAlert
                             )
+                            
+                            // 检查是否需要添加到购物篮（仅在新建物品时）
+                            val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+                            val shouldAddToShoppingList = itemId == null && prefs.getBoolean("add_to_shopping_list_after_save", false)
+                            
+                            // 保存物品
                             if (itemId == null) {
+                                // 新建物品
+                                scope.launch(Dispatchers.IO) {
+                                    // 直接使用 Repository 插入物品以获取 ID
+                                    val database = com.example.itemremindertool.data.database.AppDatabase.getDatabase(context)
+                                    val itemRepository = com.example.itemremindertool.data.repository.ItemRepository(
+                                        database.itemDao(),
+                                        database.deletedRecordDao()
+                                    )
+                                    val savedItemId = itemRepository.insertItem(item.copy(updatedAt = java.util.Date()))
+                                    
+                                    // 如果需要添加到购物篮
+                                    if (shouldAddToShoppingList) {
+                                        // 清除标记
+                                        prefs.edit().putBoolean("add_to_shopping_list_after_save", false).apply()
+                                        // 获取保存后的物品
+                                        val savedItem = database.itemDao().getItemById(savedItemId)
+                                        
+                                        savedItem?.let { saved ->
+                                            // 添加到购物篮
+                                            val shoppingItem = com.example.itemremindertool.data.model.ShoppingItem(
+                                                id = 0L,
+                                                name = saved.name,
+                                                description = saved.description,
+                                                quantity = saved.quantity,
+                                                priority = com.example.itemremindertool.data.model.Priority.MEDIUM,
+                                                itemId = saved.id,
+                                                imageUri = saved.imageUri
+                                            )
+                                            database.shoppingItemDao().insertShoppingItem(shoppingItem)
+                                        }
+                                    }
+                                }
+                                // 调用 ViewModel 的 insertItem 以更新 UI 状态
                                 viewModel.insertItem(item)
                             } else {
+                                // 更新物品
                                 viewModel.updateItem(item.copy(id = itemId!!))
                             }
                             // 直接返回，导航栈会自动返回到打开前的页面

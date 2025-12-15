@@ -1,11 +1,20 @@
 package com.example.itemremindertool.data.repository
 
+import androidx.room.Transaction
 import com.example.itemremindertool.data.dao.WarehouseDao
+import com.example.itemremindertool.data.dao.DeletedRecordDao
 import com.example.itemremindertool.data.model.Warehouse
+import com.example.itemremindertool.data.model.DeletedRecord
+import java.util.Date
 import kotlinx.coroutines.flow.Flow
 
-class WarehouseRepository(private val warehouseDao: WarehouseDao) {
+class WarehouseRepository(
+    private val warehouseDao: WarehouseDao,
+    private val deletedRecordDao: DeletedRecordDao? = null
+) {
     fun getAllWarehouses(): Flow<List<Warehouse>> = warehouseDao.getAllWarehouses()
+
+    suspend fun getAllWarehousesSync(): List<Warehouse> = warehouseDao.getAllWarehousesSync()
 
     fun getTopLevelWarehouses(): Flow<List<Warehouse>> = warehouseDao.getTopLevelWarehouses()
 
@@ -19,9 +28,33 @@ class WarehouseRepository(private val warehouseDao: WarehouseDao) {
 
     suspend fun updateWarehouse(warehouse: Warehouse) = warehouseDao.updateWarehouse(warehouse)
 
-    suspend fun deleteWarehouse(warehouse: Warehouse) = warehouseDao.deleteWarehouse(warehouse)
+    @androidx.room.Transaction
+    suspend fun deleteWarehouse(warehouse: Warehouse) {
+        // 在事务中删除数据和记录删除操作，确保原子性
+        warehouseDao.deleteWarehouse(warehouse)
+        // 记录删除操作
+        deletedRecordDao?.insertDeletedRecord(
+            DeletedRecord(
+                entityType = "warehouse",
+                entityId = warehouse.id,
+                deletedAt = Date()
+            )
+        )
+    }
 
-    suspend fun deleteWarehouseById(id: Long) = warehouseDao.deleteWarehouseById(id)
+    @androidx.room.Transaction
+    suspend fun deleteWarehouseById(id: Long) {
+        // 在事务中删除数据和记录删除操作，确保原子性
+        warehouseDao.deleteWarehouseById(id)
+        // 记录删除操作
+        deletedRecordDao?.insertDeletedRecord(
+            DeletedRecord(
+                entityType = "warehouse",
+                entityId = id,
+                deletedAt = Date()
+            )
+        )
+    }
 
     /**
      * 获取容器的完整路径（从顶层到当前容器）

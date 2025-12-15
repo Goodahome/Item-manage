@@ -18,8 +18,9 @@ android {
         applicationId = "com.example.itemremindertool"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        // 版本号配置 - 每次发布新版本时递增 versionCode，更新 versionName
+        versionCode = 2
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -45,7 +46,13 @@ android {
                 val keystoreProperties = Properties()
                 keystoreProperties.load(FileInputStream(keystorePropertiesFile))
                 
-                storeFile = file(keystoreProperties.getProperty("storeFile") ?: "")
+                val storeFileProperty = keystoreProperties.getProperty("storeFile") ?: ""
+                if (storeFileProperty.isNotEmpty()) {
+                    // 支持绝对路径和相对路径
+                    // Windows 路径可能包含反斜杠，需要处理
+                    val normalizedPath = storeFileProperty.replace("\\", "/")
+                    storeFile = file(normalizedPath)
+                }
                 storePassword = keystoreProperties.getProperty("storePassword") ?: ""
                 keyAlias = keystoreProperties.getProperty("keyAlias") ?: ""
                 keyPassword = keystoreProperties.getProperty("keyPassword") ?: ""
@@ -91,6 +98,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
+    implementation("androidx.compose.material:material:1.5.4") // 添加 Material2 依赖以使用 PullRefresh
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.room.runtime)
@@ -113,6 +121,8 @@ dependencies {
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlinx.coroutines.android)
+    // OkHttp for Nextcloud WebDAV
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     // TensorFlow Lite for MobileNetV3 (使用最新版本以支持 16KB 页面大小)
     // 强制使用统一的 TensorFlow Lite API 版本，避免与 ML Kit 的 litert-api 冲突
     implementation("org.tensorflow:tensorflow-lite:2.17.0") {

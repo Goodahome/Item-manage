@@ -55,11 +55,15 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
     
     // 设置子页面
     object AppearanceSettings : Screen("appearance_settings", R.string.appearance_settings, Icons.Default.Palette, Icons.Default.Palette)
+    object ThemeSelection : Screen("theme_selection", R.string.theme, Icons.Default.Palette, Icons.Default.Palette)
+    object ColorSchemeSelection : Screen("color_scheme_selection", R.string.color_scheme, Icons.Default.Palette, Icons.Default.Palette)
+    object IconSelection : Screen("icon_selection", R.string.app_icon, Icons.Default.Palette, Icons.Default.Palette)
     object WarehouseSettings : Screen("warehouse_settings", R.string.warehouse_settings, Icons.Default.Inventory2, Icons.Default.Inventory2)
     object AppSettings : Screen("app_settings", R.string.app_settings, Icons.Default.Apps, Icons.Default.Apps)
     object CloudStorageSettings : Screen("cloud_storage_settings", R.string.cloud_storage, Icons.Default.Cloud, Icons.Default.Cloud)
     object LanguageSettings : Screen("language_settings", R.string.language, Icons.Default.Language, Icons.Default.Language)
     object AlertSettings : Screen("alert_settings", R.string.alert_settings, Icons.Default.Notifications, Icons.Default.Notifications)
+    object BackupRestore : Screen("backup_restore", R.string.backup_restore, Icons.Default.Backup, Icons.Default.Backup)
     
     // 筛选后的物品列表
     object FilteredItems : Screen("filtered_items/{filterType}", R.string.nav_all_items, Icons.Default.Category, Icons.Default.Category) {

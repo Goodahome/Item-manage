@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.Flow
 interface WarehouseDao {
     @Query("SELECT * FROM warehouses ORDER BY name ASC")
     fun getAllWarehouses(): Flow<List<Warehouse>>
+    
+    @Query("SELECT * FROM warehouses ORDER BY name ASC")
+    suspend fun getAllWarehousesSync(): List<Warehouse>
 
     @Query("SELECT * FROM warehouses WHERE id = :id")
     suspend fun getWarehouseById(id: Long): Warehouse?

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.itemremindertool.data.model.Warehouse
 import com.example.itemremindertool.data.repository.ItemRepository
 import com.example.itemremindertool.data.repository.WarehouseRepository
+import com.example.itemremindertool.ui.viewmodel.OperationState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +22,10 @@ class WarehouseViewModel(
 
     private val _uiState = MutableStateFlow<WarehouseUiState>(WarehouseUiState())
     val uiState: StateFlow<WarehouseUiState> = _uiState.asStateFlow()
+    
+    // 操作状态
+    private val _operationState = MutableStateFlow<OperationState>(OperationState.Idle)
+    val operationState: StateFlow<OperationState> = _operationState.asStateFlow()
 
     fun loadWarehouse(warehouseId: Long) {
         viewModelScope.launch {
@@ -78,19 +83,49 @@ class WarehouseViewModel(
 
     fun insertWarehouse(warehouse: Warehouse) {
         viewModelScope.launch {
-            warehouseRepository.insertWarehouse(warehouse)
+            try {
+                _operationState.value = OperationState.Saving
+                warehouseRepository.insertWarehouse(warehouse)
+                _operationState.value = OperationState.Success("保存成功")
+                kotlinx.coroutines.delay(2000)
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                _operationState.value = OperationState.Error("保存失败: ${e.message}")
+                kotlinx.coroutines.delay(2000)
+                _operationState.value = OperationState.Idle
+            }
         }
     }
 
     fun updateWarehouse(warehouse: Warehouse) {
         viewModelScope.launch {
-            warehouseRepository.updateWarehouse(warehouse)
+            try {
+                _operationState.value = OperationState.Saving
+                warehouseRepository.updateWarehouse(warehouse)
+                _operationState.value = OperationState.Success("更新成功")
+                kotlinx.coroutines.delay(2000)
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                _operationState.value = OperationState.Error("更新失败: ${e.message}")
+                kotlinx.coroutines.delay(2000)
+                _operationState.value = OperationState.Idle
+            }
         }
     }
 
     fun deleteWarehouse(warehouse: Warehouse) {
         viewModelScope.launch {
-            warehouseRepository.deleteWarehouse(warehouse)
+            try {
+                _operationState.value = OperationState.Deleting
+                warehouseRepository.deleteWarehouse(warehouse)
+                _operationState.value = OperationState.Success("删除成功")
+                kotlinx.coroutines.delay(2000)
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                _operationState.value = OperationState.Error("删除失败: ${e.message}")
+                kotlinx.coroutines.delay(2000)
+                _operationState.value = OperationState.Idle
+            }
         }
     }
 

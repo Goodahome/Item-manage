@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.util.Date
 
 class ShoppingItemViewModel(
@@ -20,6 +21,10 @@ class ShoppingItemViewModel(
 
     private val _uiState = MutableStateFlow<ShoppingItemUiState>(ShoppingItemUiState())
     val uiState: StateFlow<ShoppingItemUiState> = _uiState.asStateFlow()
+    
+    // 操作状态
+    private val _operationState = MutableStateFlow<OperationState>(OperationState.Idle)
+    val operationState: StateFlow<OperationState> = _operationState.asStateFlow()
 
     fun loadShoppingItem(itemId: Long) {
         viewModelScope.launch {
@@ -30,30 +35,71 @@ class ShoppingItemViewModel(
 
     fun insertShoppingItem(item: ShoppingItem) {
         viewModelScope.launch {
-            shoppingItemRepository.insertShoppingItem(item)
+            try {
+                _operationState.value = OperationState.Saving
+                shoppingItemRepository.insertShoppingItem(item)
+                _operationState.value = OperationState.Success("已添加到购物清单")
+                delay(2000)
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                _operationState.value = OperationState.Error("添加失败: ${e.message}")
+                delay(2000)
+                _operationState.value = OperationState.Idle
+            }
         }
     }
 
     fun updateShoppingItem(item: ShoppingItem) {
         viewModelScope.launch {
-            shoppingItemRepository.updateShoppingItem(item)
+            try {
+                _operationState.value = OperationState.Saving
+                shoppingItemRepository.updateShoppingItem(item)
+                _operationState.value = OperationState.Success("更新成功")
+                delay(2000)
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                _operationState.value = OperationState.Error("更新失败: ${e.message}")
+                delay(2000)
+                _operationState.value = OperationState.Idle
+            }
         }
     }
 
     fun deleteShoppingItem(item: ShoppingItem) {
         viewModelScope.launch {
-            shoppingItemRepository.deleteShoppingItem(item)
+            try {
+                _operationState.value = OperationState.Deleting
+                shoppingItemRepository.deleteShoppingItem(item)
+                _operationState.value = OperationState.Success("删除成功")
+                delay(2000)
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                _operationState.value = OperationState.Error("删除失败: ${e.message}")
+                delay(2000)
+                _operationState.value = OperationState.Idle
+            }
         }
     }
 
     fun toggleComplete(item: ShoppingItem) {
         viewModelScope.launch {
-            shoppingItemRepository.updateShoppingItem(
-                item.copy(
-                    isCompleted = !item.isCompleted,
-                    completedAt = if (!item.isCompleted) Date() else null
+            try {
+                _operationState.value = OperationState.Saving
+                shoppingItemRepository.updateShoppingItem(
+                    item.copy(
+                        isCompleted = !item.isCompleted,
+                        completedAt = if (!item.isCompleted) Date() else null
+                    )
                 )
-            )
+                val message = if (!item.isCompleted) "已标记为完成" else "已取消完成"
+                _operationState.value = OperationState.Success(message)
+                delay(2000)
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                _operationState.value = OperationState.Error("操作失败: ${e.message}")
+                delay(2000)
+                _operationState.value = OperationState.Idle
+            }
         }
     }
 }

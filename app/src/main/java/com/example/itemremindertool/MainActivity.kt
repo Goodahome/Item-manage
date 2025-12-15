@@ -41,11 +41,15 @@ import com.example.itemremindertool.ui.screens.SettingsScreen
 import com.example.itemremindertool.notification.NotificationScheduler
 import com.example.itemremindertool.ui.theme.ItemReminderToolTheme
 import com.example.itemremindertool.ui.viewmodel.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.itemremindertool.utils.AppConfigManager
 import com.example.itemremindertool.utils.LocaleHelper
 import com.example.itemremindertool.utils.IconManager
+import com.example.itemremindertool.utils.AppRefreshManager
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun attachBaseContext(newBase: Context) {
@@ -66,10 +70,10 @@ class MainActivity : ComponentActivity() {
         LocaleHelper.setLocale(this, language)
         
         val database = AppDatabase.getDatabase(applicationContext)
-        val itemRepository = ItemRepository(database.itemDao())
+        val itemRepository = ItemRepository(database.itemDao(), database.deletedRecordDao())
         val categoryRepository = CategoryRepository(database.categoryDao())
         val shoppingItemRepository = ShoppingItemRepository(database.shoppingItemDao())
-        val warehouseRepository = WarehouseRepository(database.warehouseDao())
+        val warehouseRepository = WarehouseRepository(database.warehouseDao(), database.deletedRecordDao())
         val tagManager = TagManager(applicationContext)
         val accessHistoryManager = AccessHistoryManager(applicationContext)
 
@@ -89,6 +93,35 @@ class MainActivity : ComponentActivity() {
         // 重新调度所有提醒
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             com.example.itemremindertool.utils.ReminderScheduler.rescheduleAllReminders(this@MainActivity)
+        }
+        
+        // 初始化云端自动同步（如果已启用）
+        // 注意：不在启动时立即同步，而是通过 WorkManager 定期同步
+        // 这样可以避免启动时立即上传空数据
+        val syncPrefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        val autoSyncEnabled = syncPrefs.getBoolean("auto_sync_enabled", false)
+        val serverUrl = syncPrefs.getString("nextcloud_server_url", "") ?: ""
+        val username = syncPrefs.getString("nextcloud_username", "") ?: ""
+        val password = syncPrefs.getString("nextcloud_password", "") ?: ""
+        if (autoSyncEnabled && serverUrl.isNotEmpty() && username.isNotEmpty() && password.isNotEmpty()) {
+            // 只调度定期同步任务，不立即执行
+            com.example.itemremindertool.utils.CloudSyncScheduler.scheduleSync(this)
+        }
+        
+        // 应用启动时重置同步状态（清除可能残留的同步状态）
+        com.example.itemremindertool.utils.SyncStateManager.reset()
+
+        // 收集数据库重置事件，触发 Activity 重建以重新绑定新的 DB 实例
+        lifecycleScope.launch {
+            AppRefreshManager.recreateFlow.collect {
+                runOnUiThread { recreate() }
+            }
+        }
+
+        // 如果存在重建标记（可能由后台同步/恢复时设置），启动时立即消费并重建
+        if (AppRefreshManager.consumeFlag(this)) {
+            recreate()
+            return
         }
         
         // 初始化应用图标
@@ -406,6 +439,9 @@ fun ItemReminderToolApp(
                     onEditItem = { itemId ->
                         navController.navigate(Screen.EditItem.createRoute(itemId))
                     },
+                    onViewItem = { itemId ->
+                        navController.navigate(Screen.ItemDetail.createRoute(itemId))
+                    },
                     onScanBarcode = { navController.navigate(Screen.BarcodeScanner.route) },
                     onItemRecognition = { navController.navigate(Screen.ItemRecognition.route) },
                     onMenuClick = { scope.launch { drawerState.open() } },
@@ -541,6 +577,27 @@ fun ItemReminderToolApp(
             }
 
             composable(
+                route = Screen.ItemDetail.route,
+                arguments = listOf(navArgument("itemId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val itemId = backStackEntry.arguments?.getLong("itemId") ?: return@composable
+                val itemReminderViewModel = androidx.lifecycle.viewmodel.compose.viewModel<com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel>()
+                
+                com.example.itemremindertool.ui.screens.ItemDetailScreen(
+                    itemId = itemId,
+                    itemViewModel = itemViewModel,
+                    reminderViewModel = itemReminderViewModel,
+                    onNavigateBack = { navController.popBackOrDashboard() },
+                    onEditItem = { editItemId ->
+                        navController.navigate(Screen.EditItem.createRoute(editItemId))
+                    },
+                    onAddAlert = { item ->
+                        navController.navigate(Screen.ItemReminderSettings.createRoute(item.id))
+                    }
+                )
+            }
+
+            composable(
                 route = Screen.ItemReminderSettings.route,
                 arguments = listOf(navArgument("itemId") { type = NavType.LongType })
             ) { backStackEntry ->
@@ -638,19 +695,65 @@ fun ItemReminderToolApp(
                     onNavigateToWarehouse = { navController.navigate(Screen.WarehouseSettings.route) },
                     onNavigateToApp = { navController.navigate(Screen.AppSettings.route) },
                     onNavigateToCloudStorage = { navController.navigate(Screen.CloudStorageSettings.route) },
-                    onNavigateToAlert = { navController.navigate(Screen.AlertSettings.route) }
+                    onNavigateToAlert = { navController.navigate(Screen.AlertSettings.route) },
+                    onNavigateToBackupRestore = { navController.navigate(Screen.BackupRestore.route) }
                 )
             }
             
             composable(Screen.AppearanceSettings.route) {
                 AppearanceSettingsScreen(
-                    onNavigateBack = { navController.popBackOrDashboard() }
+                    onNavigateBack = { navController.popBackOrDashboard() },
+                    onNavigateToTheme = { navController.navigate(Screen.ThemeSelection.route) },
+                    onNavigateToColorScheme = { navController.navigate(Screen.ColorSchemeSelection.route) },
+                    onNavigateToIcon = { navController.navigate(Screen.IconSelection.route) }
+                )
+            }
+            
+            composable(Screen.ThemeSelection.route) {
+                ThemeSelectionScreen(
+                    onNavigateBack = { navController.popBackOrDashboard() },
+                    onApply = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            
+            composable(Screen.ColorSchemeSelection.route) {
+                ColorSchemeSelectionScreen(
+                    onNavigateBack = { navController.popBackOrDashboard() },
+                    onApply = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            
+            composable(Screen.IconSelection.route) {
+                IconSelectionScreen(
+                    onNavigateBack = { navController.popBackOrDashboard() },
+                    onApply = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
             
             composable(Screen.LanguageSettings.route) {
                 LanguageSettingsScreen(
-                    onNavigateBack = { navController.popBackOrDashboard() }
+                    onNavigateBack = { navController.popBackOrDashboard() },
+                    onApply = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
             
@@ -667,13 +770,23 @@ fun ItemReminderToolApp(
             }
             
             composable(Screen.CloudStorageSettings.route) {
+                val cloudStorageViewModel: CloudStorageViewModel = viewModel()
                 CloudStorageSettingsScreen(
+                    viewModel = cloudStorageViewModel,
                     onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
             
             composable(Screen.AlertSettings.route) {
                 AlertSettingsScreen(
+                    onNavigateBack = { navController.popBackOrDashboard() }
+                )
+            }
+            
+            composable(Screen.BackupRestore.route) {
+                val backupRestoreViewModel: BackupRestoreViewModel = viewModel()
+                BackupRestoreScreen(
+                    viewModel = backupRestoreViewModel,
                     onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
