@@ -14,6 +14,7 @@ object NextcloudBackupManager {
     /**
      * 上传备份文件到 Nextcloud
      * @param remoteFileName 远程文件名，如果为空则使用备份文件的原始名称
+     * @param skipConnectionTest 是否跳过连接测试（如果已经在同一流程中测试过）
      */
     suspend fun uploadBackup(
         context: Context,
@@ -21,13 +22,16 @@ object NextcloudBackupManager {
         serverUrl: String,
         username: String,
         password: String,
-        remoteFileName: String? = null
+        remoteFileName: String? = null,
+        skipConnectionTest: Boolean = false
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
             val client = NextcloudClient(serverUrl, username, password)
             
-            // 测试连接
-            client.testConnection().getOrThrow()
+            // 只在需要时测试连接
+            if (!skipConnectionTest) {
+                client.testConnection().getOrThrow()
+            }
             
             // 确保备份目录存在
             client.createDirectoryIfNotExists(BACKUP_DIR).getOrThrow()
@@ -85,24 +89,30 @@ object NextcloudBackupManager {
     
     /**
      * 列出 Nextcloud 上的备份文件
+     * @param skipConnectionTest 是否跳过连接测试（用于优化性能）
      */
     suspend fun listBackups(
         serverUrl: String,
         username: String,
-        password: String
+        password: String,
+        skipConnectionTest: Boolean = false
     ): Result<List<String>> = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "开始列出云端备份文件，备份目录: $BACKUP_DIR")
             val client = NextcloudClient(serverUrl, username, password)
             
-            // 测试连接
-            Log.d(TAG, "测试连接...")
-            val testResult = client.testConnection()
-            if (testResult.isFailure) {
-                Log.e(TAG, "连接测试失败: ${testResult.exceptionOrNull()?.message}")
-                return@withContext Result.failure(testResult.exceptionOrNull() ?: IOException("连接测试失败"))
+            // 只在需要时测试连接
+            if (!skipConnectionTest) {
+                Log.d(TAG, "测试连接...")
+                val testResult = client.testConnection()
+                if (testResult.isFailure) {
+                    Log.e(TAG, "连接测试失败: ${testResult.exceptionOrNull()?.message}")
+                    return@withContext Result.failure(testResult.exceptionOrNull() ?: IOException("连接测试失败"))
+                }
+                Log.d(TAG, "连接测试成功")
+            } else {
+                Log.d(TAG, "跳过连接测试（已在之前测试过）")
             }
-            Log.d(TAG, "连接测试成功")
             
             // 列出备份目录中的文件
             Log.d(TAG, "列出备份目录中的文件: $BACKUP_DIR")
@@ -144,18 +154,22 @@ object NextcloudBackupManager {
     
     /**
      * 删除 Nextcloud 上的备份文件
+     * @param skipConnectionTest 是否跳过连接测试（用于优化性能）
      */
     suspend fun deleteBackup(
         remotePath: String,
         serverUrl: String,
         username: String,
-        password: String
+        password: String,
+        skipConnectionTest: Boolean = false
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val client = NextcloudClient(serverUrl, username, password)
             
-            // 测试连接
-            client.testConnection().getOrThrow()
+            // 只在需要时测试连接
+            if (!skipConnectionTest) {
+                client.testConnection().getOrThrow()
+            }
             
             // 删除文件
             client.deleteFile(remotePath).getOrThrow()

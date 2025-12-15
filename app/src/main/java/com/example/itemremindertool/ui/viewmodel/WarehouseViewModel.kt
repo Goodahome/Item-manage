@@ -113,6 +113,13 @@ class WarehouseViewModel(
         }
     }
 
+    /**
+     * 获取删除容器时的统计信息
+     */
+    suspend fun getDeleteStatistics(warehouse: Warehouse): Pair<Int, Int> {
+        return warehouseRepository.getDeleteStatistics(warehouse)
+    }
+    
     fun deleteWarehouse(warehouse: Warehouse) {
         viewModelScope.launch {
             try {

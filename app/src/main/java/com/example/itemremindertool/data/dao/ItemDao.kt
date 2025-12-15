@@ -54,5 +54,11 @@ interface ItemDao {
 
     @Query("DELETE FROM items WHERE id = :id")
     suspend fun deleteItemById(id: Long)
+    
+    @Query("DELETE FROM items WHERE warehouseId = :warehouseId")
+    suspend fun deleteItemsByWarehouse(warehouseId: Long)
+    
+    @Query("SELECT COUNT(*) FROM items WHERE warehouseId = :warehouseId")
+    suspend fun getItemCountByWarehouse(warehouseId: Long): Int
 }
 

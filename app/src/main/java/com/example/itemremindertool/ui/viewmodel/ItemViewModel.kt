@@ -48,12 +48,13 @@ class ItemViewModel(
         }
     }
 
-    fun insertItem(item: Item) {
+    fun insertItem(item: Item, onSuccess: ((Long) -> Unit)? = null) {
         viewModelScope.launch {
             try {
                 _operationState.value = OperationState.Saving
-                itemRepository.insertItem(item.copy(updatedAt = Date()))
+                val itemId = itemRepository.insertItem(item.copy(updatedAt = Date()))
                 _operationState.value = OperationState.Success("保存成功")
+                onSuccess?.invoke(itemId) // 回调返回插入后的 ID
                 kotlinx.coroutines.delay(2000) // 成功消息显示2秒
                 _operationState.value = OperationState.Idle
             } catch (e: Exception) {
@@ -61,8 +62,9 @@ class ItemViewModel(
                 if (e.message?.contains("connection pool has been closed") == true) {
                     kotlinx.coroutines.delay(1000) // 等待1秒让数据库恢复
                     try {
-                        itemRepository.insertItem(item.copy(updatedAt = Date()))
+                        val itemId = itemRepository.insertItem(item.copy(updatedAt = Date()))
                         _operationState.value = OperationState.Success("保存成功")
+                        onSuccess?.invoke(itemId) // 回调返回插入后的 ID
                         kotlinx.coroutines.delay(2000)
                         _operationState.value = OperationState.Idle
                     } catch (retryException: Exception) {

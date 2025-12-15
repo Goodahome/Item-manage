@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.Flow
 
 class WarehouseRepository(
     private val warehouseDao: WarehouseDao,
-    private val deletedRecordDao: DeletedRecordDao? = null
+    private val deletedRecordDao: DeletedRecordDao? = null,
+    private val itemDao: com.example.itemremindertool.data.dao.ItemDao? = null
 ) {
     fun getAllWarehouses(): Flow<List<Warehouse>> = warehouseDao.getAllWarehouses()
 
@@ -28,9 +29,47 @@ class WarehouseRepository(
 
     suspend fun updateWarehouse(warehouse: Warehouse) = warehouseDao.updateWarehouse(warehouse)
 
+    /**
+     * 递归删除容器及其所有子容器和物品
+     * @param warehouse 要删除的容器
+     * @return 删除统计信息 (子容器数量, 物品数量)
+     */
     @androidx.room.Transaction
-    suspend fun deleteWarehouse(warehouse: Warehouse) {
-        // 在事务中删除数据和记录删除操作，确保原子性
+    suspend fun deleteWarehouseRecursively(warehouse: Warehouse): Pair<Int, Int> {
+        var childWarehouseCount = 0
+        var itemCount = 0
+        
+        // 1. 递归删除所有子容器
+        val childIds = getAllChildWarehouseIds(warehouse.id)
+        childWarehouseCount = childIds.size
+        
+        // 先删除子容器中的物品
+        childIds.forEach { childId ->
+            itemDao?.let { dao ->
+                val count = dao.getItemCountByWarehouse(childId)
+                itemCount += count
+                dao.deleteItemsByWarehouse(childId)
+            }
+            // 删除子容器
+            warehouseDao.deleteWarehouseById(childId)
+            // 记录删除操作
+            deletedRecordDao?.insertDeletedRecord(
+                DeletedRecord(
+                    entityType = "warehouse",
+                    entityId = childId,
+                    deletedAt = Date()
+                )
+            )
+        }
+        
+        // 2. 删除当前容器中的物品
+        itemDao?.let { dao ->
+            val count = dao.getItemCountByWarehouse(warehouse.id)
+            itemCount += count
+            dao.deleteItemsByWarehouse(warehouse.id)
+        }
+        
+        // 3. 删除当前容器
         warehouseDao.deleteWarehouse(warehouse)
         // 记录删除操作
         deletedRecordDao?.insertDeletedRecord(
@@ -40,6 +79,36 @@ class WarehouseRepository(
                 deletedAt = Date()
             )
         )
+        
+        return Pair(childWarehouseCount, itemCount)
+    }
+    
+    /**
+     * 获取删除容器时的统计信息（子容器数量和物品数量）
+     */
+    suspend fun getDeleteStatistics(warehouse: Warehouse): Pair<Int, Int> {
+        val childIds = getAllChildWarehouseIds(warehouse.id)
+        var itemCount = 0
+        
+        // 统计所有子容器中的物品
+        childIds.forEach { childId ->
+            itemDao?.let { dao ->
+                itemCount += dao.getItemCountByWarehouse(childId)
+            }
+        }
+        
+        // 统计当前容器中的物品
+        itemDao?.let { dao ->
+            itemCount += dao.getItemCountByWarehouse(warehouse.id)
+        }
+        
+        return Pair(childIds.size, itemCount)
+    }
+
+    @androidx.room.Transaction
+    suspend fun deleteWarehouse(warehouse: Warehouse) {
+        // 使用递归删除方法
+        deleteWarehouseRecursively(warehouse)
     }
 
     @androidx.room.Transaction

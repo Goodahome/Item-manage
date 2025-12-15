@@ -73,7 +73,7 @@ class MainActivity : ComponentActivity() {
         val itemRepository = ItemRepository(database.itemDao(), database.deletedRecordDao())
         val categoryRepository = CategoryRepository(database.categoryDao())
         val shoppingItemRepository = ShoppingItemRepository(database.shoppingItemDao())
-        val warehouseRepository = WarehouseRepository(database.warehouseDao(), database.deletedRecordDao())
+        val warehouseRepository = WarehouseRepository(database.warehouseDao(), database.deletedRecordDao(), database.itemDao())
         val tagManager = TagManager(applicationContext)
         val accessHistoryManager = AccessHistoryManager(applicationContext)
 

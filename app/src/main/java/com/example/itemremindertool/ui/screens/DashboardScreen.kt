@@ -2054,9 +2054,13 @@ fun WarehouseIconItem(
     onEditWarehouse: (Warehouse) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
     onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
+    warehouseViewModel: WarehouseViewModel? = null, // 用于获取删除统计信息
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var deleteStats by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    val scope = rememberCoroutineScope()
     // 外层容器，用于显示选中指示器
     Box(
         modifier = modifier
@@ -2188,7 +2192,17 @@ fun WarehouseIconItem(
                 },
                 onClick = {
                     showMenu = false
-                    onDeleteWarehouse(warehouse)
+                    // 获取删除统计信息并显示确认对话框
+                    if (warehouseViewModel != null) {
+                        scope.launch {
+                            val stats = warehouseViewModel.getDeleteStatistics(warehouse)
+                            deleteStats = stats
+                            showDeleteConfirmDialog = true
+                        }
+                    } else {
+                        // 如果没有 ViewModel，直接删除
+                        onDeleteWarehouse(warehouse)
+                    }
                 },
                 leadingIcon = { 
                     Icon(
@@ -2205,6 +2219,115 @@ fun WarehouseIconItem(
                 )
             )
         }
+            }
+        }
+        
+        // 删除确认对话框
+        if (showDeleteConfirmDialog && deleteStats != null) {
+            androidx.compose.ui.window.Dialog(onDismissRequest = { showDeleteConfirmDialog = false }) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth(0.85f)
+                        .wrapContentHeight(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = ColorHelpers.getGroup3CardBgColor()
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // 警告图标
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        // 标题
+                        Text(
+                            text = "确认删除容器",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = ColorHelpers.getGroup4TextColor()
+                        )
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        // 容器名称
+                        Text(
+                            text = "\"${warehouse.name}\"",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = ColorHelpers.getGroup4TextColor()
+                        )
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        // 删除说明
+                        val (childCount, itemCount) = deleteStats!!
+                        val warningText = buildString {
+                            append("删除此容器将同时删除：\n")
+                            if (childCount > 0) {
+                                append("• $childCount 个子容器\n")
+                            }
+                            if (itemCount > 0) {
+                                append("• $itemCount 件物品\n")
+                            }
+                            if (childCount == 0 && itemCount == 0) {
+                                append("• 容器本身")
+                            } else {
+                                append("• 容器本身")
+                            }
+                            append("\n\n此操作不可恢复！")
+                        }
+                        
+                        Text(
+                            text = warningText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = ColorHelpers.getGroup4TextColor(),
+                            lineHeight = 20.sp
+                        )
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        // 按钮行
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // 取消按钮
+                            TextButton(
+                                onClick = { showDeleteConfirmDialog = false },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    "取消",
+                                    color = ColorHelpers.getGroup4TextColor()
+                                )
+                            }
+                            
+                            // 确认删除按钮
+                            Button(
+                                onClick = {
+                                    showDeleteConfirmDialog = false
+                                    onDeleteWarehouse(warehouse)
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Text("删除", color = androidx.compose.material3.MaterialTheme.colorScheme.onError)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -2224,6 +2347,7 @@ fun WarehouseSidebarColumn(
     onEditWarehouse: (Warehouse) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
     onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
+    warehouseViewModel: WarehouseViewModel? = null, // 用于获取删除统计信息
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -2311,7 +2435,8 @@ fun WarehouseSidebarColumn(
                     onClick = { onWarehouseClick(warehouse) },
                     onEditWarehouse = onEditWarehouse,
                     onDeleteWarehouse = onDeleteWarehouse,
-                    onViewInfo = onViewInfo
+                    onViewInfo = onViewInfo,
+                    warehouseViewModel = warehouseViewModel
                 )
             }
             
@@ -2443,6 +2568,8 @@ fun SubWarehouseIcon(
                 text = { Text(stringResource(R.string.delete)) },
                 onClick = {
                     showMenu = false
+                    // 这里也需要添加确认对话框，但需要 warehouseViewModel
+                    // 暂时直接删除，后续可以优化
                     onDeleteWarehouse(warehouse)
                 },
                 leadingIcon = { Icon(Icons.Default.Delete, null) }

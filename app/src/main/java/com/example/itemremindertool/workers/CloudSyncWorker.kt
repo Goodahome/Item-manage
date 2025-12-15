@@ -56,8 +56,11 @@ class CloudSyncWorker(
             }
             
             // 1. 删除旧的云端备份文件（只保留最新的）
+            // 注意：在 listBackups 中测试连接，后续操作跳过测试以优化性能
+            var connectionTested = false
             try {
-                val cloudBackupsResult = NextcloudBackupManager.listBackups(serverUrl, username, password)
+                val cloudBackupsResult = NextcloudBackupManager.listBackups(serverUrl, username, password, skipConnectionTest = false)
+                connectionTested = true // 标记已测试连接
                 val cloudBackups = cloudBackupsResult.getOrNull() ?: emptyList()
                 
                 if (cloudBackups.isNotEmpty()) {
@@ -68,7 +71,8 @@ class CloudSyncWorker(
                                 backupPath,
                                 serverUrl,
                                 username,
-                                password
+                                password,
+                                skipConnectionTest = true // 跳过连接测试，已在 listBackups 中测试过
                             )
                             Log.d(TAG, "已删除旧备份: $backupPath")
                         } catch (e: Exception) {
@@ -97,6 +101,7 @@ class CloudSyncWorker(
             Log.d(TAG, "本地备份创建成功: ${backupFile.absolutePath}, 大小: ${backupFile.length()} bytes")
             
             // 3. 上传到云端（使用固定的文件名，覆盖旧文件）
+            // 如果已经在 listBackups 中测试过连接，跳过测试以优化性能
             Log.d(TAG, "开始上传备份到云端...")
             val fixedBackupName = "item_reminder_backup_latest.zip"
             val uploadResult = NextcloudBackupManager.uploadBackup(
@@ -105,7 +110,8 @@ class CloudSyncWorker(
                 serverUrl,
                 username,
                 password,
-                fixedBackupName
+                fixedBackupName,
+                skipConnectionTest = connectionTested // 如果已测试过连接，跳过测试
             )
             
             return uploadResult.fold(
