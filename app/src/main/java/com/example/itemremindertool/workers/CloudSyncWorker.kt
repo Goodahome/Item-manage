@@ -16,11 +16,22 @@ class CloudSyncWorker(
     override suspend fun doWork(): Result {
         return try {
             val prefs = applicationContext.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-            val autoSyncEnabled = prefs.getBoolean("auto_sync_enabled", false)
             
-            if (!autoSyncEnabled) {
-                Log.d(TAG, "自动同步未启用，跳过同步")
-                return Result.success()
+            // 检查是否是手动同步（手动同步不受自动同步开关影响）
+            val isManualSync = inputData.getBoolean(
+                com.example.itemremindertool.utils.CloudSyncScheduler.KEY_IS_MANUAL_SYNC,
+                false
+            )
+            
+            // 只有自动同步才需要检查自动同步开关
+            if (!isManualSync) {
+                val autoSyncEnabled = prefs.getBoolean("auto_sync_enabled", false)
+                if (!autoSyncEnabled) {
+                    Log.d(TAG, "自动同步未启用，跳过同步")
+                    return Result.success()
+                }
+            } else {
+                Log.d(TAG, "手动同步触发，跳过自动同步开关检查")
             }
             
             val serverUrl = prefs.getString("nextcloud_server_url", "") ?: ""
@@ -35,7 +46,8 @@ class CloudSyncWorker(
             // 通知开始同步
             SyncStateManager.startSyncing()
             
-            Log.d(TAG, "========== 开始云端自动同步（仅上传本地数据）==========")
+            val syncType = if (isManualSync) "手动同步" else "自动同步"
+            Log.d(TAG, "========== 开始云端$syncType（仅上传本地数据）==========")
             
             // 检查本地是否有数据
             val localDb = com.example.itemremindertool.data.database.AppDatabase.getDatabase(applicationContext)
@@ -121,12 +133,14 @@ class CloudSyncWorker(
                     prefs.edit().putLong("last_cloud_sync_time", currentTime).apply()
                     
                     SyncStateManager.syncSuccess("云端同步成功")
-                    Log.d(TAG, "自动同步成功，备份已上传到云端")
+                    val syncType = if (isManualSync) "手动同步" else "自动同步"
+                    Log.d(TAG, "${syncType}成功，备份已上传到云端")
                     Result.success()
                 },
                 onFailure = { e ->
                     SyncStateManager.syncError("云端同步失败: ${e.message}")
-                    Log.e(TAG, "自动同步失败", e)
+                    val syncType = if (isManualSync) "手动同步" else "自动同步"
+                    Log.e(TAG, "${syncType}失败", e)
                     Result.retry() // 失败时重试
                 }
             )

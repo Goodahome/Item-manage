@@ -2,6 +2,7 @@ package com.example.itemremindertool.utils
 
 import android.content.Context
 import androidx.work.Constraints
+import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
@@ -15,6 +16,7 @@ import java.util.concurrent.TimeUnit
  */
 object CloudSyncScheduler {
     private const val WORK_NAME = "cloud_sync_work"
+    const val KEY_IS_MANUAL_SYNC = "is_manual_sync" // 手动同步标志键
     
     /**
      * 调度自动同步任务
@@ -48,15 +50,21 @@ object CloudSyncScheduler {
     }
     
     /**
-     * 立即执行一次同步（用于测试）
+     * 立即执行一次同步（手动同步，不受自动同步开关影响）
      */
     fun syncNow(context: Context) {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
         
+        // 传递手动同步标志，让 Worker 知道这是手动触发的，不需要检查自动同步开关
+        val inputData = Data.Builder()
+            .putBoolean(KEY_IS_MANUAL_SYNC, true)
+            .build()
+        
         val workRequest = androidx.work.OneTimeWorkRequestBuilder<CloudSyncWorker>()
             .setConstraints(constraints)
+            .setInputData(inputData)
             .build()
         
         WorkManager.getInstance(context).enqueue(workRequest)

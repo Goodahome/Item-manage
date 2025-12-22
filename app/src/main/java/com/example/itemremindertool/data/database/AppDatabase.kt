@@ -10,6 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.itemremindertool.data.converters.DateConverters
 import com.example.itemremindertool.data.converters.StringListConverters
 import com.example.itemremindertool.data.converters.ReminderTypeConverters
+import com.example.itemremindertool.data.converters.ActivityEventTypeConverters
 import com.example.itemremindertool.data.dao.CategoryDao
 import com.example.itemremindertool.data.dao.ItemDao
 import com.example.itemremindertool.data.dao.ShoppingItemDao
@@ -22,13 +23,15 @@ import com.example.itemremindertool.data.model.ShoppingItem
 import com.example.itemremindertool.data.model.Warehouse
 import com.example.itemremindertool.data.model.ItemReminder
 import com.example.itemremindertool.data.model.DeletedRecord
+import com.example.itemremindertool.data.model.ActivityEvent
+import com.example.itemremindertool.data.dao.ActivityEventDao
 
 @Database(
-    entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class, ItemReminder::class, DeletedRecord::class],
-    version = 9,
+    entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class, ItemReminder::class, DeletedRecord::class, ActivityEvent::class],
+    version = 10,
     exportSchema = false
 )
-@TypeConverters(DateConverters::class, StringListConverters::class, ReminderTypeConverters::class)
+@TypeConverters(DateConverters::class, StringListConverters::class, ReminderTypeConverters::class, ActivityEventTypeConverters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun itemDao(): ItemDao
     abstract fun categoryDao(): CategoryDao
@@ -36,6 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun warehouseDao(): WarehouseDao
     abstract fun itemReminderDao(): ItemReminderDao
     abstract fun deletedRecordDao(): DeletedRecordDao
+    abstract fun activityEventDao(): ActivityEventDao
 
     companion object {
         @Volatile
@@ -104,7 +108,7 @@ abstract class AppDatabase : RoomDatabase() {
                             )
                         }
                     })
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
@@ -197,6 +201,25 @@ abstract class AppDatabase : RoomDatabase() {
                         entityId INTEGER NOT NULL,
                         deletedAt INTEGER NOT NULL,
                         UNIQUE(entityType, entityId)
+                    )
+                """)
+            }
+        }
+        
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // 创建动态事件表
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS activity_events (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        type TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        description TEXT NOT NULL,
+                        targetId INTEGER,
+                        targetName TEXT NOT NULL,
+                        iconType TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        metadata TEXT NOT NULL
                     )
                 """)
             }
