@@ -37,7 +37,7 @@
     <string name="appearance_settings">外观设置</string>
     <string name="app_settings">应用设置</string>
     <string name="cloud_storage">云端存储</string>
-    <string name="alert_settings">提醒设置</string>
+    <string name="alert_settings">设置提醒</string>
     <string name="backup_restore">备份与恢复</string>
     <string name="backup_data">备份数据</string>
     <string name="restore_data">恢复数据</string>
@@ -135,6 +135,18 @@
     <string name="password_mismatch">两次输入的密码不一致</string>
     <string name="password_empty">密码不能为空</string>
     
+    <!-- 生物识别 -->
+    <string name="biometric_unlock_title">使用生物识别解锁</string>
+    <string name="biometric_unlock_subtitle">请使用指纹或面部识别解锁应用</string>
+    <string name="use_biometric">使用生物识别</string>
+    
+    <!-- 时间选择器 -->
+    <string name="select_date">选择日期</string>
+    <string name="select_time">选择时间</string>
+    <string name="select_date_time">选择日期时间</string>
+    <string name="select_expiry_date">选择到期日期</string>
+    <string name="no_date_selected">未选择日期</string>
+    
     <!-- 对话框 -->
     <string name="modify_app_name">修改程序名称</string>
     <string name="app_name_hint">程序名称</string>
@@ -150,6 +162,9 @@
     <string name="number_of_warehouses">容器数</string>
     <string name="shopping_items">待购物品</string>
     <string name="items_count">%d 件物品</string>
+    <string name="stat_label_warehouse">容器</string>
+    <string name="stat_label_item">物品</string>
+    <string name="stat_label_shopping">待购</string>
     
     <!-- 物品相关 -->
     <string name="item_name">物品名称</string>
@@ -172,7 +187,7 @@
     <string name="delete_item_confirm">确定要删除这个物品吗？</string>
     <string name="add_to_shopping_cart">加入购物篮</string>
     <string name="add_reminder">添加提醒</string>
-    <string name="item_reminder_settings">物品提醒设置</string>
+    <string name="item_reminder_settings">设置提醒</string>
     
     <!-- 物品状态 -->
     <string name="status_normal">正常</string>
@@ -243,10 +258,6 @@
     <string name="delete_tag_confirm_with_usage">确定要删除标签「%1$s」吗？该标签正在被 %2$d 个物品使用，删除后将从这些物品中移除。</string>
     <string name="tag_hint">输入标签（最多12个字符）</string>
     <string name="tag_limit_exceeded">标签长度不能超过12个字符</string>
-    
-    <!-- 日期选择 -->
-    <string name="select_date">选择日期</string>
-    <string name="no_date_selected">未选择日期</string>
     
     <!-- 图片相关 -->
     <string name="take_photo">拍照</string>
@@ -362,9 +373,13 @@
     <string name="capacity">容量</string>
     <string name="used_capacity">已使用: %1$d / %2$d</string>
     <string name="items_unit">件</string>
-    <!-- 容器（为与多语言文件保持键一致，补充默认值） -->
+    <!-- 容器 -->
     <string name="item_container">容器</string>
     <string name="container">容器</string>
+    <string name="unnamed_warehouse">未命名容器</string>
+    <string name="warehouse_items_suffix">里的物品</string>
+    <string name="custom_warehouse_items_suffix">自定义容器物品后缀</string>
+    <string name="custom_warehouse_items_suffix_desc">设置容器路径中最后一个容器显示的后缀文本</string>
     <string name="containers">容器管理</string>
     <string name="add_container">添加容器</string>
     <string name="edit_container">编辑容器</string>
@@ -424,4 +439,122 @@
     <string name="document_expiry">证件到期</string>
     <string name="move_item_success">物品已移动到 %1$s</string>
     <string name="move_item_failed">移动失败</string>
+    
+    <!-- 删除确认 -->
+    <string name="confirm_delete">确认删除</string>
+    <string name="delete_warehouse_warning">删除此容器将同时删除其所有子容器和物品，此操作不可恢复！</string>
+    
+    <!-- 容器相关 -->
+    <string name="generate_qr_code_action">生成二维码</string>
+    <string name="add_container_action">添加容器</string>
+    <string name="quantity_label">数量</string>
+    <string name="warehouse_empty">此容器为空</string>
+    <string name="child_warehouse_info">子容器：%1$d    物品：%2$d</string>
+    
+    <!-- 提醒相关 -->
+    <string name="expiring_soon_title">即将过期</string>
+    <string name="low_stock_title">库存不足</string>
+    <string name="no_activity">暂无动态</string>
+    <string name="complete_purchase">完成购买</string>
+    <string name="confirm_complete_purchase">确认完成购买？这将清空待购清单并将购买数量补充到对应物品的库存中。</string>
+    
+    <!-- 物品相关 -->
+    <string name="image_list_hint">图片列表（点击设为主图）</string>
+    <string name="warehouse_required">容器 必填，请选择容器</string>
+    <string name="enter_tag_hint">输入标签…</string>
+    <string name="take_photo_recognize_item">拍照识别物品</string>
+    
+    <!-- 提醒设置 -->
+    <string name="add_reminder_title">%1$s - 添加提醒</string>
+    <string name="edit_reminder">编辑提醒</string>
+    <string name="reminder_reason">原因：%1$s</string>
+    <string name="no_reminder_settings">暂无提醒设置</string>
+    <string name="reminder_enabled">已启用</string>
+    <string name="reminder_disabled">已禁用</string>
+    <string name="reminder_time_label">提醒时间: %1$s</string>
+    <string name="reminder_content">提醒内容</string>
+    <string name="reminder_time">提醒时间</string>
+    <string name="reminder_type">提醒类型</string>
+    
+    <!-- 备份恢复 -->
+    <string name="offline_backup">离线备份</string>
+    <string name="backup_file_location">备份文件将保存到设备的Downloads目录，您可以在文件管理器中找到</string>
+    <string name="cloud_restore">云端恢复</string>
+    <string name="cloud_restore_description">从云端下载并恢复自动同步的备份文件（将直接恢复所有数据，请先进行离线备份）</string>
+    <string name="restore_data_action">恢复数据</string>
+    <string name="important_notice">重要提示</string>
+    <string name="confirm_restore">确认恢复</string>
+    
+    <!-- 活动事件 -->
+    <string name="event_added_item">添加了物品</string>
+    <string name="event_deleted_item">删除了物品</string>
+    <string name="event_updated_item">更新了物品</string>
+    <string name="event_created_warehouse">创建了容器</string>
+    <string name="event_deleted_warehouse">删除了容器</string>
+    <string name="event_updated_warehouse">更新了容器</string>
+    <string name="event_reminder">提醒</string>
+    <string name="event_expiring_soon">即将过期</string>
+    <string name="event_low_stock">库存不足</string>
+    <string name="event_purchased_item">购买了物品</string>
+    
+    <!-- 时间线描述 -->
+    <string name="item_expiring_description">%1$s 将在 %2$d 天后过期</string>
+    <string name="item_low_stock_description">%1$s 当前库存：%2$d</string>
+    
+    <!-- 备份恢复对话框 -->
+    <string name="backup_to_downloads">备份到Downloads</string>
+    <string name="restore_from_cloud">从云端恢复</string>
+    <string name="cloud_restore_warning">从云端恢复将直接替换所有现有数据！</string>
+    <string name="cloud_restore_suggestion">强烈建议您先进行离线备份，否则现有数据将丢失。</string>
+    <string name="confirm_continue">确定要继续吗？</string>
+    <string name="continue_restore">继续恢复</string>
+    <string name="confirm_restore_message">确定要从云端恢复备份吗？这将替换所有现有数据。</string>
+    
+    <!-- 完成购买对话框 -->
+    <string name="complete_purchase_button">完成购买</string>
+    <string name="cancel_button">取消</string>
+    <string name="confirm_button">确定</string>
+    
+    <!-- 提醒设置 -->
+    <string name="reminder_content_placeholder">请输入提醒内容（可选）</string>
+    <string name="reminder_time_placeholder">点击选择提醒时间</string>
+    <string name="date_label">日期</string>
+    <string name="time_label">时间</string>
+    <string name="daily_reminder_time">每日提醒时间</string>
+    <string name="monthly_date_hint">每月日期（1-31）</string>
+    <string name="reminder_time_hint">提醒时间</string>
+    <string name="month_hint">月份（1-12）</string>
+    <string name="day_hint">日期（1-31）</string>
+    <string name="reminder_reason_placeholder">提醒原因（可选）</string>
+    
+    <!-- 图片选择 -->
+    <string name="select_multiple">选择多张</string>
+    
+    <!-- 提醒类型 -->
+    <string name="reminder_type_once">一次性</string>
+    <string name="reminder_type_daily">每日</string>
+    <string name="reminder_type_monthly">每月</string>
+    <string name="reminder_type_yearly">每年</string>
+    
+    <!-- 提醒时间文本 -->
+    <string name="reminder_time_prefix">时间：%1$s</string>
+    <string name="reminder_time_not_set">未设置时间</string>
+    <string name="reminder_daily_prefix">每天 %1$s</string>
+    <string name="reminder_monthly_prefix">每月 %1$d 号 %2$s</string>
+    <string name="reminder_yearly_prefix">%1$d月%2$d号 %3$s</string>
+    
+    <!-- 提醒类型显示 -->
+    <string name="reminder_type_once_display">一次性提醒</string>
+    <string name="reminder_type_daily_display">每日提醒</string>
+    <string name="reminder_type_monthly_display">每月提醒</string>
+    <string name="reminder_type_yearly_display">每年提醒</string>
+    
+    <!-- 提醒类型显示（简化版） -->
+    <string name="reminder_type_once_simple">单次提醒</string>
+    
+    <!-- 时间显示 -->
+    <string name="time_just_now">刚刚</string>
+    <string name="time_minutes_ago">%1$d分钟前</string>
+    <string name="time_hours_ago">%1$d小时前</string>
+    <string name="time_days_ago">%1$d天前</string>
 </resources>

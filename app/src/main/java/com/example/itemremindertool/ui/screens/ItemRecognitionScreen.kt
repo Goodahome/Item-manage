@@ -289,7 +289,7 @@ fun CameraRecognitionDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "拍照识别物品",
+                    text = stringResource(R.string.take_photo_recognize_item),
                     style = MaterialTheme.typography.titleLarge
                 )
                 

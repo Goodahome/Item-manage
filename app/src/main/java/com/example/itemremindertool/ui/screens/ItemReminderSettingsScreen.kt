@@ -21,8 +21,14 @@ import com.example.itemremindertool.data.model.ItemReminder
 import com.example.itemremindertool.data.model.ReminderType
 import com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.UIConstants
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.loper7.date_time_picker.dialog.CardDatePickerDialog
+import com.loper7.date_time_picker.DateTimeConfig
+import android.app.Activity
+import androidx.compose.ui.platform.LocalContext
 import java.text.SimpleDateFormat
+import java.text.DateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,22 +46,22 @@ fun ItemReminderSettingsScreen(
     Scaffold(
         topBar = {
             GradientTopAppBar(
-                title = { Text("${item.name} - 添加提醒") },
+                title = { Text(stringResource(R.string.add_reminder_title, item.name)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "返回")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
         },
         floatingActionButton = {
-            Column(modifier = Modifier.padding(bottom = 70.dp)) {
+            Column(modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)) {
                 FloatingActionButton(
                     onClick = { showAddReminderDialog = true },
                     containerColor = ColorHelpers.getGroup5FabColor(),
-                    modifier = Modifier.size(56.dp)
+                    modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
-                    Icon(Icons.Default.Add, "添加提醒")
+                    Icon(Icons.Default.Add, stringResource(R.string.add_reminder))
                 }
             }
         }
@@ -116,22 +122,30 @@ fun ItemReminderSettingsScreen(
         }
     }
     
-    // 添加/编辑提醒对话框
-    if (showAddReminderDialog || editingReminder != null) {
-        ReminderEditDialog(
+    // 添加提醒对话框 - 使用统一的现代化弹窗
+    if (showAddReminderDialog) {
+        ModernReminderDialog(
             item = item,
-            existingReminder = editingReminder,
+            reminderViewModel = viewModel,
             onDismiss = {
                 showAddReminderDialog = false
+            },
+            onSuccess = {
+                showAddReminderDialog = false
+            }
+        )
+    }
+    
+    // 编辑提醒对话框 - 使用统一的现代化弹窗
+    if (editingReminder != null) {
+        ModernReminderDialog(
+            item = item,
+            reminderViewModel = viewModel,
+            existingReminder = editingReminder,
+            onDismiss = {
                 editingReminder = null
             },
-            onConfirm = { reminder ->
-                if (editingReminder != null) {
-                    viewModel.updateReminder(reminder)
-                } else {
-                    viewModel.insertReminder(reminder)
-                }
-                showAddReminderDialog = false
+            onSuccess = {
                 editingReminder = null
             }
         )
@@ -204,7 +218,7 @@ fun ReminderCard(
                 // 提醒原因
                 if (reminder.reason.isNotBlank()) {
                     Text(
-                        text = "原因：${reminder.reason}",
+                        text = stringResource(R.string.reminder_reason, reminder.reason),
                         style = MaterialTheme.typography.bodySmall,
                         color = ColorHelpers.getGroup4TextColor(0.6f)
                     )
@@ -246,12 +260,36 @@ fun ReminderCard(
 
 @Composable
 fun getReminderTimeText(reminder: ItemReminder): String {
-    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+    val context = LocalContext.current
+    val dateTimeFormat = remember {
+        DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, Locale.getDefault())
+    }
+    val dateFormat = remember {
+        DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault())
+    }
+    val timeFormat = remember {
+        DateFormat.getTimeInstance(DateFormat.SHORT, Locale.getDefault())
+    }
+    
     return when (reminder.reminderType) {
-        ReminderType.ONCE -> reminder.reminderTime?.let { "时间：${dateFormat.format(it)}" } ?: "未设置时间"
-        ReminderType.DAILY -> "每天 ${reminder.dailyTime ?: "未设置时间"}"
-        ReminderType.MONTHLY -> "每月 ${reminder.monthlyDay ?: "?"} 号 ${reminder.monthlyTime ?: "未设置时间"}"
-        ReminderType.YEARLY -> "${reminder.yearlyMonth ?: "?"}月${reminder.yearlyDay ?: "?"}号 ${reminder.yearlyTime ?: "未设置时间"}"
+        ReminderType.ONCE -> reminder.reminderTime?.let { 
+            context.getString(R.string.reminder_time_prefix, dateTimeFormat.format(it))
+        } ?: context.getString(R.string.reminder_time_not_set)
+        ReminderType.DAILY -> context.getString(
+            R.string.reminder_daily_prefix,
+            reminder.dailyTime ?: context.getString(R.string.reminder_time_not_set)
+        )
+        ReminderType.MONTHLY -> context.getString(
+            R.string.reminder_monthly_prefix,
+            reminder.monthlyDay ?: 0,
+            reminder.monthlyTime ?: context.getString(R.string.reminder_time_not_set)
+        )
+        ReminderType.YEARLY -> context.getString(
+            R.string.reminder_yearly_prefix,
+            reminder.yearlyMonth ?: 0,
+            reminder.yearlyDay ?: 0,
+            reminder.yearlyTime ?: context.getString(R.string.reminder_time_not_set)
+        )
     }
 }
 
@@ -263,6 +301,17 @@ fun ReminderEditDialog(
     onDismiss: () -> Unit,
     onConfirm: (ItemReminder) -> Unit
 ) {
+    val context = LocalContext.current
+    val activity = context as? Activity
+    
+    // 使用系统默认的日期和时间格式
+    val dateFormat = remember {
+        DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault())
+    }
+    val timeFormat = remember {
+        DateFormat.getTimeInstance(DateFormat.SHORT, Locale.getDefault())
+    }
+    
     var selectedType by remember { mutableStateOf(existingReminder?.reminderType ?: ReminderType.ONCE) }
     var reminderTime by remember { mutableStateOf(existingReminder?.reminderTime) }
     var dailyTime by remember { mutableStateOf(existingReminder?.dailyTime ?: "09:00") }
@@ -277,10 +326,12 @@ fun ReminderEditDialog(
     var showTimePickerDialog by remember { mutableStateOf(false) }
     var currentEditingTimeField by remember { mutableStateOf<String?>(null) }
     var selectedDateMillis by remember { mutableStateOf<Long?>(reminderTime?.time) }
+    var datePickerKey by remember { mutableStateOf(0) }
+    var timePickerKey by remember { mutableStateOf(0) }
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (existingReminder != null) "编辑提醒" else "添加提醒") },
+        title = { Text(if (existingReminder != null) stringResource(R.string.edit_reminder) else stringResource(R.string.add_reminder)) },
         text = {
             Column(
                 modifier = Modifier
@@ -289,7 +340,7 @@ fun ReminderEditDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // 提醒类型选择
-                Text("提醒类型", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.reminder_type), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -301,10 +352,10 @@ fun ReminderEditDialog(
                             label = {
                                 Text(
                                     when (type) {
-                                        ReminderType.ONCE -> "一次性"
-                                        ReminderType.DAILY -> "每日"
-                                        ReminderType.MONTHLY -> "每月"
-                                        ReminderType.YEARLY -> "每年"
+                                        ReminderType.ONCE -> stringResource(R.string.reminder_type_once)
+                                        ReminderType.DAILY -> stringResource(R.string.reminder_type_daily)
+                                        ReminderType.MONTHLY -> stringResource(R.string.reminder_type_monthly)
+                                        ReminderType.YEARLY -> stringResource(R.string.reminder_type_yearly)
                                     }
                                 )
                             },
@@ -324,10 +375,10 @@ fun ReminderEditDialog(
                         ) {
                             // 日期选择
                             OutlinedTextField(
-                                value = reminderTime?.let { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(it) } ?: "",
+                                value = reminderTime?.let { dateFormat.format(it) } ?: "",
                                 onValueChange = {},
                                 readOnly = true,
-                                label = { Text("日期") },
+                                label = { Text(stringResource(R.string.date_label)) },
                                 modifier = Modifier.weight(1f),
                                 trailingIcon = {
                                     IconButton(onClick = { showDatePicker = true }) {
@@ -337,10 +388,10 @@ fun ReminderEditDialog(
                             )
                             // 时间选择
                             OutlinedTextField(
-                                value = reminderTime?.let { SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(it) } ?: "",
+                                value = reminderTime?.let { timeFormat.format(it) } ?: "",
                                 onValueChange = {},
                                 readOnly = true,
-                                label = { Text("时间") },
+                                label = { Text(stringResource(R.string.time_label)) },
                                 modifier = Modifier.weight(1f),
                                 trailingIcon = {
                                     IconButton(onClick = {
@@ -363,7 +414,7 @@ fun ReminderEditDialog(
                             value = dailyTime,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("每日提醒时间") },
+                            label = { Text(stringResource(R.string.daily_reminder_time)) },
                             modifier = Modifier.fillMaxWidth(),
                             trailingIcon = {
                                 IconButton(onClick = {
@@ -383,14 +434,14 @@ fun ReminderEditDialog(
                                     monthlyDay = day.coerceIn(1, 31)
                                 }
                             },
-                            label = { Text("每月日期（1-31）") },
+                            label = { Text(stringResource(R.string.monthly_date_hint)) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = monthlyTime,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("提醒时间") },
+                            label = { Text(stringResource(R.string.reminder_time_hint)) },
                             modifier = Modifier.fillMaxWidth(),
                             trailingIcon = {
                                 IconButton(onClick = {
@@ -414,7 +465,7 @@ fun ReminderEditDialog(
                                         yearlyMonth = month.coerceIn(1, 12)
                                     }
                                 },
-                                label = { Text("月份（1-12）") },
+                                label = { Text(stringResource(R.string.month_hint)) },
                                 modifier = Modifier.weight(1f)
                             )
                             OutlinedTextField(
@@ -424,7 +475,7 @@ fun ReminderEditDialog(
                                         yearlyDay = day.coerceIn(1, 31)
                                     }
                                 },
-                                label = { Text("日期（1-31）") },
+                                label = { Text(stringResource(R.string.day_hint)) },
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -432,7 +483,7 @@ fun ReminderEditDialog(
                             value = yearlyTime,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("提醒时间") },
+                            label = { Text(stringResource(R.string.reminder_time_hint)) },
                             modifier = Modifier.fillMaxWidth(),
                             trailingIcon = {
                                 IconButton(onClick = {
@@ -452,7 +503,7 @@ fun ReminderEditDialog(
                 OutlinedTextField(
                     value = reason,
                     onValueChange = { reason = it },
-                    label = { Text("提醒原因（可选）") },
+                    label = { Text(stringResource(R.string.reminder_reason_placeholder)) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
                     maxLines = 3
@@ -481,33 +532,32 @@ fun ReminderEditDialog(
                     onConfirm(newReminder)
                 }
             ) {
-                Text("确定")
+                Text(stringResource(R.string.confirm_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.cancel_button))
             }
         }
     )
     
-    // 日期选择器（一次性提醒）
-    if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = selectedDateMillis ?: System.currentTimeMillis()
-        )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let {
-                        selectedDateMillis = it
+    // 日期选择器（一次性提醒）- 使用 CardDatePickerDialog
+    val selectDateTitle = stringResource(R.string.select_date)
+    LaunchedEffect(showDatePicker, datePickerKey) {
+        if (showDatePicker && activity != null) {
+            val dialog = CardDatePickerDialog.builder(activity)
+                .setTitle(selectDateTitle)
+                .setDefaultTime(selectedDateMillis ?: System.currentTimeMillis())
+                .setDisplayType(DateTimeConfig.YEAR, DateTimeConfig.MONTH, DateTimeConfig.DAY)
+                .setOnChoose { millisecond ->
+                    selectedDateMillis = millisecond
                         // 如果已有时间，保留时间；否则设置为当前时间
                         val calendar = Calendar.getInstance()
                         if (reminderTime != null) {
                             calendar.time = reminderTime
                         }
-                        calendar.timeInMillis = it
+                    calendar.timeInMillis = millisecond
                         // 如果没有设置过时间，使用当前时间
                         if (reminderTime == null) {
                             val now = Calendar.getInstance()
@@ -518,136 +568,119 @@ fun ReminderEditDialog(
                         reminderTime = Date(calendar.timeInMillis)
                         // 选择日期后自动打开时间选择器
                         showDatePicker = false
+                    datePickerKey++
                         currentEditingTimeField = "once"
                         showTimePickerDialog = true
-                    } ?: run {
-                        showDatePicker = false
-                    }
-                }) {
-                    Text("确定")
+                    timePickerKey++
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("取消")
+                .setOnCancel {
+                    showDatePicker = false
+                    datePickerKey++
                 }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+                .build()
+            dialog.show()
+                }
     }
     
-    // 时间选择器（循环提醒和一次性提醒）
-    if (showTimePickerDialog && currentEditingTimeField != null) {
-        // 获取初始时间
-        val initialHour = when (currentEditingTimeField) {
-            "once" -> reminderTime?.let {
-                val cal = Calendar.getInstance()
-                cal.time = it
-                cal.get(Calendar.HOUR_OF_DAY)
-            } ?: Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-            "daily" -> dailyTime.split(":").getOrNull(0)?.toIntOrNull() ?: 9
-            "monthly" -> monthlyTime.split(":").getOrNull(0)?.toIntOrNull() ?: 9
-            "yearly" -> yearlyTime.split(":").getOrNull(0)?.toIntOrNull() ?: 9
-            else -> 9
-        }
-        val initialMinute = when (currentEditingTimeField) {
-            "once" -> reminderTime?.let {
-                val cal = Calendar.getInstance()
-                cal.time = it
-                cal.get(Calendar.MINUTE)
-            } ?: Calendar.getInstance().get(Calendar.MINUTE)
-            "daily" -> dailyTime.split(":").getOrNull(1)?.toIntOrNull() ?: 0
-            "monthly" -> monthlyTime.split(":").getOrNull(1)?.toIntOrNull() ?: 0
-            "yearly" -> yearlyTime.split(":").getOrNull(1)?.toIntOrNull() ?: 0
-            else -> 0
-        }
-        val initialSecond = when (currentEditingTimeField) {
-            "once" -> reminderTime?.let {
-                val cal = Calendar.getInstance()
-                cal.time = it
-                cal.get(Calendar.SECOND)
-            } ?: 0
-            else -> 0
-        }
-        
-        var second by remember { mutableStateOf(initialSecond) }
-        
-        val timePickerState = rememberTimePickerState(
-            initialHour = initialHour,
-            initialMinute = initialMinute
-        )
-        
-        AlertDialog(
-            onDismissRequest = { 
-                showTimePickerDialog = false
-                currentEditingTimeField = null
-            },
-            title = { Text("选择时间") },
-            text = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    TimePicker(state = timePickerState)
-                    // 如果是一次性提醒，添加秒的选择
-                    if (currentEditingTimeField == "once") {
-                        OutlinedTextField(
-                            value = second.toString(),
-                            onValueChange = {
-                                it.toIntOrNull()?.let { s ->
-                                    second = s.coerceIn(0, 59)
-                                }
-                            },
-                            label = { Text("秒（0-59）") },
-                            modifier = Modifier.fillMaxWidth(),
-                            suffix = { Text("秒") }
-                        )
+    // 时间选择器（循环提醒和一次性提醒）- 使用 CardDatePickerDialog
+    val selectTimeTitle = stringResource(R.string.select_time)
+    LaunchedEffect(showTimePickerDialog, currentEditingTimeField, timePickerKey) {
+        if (showTimePickerDialog && currentEditingTimeField != null && activity != null) {
+            // 计算初始时间（毫秒）
+            val initialTimeMillis = when (currentEditingTimeField) {
+                "once" -> {
+                    reminderTime?.time ?: run {
+                        selectedDateMillis?.let {
+                            val cal = Calendar.getInstance()
+                            cal.timeInMillis = it
+                            val now = Calendar.getInstance()
+                            cal.set(Calendar.HOUR_OF_DAY, now.get(Calendar.HOUR_OF_DAY))
+                            cal.set(Calendar.MINUTE, now.get(Calendar.MINUTE))
+                            cal.set(Calendar.SECOND, 0)
+                            cal.set(Calendar.MILLISECOND, 0)
+                            cal.timeInMillis
+                        } ?: System.currentTimeMillis()
                     }
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = {
+                "daily" -> {
+                val cal = Calendar.getInstance()
+                    val parts = dailyTime.split(":")
+                    cal.set(Calendar.HOUR_OF_DAY, parts.getOrNull(0)?.toIntOrNull() ?: 9)
+                    cal.set(Calendar.MINUTE, parts.getOrNull(1)?.toIntOrNull() ?: 0)
+                    cal.set(Calendar.SECOND, 0)
+                    cal.set(Calendar.MILLISECOND, 0)
+                    cal.timeInMillis
+                }
+                "monthly" -> {
+                val cal = Calendar.getInstance()
+                    val parts = monthlyTime.split(":")
+                    cal.set(Calendar.HOUR_OF_DAY, parts.getOrNull(0)?.toIntOrNull() ?: 9)
+                    cal.set(Calendar.MINUTE, parts.getOrNull(1)?.toIntOrNull() ?: 0)
+                    cal.set(Calendar.SECOND, 0)
+                    cal.set(Calendar.MILLISECOND, 0)
+                    cal.timeInMillis
+                }
+                "yearly" -> {
+                val cal = Calendar.getInstance()
+                    val parts = yearlyTime.split(":")
+                    cal.set(Calendar.HOUR_OF_DAY, parts.getOrNull(0)?.toIntOrNull() ?: 9)
+                    cal.set(Calendar.MINUTE, parts.getOrNull(1)?.toIntOrNull() ?: 0)
+                    cal.set(Calendar.SECOND, 0)
+                    cal.set(Calendar.MILLISECOND, 0)
+                    cal.timeInMillis
+                }
+                else -> System.currentTimeMillis()
+            }
+            
+            // 时间选择器 - 使用 CardDatePickerDialog，设置只显示时分
+            val dialog = CardDatePickerDialog.builder(activity)
+                .setTitle(selectTimeTitle)
+                .setDefaultTime(initialTimeMillis)
+                .setDisplayType(DateTimeConfig.HOUR, DateTimeConfig.MIN)
+                .setOnChoose { millisecond ->
+                    val calendar = Calendar.getInstance()
+                    calendar.timeInMillis = millisecond
+                    val hour = calendar.get(Calendar.HOUR_OF_DAY)
+                    val minute = calendar.get(Calendar.MINUTE)
+                    
                     when (currentEditingTimeField) {
                         "once" -> {
                             // 一次性提醒：组合日期和时间
                             selectedDateMillis?.let { dateMillis ->
-                                val calendar = Calendar.getInstance()
-                                calendar.timeInMillis = dateMillis
-                                calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
-                                calendar.set(Calendar.MINUTE, timePickerState.minute)
-                                calendar.set(Calendar.SECOND, second)
-                                calendar.set(Calendar.MILLISECOND, 0)
-                                reminderTime = Date(calendar.timeInMillis)
+                                val dateCal = Calendar.getInstance()
+                                dateCal.timeInMillis = dateMillis
+                                dateCal.set(Calendar.HOUR_OF_DAY, hour)
+                                dateCal.set(Calendar.MINUTE, minute)
+                                dateCal.set(Calendar.SECOND, 0)
+                                dateCal.set(Calendar.MILLISECOND, 0)
+                                reminderTime = Date(dateCal.timeInMillis)
                             }
                         }
                         "daily" -> {
-                            val timeStr = String.format("%02d:%02d:00", timePickerState.hour, timePickerState.minute)
+                            val timeStr = String.format("%02d:%02d:00", hour, minute)
                             dailyTime = timeStr
                         }
                         "monthly" -> {
-                            val timeStr = String.format("%02d:%02d:00", timePickerState.hour, timePickerState.minute)
+                            val timeStr = String.format("%02d:%02d:00", hour, minute)
                             monthlyTime = timeStr
                         }
                         "yearly" -> {
-                            val timeStr = String.format("%02d:%02d:00", timePickerState.hour, timePickerState.minute)
+                            val timeStr = String.format("%02d:%02d:00", hour, minute)
                             yearlyTime = timeStr
                         }
                     }
                     showTimePickerDialog = false
+                    timePickerKey++
                     currentEditingTimeField = null
-                }) {
-                    Text("确定")
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = {
+                .setOnCancel {
                     showTimePickerDialog = false
+                    timePickerKey++
                     currentEditingTimeField = null
-                }) {
-                    Text("取消")
                 }
-            }
-        )
+                .build()
+            dialog.show()
+                }
     }
 }
 

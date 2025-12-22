@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
+import com.example.itemremindertool.ui.components.UIConstants
 import com.example.itemremindertool.data.model.Priority
 import com.example.itemremindertool.data.model.ShoppingItem
 import com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel
@@ -72,12 +73,12 @@ fun ShoppingListScreen(
         },
         floatingActionButton = {
             Column(
-                modifier = Modifier.padding(bottom = 70.dp)
+                modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
             ) {
                 FloatingActionButton(
                     onClick = onAddItem,
                     containerColor = ColorHelpers.getGroup5FabColor(),
-                    modifier = Modifier.size(56.dp)
+                    modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(Icons.Default.Add, stringResource(R.string.add_shopping_item))
                 }

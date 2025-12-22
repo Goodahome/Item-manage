@@ -17,6 +17,7 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.UIConstants
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import com.example.itemremindertool.utils.IconManager
@@ -50,14 +51,15 @@ fun IconSelectionScreen(
         },
         floatingActionButton = {
             Column(
-                modifier = Modifier.padding(bottom = 70.dp)
+                modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
             ) {
                 FloatingActionButton(
                     onClick = {
                         IconManager.switchIcon(context, selectedIcon)
                         showRestartDialog = true
                     },
-                    containerColor = ColorHelpers.getGroup5FabColor()
+                    containerColor = ColorHelpers.getGroup5FabColor(),
+                    modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(Icons.Default.Check, stringResource(R.string.apply))
                 }

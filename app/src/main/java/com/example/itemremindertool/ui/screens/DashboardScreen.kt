@@ -1,102 +1,78 @@
 package com.example.itemremindertool.ui.screens
-import androidx.compose.ui.res.stringResource
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+
+import android.graphics.BitmapFactory
+import android.util.Log
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.border
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.activity.compose.BackHandler
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.window.Dialog
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.IntOffset
-import kotlin.math.roundToInt
+import androidx.compose.ui.zIndex
+import com.example.itemremindertool.R
+import com.example.itemremindertool.data.AlertSettingsManager
 import com.example.itemremindertool.data.model.Item
-import com.example.itemremindertool.data.model.Warehouse
 import com.example.itemremindertool.data.model.ShoppingItem
+import com.example.itemremindertool.data.model.Warehouse
+import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
+import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.WarehouseQRCodeDialog
+import com.example.itemremindertool.ui.components.UIConstants
+import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.ui.theme.LocalAppSettings
 import com.example.itemremindertool.ui.viewmodel.DashboardViewModel
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.ui.viewmodel.OperationState
 import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
-import com.example.itemremindertool.ui.screens.ItemSearchByImageDialog
-import com.example.itemremindertool.ui.theme.LocalAppSettings
-import com.example.itemremindertool.ui.theme.ColorHelpers
-import com.example.itemremindertool.ui.components.QuickAddBottomSheet
-import androidx.compose.foundation.BorderStroke
-import com.example.itemremindertool.ui.components.GradientTopAppBar
-import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
+import com.example.itemremindertool.utils.ImageUtils
 import com.example.itemremindertool.utils.SyncStateManager
-import com.example.itemremindertool.R
-import com.example.itemremindertool.data.AlertSettingsManager
-
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.*
-import java.util.Calendar
+import java.text.DateFormat
 import java.time.Instant
 import java.time.ZoneId
-import java.time.LocalDate
-import java.time.temporal.ChronoUnit
-import android.content.SharedPreferences
-import android.util.Log
+import java.util.*
 
 /**
  * 首页布局风格枚举
@@ -139,6 +115,8 @@ fun DashboardScreen(
     itemViewModel: ItemViewModel,
     warehouseViewModel: com.example.itemremindertool.ui.viewmodel.WarehouseViewModel,
     shoppingItemViewModel: com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel,
+    itemReminderViewModel: com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel? = null, // 物品提醒ViewModel
+    activityEventViewModel: com.example.itemremindertool.ui.viewmodel.ActivityEventViewModel? = null, // 动态事件ViewModel
     accessHistoryManager: com.example.itemremindertool.data.AccessHistoryManager,
     onAddItem: (Long?) -> Unit, // 传递当前选中的容器ID
     onEditItem: (Long) -> Unit,
@@ -342,15 +320,8 @@ fun DashboardScreen(
                 homeLayoutStyle == HomeLayoutStyle.DISCORD && selectedWarehouseId == null
             }
             
-            // 根据是否在购物列表页面调整底部 padding，避免挡住删除按钮
-            val bottomPadding = if (isShoppingListVisible) {
-                100.dp // 购物列表页面时增加更多空间
-            } else {
-                70.dp // 其他页面保持原有间距
-            }
-            
             Column(
-                modifier = Modifier.padding(bottom = bottomPadding)
+                modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
             ) {
                 // Discord 风格下，使用与左侧圆形容器图标一致的背景色；否则保持原有 FAB 颜色
                 val fabBackground = if (homeLayoutStyle == HomeLayoutStyle.DISCORD) {
@@ -370,9 +341,9 @@ fun DashboardScreen(
                         // 如果当前选中了容器，则带入容器ID
                         onAddItem(selectedWarehouseId)
                     },
-                    modifier = Modifier.size(56.dp),
                     containerColor = fabBackground,
-                    contentColor = fabIconColor
+                    contentColor = fabIconColor,
+                    modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(
                         Icons.Default.Add,
@@ -427,6 +398,10 @@ fun DashboardScreen(
             when (homeLayoutStyle) {
                 HomeLayoutStyle.DISCORD -> {
                     // Discord风格主布局（添加顶部padding为搜索框留出空间）
+                    // 生成二维码对话框状态
+                    var showQRCodeDialog by remember { mutableStateOf(false) }
+                    var selectedWarehouseForQRCode by remember { mutableStateOf<Warehouse?>(null) }
+                    
                     DiscordStyleMainLayout(
                         warehouses = warehouses,
                         allWarehouses = allWarehouses,
@@ -437,6 +412,10 @@ fun DashboardScreen(
                         alertSettingsManager = alertSettingsManager,
                         shoppingItemViewModel = shoppingItemViewModel,
                         itemViewModel = itemViewModel,
+                        itemReminderViewModel = itemReminderViewModel,
+                        activityEventViewModel = activityEventViewModel,
+                        warehouseViewModel = warehouseViewModel,
+                        searchQuery = searchQuery, // 传递搜索查询
                         onWarehouseSelect = { warehouse ->
                             selectedWarehouseId = warehouse.id
                         },
@@ -454,6 +433,10 @@ fun DashboardScreen(
                         },
                         onEditWarehouse = onEditWarehouse,
                         onDeleteWarehouse = onDeleteWarehouse,
+                        onGenerateQRCode = { warehouse ->
+                            selectedWarehouseForQRCode = warehouse
+                            showQRCodeDialog = true
+                        },
                         onEditItem = onEditItem,
                         onViewItem = onViewItem,
                         onDeleteItem = { item ->
@@ -465,6 +448,17 @@ fun DashboardScreen(
                             .fillMaxSize()
                             .padding(top = if (showSearchBox) 80.dp else 0.dp) // 仅在搜索框显示时为搜索框留出空间
                     )
+                    
+                    // 显示二维码对话框
+                    if (showQRCodeDialog && selectedWarehouseForQRCode != null) {
+                        WarehouseQRCodeDialog(
+                            warehouse = selectedWarehouseForQRCode!!,
+                            onDismiss = {
+                                showQRCodeDialog = false
+                                selectedWarehouseForQRCode = null
+                            }
+                        )
+                    }
                 }
                 HomeLayoutStyle.CLASSIC -> {
                     // 经典风格布局（卡片式）
@@ -549,7 +543,7 @@ fun StatCard(statCard: StatCardData) {
         colors = CardDefaults.cardColors(
             containerColor = statCard.backgroundColor
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -604,7 +598,7 @@ fun WarehouseStatCard(
         colors = CardDefaults.cardColors(
             containerColor = ColorHelpers.getGroup3CardBgColor()
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -658,6 +652,7 @@ fun WarehouseInfoScreen(
     onWarehouseClick: (Long) -> Unit = {},
     onEditWarehouse: () -> Unit = {},
     onEditItem: ((Long) -> Unit)? = null,
+    onViewItem: ((Long) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     // 递归计算子容器数量（包括所有子容器的子容器）
@@ -695,6 +690,7 @@ fun WarehouseInfoScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(ColorHelpers.getGroup2PageBgColor())
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -704,7 +700,7 @@ fun WarehouseInfoScreen(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                containerColor = ColorHelpers.getGroup3CardBgColor()
             )
         ) {
             Column(
@@ -746,7 +742,7 @@ fun WarehouseInfoScreen(
                 // 分隔线
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 4.dp),
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    color = ColorHelpers.getGroup4TextColor(0.2f)
                 )
         
         // 容器描述
@@ -770,11 +766,12 @@ fun WarehouseInfoScreen(
                             stringResource(R.string.description),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = ColorHelpers.getGroup4TextColor()
                         )
                     Text(
                         text = warehouse.description,
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = ColorHelpers.getGroup4TextColor()
                     )
                 }
             }
@@ -801,11 +798,12 @@ fun WarehouseInfoScreen(
                             stringResource(R.string.warehouse_location),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = ColorHelpers.getGroup4TextColor()
                         )
                         Text(
                             text = warehouse.location,
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = ColorHelpers.getGroup4TextColor()
                         )
                 }
             }
@@ -832,11 +830,12 @@ fun WarehouseInfoScreen(
                             stringResource(R.string.capacity),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = ColorHelpers.getGroup4TextColor()
                         )
                         Text(
                             text = "${warehouse.capacity}",
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = ColorHelpers.getGroup4TextColor()
                         )
                         // 显示容量使用情况
                         LinearProgressIndicator(
@@ -856,7 +855,7 @@ fun WarehouseInfoScreen(
                                 warehouse.capacity
                             ),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            color = ColorHelpers.getGroup4TextColor(0.6f)
                         )
                         }
                     }
@@ -871,6 +870,7 @@ fun WarehouseInfoScreen(
                 text = stringResource(R.string.child_containers),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
+                color = ColorHelpers.getGroup4TextColor(),
                 modifier = Modifier.padding(vertical = 8.dp)
             )
             
@@ -900,6 +900,7 @@ fun WarehouseInfoScreen(
             text = stringResource(R.string.warehouse_items),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
+            color = ColorHelpers.getGroup4TextColor(),
             modifier = Modifier.padding(vertical = 8.dp)
         )
         
@@ -918,12 +919,12 @@ fun WarehouseInfoScreen(
                         Icons.Default.Category,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        tint = ColorHelpers.getGroup4IconColor(0.6f)
                     )
                     Text(
                         stringResource(R.string.warehouse_empty_hint),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = ColorHelpers.getGroup4TextColor(0.6f)
                     )
                 }
             }
@@ -936,6 +937,9 @@ fun WarehouseInfoScreen(
                 warehouseItems.forEach { item ->
                     ItemCard(
                         item = item,
+                        onClick = {
+                            onViewItem?.invoke(item.id)
+                        },
                         onEdit = { 
                             onEditItem?.invoke(item.id)
                         },
@@ -1181,8 +1185,8 @@ fun NewHomeScreenContent(
     
     val alertCount = expiringItems.size + lowStockItems.size
     
-    // 格式化日期
-    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+    // 格式化日期 - 使用系统默认格式
+    val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault()) }
     val todayStr = remember { dateFormat.format(Date()) }
     val greeting = stringResource(R.string.greeting_today, todayStr)
     
@@ -1415,7 +1419,7 @@ fun AlertCard(
                 ColorHelpers.getGroup5AlertCardColor()
             }
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)  // 设置阴影
     ) {
         Row(
             modifier = Modifier
@@ -2054,13 +2058,12 @@ fun WarehouseIconItem(
     onEditWarehouse: (Warehouse) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
     onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
+    onGenerateQRCode: ((Warehouse) -> Unit)? = null, // 新增：生成二维码回调
     warehouseViewModel: WarehouseViewModel? = null, // 用于获取删除统计信息
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
-    var deleteStats by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-    val scope = rememberCoroutineScope()
     // 外层容器，用于显示选中指示器
     Box(
         modifier = modifier
@@ -2137,17 +2140,27 @@ fun WarehouseIconItem(
                     )
                 }
                 
-                // 长按菜单
-        DropdownMenu(
+                // 长按菜单 - 添加背景层以支持点击外部关闭
+                if (showMenu) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable { showMenu = false }
+                            .zIndex(1f)
+                    )
+                }
+                DropdownMenu(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
-            modifier = Modifier.width(160.dp),
+            modifier = Modifier
+                .width(160.dp)
+                .zIndex(2f),
             shape = RoundedCornerShape(6.dp),
             containerColor = ColorHelpers.getGroup3CardBgColor(),
             tonalElevation = 8.dp
         ) {
             // 编辑
-            DropdownMenuItem(
+                    DropdownMenuItem(
                 text = { 
                     Text(
                         stringResource(R.string.edit),
@@ -2155,10 +2168,10 @@ fun WarehouseIconItem(
                         color = ColorHelpers.getGroup4TextColor()
                     ) 
                 },
-                onClick = {
-                    showMenu = false
-                    onEditWarehouse(warehouse)
-                },
+                        onClick = {
+                            showMenu = false
+                            onEditWarehouse(warehouse)
+                        },
                 leadingIcon = { 
                     Icon(
                         Icons.Default.Edit, 
@@ -2174,15 +2187,45 @@ fun WarehouseIconItem(
                 )
             )
             
+            // 生成二维码
+            if (onGenerateQRCode != null) {
+                DropdownMenuItem(
+                    text = { 
+                        Text(
+                            stringResource(R.string.generate_qr_code),
+                            fontSize = 14.sp,
+                            color = ColorHelpers.getGroup4TextColor()
+                        ) 
+                    },
+                    onClick = {
+                        showMenu = false
+                        onGenerateQRCode(warehouse)
+                    },
+                    leadingIcon = { 
+                        Icon(
+                            Icons.Default.QrCode, 
+                            null,
+                            modifier = Modifier.size(18.dp),
+                            tint = ColorHelpers.getGroup4IconColor()
+                        ) 
+                    },
+                    modifier = Modifier.height(36.dp),
+                    colors = MenuDefaults.itemColors(
+                        textColor = ColorHelpers.getGroup4TextColor(),
+                        leadingIconColor = ColorHelpers.getGroup4IconColor()
+                    )
+                )
+            }
+            
             // 分隔线
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                color = ColorHelpers.getGroup4TextColor().copy(alpha = 0.1f),
-                thickness = 0.5.dp
-            )
+            //HorizontalDivider(
+            //    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            //    color = ColorHelpers.getGroup4TextColor().copy(alpha = 0.1f),
+            //    thickness = 0.5.dp
+            //)
             
             // 删除（红色）
-            DropdownMenuItem(
+                    DropdownMenuItem(
                 text = { 
                     Text(
                         stringResource(R.string.delete),
@@ -2190,19 +2233,10 @@ fun WarehouseIconItem(
                         color = MaterialTheme.colorScheme.error
                     ) 
                 },
-                onClick = {
-                    showMenu = false
-                    // 获取删除统计信息并显示确认对话框
-                    if (warehouseViewModel != null) {
-                        scope.launch {
-                            val stats = warehouseViewModel.getDeleteStatistics(warehouse)
-                            deleteStats = stats
-                            showDeleteConfirmDialog = true
-                        }
-                    } else {
-                        // 如果没有 ViewModel，直接删除
-                        onDeleteWarehouse(warehouse)
-                    }
+                        onClick = {
+                            showMenu = false
+                    // 显示删除确认对话框
+                    showDeleteConfirmDialog = true
                 },
                 leadingIcon = { 
                     Icon(
@@ -2219,21 +2253,21 @@ fun WarehouseIconItem(
                 )
             )
         }
-            }
+        }
         }
         
-        // 删除确认对话框
-        if (showDeleteConfirmDialog && deleteStats != null) {
+        // 删除确认对话框（简化版，只显示风险提示）
+        if (showDeleteConfirmDialog) {
             androidx.compose.ui.window.Dialog(onDismissRequest = { showDeleteConfirmDialog = false }) {
                 Card(
                     modifier = Modifier
-                        .fillMaxWidth(0.85f)
+                        .fillMaxWidth(0.75f)
                         .wrapContentHeight(),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = ColorHelpers.getGroup3CardBgColor()
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(
                         modifier = Modifier.padding(20.dp),
@@ -2243,7 +2277,7 @@ fun WarehouseIconItem(
                         Icon(
                             Icons.Default.Delete,
                             contentDescription = null,
-                            modifier = Modifier.size(48.dp),
+                            modifier = Modifier.size(40.dp),
                             tint = MaterialTheme.colorScheme.error
                         )
                         
@@ -2251,55 +2285,39 @@ fun WarehouseIconItem(
                         
                         // 标题
                         Text(
-                            text = "确认删除容器",
-                            style = MaterialTheme.typography.titleLarge,
+                            text = stringResource(R.string.confirm_delete),
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = ColorHelpers.getGroup4TextColor()
                         )
                         
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         
                         // 容器名称
                         Text(
                             text = "\"${warehouse.name}\"",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
                             color = ColorHelpers.getGroup4TextColor()
                         )
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        // 删除说明
-                        val (childCount, itemCount) = deleteStats!!
-                        val warningText = buildString {
-                            append("删除此容器将同时删除：\n")
-                            if (childCount > 0) {
-                                append("• $childCount 个子容器\n")
-                            }
-                            if (itemCount > 0) {
-                                append("• $itemCount 件物品\n")
-                            }
-                            if (childCount == 0 && itemCount == 0) {
-                                append("• 容器本身")
-                            } else {
-                                append("• 容器本身")
-                            }
-                            append("\n\n此操作不可恢复！")
-                        }
-                        
+                        // 风险提示（简化版）
                         Text(
-                            text = warningText,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = ColorHelpers.getGroup4TextColor(),
-                            lineHeight = 20.sp
+                            text = stringResource(R.string.delete_warehouse_warning),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = ColorHelpers.getGroup4TextColor(0.8f),
+                            lineHeight = 18.sp,
+                            textAlign = TextAlign.Center
                         )
                         
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
                         
                         // 按钮行
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             // 取消按钮
                             TextButton(
@@ -2308,6 +2326,7 @@ fun WarehouseIconItem(
                             ) {
                                 Text(
                                     "取消",
+                                    fontSize = 14.sp,
                                     color = ColorHelpers.getGroup4TextColor()
                                 )
                             }
@@ -2316,14 +2335,18 @@ fun WarehouseIconItem(
                             Button(
                                 onClick = {
                                     showDeleteConfirmDialog = false
-                                    onDeleteWarehouse(warehouse)
-                                },
+                            onDeleteWarehouse(warehouse)
+                        },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.error
                                 )
                             ) {
-                                Text("删除", color = androidx.compose.material3.MaterialTheme.colorScheme.onError)
+                                Text(
+                                    "删除",
+                                    fontSize = 14.sp,
+                                    color = androidx.compose.material3.MaterialTheme.colorScheme.onError
+                                )
                             }
                         }
                     }
@@ -2347,6 +2370,7 @@ fun WarehouseSidebarColumn(
     onEditWarehouse: (Warehouse) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
     onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
+    onGenerateQRCode: ((Warehouse) -> Unit)? = null, // 新增：生成二维码回调
     warehouseViewModel: WarehouseViewModel? = null, // 用于获取删除统计信息
     modifier: Modifier = Modifier
 ) {
@@ -2419,7 +2443,10 @@ fun WarehouseSidebarColumn(
             modifier = Modifier
                 .weight(1f)
                 .nestedScroll(object : NestedScrollConnection {
-                    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    override fun onPreScroll(
+                        available: Offset,
+                        source: NestedScrollSource
+                    ): Offset {
                         // 允许下拉手势向上传递
                         return Offset.Zero
                     }
@@ -2436,6 +2463,7 @@ fun WarehouseSidebarColumn(
                     onEditWarehouse = onEditWarehouse,
                     onDeleteWarehouse = onDeleteWarehouse,
                     onViewInfo = onViewInfo,
+                    onGenerateQRCode = onGenerateQRCode,
                     warehouseViewModel = warehouseViewModel
                 )
             }
@@ -2476,6 +2504,7 @@ fun SubWarehouseIcon(
     onEditWarehouse: (Warehouse) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
     onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
+    onGenerateQRCode: ((Warehouse) -> Unit)? = null, // 新增：生成二维码回调
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -2549,9 +2578,19 @@ fun SubWarehouseIcon(
             )
         }
         
+        // 添加背景层以支持点击外部关闭
+        if (showMenu) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { showMenu = false }
+                    .zIndex(1f)
+            )
+        }
         DropdownMenu(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
+            modifier = Modifier.zIndex(2f),
             shape = RoundedCornerShape(12.dp),
             containerColor = ColorHelpers.getGroup3CardBgColor(),
             tonalElevation = 8.dp
@@ -2564,12 +2603,23 @@ fun SubWarehouseIcon(
                 },
                 leadingIcon = { Icon(Icons.Default.Edit, null) }
             )
+            
+            // 生成二维码选项
+            if (onGenerateQRCode != null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.generate_qr_code_action)) },
+                    onClick = {
+                        showMenu = false
+                        onGenerateQRCode(warehouse)
+                    },
+                    leadingIcon = { Icon(Icons.Default.QrCode, null) }
+                )
+            }
+            
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.delete)) },
                 onClick = {
                     showMenu = false
-                    // 这里也需要添加确认对话框，但需要 warehouseViewModel
-                    // 暂时直接删除，后续可以优化
                     onDeleteWarehouse(warehouse)
                 },
                 leadingIcon = { Icon(Icons.Default.Delete, null) }
@@ -2592,23 +2642,24 @@ fun SubWarehouseRow(
     warehousePath: List<Warehouse> = emptyList(), // 新增：面包屑导航路径
     onNavigateToWarehouse: ((Warehouse) -> Unit)? = null, // 新增：面包屑导航回调
     onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
+    onGenerateQRCode: ((Warehouse) -> Unit)? = null, // 新增：生成二维码回调
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp) // 减小：16dp,8dp → 12dp,6dp
+            .padding(horizontal = 12.dp, vertical = 3.dp) // 减小：16dp,8dp → 12dp,6dp
             .nestedScroll(object : NestedScrollConnection {
                 override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                     // 允许下拉手势向上传递（子容器列表是横向的，不应该拦截纵向下拉）
                     return Offset.Zero
                 }
             }),
-        shape = RoundedCornerShape(8.dp), // 减小：12dp → 8dp
+        shape = RoundedCornerShape(12.dp), // 统一为 12.dp
         colors = CardDefaults.cardColors(
             containerColor = ColorHelpers.getGroup3CardBgColor()
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp) // 减小：2dp → 1dp
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // 减小：2dp → 1dp
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
@@ -2619,7 +2670,7 @@ fun SubWarehouseRow(
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .padding(horizontal = 12.dp, vertical = 3.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -2627,11 +2678,23 @@ fun SubWarehouseRow(
                         val warehouse = warehousePath[index]
                         val isLast = index == warehousePath.size - 1
                         
-                        // 容器名称（可点击），最后一个添加"里的物品"后缀
+                        // 容器名称（可点击），最后一个添加自定义后缀
+                        val context = LocalContext.current
+                        val prefs = remember {
+                            context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+                        }
+                        val customSuffix = remember {
+                            prefs.getString("warehouse_items_suffix", context.getString(R.string.warehouse_items_suffix)) 
+                                ?: context.getString(R.string.warehouse_items_suffix)
+                        }
+                        val unnamedText = remember {
+                            prefs.getString("unnamed_warehouse", context.getString(R.string.unnamed_warehouse))
+                                ?: context.getString(R.string.unnamed_warehouse)
+                        }
                         val displayText = if (isLast) {
-                            "${warehouse.name.ifEmpty { "未命名容器" }}里的物品"
+                            "${warehouse.name.ifEmpty { unnamedText }}$customSuffix"
                         } else {
-                            warehouse.name.ifEmpty { "未命名容器" }
+                            warehouse.name.ifEmpty { unnamedText }
                         }
                         
                         Text(
@@ -2690,7 +2753,8 @@ fun SubWarehouseRow(
                         onClick = { onSubWarehouseClick(subWarehouse) },
                         onEditWarehouse = onEditWarehouse,
                         onDeleteWarehouse = onDeleteWarehouse,
-                        onViewInfo = onViewInfo
+                        onViewInfo = onViewInfo,
+                        onGenerateQRCode = onGenerateQRCode
                     )
                 }
                 
@@ -2721,7 +2785,7 @@ fun SubWarehouseRow(
                         }
                         
                         Text(
-                            text = "添加容器",
+                            text = stringResource(R.string.add_container_action),
                             style = MaterialTheme.typography.labelSmall,
                             color = ColorHelpers.getGroup4TextColor()
                         )
@@ -2754,69 +2818,129 @@ fun ItemListRow(
     onAddToShoppingCart: (Item) -> Unit = {},
     onDeleteItem: (Item) -> Unit = {},
     onAddAlert: (Item) -> Unit = {},
+    onQuantityChange: ((Item, Int) -> Unit)? = null, // 数量变化回调
+    warehouseName: String? = null, // 容器名称（可选）
     modifier: Modifier = Modifier
 ) {
     // 菜单展开状态
     var showMenu by remember { mutableStateOf(false) }
+    
+    // 获取主图路径（优先使用裁剪后的主图）
+    val primaryImagePath = remember(item.imageUris, item.primaryImageIndex, item.imageUri) {
+        if (item.imageUris.isNotEmpty() && item.primaryImageIndex < item.imageUris.size) {
+            val originalPath = item.imageUris[item.primaryImageIndex]
+            val croppedPath = ImageUtils.getCroppedImagePath(originalPath)
+            // 如果裁剪后的图片存在，使用裁剪后的；否则使用原图
+            val croppedFile = java.io.File(croppedPath)
+            if (croppedFile.exists()) croppedPath else originalPath
+        } else {
+            item.imageUri
+        }
+    }
+    
+    // 加载主图用于头像显示
+    val avatarBitmap = remember(primaryImagePath) {
+        if (primaryImagePath != null) {
+            try {
+                BitmapFactory.decodeFile(primaryImagePath)?.asImageBitmap()
+            } catch (_: Exception) {
+                null
+            }
+        } else {
+            null
+        }
+    }
     
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 3.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = ColorHelpers.getGroup3CardBgColor()
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp), // 减小：12dp → 10dp
-            horizontalArrangement = Arrangement.spacedBy(10.dp), // 减小：12dp → 10dp
+                .padding(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧圆形物品图标
+            // 左侧圆形主图/占位
             val itemBackgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
             val itemTextColor = ColorHelpers.getContrastColor(itemBackgroundColor)
             Box(
                 modifier = Modifier
-                    .size(36.dp) // 减小：40dp → 36dp
+                    .size(40.dp)
                     .clip(CircleShape)
                     .background(itemBackgroundColor),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = item.name.firstOrNull()?.uppercase() ?: "?",
-                    style = MaterialTheme.typography.titleSmall, // 减小字体
-                    fontWeight = FontWeight.Bold,
-                    color = itemTextColor // 根据背景颜色对比度自动切换
-                )
+                if (avatarBitmap != null) {
+                    Image(
+                        bitmap = avatarBitmap,
+                        contentDescription = item.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text = item.name.firstOrNull()?.uppercase() ?: "?",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = itemTextColor
+                    )
+                }
             }
             
             // 中间物品信息
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp) // 减小间距
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 // 物品名称（粗体）
                 Text(
                     text = item.name,
-                    style = MaterialTheme.typography.bodyMedium, // 减小字体
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = ColorHelpers.getGroup4TextColor(),
-                    maxLines = 2, // 允许显示2行
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                
+                // 容器名称（如果提供）
+                if (warehouseName != null) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Folder,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = warehouseName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
                 
                 // 物品描述
                 if (item.description.isNotBlank()) {
                     Text(
                         text = item.description,
-                        style = MaterialTheme.typography.labelSmall, // 减小字体
+                        style = MaterialTheme.typography.labelSmall,
                         color = ColorHelpers.getGroup4TextColor(0.7f),
-                        maxLines = 2, // 允许显示2行
+                        maxLines = if (warehouseName != null) 1 else 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -2854,9 +2978,6 @@ fun ItemListRow(
                             val tag = allTagsToShow[index]
                             // 根据标签类型和索引分配不同浅颜色背景
                             val bgColor = when {
-                                tag == "正常" -> Color(0xFFE8F5E9) // 浅绿
-                                tag == "损坏" -> Color(0xFFFFF3E0) // 浅橙
-                                tag == "遗失" -> Color(0xFFFFEBEE) // 浅红
                                 tag == "过期" -> Color(0xFFF3E5F5) // 浅紫
                                 else -> {
                                     // 自定义标签使用循环颜色（柔和的浅色）
@@ -2865,9 +2986,6 @@ fun ItemListRow(
                             }
                             
                             val displayTag = when (tag) {
-                                "正常" -> stringResource(R.string.status_normal)
-                                "损坏" -> stringResource(R.string.status_damaged)
-                                "遗失" -> stringResource(R.string.status_lost)
                                 "过期" -> stringResource(R.string.status_expired)
                                 else -> tag
                             }
@@ -2882,7 +3000,6 @@ fun ItemListRow(
                                     displayTag, 
                                     color = ColorHelpers.getGroup4TextColor(),
                                     fontSize = 10.sp,
-                                    // 控制行高，避免额外的上下空间；padding 保持最小
                                     lineHeight = 11.sp,
                                     modifier = Modifier.padding(horizontal = 2.dp, vertical = 0.dp),
                                     style = MaterialTheme.typography.labelSmall.copy(lineHeight = 9.sp, fontSize = 8.sp)
@@ -2898,7 +3015,7 @@ fun ItemListRow(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (item.expiryDate != null) {
-                        val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+                        val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault()) }
                         val dateStr = remember(item.expiryDate) { dateFormat.format(item.expiryDate) }
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -2906,11 +3023,11 @@ fun ItemListRow(
                         ) {
                             Icon(
                                 Icons.Default.CalendarToday,
-                        contentDescription = null,
+                                contentDescription = null,
                                 modifier = Modifier.size(12.dp),
                                 tint = ColorHelpers.getGroup4IconColor(0.6f)
-                    )
-                    Text(
+                            )
+                            Text(
                                 text = dateStr,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontSize = 10.sp,
@@ -2931,7 +3048,7 @@ fun ItemListRow(
                                 tint = ColorHelpers.getGroup4IconColor(0.6f)
                             )
                             Text(
-                                text = item.barcode.take(8), // 只显示前8位
+                                text = item.barcode.take(8),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontSize = 10.sp,
                                 color = ColorHelpers.getGroup4TextColor(0.6f)
@@ -2962,19 +3079,73 @@ fun ItemListRow(
                         Spacer(modifier = Modifier.height(4.dp))
                     }
                     
-                    // 数量显示
+                    // 数量显示和快速调整按钮
                     Text(
-                        text = "数量",
+                        text = stringResource(R.string.quantity_label),
                         style = MaterialTheme.typography.labelSmall,
-                        fontSize = 10.sp, // 进一步减小
+                        fontSize = 10.sp,
                         color = ColorHelpers.getGroup4TextColor(0.6f)
                     )
-                    Text(
-                        text = item.quantity.toString(),
-                        style = MaterialTheme.typography.titleSmall, // 减小字体
-                        fontWeight = FontWeight.Bold,
-                        color = ColorHelpers.getGroup4TextColor()
-                    )
+                    
+                    // 如果提供了数量变化回调，显示 +/- 按钮
+                    if (onQuantityChange != null) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // 减少按钮
+                            IconButton(
+                                onClick = { 
+                                    if (item.quantity > 0) {
+                                        onQuantityChange(item, item.quantity - 1)
+                                    }
+                                },
+                                modifier = Modifier.size(24.dp),
+                                enabled = item.quantity > 0
+                            ) {
+                                Icon(
+                                    Icons.Default.Remove,
+                                    contentDescription = "减少数量",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = if (item.quantity > 0) 
+                                        ColorHelpers.getGroup4IconColor() 
+                                    else 
+                                        ColorHelpers.getGroup4IconColor(0.3f)
+                                )
+                            }
+                            
+                            // 数量文本
+                            Text(
+                                text = item.quantity.toString(),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = ColorHelpers.getGroup4TextColor(),
+                                modifier = Modifier.widthIn(min = 24.dp),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            
+                            // 增加按钮
+                            IconButton(
+                                onClick = { onQuantityChange(item, item.quantity + 1) },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = "增加数量",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = ColorHelpers.getGroup4IconColor()
+                                )
+                            }
+                        }
+                    } else {
+                        // 没有回调时，只显示数量
+                        Text(
+                            text = item.quantity.toString(),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = ColorHelpers.getGroup4TextColor()
+                        )
+                    }
                 }
                 
                 // 三个点菜单按钮
@@ -3124,6 +3295,7 @@ fun ItemListRow(
     }
 }
 
+
 /**
  * 右下物品列表区域
  */
@@ -3137,6 +3309,7 @@ fun ItemListSection(
     alertSettingsManager: AlertSettingsManager? = null,
     onDeleteItem: (Item) -> Unit = {},
     onAddAlert: (Item) -> Unit = {},
+    allWarehouses: List<Warehouse>? = null, // 所有容器列表（用于显示容器名称）
     modifier: Modifier = Modifier
 ) {
     // LazyColumn 的状态
@@ -3148,7 +3321,10 @@ fun ItemListSection(
             modifier = modifier
                 .fillMaxSize()
                 .nestedScroll(object : NestedScrollConnection {
-                    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    override fun onPreScroll(
+                        available: Offset,
+                        source: NestedScrollSource
+                    ): Offset {
                         // 允许下拉手势向上传递
                         return Offset.Zero
                     }
@@ -3166,7 +3342,7 @@ fun ItemListSection(
                     modifier = Modifier.size(64.dp)
                     )
                     Text(
-                    text = "此容器为空",
+                    text = stringResource(R.string.warehouse_empty),
                     style = MaterialTheme.typography.bodyLarge,
                     color = ColorHelpers.getGroup4TextColor(0.6f)
                 )
@@ -3178,7 +3354,10 @@ fun ItemListSection(
             modifier = modifier
                 .fillMaxSize()
                 .nestedScroll(object : NestedScrollConnection {
-                    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    override fun onPreScroll(
+                        available: Offset,
+                        source: NestedScrollSource
+                    ): Offset {
                         // 允许下拉手势向上传递
                         return Offset.Zero
                     }
@@ -3187,10 +3366,16 @@ fun ItemListSection(
             contentPadding = PaddingValues(bottom = 80.dp, top = 4.dp, start = 0.dp, end = 0.dp) // 为 FAB 和阴影留出空间
         ) {
             items(items, key = { it.id }) { item ->
+                // 查找物品所属的容器名称
+                val warehouseName = remember(item.warehouseId, allWarehouses) {
+                    allWarehouses?.find { it.id == item.warehouseId }?.name
+                }
+                
                 ItemListRow(
                     item = item,
                     onClick = { onViewItem(item.id) },
                     onEditItem = onEditItem,
+                    warehouseName = warehouseName, // 传递容器名称
                     onAddToShoppingCart = { item ->
                         shoppingItemViewModel?.let { vm ->
                             val shoppingItem = com.example.itemremindertool.data.model.ShoppingItem(
@@ -3210,7 +3395,11 @@ fun ItemListSection(
                             itemViewModel?.deleteItem(toDelete)
                         }
                     },
-                    onAddAlert = onAddAlert
+                    onAddAlert = onAddAlert,
+                    onQuantityChange = { item, newQuantity ->
+                        // 快速更新物品数量
+                        itemViewModel?.updateItem(item.copy(quantity = newQuantity))
+                    }
                 )
             }
         }
@@ -3232,6 +3421,10 @@ fun DiscordStyleMainLayout(
     alertSettingsManager: AlertSettingsManager, // 新增：提醒设置管理器
     shoppingItemViewModel: com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel? = null,
     itemViewModel: ItemViewModel? = null,
+    itemReminderViewModel: com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel? = null, // 物品提醒ViewModel
+    activityEventViewModel: com.example.itemremindertool.ui.viewmodel.ActivityEventViewModel? = null, // 动态事件ViewModel
+    warehouseViewModel: WarehouseViewModel? = null, // 新增：用于获取删除统计信息
+    searchQuery: String = "", // 新增：搜索查询
     onWarehouseSelect: (Warehouse) -> Unit,
     onHomeClick: () -> Unit, // 新增：点击首页的回调
     onSubWarehouseClick: (Warehouse) -> Unit,
@@ -3239,6 +3432,7 @@ fun DiscordStyleMainLayout(
     onAddChildWarehouse: (Long) -> Unit,
     onEditWarehouse: (Long) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
+    onGenerateQRCode: ((Warehouse) -> Unit)? = null, // 新增：生成二维码回调
     onEditItem: (Long) -> Unit,
     onViewItem: (Long) -> Unit = {}, // 查看物品信息回调
     onDeleteItem: (Item) -> Unit = {},
@@ -3246,6 +3440,19 @@ fun DiscordStyleMainLayout(
     pullRefreshState: androidx.compose.material.pullrefresh.PullRefreshState, // 下拉刷新状态
     modifier: Modifier = Modifier
 ) {
+    // 搜索过滤
+    val filteredItems = remember(allItems, searchQuery) {
+        if (searchQuery.isBlank()) {
+            emptyList()
+        } else {
+            allItems.filter { item ->
+                item.name.contains(searchQuery, ignoreCase = true) ||
+                item.description.contains(searchQuery, ignoreCase = true) ||
+                (item.barcode?.contains(searchQuery, ignoreCase = true) == true)
+            }
+        }
+    }
+    val isSearching = searchQuery.isNotBlank()
     // 计算当前容器的根容器（顶级容器）ID，用于侧边栏选中状态
     val rootWarehouseId = remember(selectedWarehouseId, allWarehouses, warehouses) {
         if (selectedWarehouseId == null) {
@@ -3318,6 +3525,13 @@ fun DiscordStyleMainLayout(
     var showWarehouseInfoDialog by remember { mutableStateOf(false) }
     var selectedWarehouseForInfo by remember { mutableStateOf<Warehouse?>(null) }
     
+    // 删除确认对话框相关状态
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var warehouseToDelete by remember { mutableStateOf<Warehouse?>(null) }
+    var deleteStatistics by remember { mutableStateOf<Pair<Int, Int>>(0 to 0) }
+    var isSubWarehouseDelete by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    
     // 合并所有容器列表
     val allContainers = remember(allWarehouses, warehouses) {
         (allWarehouses + warehouses).distinctBy { it.id }
@@ -3343,7 +3557,9 @@ fun DiscordStyleMainLayout(
                 onAddWarehouse = onAddWarehouse,
                 onEditWarehouse = { warehouse -> onEditWarehouse(warehouse.id) },
                 onDeleteWarehouse = onDeleteWarehouse,
-                onViewInfo = onViewWarehouseInfo
+                onViewInfo = onViewWarehouseInfo,
+                onGenerateQRCode = onGenerateQRCode,
+                warehouseViewModel = warehouseViewModel
             )
         
         // 右侧内容区 - 使用 Box 包装以支持下拉刷新
@@ -3357,73 +3573,303 @@ fun DiscordStyleMainLayout(
             Column(
                 modifier = Modifier.fillMaxSize()
         ) {
+            // 搜索模式：显示搜索结果
+            if (isSearching) {
+                if (filteredItems.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(vertical = 64.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = ColorHelpers.getGroup4IconColor(0.6f)
+                            )
+                            Text(
+                                stringResource(R.string.no_search_results),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = ColorHelpers.getGroup4TextColor(0.6f)
+                            )
+                        }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Text(
+                            text = stringResource(R.string.search_results, filteredItems.size),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            color = ColorHelpers.getGroup4TextColor()
+                        )
+                        ItemListSection(
+                            items = filteredItems,
+                            onEditItem = onEditItem,
+                            onViewItem = onViewItem,
+                            shoppingItemViewModel = shoppingItemViewModel,
+                            itemViewModel = itemViewModel,
+                            alertSettingsManager = alertSettingsManager,
+                            onDeleteItem = onDeleteItem,
+                            onAddAlert = onAddAlert,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
             // 首页状态（selectedWarehouseId == null）
-            if (selectedWarehouseId == null) {
+            else if (selectedWarehouseId == null) {
                 // 添加待购列表切换状态
                 var showShoppingList by remember { mutableStateOf(false) }
+                var showContainerList by remember { mutableStateOf(false) }
+                var showItemList by remember { mutableStateOf(false) }
+                val allContainers = remember(allWarehouses, warehouses) {
+                    (allWarehouses + warehouses).distinctBy { it.id }
+                }
                 
                 // 右上：统计卡片
                 HomeStatisticCards(
-                    totalWarehouses = warehouses.size,
+                    totalWarehouses = allContainers.size,
                     totalItems = allItems.size,
                     shoppingItemsCount = shoppingItemsCount,
-                    onShoppingClick = { showShoppingList = !showShoppingList }
+                    onContainerClick = {
+                        if (showContainerList) {
+                            showContainerList = false
+                            showItemList = false
+                            showShoppingList = false
+                        } else {
+                            showContainerList = true
+                            showItemList = false
+                            showShoppingList = false
+                        }
+                    },
+                    onItemClick = {
+                        if (showItemList) {
+                            showContainerList = false
+                            showItemList = false
+                            showShoppingList = false
+                        } else {
+                            showItemList = true
+                            showContainerList = false
+                            showShoppingList = false
+                        }
+                    },
+                    onShoppingClick = {
+                        if (showShoppingList) {
+                            showShoppingList = false
+                            showContainerList = false
+                            showItemList = false
+                        } else {
+                            showShoppingList = true
+                            showContainerList = false
+                            showItemList = false
+                        }
+                    }
                 )
                 
-                // 右下：提醒列表或待购列表
-                if (showShoppingList) {
+                // 右下：根据统计卡片点击展示对应列表
+                when {
+                    showContainerList -> {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(allContainers, key = { it.id }) { warehouse ->
+                                val childCount = remember(allContainers, warehouse) {
+                                    countAllChildWarehouses(warehouse.id, allContainers)
+                                }
+                                val itemCount = remember(allContainers, allItems, warehouse) {
+                                    countAllItemsInWarehouse(
+                                        warehouse.id,
+                                        allContainers,
+                                        allItems,
+                                        warehouseItemCounts
+                                    )
+                                }
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { 
+                                            // 点击容器卡片，跳转到对应容器页面
+                                            onWarehouseSelect(warehouse)
+                                        },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = ColorHelpers.getGroup3CardBgColor()
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = warehouse.name,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = ColorHelpers.getGroup4TextColor()
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.child_warehouse_info, childCount, itemCount),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = ColorHelpers.getGroup4TextColor(0.7f)
+                                        )
+                                        if (warehouse.description.isNotBlank()) {
+                                            Text(
+                                                text = warehouse.description,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = ColorHelpers.getGroup4TextColor(0.7f),
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    showItemList -> {
+                        // 物品统计 - 显示所有物品及其所属容器
+                        ItemListSection(
+                            items = allItems,
+                            onEditItem = onEditItem,
+                            onViewItem = onViewItem,
+                            shoppingItemViewModel = shoppingItemViewModel,
+                            itemViewModel = itemViewModel,
+                            alertSettingsManager = alertSettingsManager,
+                            onDeleteItem = onDeleteItem,
+                            onAddAlert = onAddAlert,
+                            allWarehouses = allContainers, // 传递所有容器信息用于显示容器名称
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    showShoppingList -> {
                     // 待购列表 - 增加底部 padding 避免被 FAB 挡住删除按钮
                     ShoppingListSection(
                         shoppingItemViewModel = shoppingItemViewModel,
                         itemViewModel = itemViewModel,
                         modifier = Modifier.weight(1f)
                     )
-                } else {
-                    // 提醒列表
-                    AlertListSection(
-                        items = allItems,
-                        alertSettingsManager = alertSettingsManager,
-                        onEditItem = onEditItem,
-                        onViewItem = onViewItem,
-                        modifier = Modifier.weight(1f)
-                    )
+                    }
+                    else -> {
+                        // 提醒列表
+                        AlertListSection(
+                            items = allItems,
+                            alertSettingsManager = alertSettingsManager,
+                            itemReminderViewModel = itemReminderViewModel,
+                            activityEventViewModel = activityEventViewModel,
+                            onEditItem = onEditItem,
+                            onViewItem = onViewItem,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
             // 如果有选中的容器，显示子容器和物品
             else {
-                // 合并所有容器列表，确保能找到容器
-                val allContainers = remember(allWarehouses, warehouses) {
-                    (allWarehouses + warehouses).distinctBy { it.id }
-                }
-                
-                // 计算显示路径：优先使用计算好的路径，如果为空则至少显示当前容器
-                val displayPath = remember(selectedWarehouseId, breadcrumbPath, allContainers) {
-                    if (breadcrumbPath.isNotEmpty()) {
-                        breadcrumbPath
+                // 搜索模式：在容器页面也显示搜索结果
+                if (isSearching) {
+                    if (filteredItems.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(vertical = 64.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = ColorHelpers.getGroup4IconColor(0.6f)
+                                )
+                                Text(
+                                    stringResource(R.string.no_search_results),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = ColorHelpers.getGroup4TextColor(0.6f)
+                                )
+                            }
+                        }
                     } else {
-                        // 如果路径为空，从合并的容器列表中查找当前容器
-                        allContainers.find { it.id == selectedWarehouseId }
-                            ?.let { listOf(it) } ?: emptyList()
+                        Column(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Text(
+                                text = stringResource(R.string.search_results, filteredItems.size),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                color = ColorHelpers.getGroup4TextColor()
+                            )
+                            ItemListSection(
+                                items = filteredItems,
+                                onEditItem = onEditItem,
+                                onViewItem = onViewItem,
+                                shoppingItemViewModel = shoppingItemViewModel,
+                                itemViewModel = itemViewModel,
+                                alertSettingsManager = alertSettingsManager,
+                                onDeleteItem = onDeleteItem,
+                                onAddAlert = onAddAlert,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
-                }
-                
-                // 右上：子容器横向滚动区（包含面包屑导航）
-                if (childWarehouses.isNotEmpty() || true) { // 总是显示，即使为空也显示添加按钮
-                    SubWarehouseRow(
-                        subWarehouses = childWarehouses,
-                        warehouseItemCounts = warehouseItemCounts,
-                        onSubWarehouseClick = onSubWarehouseClick,
-                        onAddSubWarehouse = { onAddChildWarehouse(selectedWarehouseId) },
-                        onEditWarehouse = { warehouse -> onEditWarehouse(warehouse.id) },
-                        onDeleteWarehouse = onDeleteWarehouse,
-                        warehousePath = displayPath, // 传入面包屑路径
-                        onNavigateToWarehouse = { warehouse ->
-                            // 点击容器，导航到该容器
-                            onWarehouseSelect(warehouse)
-                        },
-                        onViewInfo = onViewWarehouseInfo
-                    )
-                }
+                } else {
+                    // 合并所有容器列表，确保能找到容器
+                    val allContainers = remember(allWarehouses, warehouses) {
+                        (allWarehouses + warehouses).distinctBy { it.id }
+                    }
+                    
+                    // 计算显示路径：优先使用计算好的路径，如果为空则至少显示当前容器
+                    val displayPath = remember(selectedWarehouseId, breadcrumbPath, allContainers) {
+                        if (breadcrumbPath.isNotEmpty()) {
+                            breadcrumbPath
+                        } else {
+                            // 如果路径为空，从合并的容器列表中查找当前容器
+                            allContainers.find { it.id == selectedWarehouseId }
+                                ?.let { listOf(it) } ?: emptyList()
+                        }
+                    }
+                    
+                    // 右上：子容器横向滚动区（包含面包屑导航）
+                    if (childWarehouses.isNotEmpty() || true) { // 总是显示，即使为空也显示添加按钮
+                        SubWarehouseRow(
+                            subWarehouses = childWarehouses,
+                            warehouseItemCounts = warehouseItemCounts,
+                            onSubWarehouseClick = onSubWarehouseClick,
+                            onAddSubWarehouse = { onAddChildWarehouse(selectedWarehouseId) },
+                            onEditWarehouse = { warehouse -> onEditWarehouse(warehouse.id) },
+                            onDeleteWarehouse = { warehouse ->
+                                // 子容器删除也需要确认
+                                warehouseToDelete = warehouse
+                                isSubWarehouseDelete = true
+                                scope.launch {
+                                    warehouseViewModel?.let { vm ->
+                                        deleteStatistics = vm.getDeleteStatistics(warehouse)
+                                    }
+                                }
+                                showDeleteDialog = true
+                            },
+                            warehousePath = displayPath, // 传入面包屑路径
+                            onNavigateToWarehouse = { warehouse ->
+                                // 点击容器，导航到该容器
+                                onWarehouseSelect(warehouse)
+                            },
+                            onViewInfo = onViewWarehouseInfo,
+                            onGenerateQRCode = onGenerateQRCode
+                        )
+                    }
                 
                 // 右下：物品列表
                 ItemListSection(
@@ -3462,127 +3908,338 @@ fun DiscordStyleMainLayout(
         }
         }
     }
+    }
 }
 
 /**
- * 首页统计卡片（右上）
+ * 首页统计卡片（右上）- 现代化设计
  */
 @Composable
 fun HomeStatisticCards(
     totalWarehouses: Int,
     totalItems: Int,
     shoppingItemsCount: Int,
+    onContainerClick: (() -> Unit)? = null,
+    onItemClick: (() -> Unit)? = null,
     onShoppingClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp), // 与子容器卡片一致
-        shape = RoundedCornerShape(8.dp), // 与子容器卡片一致
+            .padding(horizontal = 12.dp, vertical = 3.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = ColorHelpers.getGroup3CardBgColor()
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp) // 与子容器卡片一致
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 6.dp), // 与子容器卡片内部padding一致
-            horizontalArrangement = Arrangement.spacedBy(6.dp), // 改为统一间距
+                .padding(vertical = 12.dp, horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 容器数量 - 圆形样式
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                val textColor = ColorHelpers.getContrastColor(backgroundColor)
-                Box(
-                    modifier = Modifier
-                        .size(40.dp) // 圆形大小
-                        .clip(CircleShape)
-                        .background(backgroundColor), // 使用不同的背景色以区分
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = totalWarehouses.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = textColor // 根据背景颜色对比度自动切换
-                    )
-                }
-                Text(
-                    text = "容器",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontSize = 11.sp,
-                    color = ColorHelpers.getGroup4TextColor(0.7f)
-                )
-            }
+            // 容器数量 - 现代化样式
+            StatisticItem(
+                icon = Icons.Default.Inventory2,
+                value = totalWarehouses.toString(),
+                label = stringResource(R.string.stat_label_warehouse),
+                iconColor = MaterialTheme.colorScheme.primary, // 使用主题色
+                onClick = onContainerClick,
+                modifier = Modifier.weight(1f)
+            )
             
-            // 物品数量 - 圆形样式
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                val textColor = ColorHelpers.getContrastColor(backgroundColor)
-                Box(
-                    modifier = Modifier
-                        .size(40.dp) // 圆形大小
-                        .clip(CircleShape)
-                        .background(backgroundColor), // 使用不同的背景色以区分
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = totalItems.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = textColor // 根据背景颜色对比度自动切换
-                    )
-                }
-                Text(
-                    text = "物品",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontSize = 11.sp,
-                    color = ColorHelpers.getGroup4TextColor(0.7f)
-                )
-            }
-            
-            // 待购物品 - 圆形样式（可点击）
-            Column(
+            // 分隔线
+            androidx.compose.material3.Divider(
                 modifier = Modifier
-                    .weight(1f)
-                    .clickable(onClick = onShoppingClick),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                val textColor = ColorHelpers.getContrastColor(backgroundColor)
+                    .height(40.dp)
+                    .width(1.dp),
+                color = ColorHelpers.getGroup4TextColor(0.15f)
+            )
+            
+            // 物品数量 - 现代化样式
+            StatisticItem(
+                icon = Icons.Default.Category,
+                value = totalItems.toString(),
+                label = stringResource(R.string.stat_label_item),
+                iconColor = MaterialTheme.colorScheme.primary, // 使用主题色
+                onClick = onItemClick,
+                modifier = Modifier.weight(1f)
+            )
+            
+            // 分隔线
+            androidx.compose.material3.Divider(
+                modifier = Modifier
+                    .height(40.dp)
+                    .width(1.dp),
+                color = ColorHelpers.getGroup4TextColor(0.15f)
+            )
+            
+            // 待购物品 - 现代化样式（可点击）
+            StatisticItem(
+                icon = Icons.Default.ShoppingBag,
+                value = shoppingItemsCount.toString(),
+                label = stringResource(R.string.stat_label_shopping),
+                iconColor = MaterialTheme.colorScheme.primary, // 使用主题色
+                onClick = onShoppingClick,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+/**
+ * 单个统计项组件 - 现代化设计
+ */
+@Composable
+private fun StatisticItem(
+    icon: ImageVector,
+    value: String,
+    label: String,
+    iconColor: androidx.compose.ui.graphics.Color,
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    val contentModifier = if (onClick != null) {
+        modifier.clickable(onClick = onClick)
+    } else {
+        modifier
+    }
+    
+    Column(
+        modifier = contentModifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        // 图标容器 - 带渐变背景
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            iconColor.copy(alpha = 0.2f),
+                            iconColor.copy(alpha = 0.1f)
+                        )
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = iconColor,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        
+        // 数值和标签
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = ColorHelpers.getGroup4TextColor(),
+                fontSize = 18.sp
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                fontSize = 11.sp,
+                color = ColorHelpers.getGroup4TextColor(0.65f),
+                letterSpacing = 0.3.sp
+            )
+        }
+    }
+}
+
+/**
+ * 时间线动态Item - 现代化设计
+ */
+@Composable
+fun TimelineItemView(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    iconColor: androidx.compose.ui.graphics.Color,
+    timeStr: String,
+    isLast: Boolean,
+    isFirst: Boolean = false,
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 80.dp) // 设置最小高度，确保时间线连续
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(onClick = onClick)
+                } else {
+                    Modifier
+                }
+            ),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 左侧：时间线和图标
+        Column(
+            modifier = Modifier.width(40.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // 上半部分竖线（除了第一项）
+            if (!isFirst) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp) // 圆形大小
-                        .clip(CircleShape)
-                        .background(backgroundColor), // 使用不同的背景色以区分
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = shoppingItemsCount.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = textColor // 根据背景颜色对比度自动切换
-                    )
-                }
-                Text(
-                    text = "待购",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontSize = 11.sp,
-                    color = ColorHelpers.getGroup4TextColor(0.7f)
+                        .width(3.dp)
+                        .height(12.dp)
+                        .background(
+                            color = iconColor.copy(alpha = 0.3f)
+                        )
+                )
+            } else {
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            
+            // 圆形图标
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(ColorHelpers.getGroup2PageBgColor()) // 背景色遮盖时间线
+                    .border(3.dp, iconColor.copy(alpha = 0.3f), CircleShape)
+                    .background(iconColor.copy(alpha = 0.15f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(20.dp)
                 )
             }
+            
+            // 下半部分竖线（除了最后一项）- 使用足够的高度确保连续
+            if (!isLast) {
+                Box(
+                    modifier = Modifier
+                        .width(3.dp)
+                        .height(80.dp) // 使用固定高度，足够连接下一个项目
+                        .background(
+                            color = iconColor.copy(alpha = 0.3f)
+                        )
+                )
+            } else {
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+        
+        // 右侧：内容
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(top = 8.dp, bottom = 12.dp)
+        ) {
+            // 标题
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = ColorHelpers.getGroup4TextColor(),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            // 描述
+            if (description.isNotBlank()) {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ColorHelpers.getGroup4TextColor(0.8f),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 20.sp
+                )
+                
+                Spacer(modifier = Modifier.height(6.dp))
+            }
+            
+            // 时间
+            Text(
+                text = timeStr,
+                style = MaterialTheme.typography.labelMedium,
+                color = ColorHelpers.getGroup4TextColor(0.5f),
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+/**
+ * 提醒列表项（时间线样式）- 保留用于兼容
+ */
+@Composable
+fun AlertTimelineItem(
+    title: String,
+    description: String,
+    time: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = ColorHelpers.getGroup3CardBgColor()
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            // 标题和时间
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = ColorHelpers.getGroup4TextColor(),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = time,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = ColorHelpers.getGroup4TextColor(0.6f)
+                )
+            }
+            
+            // 描述
+            Text(
+                text = description,
+                style = MaterialTheme.typography.labelSmall,
+                color = ColorHelpers.getGroup4TextColor(0.7f),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -3604,11 +4261,11 @@ fun AlertListItem(
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 3.dp) // 减小：16dp,4dp → 12dp,3dp
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp), // 减小：12dp → 8dp
+        shape = RoundedCornerShape(12.dp), // 统一为 12.dp
         colors = CardDefaults.cardColors(
             containerColor = ColorHelpers.getGroup3CardBgColor()
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
@@ -3674,15 +4331,23 @@ fun AlertListItem(
 fun AlertListSection(
     items: List<Item>,
     alertSettingsManager: AlertSettingsManager,
+    itemReminderViewModel: com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel? = null,
+    activityEventViewModel: com.example.itemremindertool.ui.viewmodel.ActivityEventViewModel? = null,
     onEditItem: (Long) -> Unit,
     onViewItem: (Long) -> Unit = {}, // 查看物品信息回调
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    
+
     // 获取提醒设置
     val expiryReminderDays = remember { alertSettingsManager.getExpiryReminderDays() }
     val lowStockThreshold = remember { alertSettingsManager.getLowStockThreshold() }
+
+    // 获取所有启用的自定义提醒
+    val activeReminders = itemReminderViewModel?.allActiveReminders?.collectAsState(initial = emptyList())?.value ?: emptyList()
+    
+    // 获取所有动态事件
+    val activityEvents = activityEventViewModel?.recentEvents?.collectAsState(initial = emptyList())?.value ?: emptyList()
     
     // 计算即将过期物品
     val calendar = Calendar.getInstance()
@@ -3705,37 +4370,158 @@ fun AlertListSection(
         }
     }
     
-    // 合并所有提醒，按时间排序
-    data class AlertItem(
-        val item: Item,
-        val type: String, // "expiring" or "lowstock"
-        val time: Long
+    // 合并所有动态和提醒，按时间排序
+    data class TimelineItem(
+        val id: String,
+        val type: String, // "event", "expiring", "lowstock", "custom"
+        val title: String,
+        val description: String,
+        val time: Long,
+        val icon: androidx.compose.ui.graphics.vector.ImageVector,
+        val iconColor: androidx.compose.ui.graphics.Color,
+        val targetId: Long? = null,
+        val item: Item? = null,
+        val reminder: com.example.itemremindertool.data.model.ItemReminder? = null
     )
     
-    val allAlerts = remember(expiringItems, lowStockItems) {
-        val alerts = mutableListOf<AlertItem>()
+    // 获取主题色（在Composable上下文中）
+    val themeColor = MaterialTheme.colorScheme.primary
+    val expiringSoonTitle = stringResource(R.string.expiring_soon_title)
+    val lowStockTitle = stringResource(R.string.low_stock_title)
+    val allTimeline = remember(expiringItems, lowStockItems, activeReminders, activityEvents, themeColor, expiringSoonTitle, lowStockTitle) {
+        val timeline = mutableListOf<TimelineItem>()
+        
+        // 添加动态事件
+        activityEvents.forEach { event ->
+            val (icon, iconColor) = when (event.type) {
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_ADDED -> 
+                    Icons.Default.Add to themeColor
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_DELETED -> 
+                    Icons.Default.Delete to themeColor
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_UPDATED -> 
+                    Icons.Default.Edit to themeColor
+                com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_ADDED -> 
+                    Icons.Default.Folder to themeColor
+                com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_DELETED -> 
+                    Icons.Default.FolderDelete to themeColor
+                com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_UPDATED -> 
+                    Icons.Default.FolderOpen to themeColor
+                com.example.itemremindertool.data.model.ActivityEventType.REMINDER_TRIGGERED -> 
+                    Icons.Default.Notifications to themeColor
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_EXPIRING -> 
+                    Icons.Default.Warning to themeColor
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_LOW_STOCK -> 
+                    Icons.Default.Inventory2 to themeColor
+            }
+            
+            timeline.add(
+                TimelineItem(
+                    id = "event_${event.id}",
+                    type = "event",
+                    title = event.title,
+                    description = event.description,
+                    time = event.createdAt.time,
+                    icon = icon,
+                    iconColor = iconColor,
+                    targetId = event.targetId
+                )
+            )
+        }
         
         // 添加即将过期提醒
         expiringItems.forEach { item ->
-            alerts.add(AlertItem(item, "expiring", item.expiryDate?.time ?: 0))
+            val daysUntilExpiry = ((item.expiryDate!!.time - System.currentTimeMillis()) / (1000 * 60 * 60 * 24)).toInt()
+            val description = context.getString(
+                R.string.item_expiring_description,
+                item.name,
+                daysUntilExpiry
+            )
+            timeline.add(
+                TimelineItem(
+                    id = "expiring_${item.id}",
+                    type = "expiring",
+                    title = expiringSoonTitle,
+                    description = description,
+                    time = item.expiryDate.time,
+                    icon = Icons.Default.CalendarToday,
+                    iconColor = themeColor,
+                    targetId = item.id,
+                    item = item
+                )
+            )
         }
         
         // 添加库存不足提醒
         lowStockItems.forEach { item ->
-            alerts.add(AlertItem(item, "lowstock", item.updatedAt.time))
+            val description = context.getString(
+                R.string.item_low_stock_description,
+                item.name,
+                item.quantity
+            )
+            timeline.add(
+                TimelineItem(
+                    id = "lowstock_${item.id}",
+                    type = "lowstock",
+                    title = lowStockTitle,
+                    description = description,
+                    time = item.updatedAt.time,
+                    icon = Icons.Default.Inventory,
+                    iconColor = themeColor,
+                    targetId = item.id,
+                    item = item
+                )
+            )
+        }
+        
+        // 添加自定义提醒
+        val currentTime = System.currentTimeMillis()
+        activeReminders.forEach { reminder ->
+            val item = items.find { it.id == reminder.itemId }
+            if (item != null) {
+                val nextReminderTime = when (reminder.reminderType) {
+                    com.example.itemremindertool.data.model.ReminderType.ONCE -> 
+                        reminder.reminderTime?.time ?: currentTime
+                    else -> currentTime
+                }
+                
+                val typeStr = when (reminder.reminderType) {
+                    com.example.itemremindertool.data.model.ReminderType.ONCE -> "一次性提醒"
+                    com.example.itemremindertool.data.model.ReminderType.DAILY -> "每日提醒"
+                    com.example.itemremindertool.data.model.ReminderType.MONTHLY -> "每月提醒"
+                    com.example.itemremindertool.data.model.ReminderType.YEARLY -> "每年提醒"
+                }
+                
+                timeline.add(
+                    TimelineItem(
+                        id = "custom_${reminder.id}",
+                        type = "custom",
+                        title = typeStr,
+                        description = "${item.name} - ${reminder.reason}",
+                        time = nextReminderTime,
+                        icon = Icons.Default.Alarm,
+                        iconColor = themeColor,
+                        targetId = item.id,
+                        item = item,
+                        reminder = reminder
+                    )
+                )
+            }
         }
         
         // 按时间降序排序（最新的在前）
-        alerts.sortedByDescending { it.time }
+        timeline.sortedByDescending { it.time }
     }
     
-    if (allAlerts.isEmpty()) {
+    if (allTimeline.isEmpty()) {
         // 空状态 - 使用可滚动容器以支持下拉刷新
         Box(
             modifier = modifier
                 .fillMaxSize()
                 .nestedScroll(object : NestedScrollConnection {
-                    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    override fun onPreScroll(
+                        available: Offset,
+                        source: NestedScrollSource
+                    ): Offset {
                         // 允许下拉手势向上传递
                         return Offset.Zero
                     }
@@ -3747,154 +4533,92 @@ fun AlertListSection(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    Icons.Default.CheckCircle,
+                    Icons.Default.Timeline,
                     contentDescription = null,
                     tint = ColorHelpers.getGroup4IconColor(0.4f),
                     modifier = Modifier.size(64.dp)
                 )
                 Text(
-                    text = "暂无提醒",
+                    text = stringResource(R.string.no_activity),
                     style = MaterialTheme.typography.bodyLarge,
                     color = ColorHelpers.getGroup4TextColor(0.6f)
                 )
             }
         }
     } else {
+        // 分页加载状态
+        var displayedCount by remember { mutableStateOf(20) } // 初始加载20条
+        val listState = rememberLazyListState()
+        
+        // 监听滚动到底部，自动加载更多
+        LaunchedEffect(listState) {
+            snapshotFlow {
+                val layoutInfo = listState.layoutInfo
+                val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
+                lastVisibleItem?.index ?: 0
+            }.collect { lastVisibleIndex ->
+                // 当滚动到倒数第5项时，加载更多
+                if (lastVisibleIndex >= displayedCount - 5 && displayedCount < allTimeline.size) {
+                    displayedCount = minOf(displayedCount + 20, allTimeline.size)
+                }
+            }
+        }
+        
+        // 时间线样式
         LazyColumn(
+            state = listState,
             modifier = modifier
                 .fillMaxSize()
                 .nestedScroll(object : NestedScrollConnection {
-                    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    override fun onPreScroll(
+                        available: Offset,
+                        source: NestedScrollSource
+                    ): Offset {
                         // 允许下拉手势向上传递
                         return Offset.Zero
                     }
                 }),
-            verticalArrangement = Arrangement.spacedBy(3.dp), // 减小：4dp → 3dp
-            contentPadding = PaddingValues(bottom = 80.dp)
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 0.dp,
+                bottom = 80.dp
+            )
         ) {
-            items(allAlerts) { alert ->
-                val timeStr = remember(alert.time) {
-                    val sdf = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
-                    sdf.format(Date(alert.time))
-                }
-                
-                when (alert.type) {
-                    "expiring" -> {
-                        // 使用统一的过期判定逻辑和天数计算
-                        val (isExpired, daysUntilExpiry) = remember(alert.item.expiryDate) {
-                            if (alert.item.expiryDate != null) {
-                                val zone = ZoneId.systemDefault()
-                                val nowZoned = Instant.now().atZone(zone)
-                                val expiryDateLocal = Instant.ofEpochMilli(alert.item.expiryDate.time)
-                                    .atZone(zone)
-                                    .toLocalDate()
-                                val expiryEnd = expiryDateLocal
-                                    .plusDays(1)          // 次日
-                                    .atStartOfDay(zone)   // 00:00
-                                    .plusMinutes(1)       // 00:01 后开始算过期
-                                val expired = !nowZoned.isBefore(expiryEnd)
-                                // 计算剩余天数（基于日期，不是小时）
-                                val todayLocal = nowZoned.toLocalDate()
-                                val daysLeft = java.time.temporal.ChronoUnit.DAYS.between(todayLocal, expiryDateLocal).toInt()
-                                Pair(expired, daysLeft)
-                            } else {
-                                Pair(false, 0)
+            items(displayedCount) { index ->
+                if (index < allTimeline.size) {
+                    val timelineItem = allTimeline[index]
+                    val context = LocalContext.current
+                    val timeStr = remember(timelineItem.time) {
+                        val now = System.currentTimeMillis()
+                        val diff = now - timelineItem.time
+                        when {
+                            diff < 60 * 1000 -> context.getString(R.string.time_just_now)
+                            diff < 60 * 60 * 1000 -> context.getString(R.string.time_minutes_ago, diff / (60 * 1000))
+                            diff < 24 * 60 * 60 * 1000 -> context.getString(R.string.time_hours_ago, diff / (60 * 60 * 1000))
+                            diff < 7 * 24 * 60 * 60 * 1000 -> context.getString(R.string.time_days_ago, diff / (24 * 60 * 60 * 1000))
+                            else -> {
+                                val dateTimeFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault())
+                                dateTimeFormat.format(Date(timelineItem.time))
                             }
                         }
-                        
-                        AlertListItem(
-                            title = alert.item.name,
-                            description = if (isExpired) "已过期" else "还剩 $daysUntilExpiry 天过期",
-                            icon = Icons.Default.Warning,
-                            time = timeStr,
-                            onClick = { onViewItem(alert.item.id) }
-                        )
                     }
-                    "lowstock" -> {
-                        AlertListItem(
-                            title = alert.item.name,
-                            description = "库存不足：剩余 ${alert.item.quantity} 件",
-                            icon = Icons.Default.Inventory2,
-                            time = timeStr,
-                            onClick = { onViewItem(alert.item.id) }
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-/**
- * 容器层级头部组件（替代面包屑导航）
- * 显示容器路径，一行并排显示多个容器名称，支持左右滑动
- */
-@Composable
-fun WarehouseLevelHeader(
-    warehousePath: List<Warehouse>,
-    onNavigateToWarehouse: (Warehouse) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    if (warehousePath.isEmpty()) return
-    
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = ColorHelpers.getGroup3CardBgColor()
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        // 使用 LazyRow 实现横向滚动
-        LazyRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            items(warehousePath.size) { index ->
-                val warehouse = warehousePath[index]
-                val isLast = index == warehousePath.size - 1
-                
-                // 容器名称（可点击）
-                Text(
-                    text = warehouse.name.ifEmpty { "未命名容器" },
-                    style = if (isLast) {
-                        MaterialTheme.typography.titleMedium
-                    } else {
-                        MaterialTheme.typography.bodyMedium
-                    },
-                    fontWeight = if (isLast) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isLast) {
-                        ColorHelpers.getGroup4TextColor()
-                    } else {
-                        ColorHelpers.getGroup4TextColor(0.7f)
-                    },
-                    modifier = Modifier
-                        .clickable { onNavigateToWarehouse(warehouse) }
-                        .padding(vertical = 4.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                
-                // 如果不是最后一个，显示箭头分隔符
-                if (!isLast) {
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = null,
-                        tint = ColorHelpers.getGroup4IconColor(0.5f),
-                        modifier = Modifier
-                            .size(16.dp)
-                            .padding(horizontal = 4.dp)
+                    
+                    TimelineItemView(
+                        title = timelineItem.title,
+                        description = timelineItem.description,
+                        icon = timelineItem.icon,
+                        iconColor = timelineItem.iconColor,
+                        timeStr = timeStr,
+                        isLast = index == displayedCount - 1 || index == allTimeline.size - 1,
+                        isFirst = index == 0,
+                        onClick = null // 移除点击跳转功能
                     )
                 }
             }
         }
     }
 }
-
 /**
  * 待购列表（右下）- Discord 风格首页
  */
@@ -3926,12 +4650,12 @@ fun ShoppingListSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "待购列表",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = ColorHelpers.getGroup4TextColor()
-            )
+            //Text(
+            //    text = "待购列表",
+            //    style = MaterialTheme.typography.titleLarge,
+            //    fontWeight = FontWeight.Bold,
+            //    color = ColorHelpers.getGroup4TextColor()
+            //)
             
             // 完成购买按钮（只在有已勾选的物品时显示）
             if (completedItems.isNotEmpty()) {
@@ -3948,7 +4672,7 @@ fun ShoppingListSection(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("完成购买", fontSize = 14.sp)
+                    Text(stringResource(R.string.complete_purchase_button), fontSize = 10.sp)
                 }
             }
         }
@@ -3971,7 +4695,7 @@ fun ShoppingListSection(
                     )
                 Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                    "待购清单为空",
+                    stringResource(R.string.no_shopping_items),
                     style = MaterialTheme.typography.bodyLarge,
                     color = ColorHelpers.getGroup4TextColor(0.6f)
                 )
@@ -3981,13 +4705,16 @@ fun ShoppingListSection(
                 modifier = Modifier
                     .fillMaxSize()
                     .nestedScroll(object : NestedScrollConnection {
-                        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                        override fun onPreScroll(
+                            available: Offset,
+                            source: NestedScrollSource
+                        ): Offset {
                             // 允许下拉手势向上传递
                             return Offset.Zero
                         }
                     }),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 120.dp) // 增加底部间距，避免被 FAB 挡住删除按钮
+                contentPadding = PaddingValues(bottom = 80.dp) // 增加底部间距，避免被 FAB 挡住删除按钮
             ) {
                 items(shoppingItems) { shoppingItem ->
                     ShoppingItemCard(
@@ -4027,7 +4754,7 @@ fun ShoppingListSection(
                 colors = CardDefaults.cardColors(
                     containerColor = ColorHelpers.getGroup3CardBgColor()
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -4045,14 +4772,14 @@ fun ShoppingListSection(
                     )
                     
                     Text(
-                        text = "完成购买",
+                        text = stringResource(R.string.complete_purchase),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = ColorHelpers.getGroup4TextColor()
                     )
                     
                     Text(
-                        text = "确认完成购买？这将清空待购清单并将购买数量补充到对应物品的库存中。",
+                        text = stringResource(R.string.confirm_complete_purchase),
                         style = MaterialTheme.typography.bodyMedium,
                         color = ColorHelpers.getGroup4TextColor(0.8f),
                         textAlign = TextAlign.Center,
@@ -4075,44 +4802,44 @@ fun ShoppingListSection(
                                 contentColor = ColorHelpers.getGroup4TextColor()
                             )
                         ) {
-                            Text("取消", fontSize = 14.sp)
+                            Text(stringResource(R.string.cancel_button), fontSize = 14.sp)
                         }
                         
                         // 确定按钮
                         Button(
-                            onClick = {
-                                // 处理完成购买逻辑 - 只处理已勾选的物品
-                                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                                    val itemDao = com.example.itemremindertool.data.database.AppDatabase
-                                        .getDatabase(context)
-                                        .itemDao()
-                                    
-                                    completedItems.forEach { shoppingItem ->
-                                        // 如果有关联的物品，补充库存
-                                        shoppingItem.itemId?.let { itemId ->
-                                            try {
-                                                val item = itemDao.getItemById(itemId)
-                                                item?.let {
-                                                    val updatedItem = it.copy(
-                                                        quantity = it.quantity + shoppingItem.quantity
-                                                    )
-                                                    itemDao.updateItem(updatedItem)
-                                                } ?: run {
-                                                    // 如果物品不存在，记录错误但不阻止删除购物项
-                                                    android.util.Log.e("ShoppingList", "物品不存在: itemId=$itemId")
-                                                }
-                                            } catch (e: Exception) {
-                                                android.util.Log.e("ShoppingList", "更新物品库存失败: itemId=$itemId", e)
-                                            }
+                    onClick = {
+                        // 处理完成购买逻辑 - 只处理已勾选的物品
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                            val itemDao = com.example.itemremindertool.data.database.AppDatabase
+                                .getDatabase(context)
+                                .itemDao()
+                            
+                            completedItems.forEach { shoppingItem ->
+                                // 如果有关联的物品，补充库存
+                                shoppingItem.itemId?.let { itemId ->
+                                    try {
+                                        val item = itemDao.getItemById(itemId)
+                                        item?.let {
+                                            val updatedItem = it.copy(
+                                                quantity = it.quantity + shoppingItem.quantity
+                                            )
+                                            itemDao.updateItem(updatedItem)
                                         } ?: run {
-                                            // 如果没有关联的物品ID，记录警告
-                                            android.util.Log.w("ShoppingList", "购物项没有关联的物品ID: ${shoppingItem.name}")
+                                            // 如果物品不存在，记录错误但不阻止删除购物项
+                                            android.util.Log.e("ShoppingList", "物品不存在: itemId=$itemId")
                                         }
-                                        // 删除已完成的待购物品
-                                        shoppingItemViewModel?.deleteShoppingItem(shoppingItem)
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("ShoppingList", "更新物品库存失败: itemId=$itemId", e)
                                     }
+                                } ?: run {
+                                    // 如果没有关联的物品ID，记录警告
+                                    android.util.Log.w("ShoppingList", "购物项没有关联的物品ID: ${shoppingItem.name}")
                                 }
-                                showCompletePurchaseDialog = false
+                                // 删除已完成的待购物品
+                                shoppingItemViewModel?.deleteShoppingItem(shoppingItem)
+                            }
+                        }
+                        showCompletePurchaseDialog = false
                             },
                             modifier = Modifier
                                 .weight(1f)
@@ -4122,9 +4849,9 @@ fun ShoppingListSection(
                                 containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
-                            Text("确定", fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                        }
-                    }
+                            Text(stringResource(R.string.confirm_button), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                }
+            }
                 }
             }
         }
@@ -4168,7 +4895,7 @@ fun ShoppingItemCard(
                     checked = shoppingItem.isCompleted,
                     onCheckedChange = { onToggleComplete() }
                 )
-                
+
                 // 物品信息
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -4191,7 +4918,7 @@ fun ShoppingItemCard(
                     if (shoppingItem.description.isNotBlank()) {
                         Text(
                             text = shoppingItem.description,
-                        style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodySmall,
                             color = if (shoppingItem.isCompleted) {
                                 ColorHelpers.getGroup4TextColor(0.4f)
                             } else {
@@ -4208,7 +4935,7 @@ fun ShoppingItemCard(
                     }
                 }
             }
-            
+
             // 右侧：数量编辑和删除按钮
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -4236,7 +4963,7 @@ fun ShoppingItemCard(
                             }
                         )
                     }
-                    
+
                     // 数量显示
                     Text(
                         text = shoppingItem.quantity.toString(),
@@ -4250,7 +4977,7 @@ fun ShoppingItemCard(
                         modifier = Modifier.widthIn(min = 24.dp),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
-                    
+
                     // 增加按钮
                     IconButton(
                         onClick = { onQuantityChange(shoppingItem.quantity + 1) },
@@ -4269,7 +4996,7 @@ fun ShoppingItemCard(
                         )
                     }
                 }
-                
+
                 // 删除按钮
                 IconButton(
                     onClick = onDelete,

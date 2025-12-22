@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -42,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.itemremindertool.data.TagManager
 import com.example.itemremindertool.data.model.Item
-import com.example.itemremindertool.data.model.ItemStatus
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.ui.components.CameraCaptureDialog
 import com.example.itemremindertool.ui.components.ImageCropDialog
@@ -53,6 +54,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.rememberCoroutineScope
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.loper7.date_time_picker.dialog.CardDatePickerDialog
+import com.loper7.date_time_picker.DateTimeConfig
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.Image
@@ -62,13 +68,20 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import java.text.SimpleDateFormat
+import java.text.DateFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Date
 import java.util.*
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
 import android.net.Uri
+import java.io.File
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -97,17 +110,23 @@ fun ItemEditScreen(
     var expiryDate by remember { mutableStateOf<Date?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
     var enableStockAlert by remember { mutableStateOf(false) } // 库存提醒开关，默认为false
-    var imageUri by remember { mutableStateOf<String?>(null) }
+    var imageUri by remember { mutableStateOf<String?>(null) } // 保留向后兼容
+    var imageUris by remember { mutableStateOf<List<String>>(emptyList()) } // 多张图片路径列表
+    var primaryImageIndex by remember { mutableStateOf(0) } // 主图索引
     var showCameraDialog by remember { mutableStateOf(false) }
     var showCropDialog by remember { mutableStateOf(false) }
     var bitmapToCrop by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     // 获取 Context 和协程作用域
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
+
     // 从 ViewModel 获取待处理的特征码
     val pendingFeatureCode by viewModel.pendingFeatureCode.collectAsState()
-    var featureCode by remember { mutableStateOf<String?>(initialFeatureCode ?: pendingFeatureCode) }
+    var featureCode by remember {
+        mutableStateOf<String?>(
+            initialFeatureCode ?: pendingFeatureCode
+        )
+    }
 
     // ==================== 标签输入专用状态 ====================
     var isTagInputFocused by remember { mutableStateOf(false) }
@@ -116,7 +135,6 @@ fun ItemEditScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     // ==================== 状态判断 ====================
-    var selectedStatus by remember { mutableStateOf<ItemStatus?>(null) }
     // 到期日结束后（次日00:01起）才算过期
     val isExpired = expiryDate?.let { date ->
         val zone = ZoneId.systemDefault()
@@ -129,13 +147,20 @@ fun ItemEditScreen(
             .plusMinutes(1)       // 00:01 后开始算过期
         !nowZoned.isBefore(expiryEnd)
     } ?: false
-    val displayStatus = if (isExpired) ItemStatus.EXPIRED else (selectedStatus ?: ItemStatus.NORMAL)
 
     // ==================== 监听待处理特征码变化 ====================
     LaunchedEffect(pendingFeatureCode) {
         if (pendingFeatureCode != null && featureCode == null) {
             featureCode = pendingFeatureCode
-            android.util.Log.d("ItemEditScreen", "从 ViewModel 获取特征码: ${featureCode?.substring(0, minOf(50, featureCode?.length ?: 0))}...")
+            android.util.Log.d(
+                "ItemEditScreen",
+                "从 ViewModel 获取特征码: ${
+                    featureCode?.substring(
+                        0,
+                        minOf(50, featureCode?.length ?: 0)
+                    )
+                }..."
+            )
         }
     }
 
@@ -158,27 +183,39 @@ fun ItemEditScreen(
     LaunchedEffect(itemId, selectedItem.selectedItem, initialWarehouseId) {
         if (itemId != null) {
             // 编辑模式：加载已有物品数据
-        selectedItem.selectedItem?.let { item ->
-            name = item.name
-            description = item.description
-            selectedCategoryId = item.categoryId
-            selectedWarehouseId = item.warehouseId
+            selectedItem.selectedItem?.let { item ->
+                name = item.name
+                description = item.description
+                selectedCategoryId = item.categoryId
+                selectedWarehouseId = item.warehouseId
                 tags = item.tags.toSet()
-            price = item.price?.toString() ?: ""
-            quantity = item.quantity.toString()
-            barcode = item.barcode ?: ""
-            expiryDate = item.expiryDate
-            enableStockAlert = item.enableStockAlert
+                price = item.price?.toString() ?: ""
+                quantity = item.quantity.toString()
+                barcode = item.barcode ?: ""
+                expiryDate = item.expiryDate
+                enableStockAlert = item.enableStockAlert
                 imageUri = item.imageUri
+                // 加载多图：如果有imageUris则使用，否则兼容旧的imageUri
+                imageUris = if (item.imageUris.isNotEmpty()) {
+                    item.imageUris
+                } else {
+                    item.imageUri?.let { listOf(it) } ?: emptyList()
+                }
+                // 安全设置主图索引：如果列表为空，设置为0；否则限制在有效范围内
+                primaryImageIndex = if (imageUris.isEmpty()) {
+                    0
+                } else {
+                    item.primaryImageIndex.coerceIn(0, imageUris.size - 1)
+                }
                 featureCode = item.featureCode
                 // 初始化状态
-                val statusInTags = item.tags.firstOrNull { it in listOf("正常", "损坏", "遗失") }
-                selectedStatus = when (statusInTags) {
-                    "正常" -> ItemStatus.NORMAL
-                    "损坏" -> ItemStatus.DAMAGED
-                    "遗失" -> ItemStatus.LOST
-                    else -> ItemStatus.NORMAL
-                }
+                // val statusInTags = item.tags.firstOrNull { it in listOf("正常", "损坏", "遗失") }
+                // selectedStatus = when (statusInTags) {
+                //    "正常" -> ItemStatus.NORMAL
+                //    "损坏" -> ItemStatus.DAMAGED
+                //    "遗失" -> ItemStatus.LOST
+                //    else -> ItemStatus.NORMAL
+                //}
             }
         } else {
             // 新建模式：设置初始容器
@@ -187,12 +224,12 @@ fun ItemEditScreen(
             }
         }
     }
-    
+
     // 确保在新建模式下，初始容器ID正确设置
     LaunchedEffect(initialWarehouseId) {
         if (itemId == null && initialWarehouseId != null) {
             selectedWarehouseId = initialWarehouseId
-            selectedStatus = ItemStatus.NORMAL
+            // selectedStatus = ItemStatus.NORMAL
         }
     }
 
@@ -200,7 +237,13 @@ fun ItemEditScreen(
     Scaffold(
         topBar = {
             GradientTopAppBar(
-                title = { Text(if (itemId == null) stringResource(R.string.add_item) else stringResource(R.string.edit_item)) },
+                title = {
+                    Text(
+                        if (itemId == null) stringResource(R.string.add_item) else stringResource(
+                            R.string.edit_item
+                        )
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
@@ -226,15 +269,28 @@ fun ItemEditScreen(
                                 quantity = quantity.toIntOrNull() ?: 1,
                                 barcode = barcode.ifEmpty { null },
                                 expiryDate = expiryDate,
-                                imageUri = imageUri,
+                                imageUri = imageUris.getOrNull(primaryImageIndex)
+                                    ?: imageUri, // 向后兼容
+                                imageUris = imageUris,
+                                primaryImageIndex = if (imageUris.isNotEmpty()) {
+                                    primaryImageIndex.coerceIn(0, imageUris.size - 1)
+                                } else {
+                                    0
+                                },
                                 featureCode = featureCode,
                                 enableStockAlert = enableStockAlert
                             )
-                            
+
                             // 检查是否需要添加到购物篮（仅在新建物品时）
-                            val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
-                            val shouldAddToShoppingList = itemId == null && prefs.getBoolean("add_to_shopping_list_after_save", false)
-                            
+                            val prefs = context.getSharedPreferences(
+                                "app_settings",
+                                android.content.Context.MODE_PRIVATE
+                            )
+                            val shouldAddToShoppingList = itemId == null && prefs.getBoolean(
+                                "add_to_shopping_list_after_save",
+                                false
+                            )
+
                             // 保存物品
                             if (itemId == null) {
                                 // 新建物品 - 只调用一次 ViewModel 的 insertItem
@@ -243,23 +299,32 @@ fun ItemEditScreen(
                                     if (shouldAddToShoppingList) {
                                         scope.launch(Dispatchers.IO) {
                                             // 清除标记
-                                            prefs.edit().putBoolean("add_to_shopping_list_after_save", false).apply()
+                                            prefs.edit().putBoolean(
+                                                "add_to_shopping_list_after_save",
+                                                false
+                                            ).apply()
                                             // 获取保存后的物品
-                                            val database = com.example.itemremindertool.data.database.AppDatabase.getDatabase(context)
-                                            val savedItem = database.itemDao().getItemById(savedItemId)
-                                            
+                                            val database =
+                                                com.example.itemremindertool.data.database.AppDatabase.getDatabase(
+                                                    context
+                                                )
+                                            val savedItem =
+                                                database.itemDao().getItemById(savedItemId)
+
                                             savedItem?.let { saved ->
                                                 // 添加到购物篮
-                                                val shoppingItem = com.example.itemremindertool.data.model.ShoppingItem(
-                                                    id = 0L,
-                                                    name = saved.name,
-                                                    description = saved.description,
-                                                    quantity = saved.quantity,
-                                                    priority = com.example.itemremindertool.data.model.Priority.MEDIUM,
-                                                    itemId = saved.id,
-                                                    imageUri = saved.imageUri
-                                                )
-                                                database.shoppingItemDao().insertShoppingItem(shoppingItem)
+                                                val shoppingItem =
+                                                    com.example.itemremindertool.data.model.ShoppingItem(
+                                                        id = 0L,
+                                                        name = saved.name,
+                                                        description = saved.description,
+                                                        quantity = saved.quantity,
+                                                        priority = com.example.itemremindertool.data.model.Priority.MEDIUM,
+                                                        itemId = saved.id,
+                                                        imageUri = saved.imageUri
+                                                    )
+                                                database.shoppingItemDao()
+                                                    .insertShoppingItem(shoppingItem)
                                             }
                                         }
                                     }
@@ -278,11 +343,18 @@ fun ItemEditScreen(
             )
         }
     ) { paddingValues ->
+        val keyboardController = LocalSoftwareKeyboardController.current
+        val focusManager = LocalFocusManager.current
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
+                .clickable {
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                }
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -301,8 +373,8 @@ fun ItemEditScreen(
             val density = LocalDensity.current
             val cardWidthPx = remember { with(density) { 400.dp.toPx().toInt() } }
             val cardHeightPx = remember { with(density) { 200.dp.toPx().toInt() } }
-            
-            // 从相册选择图片的启动器
+
+            // 从相册选择单张图片的启动器（用于裁剪）
             val imagePickerLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.GetContent()
             ) { uri: Uri? ->
@@ -312,7 +384,7 @@ fun ItemEditScreen(
                         val inputStream = context.contentResolver.openInputStream(uri)
                         val bitmap = BitmapFactory.decodeStream(inputStream)
                         inputStream?.close()
-                        
+
                         if (bitmap != null) {
                             // 显示裁剪对话框
                             bitmapToCrop = bitmap
@@ -323,314 +395,482 @@ fun ItemEditScreen(
                     }
                 }
             }
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Button(
-                    onClick = { showCameraDialog = true },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = ColorHelpers.getGroup2SettingsBtnColor()
-                    )
-                ) {
-                    val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                    val iconColor = ColorHelpers.getContrastColor(backgroundColor)
-                    val textColor = ColorHelpers.getContrastColor(backgroundColor)
-                    Icon(Icons.Default.CameraAlt, contentDescription = null, tint = iconColor)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.take_photo), color = textColor)
-                }
-                Button(
-                    onClick = { imagePickerLauncher.launch("image/*") },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = ColorHelpers.getGroup2SettingsBtnColor()
-                    )
-                ) {
-                    val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                    val iconColor = ColorHelpers.getContrastColor(backgroundColor)
-                    val textColor = ColorHelpers.getContrastColor(backgroundColor)
-                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = iconColor)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.select_from_gallery), color = textColor)
-                }
-                if (imageUri != null) {
-                    IconButton(onClick = { imageUri = null }) {
-                        Icon(Icons.Default.Delete, stringResource(R.string.delete_image), tint = ColorHelpers.getGroup4IconColor())
-                    }
-                }
-            }
 
-            // ==================== 描述 ====================
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text(stringResource(R.string.description)) },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 3,
-                maxLines = 5
-            )
-
-            // ==================== 容器选择 ====================
-            var expandedWarehouse by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = expandedWarehouse,
-                onExpandedChange = { expandedWarehouse = !expandedWarehouse }
-            ) {
-                OutlinedTextField(
-                    value = warehouses.find { it.id == selectedWarehouseId }?.name ?: "",
-                    onValueChange = { },
-                    readOnly = true,
-                    label = { Text(stringResource(R.string.warehouse)) },
-                    isError = warehouseError,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedWarehouse) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
-                )
-                ExposedDropdownMenu(
-                    expanded = expandedWarehouse,
-                    onDismissRequest = { expandedWarehouse = false }
-                ) {
-                    warehouses.forEach { warehouse ->
-                        DropdownMenuItem(
-                            text = { Text(warehouse.name) },
-                            onClick = {
-                                selectedWarehouseId = warehouse.id
-                                warehouseError = false
-                                expandedWarehouse = false
-                            }
+            // 裁剪图片为主图的函数（保存为单独的文件）
+            // 单独定义函数，避免 remember 块嵌套导致类型推断错误
+            val cropImageForPrimary: (String) -> Unit = { imagePath ->
+                scope.launch(Dispatchers.IO) {
+                    val bitmap = ImageUtils.loadBitmapFromPath(imagePath)
+                    if (bitmap != null) {
+                        val croppedBitmap = ImageUtils.cropImageToCardSize(
+                            bitmap,
+                            cardWidthPx,
+                            cardHeightPx
+                        )
+                        // 保存为单独的裁剪文件
+                        val croppedPath = ImageUtils.getCroppedImagePath(imagePath)
+                        val croppedFileName = File(croppedPath).name
+                        ImageUtils.saveImageToInternalStorage(
+                            context,
+                            croppedBitmap,
+                            croppedFileName
                         )
                     }
                 }
             }
-            if (warehouseError) {
-                Text(
-                    text = stringResource(R.string.warehouse) + " 必填，请选择容器",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
 
-            // ==================== 标签 + 自定义标签（核心改动）===================
-            Text(stringResource(R.string.status_tags), style = MaterialTheme.typography.labelLarge)
+            // 切换主图时，删除旧的主图裁剪文件，创建新的主图裁剪文件
+            val switchPrimaryImage: (Int) -> Unit = { newIndex ->
+                scope.launch(Dispatchers.IO) {
+                    val oldPrimaryPath = imageUris.getOrNull(primaryImageIndex)
+                    val newPrimaryPath = imageUris.getOrNull(newIndex)
 
-            // 获取所有已创建的标签
-            val allTags by tagManager.allTags.collectAsState()
-            val statusLabels = listOf("正常", "损坏", "遗失")
-            val customTags = allTags.filter { it !in statusLabels && it != "过期" }
+                    // 删除旧的主图裁剪文件
+                    oldPrimaryPath?.let { ImageUtils.deleteCroppedImageFile(it) }
 
-            // 自动弹出键盘和聚焦
-            LaunchedEffect(isTagInputFocused) {
-                if (isTagInputFocused) {
-                    // 等待UI完全组合
-                    delay(100)
-                    // 尝试聚焦，可能需要多次尝试
-                    var retries = 0
-                    while (retries < 3) {
-                        try {
-                            tagFocusRequester.requestFocus()
-                            delay(150)
-                            keyboardController?.show()
-                            break
-                        } catch (e: Exception) {
-                            retries++
-                            delay(100)
-                        }
-                    }
+                    // 创建新的主图裁剪文件
+                    newPrimaryPath?.let { cropImageForPrimary(it) }
                 }
             }
 
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // 1. 可切换的标签（正常、损坏、遗失）- 支持多选，选中高亮60%黄色，保持边框
-                items(listOf(ItemStatus.NORMAL, ItemStatus.DAMAGED, ItemStatus.LOST)) { status ->
-                    val statusLabel = getStatusLabel(status)
-                    val isSelected = tags.contains(statusLabel)
-                    
-                    FilterChip(
-                        selected = isSelected && !isExpired,
-                        onClick = {
-                            if (!isExpired) {
-                                if (isSelected) {
-                                    // 取消选择：从tags中移除
-                                    tags = tags - statusLabel
-                                } else {
-                                    // 选择：支持多选，添加当前状态（不限制数量）
-                                    tags = tags + statusLabel
-                                    selectedStatus = status
+            // 从相册选择多张图片的启动器（保存原图，不裁剪）
+            val multipleImagePickerLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.PickMultipleVisualMedia()
+            ) { uris: List<Uri> ->
+                scope.launch(Dispatchers.IO) {
+                    uris.forEach { uri ->
+                        try {
+                            val inputStream = context.contentResolver.openInputStream(uri)
+                            val bitmap = BitmapFactory.decodeStream(inputStream)
+                            inputStream?.close()
+
+                            if (bitmap != null) {
+                                // 保存原图，不裁剪
+                                val fileName =
+                                    "item_${itemId ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
+                                val savedPath = ImageUtils.saveImageToInternalStorage(
+                                    context,
+                                    bitmap,
+                                    fileName
+                                )
+                                savedPath?.let {
+                                    imageUris = imageUris + it
+                                    if (imageUris.size == 1) {
+                                        primaryImageIndex = 0
+                                        // 第一张图片自动设为主图，需要裁剪
+                                        cropImageForPrimary(it)
+                                    }
                                 }
                             }
-                        },
-                        label = { Text(statusLabel, color = ColorHelpers.getGroup4TextColor()) },
-                        enabled = true,
-                        // 为选中/未选中状态都添加可见边框，选中使用主色，未选中使用轮廓色
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = isSelected && !isExpired,
-                            borderColor = if (isSelected && !isExpired)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
-                            selectedBorderColor = MaterialTheme.colorScheme.primary,
-                            borderWidth = 1.25.dp,
-                            selectedBorderWidth = 1.25.dp
-                        ),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color.Transparent,
-                            selectedLabelColor = ColorHelpers.getGroup4TextColor(),
-                            containerColor = Color.Transparent,
-                            labelColor = ColorHelpers.getGroup4TextColor()
-                        )
-                    )
-                }
-
-                // 2. 过期标签（自动显示）
-                if (isExpired) {
-                    item {
-                        FilterChip(
-                            selected = true,
-                            onClick = { },
-                            enabled = false,
-                            label = { Text(stringResource(R.string.expired_tag), color = ColorHelpers.getGroup4TextColor()) },
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = false,
-                                selected = true,
-                                borderColor = Color(0xFFF3E5F5).copy(alpha = 0.8f),
-                                selectedBorderColor = Color(0xFFF3E5F5).copy(alpha = 0.8f),
-                                borderWidth = 1.25.dp,
-                                selectedBorderWidth = 1.25.dp
-                            ),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color.Transparent,
-                                selectedLabelColor = ColorHelpers.getGroup4TextColor(),
-                                containerColor = Color.Transparent,
-                                labelColor = ColorHelpers.getGroup4TextColor()
-                            )
-                        )
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
                 }
+            }
 
-                // 3. 所有已创建的自定义标签（供选择，支持多选，选中高亮60%黄色，带删除按钮，保持边框）
-                items(customTags.toList()) { tag ->
-                    val isSelected = tags.contains(tag)
-                    if (isSelected) {
-                        // 选中状态：显示带删除按钮的 FilterChip，透明背景，主色边框
-                        // 使用 Row 包裹 FilterChip 和 X 图标，让 X 图标可以单独点击
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            FilterChip(
-                                selected = true,
-                                onClick = { tags = tags - tag }, // 点击标签文本时取消选中
-                                enabled = true,
-                                label = { Text(tag) },
-                                border = FilterChipDefaults.filterChipBorder(
-                                    enabled = true,
-                                    selected = true,
-                                    borderColor = MaterialTheme.colorScheme.primary,
-                                    selectedBorderColor = MaterialTheme.colorScheme.primary,
-                                    borderWidth = 1.25.dp,
-                                    selectedBorderWidth = 1.25.dp
-                                ),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = Color.Transparent,
-                                    selectedLabelColor = ColorHelpers.getGroup4TextColor(),
-                                    containerColor = Color.Transparent,
-                                    labelColor = ColorHelpers.getGroup4TextColor()
+                            Button(
+                                onClick = { showCameraDialog = true },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = ColorHelpers.getGroup2SettingsBtnColor()
                                 )
-                            )
-                            // X 图标单独可点击，点击时删除标签
-                            IconButton(
-                                onClick = {
-                                    // 从标签管理器中删除标签
-                                    tagManager.removeTag(tag)
-                                    // 从当前选中标签中移除
-                                    tags = tags - tag
-                                },
-                                modifier = Modifier.size(24.dp)
                             ) {
+                                val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
+                                val iconColor = ColorHelpers.getContrastColor(backgroundColor)
+                                val textColor = ColorHelpers.getContrastColor(backgroundColor)
                                 Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = "删除",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = ColorHelpers.getGroup4IconColor()
+                                    Icons.Default.CameraAlt,
+                                    contentDescription = null,
+                                    tint = iconColor
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.take_photo), color = textColor)
+                            }
+                            Button(
+                                onClick = {
+                                    multipleImagePickerLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = ColorHelpers.getGroup2SettingsBtnColor()
+                                )
+                            ) {
+                                val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
+                                val iconColor = ColorHelpers.getContrastColor(backgroundColor)
+                                val textColor = ColorHelpers.getContrastColor(backgroundColor)
+                                Icon(
+                                    Icons.Default.PhotoLibrary,
+                                    contentDescription = null,
+                                    tint = iconColor
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.select_multiple), color = textColor)
+                            }
+                        }
+
+                        // 显示图片列表和主图选择
+                        if (imageUris.isNotEmpty()) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text = stringResource(R.string.image_list_hint),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = ColorHelpers.getGroup4TextColor(0.7f)
+                                )
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    itemsIndexed(imageUris) { index, imagePath ->
+                                        Box(modifier = Modifier.size(80.dp)) {
+                                            // 主图显示裁剪图，非主图显示原图
+                                            val displayPath = if (index == primaryImageIndex) {
+                                                val croppedPath =
+                                                    ImageUtils.getCroppedImagePath(imagePath)
+                                                val croppedFile = File(croppedPath)
+                                                if (croppedFile.exists()) croppedPath else imagePath
+                                            } else {
+                                                imagePath // 非主图显示原图
+                                            }
+
+                                            val bitmap = remember(displayPath) {
+                                                ImageUtils.loadBitmapFromPath(displayPath)
+                                            }
+                                            if (bitmap != null) {
+                                                Card(
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .clickable {
+                                                            val oldPrimaryIndex = primaryImageIndex
+                                                            if (oldPrimaryIndex != index) {
+                                                                primaryImageIndex = index
+                                                                // 切换主图：删除旧的裁剪文件，创建新的裁剪文件
+                                                                switchPrimaryImage(index)
+                                                            }
+                                                        },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    border = if (index == primaryImageIndex) {
+                                                        BorderStroke(
+                                                            3.dp,
+                                                            MaterialTheme.colorScheme.primary
+                                                        )
+                                                    } else {
+                                                        null
+                                                    }
+                                                ) {
+                                                    Image(
+                                                        bitmap = bitmap.asImageBitmap(),
+                                                        contentDescription = null,
+                                                        modifier = Modifier.fillMaxSize(),
+                                                        contentScale = ContentScale.Crop
+                                                    )
+                                                }
+                                            }
+                                            // 删除按钮
+                                            IconButton(
+                                                onClick = {
+                                                    scope.launch(Dispatchers.IO) {
+                                                        // 删除原图和裁剪图
+                                                        ImageUtils.deleteImageAndCropped(imagePath)
+                                                    }
+                                                    imageUris =
+                                                        imageUris.filterIndexed { i, _ -> i != index }
+                                                    if (primaryImageIndex >= imageUris.size - 1) {
+                                                        primaryImageIndex =
+                                                            maxOf(0, imageUris.size - 1)
+                                                        // 如果删除的是主图，需要为新主图创建裁剪文件
+                                                        imageUris.getOrNull(primaryImageIndex)
+                                                            ?.let {
+                                                                switchPrimaryImage(primaryImageIndex)
+                                                            }
+                                                    }
+                                                },
+                                                modifier = Modifier
+                                                    .align(Alignment.TopEnd)
+                                                    .size(24.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Close,
+                                                    contentDescription = "删除",
+                                                    tint = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ==================== 描述 ====================
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text(stringResource(R.string.description)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3,
+                        maxLines = 5
+                    )
+
+                    // ==================== 容器选择 ====================
+                    var expandedWarehouse by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = expandedWarehouse,
+                        onExpandedChange = { expandedWarehouse = !expandedWarehouse }
+                    ) {
+                        OutlinedTextField(
+                            value = warehouses.find { it.id == selectedWarehouseId }?.name ?: "",
+                            onValueChange = { },
+                            readOnly = true,
+                            label = { Text(stringResource(R.string.warehouse)) },
+                            isError = warehouseError,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedWarehouse) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expandedWarehouse,
+                            onDismissRequest = { expandedWarehouse = false }
+                        ) {
+                            warehouses.forEach { warehouse ->
+                                DropdownMenuItem(
+                                    text = { Text(warehouse.name) },
+                                    onClick = {
+                                        selectedWarehouseId = warehouse.id
+                                        warehouseError = false
+                                        expandedWarehouse = false
+                                    }
                                 )
                             }
                         }
-                    } else {
-                        // 未选中状态：显示 FilterChip，透明背景，轮廓色边框
-                        FilterChip(
-                            selected = false,
-                            onClick = { tags = tags + tag },
-                            enabled = true,
-                            label = { Text(tag) },
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = false,
-                                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
-                                selectedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
-                                borderWidth = 1.25.dp,
-                                selectedBorderWidth = 1.25.dp
-                            ),
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = Color.Transparent,
-                                labelColor = ColorHelpers.getGroup4TextColor()
-                            )
+                    }
+                    if (warehouseError) {
+                        Text(
+                            text = stringResource(R.string.warehouse_required),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
-                }
 
-                // 4. 「+ 添加标签」虚线按钮 / 输入框（永远在最后一项）
-                item {
-                    Box(
+                    // ==================== 标签 + 自定义标签（核心改动）===================
+                    Text(
+                        stringResource(R.string.status_tags),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+
+                    // 获取所有已创建的标签
+                    val allTags by tagManager.allTags.collectAsState()
+                    val customTags = allTags.filter { it != "过期" }
+
+                    // 自动弹出键盘和聚焦
+                    LaunchedEffect(isTagInputFocused) {
+                        if (isTagInputFocused) {
+                            // 等待UI完全组合
+                            delay(100)
+                            // 尝试聚焦，可能需要多次尝试
+                            var retries = 0
+                            while (retries < 3) {
+                                try {
+                                    tagFocusRequester.requestFocus()
+                                    delay(150)
+                                    keyboardController?.show()
+                                    break
+                                } catch (e: Exception) {
+                                    retries++
+                                    delay(100)
+                                }
+                            }
+                        }
+                    }
+
+                    LazyRow(
                         modifier = Modifier
-                            .height(40.dp)
-                            .widthIn(min = if (isTagInputFocused) 140.dp else 108.dp, max = 120.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(
-                                if (isTagInputFocused)
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-                                else
-                                    Color.Transparent
-                            )
-                            .border(
-                                width = 1.5.dp,
-                                color = if (isTagInputFocused)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                                shape = RoundedCornerShape(20.dp)
-                            )
-                            .clickable(
-                                enabled = !isTagInputFocused,
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() }
-                            ) { isTagInputFocused = true }
-                            .padding(horizontal = 16.dp),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        BasicTextField(
-                            value = tagInputText,
-                            onValueChange = { if (it.length <= 12) tagInputText = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .fillMaxHeight()
-                                .focusRequester(tagFocusRequester)
-                                .onFocusChanged { focusState ->
-                                    // 失焦自动保存
-                                    if (!focusState.isFocused && isTagInputFocused) {
+                        // 1. 默认标签已移除，只保留过期标签的自动显示
+
+
+                        // 2. 过期标签（自动显示）
+                        if (isExpired) {
+                            item {
+                                FilterChip(
+                                    selected = true,
+                                    onClick = { },
+                                    enabled = false,
+                                    label = {
+                                        Text(
+                                            stringResource(R.string.expired_tag),
+                                            color = ColorHelpers.getGroup4TextColor()
+                                        )
+                                    },
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        enabled = false,
+                                        selected = true,
+                                        borderColor = Color(0xFFF3E5F5).copy(alpha = 0.8f),
+                                        selectedBorderColor = Color(0xFFF3E5F5).copy(alpha = 0.8f),
+                                        borderWidth = 1.25.dp,
+                                        selectedBorderWidth = 1.25.dp
+                                    ),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Color.Transparent,
+                                        selectedLabelColor = ColorHelpers.getGroup4TextColor(),
+                                        containerColor = Color.Transparent,
+                                        labelColor = ColorHelpers.getGroup4TextColor()
+                                    )
+                                )
+                            }
+                        }
+
+                        // 3. 所有已创建的自定义标签（供选择，支持多选，选中高亮60%黄色，带删除按钮，保持边框）
+                        items(customTags.toList()) { tag ->
+                            val isSelected = tags.contains(tag)
+                            if (isSelected) {
+                                // 选中状态：显示带删除按钮的 FilterChip，透明背景，主色边框
+                                // 使用 Row 包裹 FilterChip 和 X 图标，让 X 图标可以单独点击
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    FilterChip(
+                                        selected = true,
+                                        onClick = { tags = tags - tag }, // 点击标签文本时取消选中
+                                        enabled = true,
+                                        label = { Text(tag) },
+                                        border = FilterChipDefaults.filterChipBorder(
+                                            enabled = true,
+                                            selected = true,
+                                            borderColor = MaterialTheme.colorScheme.primary,
+                                            selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                            borderWidth = 1.25.dp,
+                                            selectedBorderWidth = 1.25.dp
+                                        ),
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = Color.Transparent,
+                                            selectedLabelColor = ColorHelpers.getGroup4TextColor(),
+                                            containerColor = Color.Transparent,
+                                            labelColor = ColorHelpers.getGroup4TextColor()
+                                        )
+                                    )
+                                    // X 图标单独可点击，点击时删除标签
+                                    IconButton(
+                                        onClick = {
+                                            // 从标签管理器中删除标签
+                                            tagManager.removeTag(tag)
+                                            // 从当前选中标签中移除
+                                            tags = tags - tag
+                                        },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "删除",
+                                            modifier = Modifier.size(16.dp),
+                                            tint = ColorHelpers.getGroup4IconColor()
+                                        )
+                                    }
+                                }
+                            } else {
+                                // 未选中状态：显示 FilterChip，透明背景，轮廓色边框
+                                FilterChip(
+                                    selected = false,
+                                    onClick = { tags = tags + tag },
+                                    enabled = true,
+                                    label = { Text(tag) },
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        enabled = true,
+                                        selected = false,
+                                        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
+                                        selectedBorderColor = MaterialTheme.colorScheme.outline.copy(
+                                            alpha = 0.7f
+                                        ),
+                                        borderWidth = 1.25.dp,
+                                        selectedBorderWidth = 1.25.dp
+                                    ),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        containerColor = Color.Transparent,
+                                        labelColor = ColorHelpers.getGroup4TextColor()
+                                    )
+                                )
+                            }
+                        }
+
+                        // 4. 「+ 添加标签」虚线按钮 / 输入框（永远在最后一项）
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .height(40.dp)
+                                    .widthIn(
+                                        min = if (isTagInputFocused) 140.dp else 108.dp,
+                                        max = 120.dp
+                                    )
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(
+                                        if (isTagInputFocused)
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                                        else
+                                            Color.Transparent
+                                    )
+                                    .border(
+                                        width = 1.5.dp,
+                                        color = if (isTagInputFocused)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                        shape = RoundedCornerShape(20.dp)
+                                    )
+                                    .clickable(
+                                        enabled = !isTagInputFocused,
+                                        indication = null,
+                                        interactionSource = remember { MutableInteractionSource() }
+                                    ) { isTagInputFocused = true }
+                                    .padding(horizontal = 16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                BasicTextField(
+                                    value = tagInputText,
+                                    onValueChange = { if (it.length <= 12) tagInputText = it },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .fillMaxHeight()
+                                        .focusRequester(tagFocusRequester)
+                                        .onFocusChanged { focusState ->
+                                            // 失焦自动保存
+                                            if (!focusState.isFocused && isTagInputFocused) {
+                                                val text = tagInputText.trim()
+                                                if (text.isNotEmpty() && text !in tags && text != "过期") {
+                                                    // 保存到全局标签列表
+                                                    tagManager.addTag(text)
+                                                    // 自动选中新添加的标签
+                                                    tags = tags + text
+                                                }
+                                                tagInputText = ""
+                                                isTagInputFocused = false
+                                            }
+                                        },
+                                    textStyle = androidx.compose.ui.text.TextStyle(
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        lineHeight = 20.sp
+                                    ),
+                                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                    keyboardActions = KeyboardActions(onDone = {
                                         val text = tagInputText.trim()
-                                        if (text.isNotEmpty() && text !in tags && text !in listOf("正常", "损坏", "遗失", "过期")) {
+                                        if (text.isNotEmpty() && text !in tags && text != "过期") {
                                             // 保存到全局标签列表
                                             tagManager.addTag(text)
                                             // 自动选中新添加的标签
@@ -638,295 +878,314 @@ fun ItemEditScreen(
                                         }
                                         tagInputText = ""
                                         isTagInputFocused = false
-                                    }
-                                },
-                            textStyle = androidx.compose.ui.text.TextStyle(
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                lineHeight = 20.sp
-                            ),
-                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                            keyboardActions = KeyboardActions(onDone = {
-                                val text = tagInputText.trim()
-                                if (text.isNotEmpty() && text !in tags && text !in listOf("正常", "损坏", "遗失", "过期")) {
-                                    // 保存到全局标签列表
-                                    tagManager.addTag(text)
-                                    // 自动选中新添加的标签
-                                    tags = tags + text
-                                }
-                                tagInputText = ""
-                                isTagInputFocused = false
-                                keyboardController?.hide()
-                            })
-                        ) { innerTextField ->
-                            // 关键：用 Box 叠层布局，确保垂直居中
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                // 1. 非编辑状态：显示 "+ 添加标签"
-                                if (!isTagInputFocused) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .clickable(
-                                                interactionSource = remember { MutableInteractionSource() },
-                                                indication = null
-                                            ) {
-                                                isTagInputFocused = true
-                                            },
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Add,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Spacer(Modifier.width(4.dp))
-                                        Text(
-                                            "添加标签",
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontSize = 12.sp
-                                        )
-                                    }
-                                }
-
-                                // 2. 编辑状态：显示占位文字（当输入为空时）
-                                if (isTagInputFocused && tagInputText.isEmpty()) {
+                                        keyboardController?.hide()
+                                    })
+                                ) { innerTextField ->
+                                    // 关键：用 Box 叠层布局，确保垂直居中
                                     Box(
                                         modifier = Modifier.fillMaxSize(),
-                                        contentAlignment = Alignment.CenterStart
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Text(
-                                            text = "输入标签…",
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                            fontSize = 12.sp,
-                                            modifier = Modifier.padding(start = 2.dp)
-                                        )
+                                        // 1. 非编辑状态：显示 "+ 添加标签"
+                                        if (!isTagInputFocused) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .clickable(
+                                                        interactionSource = remember { MutableInteractionSource() },
+                                                        indication = null
+                                                    ) {
+                                                        isTagInputFocused = true
+                                                    },
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Add,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Spacer(Modifier.width(4.dp))
+                                                Text(
+                                                    text = stringResource(R.string.add_tag),
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    fontSize = 12.sp
+                                                )
+                                            }
+                                        }
+
+                                        // 2. 编辑状态：显示占位文字（当输入为空时）
+                                        if (isTagInputFocused && tagInputText.isEmpty()) {
+                                            Box(
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentAlignment = Alignment.CenterStart
+                                            ) {
+                                                Text(
+                                                    text = stringResource(R.string.enter_tag_hint),
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                        alpha = 0.7f
+                                                    ),
+                                                    fontSize = 12.sp,
+                                                    modifier = Modifier.padding(start = 2.dp)
+                                                )
+                                            }
+                                        }
+
+                                        // 3. 真正的输入内容（永远在最上层，垂直居中）
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.CenterStart
+                                        ) {
+                                            innerTextField()
+                                        }
                                     }
                                 }
-
-                                // 3. 真正的输入内容（永远在最上层，垂直居中）
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.CenterStart
-                                ) {
-                                    innerTextField()
-                }
-            }
-                        }
-                    }
-                }
-            }
-
-            // ==================== 价格 & 数量 ====================
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedTextField(
-                    value = price,
-                    onValueChange = { price = it },
-                    label = { Text(stringResource(R.string.price)) },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    leadingIcon = { Text("¥") }
-                )
-
-                OutlinedTextField(
-                    value = quantity,
-                    onValueChange = { quantity = it },
-                    label = { Text(stringResource(R.string.quantity)) },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-            }
-            
-            // ==================== 库存提醒开关 ====================
-            Card(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.enable_stock_alert),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = stringResource(R.string.enable_stock_alert_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                    }
-                    Switch(
-                        checked = enableStockAlert,
-                        onCheckedChange = { enableStockAlert = it }
-                    )
-                }
-            }
-
-            // ==================== 条形码 ====================
-            OutlinedTextField(
-                value = barcode,
-                onValueChange = { barcode = it },
-                label = { Text(stringResource(R.string.barcode)) },
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.QrCode, null) }
-            )
-
-            // ==================== 特征码（只读显示）====================
-            if (featureCode != null) {
-                OutlinedTextField(
-                    value = "特征码已生成 (${featureCode!!.length} 字符)",
-                    onValueChange = { },
-                    readOnly = true,
-                    label = { Text(stringResource(R.string.feature_code)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Default.ImageSearch, null) },
-                    trailingIcon = {
-                        IconButton(onClick = { featureCode = null }) {
-                            Icon(Icons.Default.Close, stringResource(R.string.clear_feature_code))
-                        }
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                        disabledBorderColor = MaterialTheme.colorScheme.outline,
-                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-            }
-
-            // ==================== 到期日期 ====================
-            OutlinedTextField(
-                value = expiryDate?.let { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(it) } ?: "",
-                onValueChange = { },
-                readOnly = true,
-                label = { Text(stringResource(R.string.expiry_date)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showDatePicker = true },
-                leadingIcon = { Icon(Icons.Default.CalendarToday, null) },
-                trailingIcon = {
-                    IconButton(onClick = { showDatePicker = true }) {
-                        Icon(Icons.Default.DateRange, null)
-                    }
-                }
-            )
-
-            // ==================== 日期选择器 ====================
-            if (showDatePicker) {
-                val datePickerState = rememberDatePickerState(
-                    initialSelectedDateMillis = expiryDate?.time
-                )
-                DatePickerDialog(
-                    onDismissRequest = { showDatePicker = false },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            datePickerState.selectedDateMillis?.let { millis ->
-                                val zone = ZoneId.systemDefault()
-                                val localDate = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
-                                val startOfDay = localDate.atStartOfDay(zone).toInstant().toEpochMilli()
-                                expiryDate = Date(startOfDay)
-                            }
-                            showDatePicker = false
-                        }) {
-                            Text(stringResource(R.string.ok))
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showDatePicker = false }) {
-                            Text(stringResource(R.string.cancel))
-                        }
-                    }
-                ) {
-                    DatePicker(state = datePickerState)
-                }
-            }
-            
-            // ==================== 拍照对话框 ====================
-            if (showCameraDialog) {
-                CameraCaptureDialog(
-                    onImageCaptured = { imagePath ->
-                        showCameraDialog = false
-                        if (imagePath != null) {
-                            // 加载图片并自动裁剪（相机已有引导框，直接按框裁剪）
-                            val bitmap = ImageUtils.loadBitmapFromPath(imagePath)
-                            if (bitmap != null) {
-                                val croppedBitmap = ImageUtils.cropImageToCardSize(
-                                    bitmap,
-                                    cardWidthPx,
-                                    cardHeightPx
-                                )
-                                // 保存裁剪后的图片
-                                val fileName = "item_${itemId ?: System.currentTimeMillis()}.jpg"
-                                val savedPath = ImageUtils.saveImageToInternalStorage(
-                                    context,
-                                    croppedBitmap,
-                                    fileName
-                                )
-                                imageUri = savedPath
-                                // 删除原始临时文件
-                                ImageUtils.deleteImageFile(imagePath)
                             }
                         }
-                    },
-                    onDismiss = { showCameraDialog = false },
-                    cardWidth = cardWidthPx,
-                    cardHeight = cardHeightPx
-                )
-            }
-            
-            // 相册选择后的裁剪对话框
-            if (showCropDialog && bitmapToCrop != null) {
-                ImageCropDialog(
-                    bitmap = bitmapToCrop!!,
-                    onCropped = { croppedBitmap ->
-                        showCropDialog = false
-                        // 将裁剪后的图片缩放到目标卡片尺寸
-                        val scaledBitmap = ImageUtils.scaleCroppedBitmapToCardSize(
-                            croppedBitmap,
-                            cardWidthPx,
-                            cardHeightPx
+                    }
+
+                    // ==================== 价格 & 数量 ====================
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = price,
+                            onValueChange = { price = it },
+                            label = { Text(stringResource(R.string.price)) },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            leadingIcon = { Text("¥") }
                         )
-                        // 保存裁剪后的图片
-                        val fileName = "item_${itemId ?: System.currentTimeMillis()}.jpg"
-                        val savedPath = ImageUtils.saveImageToInternalStorage(
-                            context,
-                            scaledBitmap,
-                            fileName
+
+                        OutlinedTextField(
+                            value = quantity,
+                            onValueChange = { quantity = it },
+                            label = { Text(stringResource(R.string.quantity)) },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
-                        imageUri = savedPath
-                        bitmapToCrop = null
-                    },
-                    onDismiss = {
-                        showCropDialog = false
-                        bitmapToCrop = null
-                    },
-                    cardWidth = cardWidthPx,
-                    cardHeight = cardHeightPx
-                )
+                    }
+
+                    // ==================== 库存提醒开关 ====================
+                    Card(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.enable_stock_alert),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = stringResource(R.string.enable_stock_alert_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            }
+                            Switch(
+                                checked = enableStockAlert,
+                                onCheckedChange = { enableStockAlert = it }
+                            )
+                        }
+                    }
+
+                    // ==================== 条形码 ====================
+                    OutlinedTextField(
+                        value = barcode,
+                        onValueChange = { barcode = it },
+                        label = { Text(stringResource(R.string.barcode)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        leadingIcon = { Icon(Icons.Default.QrCode, null) }
+                    )
+
+                    // ==================== 特征码（只读显示）====================
+                    if (featureCode != null) {
+                        OutlinedTextField(
+                            value = "特征码已生成 (${featureCode!!.length} 字符)",
+                            onValueChange = { },
+                            readOnly = true,
+                            label = { Text(stringResource(R.string.feature_code)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            leadingIcon = { Icon(Icons.Default.ImageSearch, null) },
+                            trailingIcon = {
+                                IconButton(onClick = { featureCode = null }) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        stringResource(R.string.clear_feature_code)
+                                    )
+                                }
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                    }
+
+                    // ==================== 到期日期 ====================
+                    val dateFormat = remember {
+                        DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault())
+                    }
+                    OutlinedTextField(
+                        value = expiryDate?.let {
+                            dateFormat.format(it)
+                        } ?: "",
+                        onValueChange = { },
+                        readOnly = true,
+                        label = { Text(stringResource(R.string.expiry_date)) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                                showDatePicker = true
+                            },
+                        leadingIcon = { Icon(Icons.Default.CalendarToday, null) },
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                                showDatePicker = true
+                            }) {
+                                Icon(Icons.Default.DateRange, null)
+                            }
+                        }
+                    )
+
+                    // ==================== 日期选择器 - 使用 CardDatePickerDialog ====================
+                    val activity = context.findActivity()
+                    var datePickerKey by remember { mutableStateOf(0) }
+                    val selectExpiryDateTitle = stringResource(R.string.select_expiry_date)
+
+                    LaunchedEffect(showDatePicker, datePickerKey) {
+                        if (showDatePicker && activity != null) {
+                            val defaultTime = expiryDate?.time ?: System.currentTimeMillis()
+                            val dialog = CardDatePickerDialog.builder(activity)
+                                .setTitle(selectExpiryDateTitle)
+                                .setDefaultTime(defaultTime)
+                                .setDisplayType(
+                                    DateTimeConfig.YEAR,
+                                    DateTimeConfig.MONTH,
+                                    DateTimeConfig.DAY
+                                )
+                                .setOnChoose { millisecond ->
+                                    val zone = ZoneId.systemDefault()
+                                    val localDate =
+                                        Instant.ofEpochMilli(millisecond).atZone(zone).toLocalDate()
+                                    val startOfDay =
+                                        localDate.atStartOfDay(zone).toInstant().toEpochMilli()
+                                    expiryDate = Date(startOfDay)
+                                    showDatePicker = false
+                                    datePickerKey++
+                                }
+                                .setOnCancel {
+                                    showDatePicker = false
+                                    datePickerKey++
+                                }
+                                .build()
+                            dialog.show()
+                        }
+                    }
+
+                    // ==================== 拍照对话框 ====================
+                    if (showCameraDialog) {
+                        CameraCaptureDialog(
+                            onImageCaptured = { imagePath ->
+                                showCameraDialog = false
+                                if (imagePath != null) {
+                                    scope.launch(Dispatchers.IO) {
+                                        // 加载图片，保存原图（不裁剪）
+                                        val bitmap = ImageUtils.loadBitmapFromPath(imagePath)
+                                        if (bitmap != null) {
+                                            val fileName =
+                                                "item_${itemId ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
+                                            val savedPath = ImageUtils.saveImageToInternalStorage(
+                                                context,
+                                                bitmap,
+                                                fileName
+                                            )
+                                            savedPath?.let {
+                                                imageUris = imageUris + it
+                                                if (imageUris.size == 1) {
+                                                    primaryImageIndex = 0
+                                                    // 第一张图片自动设为主图，需要创建裁剪文件
+                                                    cropImageForPrimary(it)
+                                                }
+                                                imageUri = it // 向后兼容
+                                            }
+                                            // 删除原始临时文件
+                                            ImageUtils.deleteImageFile(imagePath)
+                                        }
+                                    }
+                                }
+                            },
+                            onDismiss = { showCameraDialog = false },
+                            cardWidth = cardWidthPx,
+                            cardHeight = cardHeightPx
+                        )
+                    }
+
+                    // 相册选择单张图片后的裁剪对话框（用于手动选择单张图片的情况）
+                    if (showCropDialog && bitmapToCrop != null) {
+                        ImageCropDialog(
+                            bitmap = bitmapToCrop!!,
+                            onCropped = { croppedBitmap ->
+                                showCropDialog = false
+                                scope.launch(Dispatchers.IO) {
+                                    // 保存原图（不立即裁剪）
+                                    val fileName =
+                                        "item_${itemId ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
+                                    val savedPath = ImageUtils.saveImageToInternalStorage(
+                                        context,
+                                        croppedBitmap,
+                                        fileName
+                                    )
+                                    savedPath?.let {
+                                        imageUris = imageUris + it
+                                        if (imageUris.size == 1) {
+                                            primaryImageIndex = 0
+                                            // 第一张图片自动设为主图，需要创建裁剪文件
+                                            cropImageForPrimary(it)
+                                        }
+                                        imageUri = it // 向后兼容
+                                    }
+                                }
+                                bitmapToCrop = null
+                            },
+                            onDismiss = {
+                                showCropDialog = false
+                                bitmapToCrop = null
+                            },
+                            cardWidth = cardWidthPx,
+                            cardHeight = cardHeightPx
+                        )
+                    }
+                }
             }
         }
-    }
-}
+
 
 // ==================== 辅助函数 ====================
-fun getStatusLabel(status: ItemStatus): String = when (status) {
-        ItemStatus.NORMAL -> "正常"
-        ItemStatus.DAMAGED -> "损坏"
-        ItemStatus.LOST -> "遗失"
-        ItemStatus.EXPIRED -> "过期"
+
+
+// 安全获取宿主 Activity，避免在 Dialog 上下文中拿不到 Activity
+fun Context.findActivity(): Activity? {
+    var ctx: Context? = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
     }
+    return null
+}
 
 // ==================== 自定义虚线 Modifier ====================
 fun Modifier.dashedBorder(
@@ -935,21 +1194,23 @@ fun Modifier.dashedBorder(
     dashLength: Dp,
     gapLength: Dp,
     cornerRadius: Dp
-): Modifier = this.then(
-    Modifier.drawBehind {
-        val stroke = Stroke(
-            width = strokeWidth.toPx(),
-            pathEffect = PathEffect.dashPathEffect(
-                floatArrayOf(dashLength.toPx(), gapLength.toPx()),
-                0f
+): Modifier {
+    return this.then(
+        Modifier.drawBehind {
+            val stroke = Stroke(
+                width = strokeWidth.toPx(),
+                pathEffect = PathEffect.dashPathEffect(
+                    floatArrayOf(dashLength.toPx(), gapLength.toPx()),
+                    0f
+                )
             )
-        )
-        drawRoundRect(
-            color = color,
-            topLeft = Offset.Zero,
-            size = size,
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerRadius.toPx()),
-            style = stroke
-        )
-    }
-)
+            drawRoundRect(
+                color = color,
+                topLeft = Offset.Zero,
+                size = size,
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerRadius.toPx()),
+                style = stroke
+            )
+        }
+    )
+}

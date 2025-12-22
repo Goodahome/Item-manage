@@ -26,6 +26,8 @@ import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel
 import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
 import com.example.itemremindertool.ui.components.WarehouseQRCodeDialog
+import com.example.itemremindertool.ui.components.UIConstants
+import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,6 +40,7 @@ fun WarehouseDetailScreen(
     accessHistoryManager: com.example.itemremindertool.data.AccessHistoryManager,
     onAddItem: (Long) -> Unit,
     onEditItem: (Long) -> Unit,
+    onViewItem: (Long) -> Unit = {},
     onAddChildWarehouse: (Long) -> Unit,
     onEditWarehouse: (Long) -> Unit,
     onDeleteWarehouse: (com.example.itemremindertool.data.model.Warehouse) -> Unit,
@@ -185,7 +188,7 @@ fun WarehouseDetailScreen(
         floatingActionButton = {
             // 展开的 FAB 菜单
             Column(
-                modifier = Modifier.padding(bottom = 70.dp),
+                modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING),
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -196,7 +199,8 @@ fun WarehouseDetailScreen(
                             fabExpanded = false
                             onAddItem(warehouseId)
                         },
-                        modifier = Modifier.size(56.dp)
+                        containerColor = ColorHelpers.getGroup5FabColor(),
+                        modifier = Modifier.size(UIConstants.FAB_SIZE)
                     ) {
                         Icon(Icons.Default.Category, stringResource(R.string.add_item))
                     }
@@ -213,7 +217,8 @@ fun WarehouseDetailScreen(
                                 fabExpanded = false
                                 onAddChildWarehouse(warehouseId)
                             },
-                            modifier = Modifier.size(56.dp)
+                            containerColor = ColorHelpers.getGroup5FabColor(),
+                            modifier = Modifier.size(UIConstants.FAB_SIZE)
                         ) {
                             Icon(Icons.Default.Inventory2, stringResource(R.string.add_warehouse))
                         }
@@ -223,7 +228,8 @@ fun WarehouseDetailScreen(
                 // 主 FAB 按钮（最下方）
                 FloatingActionButton(
                     onClick = { fabExpanded = !fabExpanded },
-                    modifier = Modifier.size(56.dp)
+                    containerColor = ColorHelpers.getGroup5FabColor(),
+                    modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(
                         Icons.Default.Add,
@@ -252,6 +258,7 @@ fun WarehouseDetailScreen(
                 },
                 onEditWarehouse = { /* 已移到顶部菜单 */ },
                 onEditItem = onEditItem,
+                onViewItem = onViewItem,
                 modifier = modifier.padding(paddingValues)
             )
         }

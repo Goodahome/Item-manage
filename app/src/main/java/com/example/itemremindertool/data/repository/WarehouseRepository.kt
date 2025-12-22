@@ -1,17 +1,20 @@
 package com.example.itemremindertool.data.repository
 
+import android.content.Context
 import androidx.room.Transaction
 import com.example.itemremindertool.data.dao.WarehouseDao
 import com.example.itemremindertool.data.dao.DeletedRecordDao
 import com.example.itemremindertool.data.model.Warehouse
 import com.example.itemremindertool.data.model.DeletedRecord
+import com.example.itemremindertool.data.database.AppDatabase
 import java.util.Date
 import kotlinx.coroutines.flow.Flow
 
 class WarehouseRepository(
     private val warehouseDao: WarehouseDao,
     private val deletedRecordDao: DeletedRecordDao? = null,
-    private val itemDao: com.example.itemremindertool.data.dao.ItemDao? = null
+    private val itemDao: com.example.itemremindertool.data.dao.ItemDao? = null,
+    private val context: Context? = null
 ) {
     fun getAllWarehouses(): Flow<List<Warehouse>> = warehouseDao.getAllWarehouses()
 
@@ -25,9 +28,50 @@ class WarehouseRepository(
 
     suspend fun getChildWarehousesSync(parentId: Long): List<Warehouse> = warehouseDao.getChildWarehousesSync(parentId)
 
-    suspend fun insertWarehouse(warehouse: Warehouse): Long = warehouseDao.insertWarehouse(warehouse)
+    suspend fun insertWarehouse(warehouse: Warehouse): Long {
+        val warehouseId = warehouseDao.insertWarehouse(warehouse)
+        // 记录动态
+        context?.let {
+            try {
+                val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
+                val event = com.example.itemremindertool.data.model.ActivityEvent(
+                    type = com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_ADDED,
+                    title = it.getString(com.example.itemremindertool.R.string.event_created_warehouse),
+                    description = warehouse.name,
+                    targetId = warehouseId,
+                    targetName = warehouse.name,
+                    iconType = "add_warehouse",
+                    createdAt = Date()
+                )
+                activityEventDao.insert(event)
+            } catch (e: Exception) {
+                android.util.Log.e("WarehouseRepository", "记录创建容器动态失败", e)
+            }
+        }
+        return warehouseId
+    }
 
-    suspend fun updateWarehouse(warehouse: Warehouse) = warehouseDao.updateWarehouse(warehouse)
+    suspend fun updateWarehouse(warehouse: Warehouse) {
+        warehouseDao.updateWarehouse(warehouse)
+        // 记录动态
+        context?.let {
+            try {
+                val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
+                val event = com.example.itemremindertool.data.model.ActivityEvent(
+                    type = com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_UPDATED,
+                    title = it.getString(com.example.itemremindertool.R.string.event_updated_warehouse),
+                    description = warehouse.name,
+                    targetId = warehouse.id,
+                    targetName = warehouse.name,
+                    iconType = "update_warehouse",
+                    createdAt = Date()
+                )
+                activityEventDao.insert(event)
+            } catch (e: Exception) {
+                android.util.Log.e("WarehouseRepository", "记录更新容器动态失败", e)
+            }
+        }
+    }
 
     /**
      * 递归删除容器及其所有子容器和物品
@@ -109,6 +153,24 @@ class WarehouseRepository(
     suspend fun deleteWarehouse(warehouse: Warehouse) {
         // 使用递归删除方法
         deleteWarehouseRecursively(warehouse)
+        // 记录动态
+        context?.let {
+            try {
+                val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
+                val event = com.example.itemremindertool.data.model.ActivityEvent(
+                    type = com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_DELETED,
+                    title = it.getString(com.example.itemremindertool.R.string.event_deleted_warehouse),
+                    description = warehouse.name,
+                    targetId = warehouse.id,
+                    targetName = warehouse.name,
+                    iconType = "delete_warehouse",
+                    createdAt = Date()
+                )
+                activityEventDao.insert(event)
+            } catch (e: Exception) {
+                android.util.Log.e("WarehouseRepository", "记录删除容器动态失败", e)
+            }
+        }
     }
 
     @androidx.room.Transaction
