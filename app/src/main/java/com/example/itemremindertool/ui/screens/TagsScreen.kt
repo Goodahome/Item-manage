@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.data.TagManager
 import com.example.itemremindertool.data.model.Item
@@ -22,6 +23,9 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.UIConstants
+import com.example.itemremindertool.ui.components.AutoSizeText
+import com.example.itemremindertool.ui.components.AutoSizeTextButton
 import java.time.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,35 +46,19 @@ fun TagsScreen(
     var selectedTag by remember { mutableStateOf<String?>(null) }
     var editTagName by remember { mutableStateOf("") }
     
-    // 默认标签
-    val defaultTags = listOf("正常", "损坏", "遗失", "过期")
+    // 取消所有默认标签
+    val defaultTags = emptyList<String>()
     
     // 收集所有物品的标签
     val allItemTags = remember(items) {
         items.flatMap { item ->
-            val tags = item.tags.toMutableList()
-            // 如果物品过期，添加"过期"标签：到期日结束后（次日00:01起）才算过期
-            if (item.expiryDate != null) {
-                val zone = ZoneId.systemDefault()
-                val nowZoned = Instant.now().atZone(zone)
-                val expiryEnd = Instant.ofEpochMilli(item.expiryDate.time)
-                    .atZone(zone)
-                    .toLocalDate()
-                    .plusDays(1)          // 次日
-                    .atStartOfDay(zone)   // 00:00
-                    .plusMinutes(1)       // 00:01 后开始算过期
-                val isExpired = !nowZoned.isBefore(expiryEnd)
-                if (isExpired && !tags.contains("过期")) {
-                    tags.add("过期")
-                }
-            }
-            tags
+            item.tags.toMutableList()
         }.toSet()
     }
     
-    // 合并所有标签：默认标签 + 自定义标签 + 物品中使用的标签
+    // 合并所有标签：自定义标签 + 物品中使用的标签（不再包含默认标签）
     val allDisplayTags = remember(allTags, allItemTags) {
-        (defaultTags + allTags + allItemTags).distinct().sorted()
+        (allTags + allItemTags).distinct().sorted()
     }
     
     // 统计每个标签的使用次数
@@ -111,11 +99,12 @@ fun TagsScreen(
         },
         floatingActionButton = {
             Column(
-                modifier = Modifier.padding(bottom = 70.dp)
+                modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
             ) {
                 FloatingActionButton(
                     onClick = { showAddDialog = true },
-                    modifier = Modifier.size(56.dp)
+                    containerColor = ColorHelpers.getGroup5FabColor(),
+                    modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(Icons.Default.Add, stringResource(R.string.add_tag))
                 }
@@ -160,9 +149,8 @@ fun TagsScreen(
                     TagCard(
                         tag = tag,
                         usageCount = tagUsageCounts[tag] ?: 0,
-                        isDefaultTag = tag in defaultTags,
                         onEdit = {
-                            if (tag !in defaultTags) {
+                            if (true) {
                                 selectedTag = tag
                                 editTagName = tag
                                 showEditDialog = true
@@ -170,7 +158,7 @@ fun TagsScreen(
                         },
                         onDelete = {
                             // 只能删除自定义标签
-                            if (tag !in defaultTags) {
+                            if (true) {
                                 selectedTag = tag
                                 showDeleteDialog = true
                             }
@@ -187,7 +175,7 @@ fun TagsScreen(
         
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text(stringResource(R.string.add_tag)) },
+            title = { AutoSizeText(stringResource(R.string.add_tag), textAlign = TextAlign.Start) },
             text = {
                 OutlinedTextField(
                     value = newTagName,
@@ -198,22 +186,22 @@ fun TagsScreen(
                 )
             },
             confirmButton = {
-                TextButton(
+                AutoSizeTextButton(
                     onClick = {
                         if (newTagName.isNotBlank()) {
                             tagManager.addTag(newTagName.trim())
                             showAddDialog = false
                         }
                     },
-                    enabled = newTagName.isNotBlank()
-                ) {
-                    Text(stringResource(R.string.add))
-                }
+                    enabled = newTagName.isNotBlank(),
+                    text = stringResource(R.string.add)
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showAddDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
+                AutoSizeTextButton(
+                    onClick = { showAddDialog = false },
+                    text = stringResource(R.string.cancel)
+                )
             }
         )
     }
@@ -225,7 +213,7 @@ fun TagsScreen(
                 showEditDialog = false
                 selectedTag = null
             },
-            title = { Text(stringResource(R.string.edit_tag)) },
+            title = { AutoSizeText(stringResource(R.string.edit_tag), textAlign = TextAlign.Start) },
             text = {
                 OutlinedTextField(
                     value = editTagName,
@@ -236,7 +224,7 @@ fun TagsScreen(
                 )
             },
             confirmButton = {
-                TextButton(
+                AutoSizeTextButton(
                     onClick = {
                         if (editTagName.isNotBlank() && editTagName != selectedTag) {
                             // 更新标签管理器中的标签
@@ -256,18 +244,18 @@ fun TagsScreen(
                             selectedTag = null
                         }
                     },
-                    enabled = editTagName.isNotBlank()
-                ) {
-                    Text(stringResource(R.string.save))
-                }
+                    enabled = editTagName.isNotBlank(),
+                    text = stringResource(R.string.save)
+                )
             },
             dismissButton = {
-                TextButton(onClick = { 
-                    showEditDialog = false
-                    selectedTag = null
-                }) {
-                    Text(stringResource(R.string.cancel))
-                }
+                AutoSizeTextButton(
+                    onClick = { 
+                        showEditDialog = false
+                        selectedTag = null
+                    },
+                    text = stringResource(R.string.cancel)
+                )
             }
         )
     }
@@ -281,18 +269,20 @@ fun TagsScreen(
                 showDeleteDialog = false
                 selectedTag = null
             },
-            title = { Text(stringResource(R.string.delete_tag)) },
+            title = { AutoSizeText(stringResource(R.string.delete_tag), textAlign = TextAlign.Start) },
             text = { 
-                Text(
-                    if (usageCount > 0) {
+                AutoSizeText(
+                    text = if (usageCount > 0) {
                         stringResource(R.string.delete_tag_confirm_with_usage, selectedTag!!, usageCount)
                     } else {
                         stringResource(R.string.delete_tag_confirm, selectedTag!!)
-                    }
+                    },
+                    textAlign = TextAlign.Start,
+                    maxLines = 3
                 )
             },
             confirmButton = {
-                TextButton(
+                AutoSizeTextButton(
                     onClick = {
                         // 从标签管理器中删除标签
                         tagManager.removeTag(selectedTag!!)
@@ -307,18 +297,18 @@ fun TagsScreen(
                         
                         showDeleteDialog = false
                         selectedTag = null
-                    }
-                ) {
-                    Text(stringResource(R.string.delete))
-                }
+                    },
+                    text = stringResource(R.string.delete)
+                )
             },
             dismissButton = {
-                TextButton(onClick = { 
-                    showDeleteDialog = false
-                    selectedTag = null
-                }) {
-                    Text(stringResource(R.string.cancel))
-                }
+                AutoSizeTextButton(
+                    onClick = { 
+                        showDeleteDialog = false
+                        selectedTag = null
+                    },
+                    text = stringResource(R.string.cancel)
+                )
             }
         )
     }
@@ -328,7 +318,6 @@ fun TagsScreen(
 fun TagCard(
     tag: String,
     usageCount: Int,
-    isDefaultTag: Boolean,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
@@ -372,19 +361,6 @@ fun TagCard(
                             fontWeight = FontWeight.Bold,
                             color = ColorHelpers.getGroup4TextColor()
                         )
-                        if (isDefaultTag) {
-                            Surface(
-                                shape = RoundedCornerShape(4.dp),
-                                color = ColorHelpers.getGroup3CardBgColor()
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.default_tag),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    color = ColorHelpers.getGroup4TextColor()
-                                )
-                            }
-                        }
                     }
                     Text(
                         text = stringResource(R.string.tag_usage_count, usageCount),
@@ -393,11 +369,10 @@ fun TagCard(
                     )
                 }
             }
-            if (!isDefaultTag) {
-                Box {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, stringResource(R.string.more_options), tint = ColorHelpers.getGroup4IconColor())
-                    }
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(Icons.Default.MoreVert, stringResource(R.string.more_options), tint = ColorHelpers.getGroup4IconColor())
+                }
                     DropdownMenu(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false }
@@ -423,5 +398,5 @@ fun TagCard(
             }
         }
     }
-}
+
 

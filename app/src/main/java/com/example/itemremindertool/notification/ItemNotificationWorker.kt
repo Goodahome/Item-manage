@@ -62,7 +62,7 @@ class ItemNotificationWorker(
             sendNotification(
                 context = applicationContext,
                 notificationManager = notificationManager,
-                title = "物品即将过期",
+                title = applicationContext.getString(com.example.itemremindertool.R.string.event_expiring_soon),
                 message = "有 ${expiringItems.size} 个物品将在 $expiryReminderDays 天内过期",
                 id = NOTIFICATION_ID_EXPIRING
             )
@@ -73,7 +73,7 @@ class ItemNotificationWorker(
             sendNotification(
                 context = applicationContext,
                 notificationManager = notificationManager,
-                title = "物品库存不足",
+                title = applicationContext.getString(com.example.itemremindertool.R.string.event_low_stock),
                 message = "有 ${lowStockItems.size} 个物品库存低于阈值",
                 id = NOTIFICATION_ID_LOW_STOCK
             )

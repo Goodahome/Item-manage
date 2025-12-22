@@ -27,6 +27,8 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.UIConstants
+import com.example.itemremindertool.ui.components.AutoSizeButton
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
@@ -84,12 +86,12 @@ fun WarehousesScreen(
         },
         floatingActionButton = {
             Column(
-                modifier = Modifier.padding(bottom = 70.dp)
+                modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
             ) {
                 FloatingActionButton(
                     onClick = onAddWarehouse,
                     containerColor = ColorHelpers.getGroup5FabColor(),
-                    modifier = Modifier.size(56.dp)
+                    modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(Icons.Default.Add, stringResource(R.string.add_warehouse))
                 }
@@ -112,16 +114,17 @@ fun WarehousesScreen(
                         Icons.Default.Inventory2,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        tint = ColorHelpers.getGroup4IconColor(0.6f)
                     )
                     Text(
                         stringResource(R.string.no_warehouses),
                         style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = ColorHelpers.getGroup4TextColor(0.6f)
                     )
-                    Button(onClick = onAddWarehouse) {
-                        Text(stringResource(R.string.add_first_warehouse))
-                    }
+                    AutoSizeButton(
+                        onClick = onAddWarehouse,
+                        text = stringResource(R.string.add_first_warehouse)
+                    )
                 }
             }
         } else {

@@ -33,8 +33,8 @@ import com.example.itemremindertool.utils.NextcloudBackupManager
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import android.content.Context
+import android.content.Intent
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -115,14 +115,8 @@ fun BackupRestoreScreen(
                     val result = DatabaseBackupUtils.restoreDatabase(context, it)
                     result.fold(
                         onSuccess = {
-                            // 先显示成功消息
-                            viewModel.showSuccess("数据库恢复成功！应用将自动重启以使更改生效。")
-                            // 延迟一下再请求重建，确保成功消息能够显示
-                            delay(1000)
-                            // 在主线程上请求重建
-                            withContext(Dispatchers.Main) {
-                                com.example.itemremindertool.utils.AppRefreshManager.requestRecreate(context)
-                            }
+                            // 处理恢复成功后的逻辑（立即重启应用）
+                            handleRestoreSuccess(context, viewModel, "数据恢复成功！程序将立即重启...")
                         },
                         onFailure = { e ->
                             viewModel.showError("恢复失败: ${e.message}")
@@ -172,14 +166,14 @@ fun BackupRestoreScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Text(
-                                text = "离线备份",
+                                text = stringResource(R.string.offline_backup),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = ColorHelpers.getGroup4TextColor()
                             )
                             
                             Text(
-                                text = "备份文件将保存到设备的Downloads目录，您可以在文件管理器中找到",
+                                text = stringResource(R.string.backup_file_location),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = ColorHelpers.getGroup4TextColor(0.7f)
                             )
@@ -239,7 +233,7 @@ fun BackupRestoreScreen(
                             ) {
                                 Icon(Icons.Default.Backup, null, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("备份到Downloads")
+                                Text(stringResource(R.string.backup_to_downloads))
                             }
                         }
                     }
@@ -262,14 +256,14 @@ fun BackupRestoreScreen(
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Text(
-                                    text = "云端恢复",
+                                    text = stringResource(R.string.cloud_restore),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = ColorHelpers.getGroup4TextColor()
                                 )
                                 
                                 Text(
-                                    text = "从云端下载并恢复自动同步的备份文件（将直接恢复所有数据，请先进行离线备份）",
+                                    text = stringResource(R.string.cloud_restore_description),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = ColorHelpers.getGroup4TextColor(0.7f)
                                 )
@@ -285,7 +279,7 @@ fun BackupRestoreScreen(
                                 ) {
                                     Icon(Icons.Default.CloudDownload, null, modifier = Modifier.size(20.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("从云端恢复")
+                                    Text(stringResource(R.string.restore_from_cloud))
                                 }
                             }
                         }
@@ -308,7 +302,7 @@ fun BackupRestoreScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Text(
-                                text = "恢复数据",
+                                text = stringResource(R.string.restore_data_action),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = ColorHelpers.getGroup4TextColor()
@@ -350,12 +344,12 @@ fun BackupRestoreScreen(
         if (showBackupWarningDialog) {
             AlertDialog(
                 onDismissRequest = { showBackupWarningDialog = false },
-                title = { Text("重要提示", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.important_notice), fontWeight = FontWeight.Bold) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("从云端恢复将直接替换所有现有数据！")
-                        Text("强烈建议您先进行离线备份，否则现有数据将丢失。")
-                        Text("确定要继续吗？", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.cloud_restore_warning))
+                        Text(stringResource(R.string.cloud_restore_suggestion))
+                        Text(stringResource(R.string.confirm_continue), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                     }
                 },
                 confirmButton = {
@@ -365,12 +359,12 @@ fun BackupRestoreScreen(
                             showCloudRestoreDialog = true
                         }
                     ) {
-                        Text("继续恢复", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.continue_restore), color = MaterialTheme.colorScheme.error)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showBackupWarningDialog = false }) {
-                        Text("取消")
+                        Text(stringResource(R.string.cancel_button))
                     }
                 }
             )
@@ -380,9 +374,9 @@ fun BackupRestoreScreen(
         if (showCloudRestoreDialog) {
             AlertDialog(
                 onDismissRequest = { showCloudRestoreDialog = false },
-                title = { Text("确认恢复") },
+                title = { Text(stringResource(R.string.confirm_restore)) },
                 text = {
-                    Text("确定要从云端恢复备份吗？这将替换所有现有数据。")
+                    Text(stringResource(R.string.confirm_restore_message))
                 },
                 confirmButton = {
                     TextButton(
@@ -460,14 +454,8 @@ fun BackupRestoreScreen(
                                                 onSuccess = {
                                                     // 清理临时文件
                                                     tempDir.deleteRecursively()
-                                                    // 先显示成功消息
-                                                    viewModel.showSuccess("云端恢复成功！应用将自动重启以使更改生效。")
-                                                    // 延迟一下再请求重建，确保成功消息能够显示
-                                                    delay(1000)
-                                                    // 在主线程上请求重建
-                                                    withContext(Dispatchers.Main) {
-                                                        com.example.itemremindertool.utils.AppRefreshManager.requestRecreate(context)
-                                                    }
+                                                    // 处理恢复成功后的逻辑（立即重启应用）
+                                                    handleRestoreSuccess(context, viewModel, "云端恢复成功！程序将立即重启...")
                                                 },
                                                 onFailure = { e ->
                                                     tempDir.deleteRecursively()
@@ -486,16 +474,47 @@ fun BackupRestoreScreen(
                             }
                         }
                     ) {
-                        Text("确认", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.confirm_button), color = MaterialTheme.colorScheme.error)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showCloudRestoreDialog = false }) {
-                        Text("取消")
+                        Text(stringResource(R.string.cancel_button))
                     }
                 }
             )
         }
     } // 关闭外层 Box
+}
+
+/**
+ * 处理恢复成功后的逻辑：立即重启应用
+ */
+private suspend fun handleRestoreSuccess(
+    context: Context,
+    viewModel: BackupRestoreViewModel,
+    message: String = "数据恢复成功！程序将立即重启..."
+) {
+    // 显示成功消息（不等待，立即重启）
+    withContext(Dispatchers.Main) {
+        viewModel.showSuccess(message)
+        // 立即重启整个应用，不延迟
+        restartApplication(context)
+    }
+}
+
+/**
+ * 重启整个应用
+ */
+private fun restartApplication(context: Context) {
+    val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+    intent?.let {
+        it.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(it)
+    }
+    // 结束当前进程
+    android.os.Process.killProcess(android.os.Process.myPid())
+    System.exit(0)
 }
 

@@ -1,6 +1,7 @@
 package com.example.itemremindertool.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +35,7 @@ fun WarehouseItemsScreen(
     warehouseViewModel: WarehouseViewModel,
     itemViewModel: ItemViewModel,
     onEditItem: (Long) -> Unit,
+    onViewItem: (Long) -> Unit = {},
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -56,10 +58,10 @@ fun WarehouseItemsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                    containerColor = com.example.itemremindertool.ui.theme.ColorHelpers.getGroup2PageBgColor(),
+                    titleContentColor = com.example.itemremindertool.ui.theme.ColorHelpers.getGroup4TextColor(),
+                    navigationIconContentColor = com.example.itemremindertool.ui.theme.ColorHelpers.getGroup4IconColor(),
+                    actionIconContentColor = com.example.itemremindertool.ui.theme.ColorHelpers.getGroup4IconColor()
                 )
             )
         }
@@ -92,6 +94,7 @@ fun WarehouseItemsScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(com.example.itemremindertool.ui.theme.ColorHelpers.getGroup2PageBgColor())
                     .padding(paddingValues),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -99,6 +102,7 @@ fun WarehouseItemsScreen(
                 items(warehouseItems.warehouseItems, key = { it.id }) { item ->
                     ItemCard(
                         item = item,
+                        onClick = { onViewItem(item.id) },
                         onEdit = { onEditItem(item.id) },
                         onDelete = { itemViewModel.deleteItem(item) },
                         onMoveToContainer = {

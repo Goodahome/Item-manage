@@ -39,8 +39,10 @@ import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
+import com.example.itemremindertool.ui.components.UIConstants
 import androidx.compose.foundation.background
 import java.text.SimpleDateFormat
+import java.text.DateFormat
 import java.util.*
 import java.time.*
 
@@ -73,12 +75,12 @@ fun ItemsScreen(
         },
         floatingActionButton = {
             Column(
-                modifier = Modifier.padding(bottom = 70.dp)
+                modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
             ) {
                 FloatingActionButton(
                     onClick = onAddItem,
                     containerColor = ColorHelpers.getGroup5FabColor(),
-                    modifier = Modifier.size(56.dp)
+                    modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(Icons.Default.Add, stringResource(R.string.add_item))
                 }
@@ -144,6 +146,7 @@ fun ItemsScreen(
 @Composable
 fun ItemCard(
     item: Item,
+    onClick: (() -> Unit)? = null,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onAddToShoppingCart: (() -> Unit)? = null,
@@ -192,7 +195,9 @@ fun ItemCard(
     }
 
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
@@ -343,9 +348,6 @@ fun ItemCard(
                         val tag = allTagsToShow[index]
                         // 根据标签类型和索引分配不同浅颜色背景（文字统一为黑色）
                         val bgColor = when {
-                            tag == "正常" -> Color(0xFFE8F5E9) // 浅绿
-                            tag == "损坏" -> Color(0xFFFFF3E0) // 浅橙
-                            tag == "遗失" -> Color(0xFFFFEBEE) // 浅红
                             tag == "过期" -> Color(0xFFF3E5F5) // 浅紫
                             else -> {
                                 // 自定义标签使用循环颜色（柔和的浅色）
@@ -363,9 +365,6 @@ fun ItemCard(
                         }
                         
                         val displayTag = when (tag) {
-                            "正常" -> stringResource(R.string.status_normal)
-                            "损坏" -> stringResource(R.string.status_damaged)
-                            "遗失" -> stringResource(R.string.status_lost)
                             "过期" -> stringResource(R.string.status_expired)
                             else -> tag
                         }
@@ -394,7 +393,7 @@ fun ItemCard(
             ) {
                 Column {
                     if (item.expiryDate != null) {
-                        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        val dateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault())
                         val dateStr = dateFormat.format(item.expiryDate)
                         Text(
                             text = stringResource(R.string.expires_on, dateStr),
@@ -453,10 +452,8 @@ fun StatusChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // 只处理过期状态
     val (labelRes, color, backgroundColor) = when (status) {
-        ItemStatus.NORMAL -> Triple(R.string.status_normal, Color(0xFF388E3C), Color(0xFFE8F5E9))
-        ItemStatus.DAMAGED -> Triple(R.string.status_damaged, Color(0xFFF57C00), Color(0xFFFFF3E0))
-        ItemStatus.LOST -> Triple(R.string.status_lost, Color(0xFFD32F2F), Color(0xFFFFEBEE))
         ItemStatus.EXPIRED -> Triple(R.string.status_expired, Color(0xFF7B1FA2), Color(0xFFF3E5F5))
     }
 

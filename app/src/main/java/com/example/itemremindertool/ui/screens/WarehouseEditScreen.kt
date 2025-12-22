@@ -17,6 +17,9 @@ import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.foundation.clickable
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -162,10 +165,17 @@ fun WarehouseEditScreen(
             )
         }
     ) { paddingValues ->
+        val keyboardController = LocalSoftwareKeyboardController.current
+        val focusManager = LocalFocusManager.current
+        
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .clickable { 
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                }
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)

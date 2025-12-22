@@ -48,10 +48,36 @@ object LocaleHelper {
     
     /**
      * 获取当前语言代码
+     * 如果用户没有设置语言，则根据系统语言自动选择
      */
     fun getCurrentLanguage(context: Context): String {
         val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-        return prefs.getString("language", "zh") ?: "zh"
+        val savedLanguage = prefs.getString("language", null)
+        
+        // 如果用户已经设置过语言，使用用户设置
+        if (savedLanguage != null) {
+            return savedLanguage
+        }
+        
+        // 如果用户没有设置过语言，根据系统语言自动选择
+        val systemLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            context.resources.configuration.locales[0]
+        } else {
+            @Suppress("DEPRECATION")
+            context.resources.configuration.locale
+        }
+        
+        val systemLanguage = systemLocale.language
+        return when (systemLanguage) {
+            "zh" -> "zh"
+            "en" -> "en"
+            "fr" -> "fr"
+            "de" -> "de"
+            "es" -> "es"
+            "it" -> "it"
+            "pt" -> "pt"
+            else -> "zh" // 默认使用中文
+        }
     }
 }
 

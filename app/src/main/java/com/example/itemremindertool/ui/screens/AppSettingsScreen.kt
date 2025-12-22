@@ -36,6 +36,12 @@ fun AppSettingsScreen(
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showAppNameDialog by remember { mutableStateOf(false) }
     var showRestartDialog by remember { mutableStateOf(false) }
+    var showSuffixDialog by remember { mutableStateOf(false) }
+    
+    val defaultSuffix = context.getString(R.string.warehouse_items_suffix)
+    var warehouseItemsSuffix by remember { 
+        mutableStateOf(prefs.getString("warehouse_items_suffix", defaultSuffix) ?: defaultSuffix) 
+    }
     
     Scaffold(
         topBar = {
@@ -80,6 +86,30 @@ fun AppSettingsScreen(
             
             Divider()
             
+            // 自定义容器物品后缀
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.custom_warehouse_items_suffix)) },
+                supportingContent = { 
+                    Text(
+                        text = stringResource(R.string.custom_warehouse_items_suffix_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ColorHelpers.getGroup4TextColor(0.7f)
+                    )
+                },
+                trailingContent = { 
+                    TextButton(
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = ColorHelpers.getGroup4TextColor()
+                        ),
+                        onClick = { showSuffixDialog = true }) {
+                        Text(stringResource(R.string.modify))
+                    }
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+            )
+            
+            Divider()
+            
             // 密码保护
             ListItem(
                 headlineContent = { Text(stringResource(R.string.password_protection)) },
@@ -95,9 +125,12 @@ fun AppSettingsScreen(
                         checked = isPasswordEnabled,
                         onCheckedChange = {
                             isPasswordEnabled = it
-                            prefs.edit().putBoolean("password_enabled", it).apply()
+                            prefs.edit().putBoolean("password_enabled", it).commit()
                             if (it) {
                                 showPasswordDialog = true
+                            } else {
+                                // 如果禁用密码，清除密码
+                                prefs.edit().putString("app_password", "").commit()
                             }
                         }
                     )
@@ -190,8 +223,9 @@ fun AppSettingsScreen(
                 TextButton(
                     onClick = {
                         if (newPassword == confirmPassword && newPassword.isNotEmpty()) {
-                            prefs.edit().putString("app_password", newPassword).apply()
-                            prefs.edit().putBoolean("password_enabled", true).apply()
+                            prefs.edit().putString("app_password", newPassword).commit()
+                            prefs.edit().putBoolean("password_enabled", true).commit()
+                            isPasswordEnabled = true
                             showPasswordDialog = false
                         }
                     },
@@ -208,6 +242,41 @@ fun AppSettingsScreen(
                         prefs.edit().putBoolean("password_enabled", false).apply()
                     }
                 }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+    
+    // 自定义容器物品后缀对话框
+    if (showSuffixDialog) {
+        var newSuffix by remember { mutableStateOf(warehouseItemsSuffix) }
+        AlertDialog(
+            onDismissRequest = { showSuffixDialog = false },
+            containerColor = dialogBackgroundColor,
+            title = { Text(stringResource(R.string.custom_warehouse_items_suffix)) },
+            text = {
+                OutlinedTextField(
+                    value = newSuffix,
+                    onValueChange = { newSuffix = it },
+                    label = { Text(stringResource(R.string.warehouse_items_suffix)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        warehouseItemsSuffix = newSuffix
+                        prefs.edit().putString("warehouse_items_suffix", newSuffix).apply()
+                        showSuffixDialog = false
+                    }
+                ) {
+                    Text(stringResource(R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSuffixDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             }

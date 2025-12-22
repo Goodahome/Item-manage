@@ -17,6 +17,8 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
@@ -43,11 +45,18 @@ fun BarcodeScannerScreen(
             ) == PackageManager.PERMISSION_GRANTED
         )
     }
-
+    
+    // 相机权限请求启动器
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasPermission = isGranted
+    }
+    
+    // 首次打开时请求权限
     LaunchedEffect(Unit) {
         if (!hasPermission) {
-            // 在实际应用中，应该使用 ActivityResultLauncher 请求权限
-            // 这里简化处理
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 

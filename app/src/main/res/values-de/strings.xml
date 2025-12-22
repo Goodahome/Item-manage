@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- App-Name -->
+    <!-- 应用名称 -->
     <string name="app_name">Heji</string>
     
-    <!-- Allgemein -->
+    <!-- 通用 -->
     <string name="back">Zurück</string>
     <string name="confirm">Bestätigen</string>
     <string name="cancel">Abbrechen</string>
@@ -20,40 +20,81 @@
     <string name="later">Später</string>
     <string name="now">Jetzt</string>
     
-    <!-- Navigation -->
+    <!-- 导航 -->
+    <string name="menu">Menü</string>
     <string name="nav_home">Startseite</string>
     <string name="nav_all_items">Alle Artikel</string>
     <string name="nav_item_management">Artikelverwaltung</string>
     <string name="nav_category_management">Kategorieverwaltung</string>
-    <string name="nav_shopping_basket">Einkaufswagen</string>
+    <string name="nav_shopping_basket">Einkaufskorb</string>
     <string name="nav_warehouse_management">Behälterverwaltung</string>
-    <string name="nav_warehouse_info">Behälterinformationen</string>
+    <string name="nav_warehouse_info">Behälterinfo</string>
     <string name="nav_items">Artikel</string>
     <string name="nav_item_shelf">Artikelregal</string>
     
-    <!-- Einstellungen -->
+    <!-- 设置页面 -->
     <string name="settings_title">Einstellungen</string>
-    <string name="appearance_settings">Erscheinungsbild</string>
+    <string name="appearance_settings">Darstellungseinstellungen</string>
     <string name="app_settings">App-Einstellungen</string>
     <string name="cloud_storage">Cloud-Speicher</string>
+    <string name="alert_settings">Erinnerungseinstellungen</string>
+    <string name="backup_restore">Sichern Wiederherstellen</string>
+    <string name="backup_data">Daten sichern</string>
+    <string name="restore_data">Daten wiederherstellen</string>
+    <string name="backup_files">Sicherungsdateiliste</string>
+    <string name="data_backup_restore">Sichern Wiederherstellen</string>
+    <string name="backup_restore_description">Die Sicherung speichert alle Artikel, Kategorien, Behälter, Einkaufslisten und Erinnerungseinstellungen. Die Wiederherstellung ersetzt alle aktuellen Daten – bitte vorsichtig vorgehen.</string>
+    <string name="expiry_reminder_days">Ablauf-Erinnerungstage</string>
+    <string name="expiry_reminder_days_desc">Festlegen, wie viele Tage vor Ablauf erinnert werden soll</string>
+    <string name="low_stock_threshold">Schwellenwert für Lagerwarnung</string>
+    <string name="low_stock_threshold_desc">Erinnerung, wenn die Artikelmenge unter diesen Wert fällt</string>
+    <string name="forget_protection">Vergessensschutz-Erinnerung</string>
+    <string name="forget_protection_desc">Bei Aktivierung Erinnerung bei lange ungenutzten Artikeln</string>
+    <string name="system_notification">Systembenachrichtigung</string>
+    <string name="system_notification_desc">Bei Aktivierung werden Erinnerungen in der Systembenachrichtigungsleiste angezeigt</string>
+    <string name="days_format">%d Tage</string>
+    <string name="filter_type_expiring">expiring</string>
+    <string name="filter_type_low_stock">low_stock</string>
+    <string name="filter_type_all_alerts">all_alerts</string>
+    <string name="expiring_items">Bald ablaufende Artikel</string>
+    <string name="low_stock_items">Artikel mit niedrigem Lagerbestand</string>
+    <string name="alert_items">Erinnerungsartikel</string>
+    <string name="enable_stock_alert">Lagerwarnung aktivieren</string>
+    <string name="enable_stock_alert_desc">Erinnerung, wenn die Artikelmenge unter den Schwellenwert fällt</string>
+    <string name="notification_time">Erinnerungszeit</string>
+    <string name="select_notification_time">Erinnerungszeit auswählen</string>
+    <string name="hour">Stunde</string>
+    <string name="minute">Minute</string>
+    <string name="threshold_value">Schwellenwert</string>
     
     <string name="theme">Design</string>
     <string name="theme_light">Hell</string>
     <string name="theme_dark">Dunkel</string>
     <string name="theme_system">System folgen</string>
-    <string name="basic_themes">Grunddesigns</string>
-    <string name="color_themes">Farbschemata</string>
+    <string name="basic_themes">Basis-Designs</string>
+    <string name="color_themes">Farbdesigns</string>
     
     <string name="color_scheme">Farbschema</string>
-    <string name="color_scheme_cold_blue">🧊 Kaltes Blau (Empfohlen)</string>
-    <string name="color_scheme_cream">🍊 Cremig</string>
-    <string name="color_scheme_mint">🌿 Minze Frisch</string>
-    <string name="color_scheme_space">🌌 Weltraum Grau</string>
-    <string name="color_scheme_wine">🍷 Wein Elegant</string>
-    <string name="color_scheme_christmas">🎄 Weihnachten Limited</string>
+    <string name="custom_colors">Benutzerdefinierte Farben</string>
+    <string name="group1_nav_drawer">Gruppe 1: Navigationsleiste und Seitenmenü</string>
+    <string name="group2_page_background">Gruppe 2: Seitenhintergrund</string>
+    <string name="group3_card_background">Gruppe 3: Kartenhintergrund</string>
+    <string name="group4_text_icon">Gruppe 4: Text und Symbole</string>
+    <string name="group5_alert_fab">Gruppe 5: Erinnerungen und FAB</string>
+    <string name="enter_color_code">Farbcode eingeben</string>
+    <string name="apply">Anwenden</string>
+    <string name="reset">Zurücksetzen</string>
+    <string name="invalid_color">Ungültiges Farbformat</string>
+    <string name="color_applied">Farbe angewendet</string>
+    <string name="color_scheme_cold_blue">🧊 Kalter Vorratsboss</string>
+    <string name="color_scheme_cream">🍊 Creme-Heilung</string>
+    <string name="color_scheme_mint">🌿 Minze-Kühle</string>
+    <string name="color_scheme_space">🌌 Tiefes Weltraumgrau</string>
+    <string name="color_scheme_wine">🍷 Wein-Stabil</string>
+    <string name="color_scheme_christmas">🎄 Limitierte Weihnachten</string>
     
     <string name="language">Sprache</string>
-    <string name="language_zh">简体中文</string>
+    <string name="language_zh">Vereinfachtes Chinesisch</string>
     <string name="language_en">English</string>
     <string name="language_fr">Français</string>
     <string name="language_de">Deutsch</string>
@@ -66,72 +107,87 @@
     <string name="password_enabled">Aktiviert</string>
     <string name="password_disabled">Deaktiviert</string>
     
-    <string name="cloud_server_url">Server-URL</string>
-    <string name="cloud_server_not_set">Nicht gesetzt</string>
+    <string name="cloud_server_url">Serveradresse</string>
+    <string name="cloud_server_not_set">Nicht eingestellt</string>
     <string name="auto_sync">Automatische Synchronisation</string>
     <string name="auto_sync_enabled">Aktiviert</string>
     <string name="auto_sync_disabled">Deaktiviert</string>
+    <string name="nextcloud_settings">Nextcloud-Einstellungen</string>
+    <string name="nextcloud_configured">Konfiguriert</string>
+    <string name="nextcloud_not_configured">Nicht konfiguriert</string>
+    <string name="nextcloud_server_url">Nextcloud-Serveradresse</string>
+    <string name="nextcloud_username">Benutzername</string>
+    <string name="nextcloud_password">Passwort/App-Passwort</string>
+    <string name="nextcloud_password_hint">Empfohlen: App-spezifisches Passwort verwenden</string>
+    <string name="test_connection">Verbindung testen</string>
+    <string name="cloud_operations">Cloud-Operationen</string>
+    <string name="upload_backup">Sicherung in Cloud hochladen</string>
+    <string name="cloud_backup_files">Cloud-Sicherungsdateien</string>
     
-    <!-- Passwort-Sperre -->
-    <string name="enter_password">Bitte Passwort eingeben</string>
+    <!-- 密码锁屏 -->
+    <string name="enter_password">Passwort eingeben</string>
     <string name="password">Passwort</string>
     <string name="password_incorrect">Falsches Passwort, bitte erneut versuchen</string>
     <string name="show_password">Passwort anzeigen</string>
-    <string name="hide_password">Passwort ausblenden</string>
+    <string name="hide_password">Passwort verbergen</string>
     <string name="set_password">Passwort festlegen</string>
     <string name="confirm_password">Passwort bestätigen</string>
-    <string name="password_mismatch">Passwörter stimmen nicht überein</string>
+    <string name="password_mismatch">Die Passwörter stimmen nicht überein</string>
     <string name="password_empty">Passwort darf nicht leer sein</string>
     
-    <!-- Dialoge -->
-    <string name="modify_app_name">App-Name ändern</string>
+    <!-- 对话框 -->
+    <string name="modify_app_name">App-Namen ändern</string>
     <string name="app_name_hint">App-Name</string>
-    <string name="app_name_changed">App-Name wurde geändert. Starten Sie die App neu, um den neuen Namen im System zu sehen.</string>
-    <string name="restart_app">App jetzt neu starten? Wenn Sie \"Später\" wählen, wird es beim nächsten Start automatisch angewendet.</string>
+    <string name="app_name_changed">App-Name geändert; Neustart erforderlich, um im System sichtbar zu werden</string>
+    <string name="restart_app">Jetzt neu starten? „Später“ wählt automatische Anwendung beim nächsten Start.</string>
     
-    <string name="set_cloud_server">Server-URL festlegen</string>
-    <string name="server_url_hint">Server-URL</string>
+    <string name="set_cloud_server">Serveradresse einstellen</string>
+    <string name="server_url_hint">Serveradresse</string>
+    <string name="server_url_example">Beispiel: https://api.example.com</string>
     
-    <!-- Statistik-Karten -->
-    <string name="total_items">Gesamt Artikel</string>
-    <string name="number_of_warehouses">Behälter</string>
-    <string name="shopping_items">Einkaufsartikel</string>
+    <!-- 统计卡片 -->
+    <string name="total_items">Gesamtzahl Artikel</string>
+    <string name="number_of_warehouses">Anzahl Behälter</string>
+    <string name="shopping_items">Zu kaufende Artikel</string>
     <string name="items_count">%d Artikel</string>
     
-    <!-- Artikel -->
+    <!-- 物品相关 -->
     <string name="item_name">Artikelname</string>
     <string name="item_description">Beschreibung</string>
     <string name="item_category">Kategorie</string>
     <string name="item_warehouse">Behälter</string>
     <string name="item_price">Preis</string>
     <string name="item_quantity">Menge</string>
-    <string name="item_barcode">Barcode</string>
+    <string name="item_barcode">Strichcode</string>
     <string name="item_expiry_date">Ablaufdatum</string>
     <string name="item_tags">Tags</string>
     <string name="item_status">Status</string>
     <string name="item_image">Bild</string>
-    <string name="item_feature_code">Merkmalcode</string>
+    <string name="item_feature_code">Merkmalscode</string>
     <string name="add_item">Artikel hinzufügen</string>
+    <string name="add_item_hint">Behälter auswählen und dann Artikel hinzufügen</string>
     <string name="edit_item">Artikel bearbeiten</string>
     <string name="item_detail">Artikeldetails</string>
     <string name="delete_item">Artikel löschen</string>
     <string name="delete_item_confirm">Möchten Sie diesen Artikel wirklich löschen?</string>
-    <string name="add_to_shopping_cart">Zum Warenkorb hinzufügen</string>
+    <string name="add_to_shopping_cart">Zum Einkaufskorb hinzufügen</string>
+    <string name="add_reminder">Erinnerung hinzufügen</string>
+    <string name="item_reminder_settings">Erinnerung einstellen</string>
     
-    <!-- Artikelstatus -->
+    <!-- 物品状态 -->
     <string name="status_normal">Normal</string>
     <string name="status_expired">Abgelaufen</string>
     <string name="status_low_stock">Niedriger Bestand</string>
-    <string name="status_out_of_stock">Nicht vorrätig</string>
+    <string name="status_out_of_stock">Ausverkauft</string>
     <string name="status_damaged">Beschädigt</string>
     <string name="status_lost">Verloren</string>
     
-    <!-- Priorität -->
+    <!-- 优先级 -->
     <string name="priority_high">Hoch</string>
     <string name="priority_medium">Mittel</string>
     <string name="priority_low">Niedrig</string>
     
-    <!-- Einkaufsliste -->
+    <!-- 购物篮 -->
     <string name="shopping_list">Einkaufsliste</string>
     <string name="shopping_item">Einkaufsartikel</string>
     <string name="add_shopping_item">Einkaufsartikel hinzufügen</string>
@@ -140,145 +196,328 @@
     <string name="delete_shopping_item_confirm">Möchten Sie diesen Einkaufsartikel wirklich löschen?</string>
     <string name="purchased">Gekauft</string>
     
-    <!-- Kategorien -->
+    <!-- 分类 -->
     <string name="category">Kategorie</string>
     <string name="categories">Kategorieverwaltung</string>
     <string name="add_category">Kategorie hinzufügen</string>
     <string name="edit_category">Kategorie bearbeiten</string>
     <string name="delete_category">Kategorie löschen</string>
-    <string name="delete_category_confirm">Möchten Sie diese Kategorie wirklich löschen? Artikel in dieser Kategorie werden nicht kategorisiert.</string>
+    <string name="delete_category_confirm">Möchten Sie diese Kategorie wirklich löschen? Die Artikel darin werden unkategorisiert.</string>
     <string name="category_name">Kategoriename</string>
     <string name="category_description">Kategoriebeschreibung</string>
-    <string name="no_category">Nicht kategorisiert</string>
+    <string name="no_category">Unkategorisiert</string>
     
-    <!-- Behälter -->
+    <!-- 容器 -->
     <string name="warehouse">Behälter</string>
     <string name="warehouses">Behälterverwaltung</string>
+    <string name="warehouse_settings">Behältereinstellungen</string>
     <string name="add_warehouse">Behälter hinzufügen</string>
+    <string name="add_warehouse_hint">Elternbehälter auswählen und dann hinzufügen</string>
     <string name="edit_warehouse">Behälter bearbeiten</string>
     <string name="delete_warehouse">Behälter löschen</string>
-    <string name="delete_warehouse_confirm">Möchten Sie dieses Behälter wirklich löschen? Artikel in diesem Behälter werden nicht zugewiesen.</string>
+    <string name="delete_warehouse_title">Behälter löschen</string>
+    <string name="delete_warehouse_confirm">Möchten Sie den Behälter „%1$s“ wirklich löschen? Die darin enthaltenen Artikel werden nicht zugewiesen.</string>
     <string name="warehouse_name">Behältername</string>
     <string name="warehouse_description">Behälterbeschreibung</string>
-    <string name="warehouse_location">Standort</string>
+    <string name="warehouse_location">Ort</string>
     <string name="warehouse_items">Behälterartikel</string>
-    <string name="no_warehouse">Nicht zugewiesen</string>
-    <string name="warehouse_settings">Behältereinstellungen</string>
+    <string name="no_warehouse">Nicht zugewiesener Behälter</string>
     <string name="child_containers">Unterbehälter</string>
-    <string name="parent_container">Übergeordneter Behälter</string>
-    <string name="max_level_reached">Maximale Behälterebene (5 Ebenen) erreicht. Bitte aktivieren Sie den unbegrenzten Behältermodus in den Einstellungen.</string>
+    <string name="parent_container">Elternbehälter</string>
+    <string name="max_level_reached">Maximale Behältertiefe (5) erreicht; unbegrenzten Modus in den Einstellungen aktivieren</string>
     <string name="unlimited_containers">Unbegrenzter Behältermodus</string>
-    <string name="unlimited_containers_description">Erlaubt das Erstellen von Behälterhierarchien über 5 Ebenen hinaus</string>
-    <string name="no_warehouse_option">Kein Behälter</string>
-    <string name="warehouse_name_required_field">Behältername *</string>
-    <string name="warehouse_saved">Behälter gespeichert</string>
-    <string name="warehouse_deleted">Behälter gelöscht</string>
-    <string name="warehouse_name_required">Bitte geben Sie den Behälternamen ein</string>
-    <string name="warehouse_not_found">Behälter nicht gefunden</string>
-    <string name="warehouse_items_title">Behälterartikel</string>
-    <string name="warehouse_management">Behälterverwaltung</string>
-    <string name="add_first_warehouse">Ersten Behälter hinzufügen</string>
-    <string name="warehouse_empty_hint">Keine Artikel in diesem Behälter</string>
-    <string name="no_warehouses">Keine Behälter</string>
+    <string name="unlimited_containers_description">Erlaubt Behälter über 5 Ebenen hinaus</string>
     
-    <!-- Tags -->
+    <!-- 标签 -->
     <string name="tags">Tags</string>
+    <string name="nav_tag_management">Tag-Verwaltung</string>
+    <string name="tag_management">Tag-Verwaltung</string>
+    <string name="default_tag">Standard</string>
+    <string name="tag_usage_count">Nutzungszähler: %1$d</string>
+    <string name="no_tags">Noch keine Tags</string>
     <string name="add_tag">Tag hinzufügen</string>
+    <string name="edit_tag">Tag bearbeiten</string>
+    <string name="delete_tag">Tag löschen</string>
+    <string name="tag_name">Tag-Name</string>
+    <string name="delete_tag_confirm">Möchten Sie das Tag „%1$s“ wirklich löschen?</string>
+    <string name="delete_tag_confirm_with_usage">Möchten Sie das Tag „%1$s“ wirklich löschen? Es wird von %2$d Artikeln verwendet und wird entfernt.</string>
     <string name="tag_hint">Tag eingeben (max. 12 Zeichen)</string>
     <string name="tag_limit_exceeded">Tag-Länge darf 12 Zeichen nicht überschreiten</string>
     
-    <!-- Datumsauswahl -->
+    <!-- 日期选择 -->
     <string name="select_date">Datum auswählen</string>
     <string name="no_date_selected">Kein Datum ausgewählt</string>
     
-    <!-- Bild -->
+    <!-- 图片相关 -->
     <string name="take_photo">Foto aufnehmen</string>
     <string name="select_from_gallery">Galerie</string>
     <string name="item_image_capture">Artikelbild</string>
     <string name="crop_image">Bild zuschneiden</string>
+    <string name="delete_image">Bild löschen</string>
+    <string name="clear_feature_code">Merkmalscode löschen</string>
     
-    <!-- Barcode-Scanner -->
-    <string name="barcode_scanner">Barcode scannen</string>
-    <string name="scan_barcode">Barcode scannen</string>
-    <string name="barcode_scanned">Barcode: %s</string>
+    <!-- 条形码扫描 -->
+    <string name="barcode_scanner">Scannen zum Hinzufügen</string>
+    <string name="switch_layout_style">Layout-Stil wechseln</string>
+    <string name="generate_qr_code">QR-Code generieren</string>
+    <string name="warehouse_qr_code">Behälter-QR-Code</string>
+    <string name="qr_code">QR-Code</string>
+    <string name="qr_code_hint">Diesen QR-Code scannen, um den Behälter schnell zu öffnen</string>
+    <string name="qr_code_generation_failed">QR-Code-Generierung fehlgeschlagen</string>
+    <string name="save_to_album">Ins Album speichern</string>
+    <string name="qr_code_saved">QR-Code ins Album gespeichert</string>
+    <string name="qr_code_save_failed">Speichern fehlgeschlagen</string>
+    <string name="scan_barcode">Strichcode scannen</string>
+    <string name="scan_barcode_to_add">Strichcode scannen, um Artikel schnell hinzuzufügen</string>
+    <string name="barcode_scanned">Strichcode: %s</string>
     
-    <!-- Artikelerkennung -->
-    <string name="item_recognition">Artikelerkennung</string>
-    <string name="click_to_recognize">Klicken Sie auf die Schaltfläche, um ein Foto aufzunehmen und den Artikel zu erkennen</string>
-    <string name="take_photo_recognize">Foto zur Erkennung aufnehmen</string>
-    <string name="extracting_features">Merkmale werden extrahiert…</string>
-    <string name="model_not_loaded">Modell nicht geladen. Stellen Sie sicher, dass die Modell-Datei im assets-Verzeichnis liegt.</string>
-    <string name="model_loaded">Modell geladen, bereit zum Aufnehmen eines Fotos zur Erkennung</string>
+    <!-- 物品识别 -->
+    <string name="item_recognition">Artikel-Erkennung</string>
+    <string name="click_to_recognize">Button klicken, um Foto aufzunehmen und Artikel zu erkennen</string>
+    <string name="take_photo_recognize">Foto aufnehmen zur Erkennung</string>
+    <string name="extracting_features">Merkmale extrahieren…</string>
+    <string name="model_not_loaded">Modell nicht geladen; Modell-Datei im assets-Ordner platzieren</string>
+    <string name="model_loaded">Modell geladen, bereit zur Erkennung</string>
     
-    <!-- Suche -->
+    <!-- 搜索 -->
     <string name="search_items">Artikel suchen</string>
     <string name="search_by_image">Bilderkennungssuche</string>
-    <string name="search_hint">Artikelnamen zum Suchen eingeben</string>
+    <string name="search_hint">Artikelnamen eingeben zum Suchen</string>
     <string name="no_results">Keine Ergebnisse gefunden</string>
     <string name="found_similar_items">%d ähnliche Artikel gefunden</string>
     
-    <!-- Leere Zustände -->
-    <string name="no_items">Keine Artikel</string>
-    <string name="no_categories">Keine Kategorien</string>
-    <string name="no_shopping_items">Einkaufswagen ist leer</string>
+    <!-- 空状态 -->
+    <string name="no_items">Noch keine Artikel</string>
+    <string name="no_categories">Noch keine Kategorien</string>
+    <string name="no_warehouses">Noch keine Behälter</string>
+    <string name="no_shopping_items">Einkaufskorb ist leer</string>
     
-    <!-- Aktionsmeldungen -->
+    <!-- 操作提示 -->
     <string name="item_saved">Artikel gespeichert</string>
     <string name="item_deleted">Artikel gelöscht</string>
     <string name="category_saved">Kategorie gespeichert</string>
     <string name="category_deleted">Kategorie gelöscht</string>
+    <string name="warehouse_saved">Behälter gespeichert</string>
+    <string name="warehouse_deleted">Behälter gelöscht</string>
     <string name="shopping_item_saved">Einkaufsartikel gespeichert</string>
     <string name="shopping_item_deleted">Einkaufsartikel gelöscht</string>
-    <string name="added_to_shopping_cart">Zum Einkaufswagen hinzugefügt</string>
+    <string name="added_to_shopping_cart">Zum Einkaufskorb hinzugefügt</string>
     <string name="more_options">Weitere Optionen</string>
     
-    <!-- Pflichtfelder -->
+    <!-- 必填字段提示 -->
     <string name="name_required">Bitte Artikelnamen eingeben</string>
     <string name="category_name_required">Bitte Kategorienamen eingeben</string>
+    <string name="warehouse_name_required">Bitte Behälternamen eingeben</string>
     <string name="shopping_item_name_required">Bitte Einkaufsartikelnamen eingeben</string>
     
-    <!-- Andere -->
-    <string name="loading">Wird geladen…</string>
+    <!-- 其他 -->
+    <string name="loading">Laden…</string>
     <string name="error">Fehler</string>
     <string name="unknown_error">Unbekannter Fehler</string>
-    <string name="retry">Wiederholen</string>
+    <string name="retry">Erneut versuchen</string>
     
-    <!-- Zusätzliche im Code gefundene Zeichenfolgen -->
-    <string name="shopping_basket">Einkaufswagen</string>
+    <!-- 代码中发现的额外字符串 -->
+    <string name="shopping_basket">Einkaufskorb</string>
     <string name="add_first_shopping_item">Ersten Einkaufsartikel hinzufügen</string>
     <string name="item_management">Artikelverwaltung</string>
     <string name="add_first_item">Ersten Artikel hinzufügen</string>
     <string name="no_matching_items">Keine passenden Artikel gefunden</string>
+    <string name="warehouse_not_found">Behälter nicht gefunden</string>
+    <string name="warehouse_items_title">Behälterartikel</string>
+    <string name="warehouse_management">Behälterverwaltung</string>
+    <string name="add_first_warehouse">Ersten Behälter hinzufügen</string>
     <string name="view_items">Artikel anzeigen</string>
     <string name="category_management">Kategorieverwaltung</string>
     <string name="add_first_category">Erste Kategorie hinzufügen</string>
     <string name="item_name_required">Artikelname *</string>
     <string name="description">Beschreibung</string>
     <string name="no_category_option">Keine Kategorie</string>
-    <string name="status_tags">Status-Tags</string>
+    <string name="no_warehouse_option">Kein Behälter</string>
+    <string name="status_tags">Tags</string>
     <string name="expired_tag">Abgelaufen</string>
     <string name="price">Preis</string>
     <string name="quantity">Menge</string>
-    <string name="barcode">Barcode</string>
-    <string name="feature_code">Artikel-Merkmalcode</string>
+    <string name="barcode">Strichcode</string>
+    <string name="feature_code">Artikel-Merkmalscode</string>
     <string name="expiry_date">Ablaufdatum</string>
-    <string name="recognizing_image">Bild wird erkannt…</string>
-    <string name="take_photo_search">Foto zum Suchen aufnehmen</string>
+    <string name="recognizing_image">Bild wird erkannt...</string>
+    <string name="take_photo_search">Foto-Suche</string>
     <string name="close">Schließen</string>
-    <string name="take_photo_recognize_button">Foto zur Erkennung aufnehmen</string>
-    <string name="extracting_features_progress">Merkmale werden extrahiert…</string>
+    <string name="take_photo_recognize_button">Foto-Erkennung</string>
+    <string name="extracting_features_progress">Merkmale extrahieren...</string>
     <string name="camera_permission_required">Kamera-Berechtigung erforderlich</string>
-    <string name="camera_permission_for_scanner">Kamera-Berechtigung erforderlich, um die Scan-Funktion zu verwenden</string>
+    <string name="camera_permission_for_scanner">Kamera-Berechtigung für Scan-Funktion erforderlich</string>
+    <string name="camera_frame_hint">Bitte Artikel in den Rahmen platzieren</string>
+    <string name="drag_frame_to_crop">Rahmen ziehen, um Zuschneidebereich auszuwählen</string>
     <string name="category_name_required_field">Kategoriename *</string>
     <string name="select_color">Farbe auswählen</string>
     <string name="shopping_item_name_required_field">Artikelname *</string>
     <string name="priority">Priorität</string>
-    <string name="capacity_limit_optional">Kapazitätsgrenze (optional)</string>
+    <string name="warehouse_name_required_field">Behältername *</string>
+    <string name="capacity_limit_optional">Kapazitätslimit (optional)</string>
     <string name="expires_on">Läuft ab: %1$s</string>
     <string name="quantity_with_value">Menge: %1$d</string>
-    <string name="price_with_value">%1$.2f €</string>
+    <string name="price_with_value">¥%1$.2f</string>
+    <string name="warehouse_empty_hint">Dieser Behälter enthält keine Artikel</string>
     <string name="capacity">Kapazität</string>
-    <string name="used_capacity">Verwendet: %1$d / %2$d</string>
-    <string name="items_unit">Artikel</string>
+    <string name="used_capacity">Genutzt: %1$d / %2$d</string>
+    <string name="items_unit">Stk.</string>
+    <!-- 容器 -->
+    <string name="item_container">Behälter</string>
+    <string name="container">Behälter</string>
+    <string name="containers">Behälterverwaltung</string>
+    <string name="add_container">Behälter hinzufügen</string>
+    <string name="edit_container">Behälter bearbeiten</string>
+    <string name="delete_container">Behälter löschen</string>
+    <string name="delete_container_confirm">Möchten Sie diesen Behälter wirklich löschen? Die darin enthaltenen Artikel werden nicht zugewiesen.</string>
+    <string name="container_name">Behältername</string>
+    <string name="container_description">Behälterbeschreibung</string>
+    <string name="container_location">Ort</string>
+    <string name="container_items">Behälterartikel</string>
+    <string name="no_container">Nicht zugewiesener Behälter</string>
+    <string name="no_containers">Noch keine Behälter</string>
+    <string name="container_saved">Behälter gespeichert</string>
+    <string name="container_deleted">Behälter gelöscht</string>
+    <string name="container_name_required">Bitte Behälternamen eingeben</string>
+    <string name="container_name_required_field">Behältername *</string>
+    <string name="container_not_found">Behälter nicht gefunden</string>
+    <string name="container_items_title">Behälterartikel</string>
+    <string name="container_management">Behälterverwaltung</string>
+    <string name="add_first_container">Ersten Behälter hinzufügen</string>
+    <string name="no_container_option">Kein Behälter</string>
+    <string name="container_empty_hint">Dieser Behälter enthält keine Artikel</string>
+    
+    <!-- 图标切换 -->
+    <string name="app_icon">App-Symbol</string>
+    <string name="icon_name_0">Symbol 1</string>
+    <string name="icon_name_1">Symbol 2</string>
+    <string name="icon_name_2">Symbol 3</string>
+    <string name="icon_name_3">Symbol 4</string>
+    <string name="icon_name_4">Symbol 5</string>
+    <string name="icon_changed">Symbol geändert; möglicherweise Neustart erforderlich</string>
+    
+    <!-- 移动物品 -->
+    <string name="move_to_container">In anderen Behälter verschieben</string>
+    <string name="select_target_container">Zielbehälter auswählen</string>
+    
+    <!-- 首页新功能 -->
+    <string name="quick_add">Schnell hinzufügen</string>
+    <string name="voice_quick_note">Sprachschnellnotiz</string>
+    <string name="voice_quick_note_hint">Sprache verwenden, um Artikel schnell aufzuzeichnen</string>
+    <string name="search_all_items">Alle Artikel suchen</string>
+    <string name="search_results">Suchergebnisse: %1$d Artikel</string>
+    <string name="no_search_results">Keine passenden Artikel gefunden</string>
+    <string name="greeting_today">Hallo, heute ist %1$s</string>
+    <string name="expiring_soon_alert">In den nächsten %1$d Tagen ablaufend/fehlend: %2$d Artikel →</string>
+    <string name="common_entries">Häufige Eingänge</string>
+    <string name="quick_access">Schnellzugriff</string>
+    <string name="shopping_list_entry">Einkaufsliste</string>
+    <string name="recently_opened">Zuletzt geöffnet</string>
+    <string name="no_recently_opened">Keine zuletzt geöffneten Behälter</string>
+    <string name="all_locations">Alle Behälter</string>
+    <string name="items_count_format">%1$d Artikel</string>
+    <string name="minutes_ago">Vor %1$d Minuten</string>
+    <string name="hours_ago">Vor %1$d Stunden</string>
+    <string name="yesterday">Gestern</string>
+    <string name="expiry_reminder">Haltbarkeitsende</string>
+    <string name="stock_alert">Lagerwarnung</string>
+    <string name="document_expiry">Dokumentablauf</string>
+    <string name="move_item_success">Artikel nach %1$s verschoben</string>
+    <string name="move_item_failed">Verschieben fehlgeschlagen</string>
+    
+    <!-- 删除确认 -->
+    <string name="confirm_delete">Löschen bestätigen</string>
+    <string name="delete_warehouse_warning">Das Löschen dieses Behälters löscht auch alle Unterbehälter und Artikel – unwiderruflich!</string>
+    
+    <!-- 容器相关 -->
+    <string name="generate_qr_code_action">QR-Code generieren</string>
+    <string name="add_container_action">Behälter hinzufügen</string>
+    <string name="quantity_label">Menge</string>
+    <string name="warehouse_empty">Dieser Behälter ist leer</string>
+    <string name="child_warehouse_info">Unterbehälter: %1$d    Artikel: %2$d</string>
+    
+    <!-- 提醒相关 -->
+    <string name="expiring_soon_title">Bald ablaufend</string>
+    <string name="low_stock_title">Niedriger Bestand</string>
+    <string name="no_activity">Keine Aktivität</string>
+    <string name="complete_purchase">Kauf abschließen</string>
+    <string name="confirm_complete_purchase">Kauf abschließen bestätigen? Dies löscht die Einkaufsliste und fügt gekaufte Mengen zum Bestand hinzu.</string>
+    
+    <!-- 物品相关 -->
+    <string name="image_list_hint">Bilderliste (Tippen, um als Hauptbild zu setzen)</string>
+    <string name="warehouse_required">Behälter erforderlich – bitte auswählen</string>
+    <string name="enter_tag_hint">Tag eingeben…</string>
+    <string name="take_photo_recognize_item">Foto aufnehmen zur Artikel-Erkennung</string>
+    
+    <!-- 提醒设置 -->
+    <string name="add_reminder_title">%1$s - Erinnerung hinzufügen</string>
+    <string name="edit_reminder">Erinnerung bearbeiten</string>
+    <string name="reminder_reason">Grund: %1$s</string>
+    <string name="no_reminder_settings">Keine Erinnerungseinstellungen</string>
+    <string name="reminder_enabled">Aktiviert</string>
+    <string name="reminder_disabled">Deaktiviert</string>
+    <string name="reminder_time_label">Erinnerungszeit: %1$s</string>
+    <string name="reminder_content">Erinnerungsinhalt</string>
+    <string name="reminder_time">Erinnerungszeit</string>
+    <string name="reminder_type">Erinnerungstyp</string>
+    
+    <!-- 备份恢复 -->
+    <string name="offline_backup">Offline-Sicherung</string>
+    <string name="backup_file_location">\"Sicherungsdatei wird im Downloads-Ordner des Geräts gespeichert; im Dateimanager finden\"</string>
+    <string name="cloud_restore">Cloud-Wiederherstellung</string>
+    <string name="cloud_restore_description">Automatisch synchronisierte Sicherung aus der Cloud herunterladen und wiederherstellen (ersetzt alle Daten direkt – vorher offline sichern)</string>
+    <string name="restore_data_action">Daten wiederherstellen</string>
+    <string name="important_notice">Wichtiger Hinweis</string>
+    <string name="confirm_restore">Wiederherstellung bestätigen</string>
+    
+    <!-- 活动事件 -->
+    <string name="event_added_item">Artikel hinzugefügt</string>
+    <string name="event_deleted_item">Artikel gelöscht</string>
+    <string name="event_updated_item">Artikel aktualisiert</string>
+    <string name="event_created_warehouse">Behälter erstellt</string>
+    <string name="event_deleted_warehouse">Behälter gelöscht</string>
+    <string name="event_updated_warehouse">Behälter aktualisiert</string>
+    <string name="event_reminder">Erinnerung</string>
+    <string name="event_expiring_soon">Bald ablaufend</string>
+    <string name="event_low_stock">Niedriger Bestand</string>
+    <string name="event_purchased_item">Artikel gekauft</string>
+    
+    <!-- 时间线描述 -->
+    <string name="item_expiring_description">%1$s läuft in %2$d Tagen ab</string>
+    <string name="item_low_stock_description">%1$s aktueller Bestand: %2$d</string>
+    
+    <!-- 备份恢复对话框 -->
+    <string name="backup_to_downloads">In Downloads sichern</string>
+    <string name="restore_from_cloud">Aus Cloud wiederherstellen</string>
+    <string name="cloud_restore_warning">Wiederherstellung aus der Cloud ersetzt direkt alle vorhandenen Daten!</string>
+    <string name="cloud_restore_suggestion">Stark empfohlen, zuerst offline zu sichern, sonst gehen aktuelle Daten verloren.</string>
+    <string name="confirm_continue">Möchten Sie fortfahren?</string>
+    <string name="continue_restore">Wiederherstellung fortsetzen</string>
+    <string name="confirm_restore_message">Möchten Sie die Cloud-Sicherung wirklich wiederherstellen? Dies ersetzt alle vorhandenen Daten.</string>
+    
+    <!-- 完成购买对话框 -->
+    <string name="complete_purchase_button">Kauf abschließen</string>
+    <string name="cancel_button">Abbrechen</string>
+    <string name="confirm_button">Bestätigen</string>
+    
+    <!-- 提醒设置 -->
+    <string name="reminder_content_placeholder">Erinnerungsinhalt eingeben (optional)</string>
+    <string name="reminder_time_placeholder">Tippen, um Erinnerungzeit auszuwählen</string>
+    <string name="date_label">Datum</string>
+    <string name="time_label">Uhrzeit</string>
+    <string name="daily_reminder_time">Tägliche Erinnerungszeit</string>
+    <string name="monthly_date_hint">Monatliches Datum (1-31)</string>
+    <string name="reminder_time_hint">Erinnerungszeit</string>
+    <string name="month_hint">Monat (1-12)</string>
+    <string name="day_hint">Tag (1-31)</string>
+    <string name="reminder_reason_placeholder">Erinnerungsgrund (optional)</string>
+    
+    <!-- 图片选择 -->
+    <string name="select_multiple">Mehrere auswählen</string>
+    
+    <!-- 提醒类型 -->
+    <string name="reminder_type_once">Einmalig</string>
+    <string name="reminder_type_daily">Täglich</string>
+    <string name="reminder_type_monthly">Monatlich</string>
+    <string name="reminder_type_yearly">Jährlich</string>
 </resources>
-

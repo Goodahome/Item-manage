@@ -180,6 +180,39 @@ object ImageUtils {
             }
         }
     }
+    
+    /**
+     * 获取裁剪图的文件路径（基于原图路径）
+     */
+    fun getCroppedImagePath(originalPath: String): String {
+        val file = File(originalPath)
+        val nameWithoutExt = file.nameWithoutExtension
+        val ext = file.extension
+        val parent = file.parent
+        return File(parent, "${nameWithoutExt}_cropped.$ext").absolutePath
+    }
+    
+    /**
+     * 删除裁剪图文件
+     */
+    fun deleteCroppedImageFile(originalPath: String?) {
+        if (originalPath != null) {
+            try {
+                val croppedPath = getCroppedImagePath(originalPath)
+                File(croppedPath).delete()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+    
+    /**
+     * 删除图片及其裁剪图
+     */
+    fun deleteImageAndCropped(originalPath: String?) {
+        deleteImageFile(originalPath)
+        deleteCroppedImageFile(originalPath)
+    }
 
     /**
      * 计算图片的平均亮度（0-255）

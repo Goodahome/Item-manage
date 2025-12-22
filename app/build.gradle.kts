@@ -133,6 +133,11 @@ dependencies {
     }
     // 暂时移除 GPU 支持以避免 16KB 兼容性问题
     // implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0")
+    // DateTimePicker 库
+    implementation("com.google.android.material:material:1.11.0")
+    implementation("com.github.loper7:DateTimePicker:0.6.3")
+    // Biometric 库
+    implementation("androidx.biometric:biometric:1.1.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

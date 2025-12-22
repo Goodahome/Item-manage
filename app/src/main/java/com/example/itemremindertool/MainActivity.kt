@@ -1,7 +1,7 @@
 package com.example.itemremindertool
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
@@ -17,12 +17,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.compose.runtime.DisposableEffect
 import androidx.navigation.NavType
 import androidx.navigation.NavController
@@ -51,7 +53,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     override fun attachBaseContext(newBase: Context) {
         // 在创建 Activity 之前设置语言环境
         val language = LocaleHelper.getCurrentLanguage(newBase)
@@ -70,10 +72,10 @@ class MainActivity : ComponentActivity() {
         LocaleHelper.setLocale(this, language)
         
         val database = AppDatabase.getDatabase(applicationContext)
-        val itemRepository = ItemRepository(database.itemDao(), database.deletedRecordDao())
+        val itemRepository = ItemRepository(database.itemDao(), database.deletedRecordDao(), applicationContext)
         val categoryRepository = CategoryRepository(database.categoryDao())
-        val shoppingItemRepository = ShoppingItemRepository(database.shoppingItemDao())
-        val warehouseRepository = WarehouseRepository(database.warehouseDao(), database.deletedRecordDao(), database.itemDao())
+        val shoppingItemRepository = ShoppingItemRepository(database.shoppingItemDao(), applicationContext)
+        val warehouseRepository = WarehouseRepository(database.warehouseDao(), database.deletedRecordDao(), database.itemDao(), applicationContext)
         val tagManager = TagManager(applicationContext)
         val accessHistoryManager = AccessHistoryManager(applicationContext)
 
@@ -190,26 +192,55 @@ fun ItemReminderToolApp(
     var isUnlocked by remember { mutableStateOf(false) }
     var shouldShowLockScreen by remember { mutableStateOf(false) }
     
-    // 检查是否需要显示锁屏
+    // 监听密码状态变化
+    LaunchedEffect(Unit) {
+        // 使用 snapshotFlow 监听 SharedPreferences 的变化
+        snapshotFlow {
+            prefs.getBoolean("password_enabled", false)
+        }.collect { enabled ->
+            isPasswordEnabled = enabled
+            // 启用密码时不立即锁屏，只在应用进入后台后再锁屏
+            if (!enabled) {
+                // 如果密码被禁用，解锁
+                isUnlocked = true
+                shouldShowLockScreen = false
+            }
+        }
+    }
+    
+    // 检查是否需要显示锁屏（初始状态）
     LaunchedEffect(Unit) {
         if (isPasswordEnabled) {
+            // 应用启动时，如果密码已启用，需要验证密码
             shouldShowLockScreen = true
         } else {
             isUnlocked = true
         }
     }
     
-    // 监听应用生命周期，当从后台返回时检查密码
+    // 监听应用生命周期，当应用进入后台时标记需要锁屏，从后台返回时检查密码
     // 注意：如果正在处理 ActivityResult（如选择图片），不应该触发密码验证
     var isProcessingActivityResult by remember { mutableStateOf(false) }
+    var shouldLockOnResume by remember { mutableStateOf(false) }
     
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME && isPasswordEnabled && isUnlocked && !isProcessingActivityResult) {
-                // 从后台返回，需要重新验证密码
-                // 但如果正在处理 ActivityResult，则延迟验证
-                shouldShowLockScreen = true
-                isUnlocked = false
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> {
+                    // 应用进入后台时，如果密码已启用且已解锁，标记需要在恢复时锁屏
+                    if (isPasswordEnabled && isUnlocked && !isProcessingActivityResult) {
+                        shouldLockOnResume = true
+                    }
+                }
+                Lifecycle.Event.ON_RESUME -> {
+                    // 从后台返回时，如果需要锁屏且密码已启用，显示锁屏
+                    if (shouldLockOnResume && isPasswordEnabled && !isProcessingActivityResult) {
+                        shouldShowLockScreen = true
+                        isUnlocked = false
+                        shouldLockOnResume = false
+                    }
+                }
+                else -> {}
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -420,11 +451,17 @@ fun ItemReminderToolApp(
                 modifier = Modifier.fillMaxSize()
             ) {
             composable(Screen.Dashboard.route) {
+                // 获取 ViewModels
+                val itemReminderViewModel = androidx.lifecycle.viewmodel.compose.viewModel<com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel>()
+                val activityEventViewModel = androidx.lifecycle.viewmodel.compose.viewModel<com.example.itemremindertool.ui.viewmodel.ActivityEventViewModel>()
+
                 DashboardScreen(
                     dashboardViewModel = dashboardViewModel,
                     itemViewModel = itemViewModel,
                     warehouseViewModel = warehouseViewModel,
                     shoppingItemViewModel = shoppingItemViewModel,
+                    itemReminderViewModel = itemReminderViewModel,
+                    activityEventViewModel = activityEventViewModel,
                     accessHistoryManager = accessHistoryManager,
                     onAddItem = { warehouseId ->
                         // 保存当前选中的容器ID，用于设置初始容器
@@ -621,15 +658,40 @@ fun ItemReminderToolApp(
             }
 
             composable(Screen.BarcodeScanner.route) {
+                // 获取当前布局风格
+                val context = LocalContext.current
+                val prefs = remember { 
+                    context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) 
+                }
+                val homeLayoutStyle = remember {
+                    val savedStyle = prefs.getString("home_layout_style", "discord")
+                    if (savedStyle == "discord") {
+                        com.example.itemremindertool.ui.screens.HomeLayoutStyle.DISCORD
+                    } else {
+                        com.example.itemremindertool.ui.screens.HomeLayoutStyle.CLASSIC
+                    }
+                }
+                
                 BarcodeScannerScreen(
                     onBarcodeScanned = { barcode ->
                         // 尝试解析为容器二维码
                         val warehouseInfo = com.example.itemremindertool.utils.QRCodeUtils.decodeWarehouseInfo(barcode)
                         if (warehouseInfo != null) {
-                            // 是容器二维码，先关闭扫描页面，然后跳转到容器页面
+                            // 是容器二维码，先关闭扫描页面
                             navController.popBackStack()
-                            navController.navigate(Screen.WarehouseItemsTab.createRoute(warehouseInfo.id)) {
-                                launchSingleTop = true
+                            // 根据布局风格决定跳转
+                            if (homeLayoutStyle == com.example.itemremindertool.ui.screens.HomeLayoutStyle.DISCORD) {
+                                // Discord风格：直接导航到Dashboard并选中容器
+                                selectedWarehouseId = warehouseInfo.id
+                                navController.navigate(Screen.Dashboard.route) {
+                                    popUpTo(Screen.Dashboard.route) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            } else {
+                                // 经典风格：跳转到容器页面
+                                navController.navigate(Screen.WarehouseItemsTab.createRoute(warehouseInfo.id)) {
+                                    launchSingleTop = true
+                                }
                             }
                         } else {
                             // 不是容器二维码，按原来的逻辑处理（物品条码）
@@ -862,6 +924,9 @@ fun ItemReminderToolApp(
                     onEditItem = { itemId ->
                         navController.navigate(Screen.EditItem.createRoute(itemId))
                     },
+                    onViewItem = { itemId ->
+                        navController.navigate(Screen.ItemDetail.createRoute(itemId))
+                    },
                     onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
@@ -923,6 +988,10 @@ fun ItemReminderToolApp(
                         // 设置 selectedWarehouseId，以便返回时保持在当前容器页面
                         selectedWarehouseId = warehouseId
                         navController.navigate(Screen.EditItem.createRoute(itemId))
+                    },
+                    onViewItem = { itemId ->
+                        // 导航到物品详情页面
+                        navController.navigate(Screen.ItemDetail.createRoute(itemId))
                     },
                     onAddChildWarehouse = { parentId ->
                         navController.navigate(Screen.AddChildWarehouse.createRoute(parentId))
