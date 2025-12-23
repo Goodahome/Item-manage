@@ -82,26 +82,36 @@ object ImageUtils {
      */
     fun loadBitmapFromPath(path: String): Bitmap? {
         return try {
+            val file = File(path)
+            if (!file.exists()) {
+                return null
+            }
             val bitmap = BitmapFactory.decodeFile(path) ?: return null
             
             // 读取 EXIF 信息并旋转图片
-            val exif = ExifInterface(path)
-            val orientation = exif.getAttributeInt(
-                ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_NORMAL
-            )
-            
-            val matrix = Matrix()
-            when (orientation) {
-                ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
-                ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
-                ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
-                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1f, 1f)
-                ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
-                else -> return bitmap // 无需旋转
+            try {
+                val exif = ExifInterface(path)
+                val orientation = exif.getAttributeInt(
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_NORMAL
+                )
+                
+                val matrix = Matrix()
+                when (orientation) {
+                    ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+                    ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+                    ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+                    ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1f, 1f)
+                    ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
+                    else -> return bitmap // 无需旋转
+                }
+                
+                Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            } catch (e: Exception) {
+                // EXIF读取失败，直接返回原始bitmap
+                e.printStackTrace()
+                bitmap
             }
-            
-            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -184,12 +194,23 @@ object ImageUtils {
     /**
      * 获取裁剪图的文件路径（基于原图路径）
      */
-    fun getCroppedImagePath(originalPath: String): String {
-        val file = File(originalPath)
-        val nameWithoutExt = file.nameWithoutExtension
-        val ext = file.extension
-        val parent = file.parent
-        return File(parent, "${nameWithoutExt}_cropped.$ext").absolutePath
+    fun getCroppedImagePath(originalPath: String): String? {
+        return try {
+            val file = File(originalPath)
+            if (!file.exists()) {
+                return null
+            }
+            val nameWithoutExt = file.nameWithoutExtension
+            val ext = file.extension
+            val parent = file.parent
+            if (parent == null) {
+                return null
+            }
+            File(parent, "${nameWithoutExt}_cropped.$ext").absolutePath
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
     
     /**
@@ -199,7 +220,9 @@ object ImageUtils {
         if (originalPath != null) {
             try {
                 val croppedPath = getCroppedImagePath(originalPath)
-                File(croppedPath).delete()
+                if (croppedPath != null) {
+                    File(croppedPath).delete()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -210,8 +233,14 @@ object ImageUtils {
      * 删除图片及其裁剪图
      */
     fun deleteImageAndCropped(originalPath: String?) {
-        deleteImageFile(originalPath)
-        deleteCroppedImageFile(originalPath)
+        if (originalPath != null) {
+            try {
+                deleteImageFile(originalPath)
+                deleteCroppedImageFile(originalPath)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     /**

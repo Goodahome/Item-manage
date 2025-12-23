@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,39 +40,28 @@ fun ImageCropDialog(
     bitmap: Bitmap,
     onCropped: (Bitmap) -> Unit,
     onDismiss: () -> Unit,
-    cardWidth: Int = 400, // 目标卡片宽度（px）
-    cardHeight: Int = 200 // 目标卡片高度（px）
+    cardWidth: Int = 400, // 目标卡片宽度（px）- 容器图片使用1:1正方形
+    cardHeight: Int = 400 // 目标卡片高度（px）- 容器图片使用1:1正方形
 ) {
     val density = LocalDensity.current
     
     // 计算裁剪框的初始尺寸和位置
     var canvasSize by remember { mutableStateOf(IntSize.Zero) }
     var frameOffset by remember { mutableStateOf(Offset.Zero) }
+    var imageScale by remember { mutableStateOf(1f) }
+    var imageOffset by remember { mutableStateOf(Offset.Zero) }
     
-    // 裁剪框的宽高比
-    val aspectRatio = cardWidth.toFloat() / cardHeight.toFloat()
+    // 裁剪框的宽高比 - 固定为1:1正方形
+    val aspectRatio = 1f
     
-    // 计算裁剪框的初始尺寸（基于图片和画布）
-    val frameSize = remember(canvasSize, cardWidth, cardHeight) {
+    // 计算裁剪框的初始尺寸（基于图片和画布，1:1正方形）
+    val frameSize = remember(canvasSize) {
         if (canvasSize.width == 0 || canvasSize.height == 0) {
-            Size(cardWidth.toFloat(), cardHeight.toFloat())
+            Size(400f, 400f) // 默认尺寸
         } else {
-            // 裁剪框占画布的60%左右
-            val maxFrameWidth = canvasSize.width * 0.6f
-            val maxFrameHeight = canvasSize.height * 0.6f
-            
-            val frameWidth: Float
-            val frameHeight: Float
-            
-            if (maxFrameWidth / aspectRatio <= maxFrameHeight) {
-                frameWidth = maxFrameWidth
-                frameHeight = frameWidth / aspectRatio
-            } else {
-                frameHeight = maxFrameHeight
-                frameWidth = frameHeight * aspectRatio
-            }
-            
-            Size(frameWidth, frameHeight)
+            // 裁剪框占画布的60%左右，保持1:1比例
+            val maxFrameSize = minOf(canvasSize.width, canvasSize.height) * 0.6f
+            Size(maxFrameSize, maxFrameSize)
         }
     }
     
@@ -106,7 +96,9 @@ fun ImageCropDialog(
                                     bitmap,
                                     frameOffset,
                                     frameSize,
-                                    canvasSize
+                                    canvasSize,
+                                    imageScale,
+                                    imageOffset
                                 )
                                 onCropped(croppedBitmap)
                             }
@@ -137,15 +129,38 @@ fun ImageCropDialog(
                             canvasSize = coordinates.size
                         }
                         .pointerInput(Unit) {
+                            // 同时支持拖动裁剪框和缩放/拖动图片
                             detectDragGestures { change, dragAmount ->
-                                change.consume()
-                                // 更新裁剪框位置
-                                val newOffset = frameOffset + dragAmount
-                                // 限制在画布范围内
-                                frameOffset = Offset(
-                                    x = newOffset.x.coerceIn(0f, canvasSize.width - frameSize.width),
-                                    y = newOffset.y.coerceIn(0f, canvasSize.height - frameSize.height)
-                                )
+                                // 检查触摸点是否在裁剪框内
+                                val touchX = change.position.x
+                                val touchY = change.position.y
+                                val isInFrame = touchX >= frameOffset.x && 
+                                               touchX <= frameOffset.x + frameSize.width &&
+                                               touchY >= frameOffset.y && 
+                                               touchY <= frameOffset.y + frameSize.height
+                                
+                                if (isInFrame) {
+                                    // 在裁剪框内，拖动裁剪框
+                                    change.consume()
+                                    val newOffset = frameOffset + dragAmount
+                                    frameOffset = Offset(
+                                        x = newOffset.x.coerceIn(0f, canvasSize.width - frameSize.width),
+                                        y = newOffset.y.coerceIn(0f, canvasSize.height - frameSize.height)
+                                    )
+                                } else {
+                                    // 在裁剪框外，拖动图片
+                                    change.consume()
+                                    imageOffset += dragAmount
+                                }
+                            }
+                        }
+                        .pointerInput(Unit) {
+                            // 双指缩放图片
+                            detectTransformGestures { _, pan, zoom, _ ->
+                                // 更新图片缩放
+                                imageScale = (imageScale * zoom).coerceIn(0.5f, 3f)
+                                // 更新图片偏移
+                                imageOffset += pan
                             }
                         }
                 ) {
@@ -154,28 +169,35 @@ fun ImageCropDialog(
                     
                     if (canvasWidth == 0f || canvasHeight == 0f) return@Canvas
                     
-                    // 计算图片显示的尺寸和位置（保持宽高比，fit center）
+                    // 计算图片显示的尺寸和位置（保持宽高比，支持缩放和拖动）
                     val bitmapAspectRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
                     val canvasAspectRatio = canvasWidth / canvasHeight
                     
-                    val drawWidth: Float
-                    val drawHeight: Float
-                    val drawLeft: Float
-                    val drawTop: Float
+                    // 基础尺寸（fit center）
+                    val baseDrawWidth: Float
+                    val baseDrawHeight: Float
                     
                     if (bitmapAspectRatio > canvasAspectRatio) {
                         // 图片更宽，以宽度为准
-                        drawWidth = canvasWidth
-                        drawHeight = canvasWidth / bitmapAspectRatio
-                        drawLeft = 0f
-                        drawTop = (canvasHeight - drawHeight) / 2
+                        baseDrawWidth = canvasWidth
+                        baseDrawHeight = canvasWidth / bitmapAspectRatio
                     } else {
                         // 图片更高，以高度为准
-                        drawHeight = canvasHeight
-                        drawWidth = canvasHeight * bitmapAspectRatio
-                        drawTop = 0f
-                        drawLeft = (canvasWidth - drawWidth) / 2
+                        baseDrawHeight = canvasHeight
+                        baseDrawWidth = canvasHeight * bitmapAspectRatio
                     }
+                    
+                    // 应用缩放
+                    val drawWidth = baseDrawWidth * imageScale
+                    val drawHeight = baseDrawHeight * imageScale
+                    
+                    // 基础位置（居中）
+                    val baseDrawLeft = (canvasWidth - baseDrawWidth) / 2
+                    val baseDrawTop = (canvasHeight - baseDrawHeight) / 2
+                    
+                    // 应用偏移
+                    val drawLeft = baseDrawLeft + imageOffset.x
+                    val drawTop = baseDrawTop + imageOffset.y
                     
                     // 绘制图片
                     drawImage(
@@ -294,12 +316,22 @@ fun ImageCropDialog(
                             containerColor = Color.Black.copy(alpha = 0.7f)
                         )
                     ) {
-                        Text(
-                            text = stringResource(R.string.drag_frame_to_crop),
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyMedium,
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
+                        ) {
+                            Text(
+                                text = stringResource(R.string.drag_frame_to_crop),
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = stringResource(R.string.pinch_to_zoom),
+                                color = Color.White.copy(alpha = 0.8f),
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -308,13 +340,15 @@ fun ImageCropDialog(
 }
 
 /**
- * 根据裁剪框位置裁剪图片
+ * 根据裁剪框位置裁剪图片（支持缩放和拖动）
  */
 private fun cropBitmap(
     bitmap: Bitmap,
     frameOffset: Offset,
     frameSize: Size,
-    canvasSize: IntSize
+    canvasSize: IntSize,
+    imageScale: Float,
+    imageOffset: Offset
 ): Bitmap {
     // 计算图片在画布上的显示位置和尺寸
     val canvasWidth = canvasSize.width.toFloat()
@@ -323,22 +357,29 @@ private fun cropBitmap(
     val bitmapAspectRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
     val canvasAspectRatio = canvasWidth / canvasHeight
     
-    val drawWidth: Float
-    val drawHeight: Float
-    val drawLeft: Float
-    val drawTop: Float
+    // 基础尺寸（fit center）
+    val baseDrawWidth: Float
+    val baseDrawHeight: Float
     
     if (bitmapAspectRatio > canvasAspectRatio) {
-        drawWidth = canvasWidth
-        drawHeight = canvasWidth / bitmapAspectRatio
-        drawLeft = 0f
-        drawTop = (canvasHeight - drawHeight) / 2
+        baseDrawWidth = canvasWidth
+        baseDrawHeight = canvasWidth / bitmapAspectRatio
     } else {
-        drawHeight = canvasHeight
-        drawWidth = canvasHeight * bitmapAspectRatio
-        drawTop = 0f
-        drawLeft = (canvasWidth - drawWidth) / 2
+        baseDrawHeight = canvasHeight
+        baseDrawWidth = canvasHeight * bitmapAspectRatio
     }
+    
+    // 应用缩放
+    val drawWidth = baseDrawWidth * imageScale
+    val drawHeight = baseDrawHeight * imageScale
+    
+    // 基础位置（居中）
+    val baseDrawLeft = (canvasWidth - baseDrawWidth) / 2
+    val baseDrawTop = (canvasHeight - baseDrawHeight) / 2
+    
+    // 应用偏移
+    val drawLeft = baseDrawLeft + imageOffset.x
+    val drawTop = baseDrawTop + imageOffset.y
     
     // 计算裁剪框在原图中的位置
     val scaleX = bitmap.width / drawWidth
@@ -349,6 +390,9 @@ private fun cropBitmap(
     val cropWidth = (frameSize.width * scaleX).toInt().coerceIn(1, bitmap.width - cropX)
     val cropHeight = (frameSize.height * scaleY).toInt().coerceIn(1, bitmap.height - cropY)
     
-    return Bitmap.createBitmap(bitmap, cropX, cropY, cropWidth, cropHeight)
+    // 确保是正方形（取较小的尺寸）
+    val finalCropSize = minOf(cropWidth, cropHeight)
+    
+    return Bitmap.createBitmap(bitmap, cropX, cropY, finalCropSize, finalCropSize)
 }
 

@@ -39,6 +39,7 @@ fun AppearanceSettingsScreen(
     var selectedTheme by remember { mutableStateOf(prefs.getString("theme", "system") ?: "system") }
     var selectedColorScheme by remember { mutableStateOf(prefs.getString("color_scheme", "cold_blue") ?: "cold_blue") }
     var selectedIcon by remember { mutableStateOf(IconManager.getCurrentIcon(context)) }
+    var discordIconCircle by remember { mutableStateOf(prefs.getBoolean("discord_icon_circle", false)) }
     
     // 监听 SharedPreferences 变化
     DisposableEffect(Unit) {
@@ -46,6 +47,7 @@ fun AppearanceSettingsScreen(
             when (key) {
                 "theme" -> selectedTheme = prefs.getString("theme", "system") ?: "system"
                 "color_scheme" -> selectedColorScheme = prefs.getString("color_scheme", "cold_blue") ?: "cold_blue"
+                "discord_icon_circle" -> discordIconCircle = prefs.getBoolean("discord_icon_circle", false)
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -138,6 +140,32 @@ fun AppearanceSettingsScreen(
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier.clickable { onNavigateToIcon() }
+            )
+
+            Divider()
+
+            // Discord 容器图标形状
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.discord_icon_shape)) },
+                supportingContent = {
+                    Text(
+                        text = if (discordIconCircle) stringResource(R.string.discord_icon_circle) else stringResource(R.string.discord_icon_round_rect),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = discordIconCircle,
+                        onCheckedChange = { checked ->
+                            discordIconCircle = checked
+                            prefs.edit().putBoolean("discord_icon_circle", checked).apply()
+                        }
+                    )
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                modifier = Modifier
+                    .fillMaxWidth()
             )
         }
     }

@@ -47,6 +47,7 @@ import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.ui.components.CameraCaptureDialog
 import com.example.itemremindertool.ui.components.ImageCropDialog
+import com.example.itemremindertool.ui.components.BarcodeScannerDialog
 import com.example.itemremindertool.utils.ImageUtils
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
@@ -535,14 +536,22 @@ fun ItemEditScreen(
                                             val displayPath = if (index == primaryImageIndex) {
                                                 val croppedPath =
                                                     ImageUtils.getCroppedImagePath(imagePath)
-                                                val croppedFile = File(croppedPath)
-                                                if (croppedFile.exists()) croppedPath else imagePath
+                                                if (croppedPath != null) {
+                                                    val croppedFile = File(croppedPath)
+                                                    if (croppedFile.exists()) croppedPath else imagePath
+                                                } else {
+                                                    imagePath
+                                                }
                                             } else {
                                                 imagePath // 非主图显示原图
                                             }
 
                                             val bitmap = remember(displayPath) {
-                                                ImageUtils.loadBitmapFromPath(displayPath)
+                                                if (displayPath != null) {
+                                                    ImageUtils.loadBitmapFromPath(displayPath)
+                                                } else {
+                                                    null
+                                                }
                                             }
                                             if (bitmap != null) {
                                                 Card(
@@ -970,7 +979,10 @@ fun ItemEditScreen(
 
                     // ==================== 库存提醒开关 ====================
                     Card(
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = ColorHelpers.getGroup3CardBgColor()
+                        ),
                     ) {
                         Row(
                             modifier = Modifier
@@ -981,7 +993,7 @@ fun ItemEditScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = stringResource(R.string.enable_stock_alert),
+                                    text = stringResource(R.string.enable_stock_alert),  // 修改
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(
@@ -998,13 +1010,40 @@ fun ItemEditScreen(
                     }
 
                     // ==================== 条形码 ====================
-                    OutlinedTextField(
-                        value = barcode,
-                        onValueChange = { barcode = it },
-                        label = { Text(stringResource(R.string.barcode)) },
+                    var showBarcodeScanner by remember { mutableStateOf(false) }
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        leadingIcon = { Icon(Icons.Default.QrCode, null) }
-                    )
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = barcode,
+                            onValueChange = { barcode = it },
+                            label = { Text(stringResource(R.string.barcode)) },
+                            modifier = Modifier.weight(1f),
+                            leadingIcon = { Icon(Icons.Default.QrCode, null) }
+                        )
+                        IconButton(
+                            onClick = { showBarcodeScanner = true }
+                        ) {
+                            Icon(
+                                Icons.Default.QrCodeScanner,
+                                contentDescription = stringResource(R.string.scan_barcode),
+                                tint = ColorHelpers.getGroup2SettingsBtnColor()
+                            )
+                        }
+                    }
+                    
+                    // 条形码扫描对话框
+                    if (showBarcodeScanner) {
+                        BarcodeScannerDialog(
+                            onBarcodeScanned = { scannedBarcode ->
+                                barcode = scannedBarcode
+                                showBarcodeScanner = false
+                            },
+                            onDismiss = { showBarcodeScanner = false }
+                        )
+                    }
 
                     // ==================== 特征码（只读显示）====================
                     if (featureCode != null) {

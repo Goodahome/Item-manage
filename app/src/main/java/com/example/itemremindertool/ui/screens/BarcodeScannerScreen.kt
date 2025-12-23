@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import com.google.common.util.concurrent.ListenableFuture
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -110,7 +111,9 @@ fun CameraPreview(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
-    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    val cameraProviderFuture: ListenableFuture<ProcessCameraProvider> = remember { 
+        ProcessCameraProvider.getInstance(context)
+    }
     val executor = remember { Executors.newSingleThreadExecutor() }
     val barcodeScanner = remember { BarcodeScanning.getClient() }
 
@@ -146,7 +149,13 @@ fun CameraPreview(
 
     DisposableEffect(Unit) {
         onDispose {
-            cameraProviderFuture.get().unbindAll()
+            try {
+                if (cameraProviderFuture.isDone) {
+                    cameraProviderFuture.get().unbindAll()
+                }
+            } catch (e: Exception) {
+                // 忽略清理时的错误
+            }
         }
     }
 

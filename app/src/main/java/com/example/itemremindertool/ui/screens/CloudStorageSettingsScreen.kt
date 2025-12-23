@@ -141,13 +141,13 @@ fun CloudStorageSettingsScreen(
                     // 测试连接按钮
                     val isConfigComplete = nextcloudServerUrl.isNotEmpty() && nextcloudUsername.isNotEmpty() && nextcloudPassword.isNotEmpty()
                     
-                    OutlinedButton(
+                    Button(
                         onClick = {
                             android.util.Log.d("CloudStorageSettings", "测试连接按钮被点击")
                             if (!isConfigComplete) {
                                 android.util.Log.d("CloudStorageSettings", "配置信息不完整")
                                 viewModel.showError("请先配置 Nextcloud 服务器信息")
-                                return@OutlinedButton
+                                return@Button
                             }
                             
                             android.util.Log.d("CloudStorageSettings", "开始执行连接测试，服务器: $nextcloudServerUrl, 用户: $nextcloudUsername")

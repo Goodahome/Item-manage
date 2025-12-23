@@ -87,6 +87,10 @@
     <string name="invalid_color">Format de couleur invalide</string>
     <string name="color_applied">Couleur appliquée</string>
     <string name="color_scheme_cold_blue">🧊 Boss stock froid</string>
+
+    <string name="discord_icon_shape">Forme des icônes Discord</string>
+    <string name="discord_icon_circle">Cercle</string>
+    <string name="discord_icon_round_rect">Carré arrondi</string>
     <string name="color_scheme_cream">🍊 Crème guérissante</string>
     <string name="color_scheme_mint">🌿 Menthe fraîche</string>
     <string name="color_scheme_space">🌌 Gris espace profond</string>
@@ -257,7 +261,7 @@
     <string name="clear_feature_code">Effacer le code de caractéristique</string>
     
     <!-- 条形码扫描 -->
-    <string name="barcode_scanner">Scanner pour ajouter</string>
+    <string name="barcode_scanner">Scanner</string>
     <string name="switch_layout_style">Changer le style de disposition</string>
     <string name="generate_qr_code">Générer un code QR</string>
     <string name="warehouse_qr_code">Code QR du conteneur</string>
@@ -520,4 +524,20 @@
     <string name="reminder_type_daily">Quotidien</string>
     <string name="reminder_type_monthly">Mensuel</string>
     <string name="reminder_type_yearly">Annuel</string>
+
+    <string name="onboarding_welcome_title">Bienvenue dans Heji</string>
+    <string name="onboarding_welcome_description">Il s’agit d’un outil simple et facile à utiliser pour gérer vos objets. Il vous aide à organiser facilement vos articles, conteneurs et rappels. Commençons !</string>
+    <string name="onboarding_home_area_title">Écran d’accueil</string>
+    <string name="onboarding_home_area_description">L’écran d’accueil affiche vos statistiques : nombre total d’articles, nombre de conteneurs et articles à acheter. À gauche se trouve la liste des conteneurs – appuyez pour voir les articles dans différents conteneurs. En haut, il y a des fonctions de recherche et de scan pour trouver et ajouter rapidement des articles.</string>
+    <string name="onboarding_add_warehouse_title">Ajouter un conteneur</string>
+    <string name="onboarding_add_warehouse_description">Appuyez sur le bouton « + » en bas de la liste des conteneurs à gauche pour ajouter un nouveau conteneur. Les conteneurs vous aident à catégoriser vos articles, par exemple « Cuisine », « Chambre », « Bureau ». Vous pouvez également créer des sous-conteneurs pour une organisation plus fine.</string>
+    <string name="onboarding_add_item_title">Ajouter un article</string>
+    <string name="onboarding_add_item_description">Appuyez sur le bouton « + » en bas à droite pour ajouter un nouvel article. Lors de l’ajout, vous pouvez définir le nom, la quantité, le prix, la date d’expiration, etc. Après avoir choisi un conteneur, l’article sera automatiquement classé dedans.</string>
+    <string name="onboarding_settings_title">Paramètres</string>
+    <string name="onboarding_settings_description">Appuyez sur le bouton de menu en haut à gauche pour ouvrir les Paramètres. Dans les Paramètres, vous pouvez :\n• Personnaliser les thèmes et les couleurs d’apparence\n• Configurer les fonctions de rappel\n• Gérer les conteneurs et les catégories\n• Sauvegarder et restaurer les données\n• Configurer la synchronisation cloud\n• Changer de langue</string>
+    <string name="onboarding_complete_title">Commencer</string>
+    <string name="onboarding_complete_description">Vous connaissez maintenant les fonctionnalités de base et pouvez commencer à utiliser Heji pour gérer vos articles ! En cas de questions, consultez à tout moment les informations d’aide dans les Paramètres.</string>
+    <string name="onboarding_next">Suivant</string>
+    <string name="onboarding_skip">Passer</string>
+    <string name="onboarding_get_started">Commencer</string>
 </resources>

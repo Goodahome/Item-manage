@@ -16,12 +16,12 @@ interface DeletedRecordDao {
     suspend fun getAllDeletedRecords(): List<DeletedRecord>
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertDeletedRecord(record: DeletedRecord)
+    suspend fun insertDeletedRecord(record: DeletedRecord): Unit
     
     @Query("DELETE FROM deleted_records WHERE entityType = :entityType AND entityId = :entityId")
-    suspend fun removeDeletedRecord(entityType: String, entityId: Long)
+    suspend fun removeDeletedRecord(entityType: String, entityId: Long): Unit
     
     @Query("DELETE FROM deleted_records WHERE deletedAt < :beforeDate")
-    suspend fun cleanOldRecords(beforeDate: Long) // 清理30天前的删除记录
+    suspend fun cleanOldRecords(beforeDate: Long): Unit // 清理30天前的删除记录
 }
 

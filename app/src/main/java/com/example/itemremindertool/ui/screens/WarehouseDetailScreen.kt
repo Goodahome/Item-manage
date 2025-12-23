@@ -27,6 +27,7 @@ import com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel
 import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
 import com.example.itemremindertool.ui.components.WarehouseQRCodeDialog
 import com.example.itemremindertool.ui.components.UIConstants
+import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.R
 
@@ -102,7 +103,8 @@ fun WarehouseDetailScreen(
     
     Scaffold(
         topBar = {
-            TopAppBar(
+            var showQRCodeDialog by remember { mutableStateOf(false) }
+            GradientTopAppBar(
                 title = {
                     // 经典模式下显示面包屑导航，Discord模式下只显示当前容器名称
                     if (homeLayoutStyle.value == HomeLayoutStyle.CLASSIC && warehousePath.isNotEmpty()) {
@@ -133,38 +135,71 @@ fun WarehouseDetailScreen(
                 },
                 actions = {
                     // 三个点的操作菜单
-                    var showQRCodeDialog by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { showTopMenu = true }) {
                             Icon(Icons.Default.MoreVert, stringResource(R.string.more_options))
                         }
                         DropdownMenu(
                             expanded = showTopMenu,
-                            onDismissRequest = { showTopMenu = false }
+                            onDismissRequest = { showTopMenu = false },
+                            containerColor = ColorHelpers.getGroup3CardBgColor()
                         ) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.edit)) },
+                                text = { 
+                                    Text(
+                                        stringResource(R.string.edit),
+                                        color = ColorHelpers.getGroup4TextColor()
+                                    ) 
+                                },
                                 onClick = {
                                     showTopMenu = false
                                     warehouse?.let { onEditWarehouse(it.id) }
                                 },
-                                leadingIcon = { Icon(Icons.Default.Edit, null) }
+                                leadingIcon = { 
+                                    Icon(
+                                        Icons.Default.Edit, 
+                                        null,
+                                        tint = ColorHelpers.getGroup4IconColor()
+                                    ) 
+                                }
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.generate_qr_code)) },
+                                text = { 
+                                    Text(
+                                        stringResource(R.string.generate_qr_code),
+                                        color = ColorHelpers.getGroup4TextColor()
+                                    ) 
+                                },
                                 onClick = {
                                     showTopMenu = false
                                     showQRCodeDialog = true
                                 },
-                                leadingIcon = { Icon(Icons.Default.QrCode, null) }
+                                leadingIcon = { 
+                                    Icon(
+                                        Icons.Default.QrCode, 
+                                        null,
+                                        tint = ColorHelpers.getGroup4IconColor()
+                                    ) 
+                                }
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.delete)) },
+                                text = { 
+                                    Text(
+                                        stringResource(R.string.delete),
+                                        color = MaterialTheme.colorScheme.error
+                                    ) 
+                                },
                                 onClick = {
                                     showTopMenu = false
                                     showDeleteDialog = true
                                 },
-                                leadingIcon = { Icon(Icons.Default.Delete, null) }
+                                leadingIcon = { 
+                                    Icon(
+                                        Icons.Default.Delete, 
+                                        null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    ) 
+                                }
                             )
                         }
                     }
@@ -176,13 +211,7 @@ fun WarehouseDetailScreen(
                             onDismiss = { showQRCodeDialog = false }
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                }
             )
         },
         floatingActionButton = {
@@ -317,7 +346,7 @@ fun BreadcrumbNavigation(
                     modifier = Modifier
                         .size(14.dp)
                         .padding(horizontal = 2.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    tint = ColorHelpers.getGroup4IconColor(0.6f)
                 )
             }
             
@@ -326,9 +355,9 @@ fun BreadcrumbNavigation(
                 text = warehouse.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = if (index == path.size - 1) {
-                    MaterialTheme.colorScheme.onSurface
+                    ColorHelpers.getGroup4TextColor()
                 } else {
-                    MaterialTheme.colorScheme.primary
+                    ColorHelpers.getGroup2SettingsBtnColor()
                 },
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

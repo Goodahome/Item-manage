@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
@@ -72,11 +73,13 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
     }
     buildFeatures {
         compose = true
@@ -138,6 +141,10 @@ dependencies {
     implementation("com.github.loper7:DateTimePicker:0.6.3")
     // Biometric 库
     implementation("androidx.biometric:biometric:1.1.0")
+    // Google Mobile Ads SDK
+    implementation("com.google.android.gms:play-services-ads:24.9.0")
+    // Guava for CameraX (required for ListenableFuture)
+    implementation("com.google.guava:guava:32.1.3-android")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

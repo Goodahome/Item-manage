@@ -226,14 +226,11 @@ fun BackupRestoreScreen(
                                         }
                                     }
                                 },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = ColorHelpers.getGroup5FabColor()
-                                )
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Icon(Icons.Default.Backup, null, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.backup_to_downloads))
+                                Text(stringResource(R.string.backup_to_downloads))    // 修改
                             }
                         }
                     }
@@ -271,7 +268,7 @@ fun BackupRestoreScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 
                                 // 云端恢复按钮
-                                OutlinedButton(
+                                Button(
                                     onClick = {
                                         showBackupWarningDialog = true
                                     },
@@ -317,7 +314,7 @@ fun BackupRestoreScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             
                             // 恢复按钮
-                            OutlinedButton(
+                            Button(
                                 onClick = {
                                     filePickerLauncher.launch("application/zip")
                                 },

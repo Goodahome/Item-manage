@@ -47,16 +47,16 @@ interface ItemDao {
     suspend fun insertItem(item: Item): Long
 
     @Update
-    suspend fun updateItem(item: Item)
+    suspend fun updateItem(item: Item): Unit
 
     @Delete
-    suspend fun deleteItem(item: Item)
+    suspend fun deleteItem(item: Item): Unit
 
     @Query("DELETE FROM items WHERE id = :id")
-    suspend fun deleteItemById(id: Long)
+    suspend fun deleteItemById(id: Long): Unit
     
     @Query("DELETE FROM items WHERE warehouseId = :warehouseId")
-    suspend fun deleteItemsByWarehouse(warehouseId: Long)
+    suspend fun deleteItemsByWarehouse(warehouseId: Long): Unit
     
     @Query("SELECT COUNT(*) FROM items WHERE warehouseId = :warehouseId")
     suspend fun getItemCountByWarehouse(warehouseId: Long): Int

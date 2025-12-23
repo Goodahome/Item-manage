@@ -23,17 +23,17 @@ interface ActivityEventDao {
     suspend fun insert(event: ActivityEvent): Long
     
     @Insert
-    suspend fun insertAll(events: List<ActivityEvent>)
+    suspend fun insertAll(events: List<ActivityEvent>): Unit
     
     @Delete
-    suspend fun delete(event: ActivityEvent)
+    suspend fun delete(event: ActivityEvent): Unit
     
     @Query("DELETE FROM activity_events WHERE id = :eventId")
-    suspend fun deleteById(eventId: Long)
+    suspend fun deleteById(eventId: Long): Unit
     
     @Query("DELETE FROM activity_events WHERE createdAt < :beforeDate")
-    suspend fun deleteOlderThan(beforeDate: Long)
+    suspend fun deleteOlderThan(beforeDate: Long): Unit
     
     @Query("DELETE FROM activity_events")
-    suspend fun deleteAll()
+    suspend fun deleteAll(): Unit
 }

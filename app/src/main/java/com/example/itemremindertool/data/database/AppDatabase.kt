@@ -28,7 +28,7 @@ import com.example.itemremindertool.data.dao.ActivityEventDao
 
 @Database(
     entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class, ItemReminder::class, DeletedRecord::class, ActivityEvent::class],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(DateConverters::class, StringListConverters::class, ReminderTypeConverters::class, ActivityEventTypeConverters::class)
@@ -108,7 +108,7 @@ abstract class AppDatabase : RoomDatabase() {
                             )
                         }
                     })
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
@@ -222,6 +222,13 @@ abstract class AppDatabase : RoomDatabase() {
                         metadata TEXT NOT NULL
                     )
                 """)
+            }
+        }
+        
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // 为 warehouses 表添加 imageUri 字段
+                database.execSQL("ALTER TABLE warehouses ADD COLUMN imageUri TEXT")
             }
         }
     }

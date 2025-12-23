@@ -21,6 +21,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ItemReminderTool"
         android:extractNativeLibs="true">
+        
+        <!-- Google Mobile Ads App ID -->
+        <!-- 请将 YOUR_ADMOB_APP_ID 替换为您的实际 AdMob App ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-9384252615968132~3199591901"/>
         <activity
             android:name=".MainActivity"
             android:exported="false"

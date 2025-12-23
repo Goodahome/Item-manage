@@ -150,11 +150,19 @@ fun ItemDetailScreen(
                 val context = LocalContext.current
                 // 主图显示裁剪后的图片，如果裁剪图不存在则显示原图
                 val croppedPath = ImageUtils.getCroppedImagePath(primaryImagePath)
-                val croppedFile = java.io.File(croppedPath)
-                val displayPath = if (croppedFile.exists()) croppedPath else primaryImagePath
+                val displayPath = if (croppedPath != null) {
+                    val croppedFile = java.io.File(croppedPath)
+                    if (croppedFile.exists()) croppedPath else primaryImagePath
+                } else {
+                    primaryImagePath
+                }
                 
                 val bitmap = remember(displayPath) {
-                    ImageUtils.loadBitmapFromPath(displayPath)
+                    if (displayPath != null) {
+                        ImageUtils.loadBitmapFromPath(displayPath)
+                    } else {
+                        null
+                    }
                 }
                 
                 if (bitmap != null) {
@@ -223,14 +231,22 @@ fun ItemDetailScreen(
                         // 小图列表：主图显示裁剪图，非主图显示原图
                         val displayPath = if (index == primaryImageIndex) {
                             val croppedPath = ImageUtils.getCroppedImagePath(imagePath)
-                            val croppedFile = java.io.File(croppedPath)
-                            if (croppedFile.exists()) croppedPath else imagePath
+                            if (croppedPath != null) {
+                                val croppedFile = java.io.File(croppedPath)
+                                if (croppedFile.exists()) croppedPath else imagePath
+                            } else {
+                                imagePath
+                            }
                         } else {
                             imagePath // 非主图显示原图
                         }
                         
                         val thumbnailBitmap = remember(displayPath) {
-                            ImageUtils.loadBitmapFromPath(displayPath)
+                            if (displayPath != null) {
+                                ImageUtils.loadBitmapFromPath(displayPath)
+                            } else {
+                                null
+                            }
                         }
                         if (thumbnailBitmap != null) {
                             Card(

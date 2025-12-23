@@ -673,13 +673,14 @@ fun ItemReminderToolApp(
                 }
                 
                 BarcodeScannerScreen(
-                    onBarcodeScanned = { barcode ->
+                    onBarcodeScanned = { scannedValue ->
+                        // 先关闭扫描页面
+                        navController.popBackStack()
+                        
                         // 尝试解析为容器二维码
-                        val warehouseInfo = com.example.itemremindertool.utils.QRCodeUtils.decodeWarehouseInfo(barcode)
+                        val warehouseInfo = com.example.itemremindertool.utils.QRCodeUtils.decodeWarehouseInfo(scannedValue)
                         if (warehouseInfo != null) {
-                            // 是容器二维码，先关闭扫描页面
-                            navController.popBackStack()
-                            // 根据布局风格决定跳转
+                            // 是容器二维码，打开对应容器
                             if (homeLayoutStyle == com.example.itemremindertool.ui.screens.HomeLayoutStyle.DISCORD) {
                                 // Discord风格：直接导航到Dashboard并选中容器
                                 selectedWarehouseId = warehouseInfo.id
@@ -694,14 +695,18 @@ fun ItemReminderToolApp(
                                 }
                             }
                         } else {
-                            // 不是容器二维码，按原来的逻辑处理（物品条码）
-                            itemViewModel.getItemByBarcode(barcode) { item ->
-                                // 先关闭扫描页面
-                                navController.popBackStack()
+                            // 不是容器二维码，尝试作为条形码查找物品
+                            itemViewModel.getItemByBarcode(scannedValue) { item ->
                                 if (item != null) {
-                                    navController.navigate(Screen.EditItem.createRoute(item.id))
+                                    // 找到物品，打开物品信息页面
+                                    navController.navigate(Screen.ItemDetail.createRoute(item.id)) {
+                                        launchSingleTop = true
+                                    }
                                 } else {
-                                    navController.navigate(Screen.AddItem.route)
+                                    // 未找到物品，可以提示用户或打开添加物品页面
+                                    navController.navigate(Screen.AddItem.route) {
+                                        launchSingleTop = true
+                                    }
                                 }
                             }
                         }
@@ -826,8 +831,10 @@ fun ItemReminderToolApp(
             }
             
             composable(Screen.AppSettings.route) {
+                val activityEventViewModel = androidx.lifecycle.viewmodel.compose.viewModel<com.example.itemremindertool.ui.viewmodel.ActivityEventViewModel>()
                 AppSettingsScreen(
-                    onNavigateBack = { navController.popBackOrDashboard() }
+                    onNavigateBack = { navController.popBackOrDashboard() },
+                    activityEventViewModel = activityEventViewModel
                 )
             }
             

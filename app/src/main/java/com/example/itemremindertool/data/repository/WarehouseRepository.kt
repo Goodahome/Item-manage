@@ -9,6 +9,7 @@ import com.example.itemremindertool.data.model.DeletedRecord
 import com.example.itemremindertool.data.database.AppDatabase
 import java.util.Date
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 class WarehouseRepository(
     private val warehouseDao: WarehouseDao,
@@ -147,6 +148,90 @@ class WarehouseRepository(
         }
         
         return Pair(childIds.size, itemCount)
+    }
+
+    /**
+     * 删除子容器，将其中的物品移动到父容器
+     * @param warehouse 要删除的子容器
+     */
+    @androidx.room.Transaction
+    suspend fun deleteSubWarehouse(warehouse: Warehouse) {
+        val parentId = warehouse.parentId
+        if (parentId == null) {
+            // 如果没有父容器，使用普通删除方法
+            deleteWarehouse(warehouse)
+            return
+        }
+        
+        // 1. 将子容器中的物品移动到父容器
+        itemDao?.let { dao ->
+            val itemsFlow = dao.getItemsByWarehouse(warehouse.id)
+            val itemList = itemsFlow.first() // 获取第一个值（当前物品列表）
+            itemList.forEach { item ->
+                val updatedItem = item.copy(
+                    warehouseId = parentId,
+                    updatedAt = Date()
+                )
+                dao.updateItem(updatedItem)
+            }
+        }
+        
+        // 2. 递归删除所有子容器（子容器的子容器）
+        val childIds = getAllChildWarehouseIds(warehouse.id)
+        childIds.forEach { childId ->
+            // 对于子容器的子容器，也将其物品移动到当前要删除的容器的父容器
+            itemDao?.let { dao ->
+                val itemsFlow = dao.getItemsByWarehouse(childId)
+                val itemList = itemsFlow.first() // 获取第一个值（当前物品列表）
+                itemList.forEach { item ->
+                    val updatedItem = item.copy(
+                        warehouseId = parentId,
+                        updatedAt = Date()
+                    )
+                    dao.updateItem(updatedItem)
+                }
+            }
+            // 删除子容器
+            warehouseDao.deleteWarehouseById(childId)
+            // 记录删除操作
+            deletedRecordDao?.insertDeletedRecord(
+                DeletedRecord(
+                    entityType = "warehouse",
+                    entityId = childId,
+                    deletedAt = Date()
+                )
+            )
+        }
+        
+        // 3. 删除当前子容器
+        warehouseDao.deleteWarehouse(warehouse)
+        // 记录删除操作
+        deletedRecordDao?.insertDeletedRecord(
+            DeletedRecord(
+                entityType = "warehouse",
+                entityId = warehouse.id,
+                deletedAt = Date()
+            )
+        )
+        
+        // 4. 记录动态
+        context?.let {
+            try {
+                val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
+                val event = com.example.itemremindertool.data.model.ActivityEvent(
+                    type = com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_DELETED,
+                    title = it.getString(com.example.itemremindertool.R.string.event_deleted_warehouse),
+                    description = warehouse.name,
+                    targetId = warehouse.id,
+                    targetName = warehouse.name,
+                    iconType = "delete_warehouse",
+                    createdAt = Date()
+                )
+                activityEventDao.insert(event)
+            } catch (e: Exception) {
+                android.util.Log.e("WarehouseRepository", "记录删除容器动态失败", e)
+            }
+        }
     }
 
     @androidx.room.Transaction

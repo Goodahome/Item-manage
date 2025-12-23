@@ -135,6 +135,25 @@ class WarehouseViewModel(
             }
         }
     }
+    
+    /**
+     * 删除子容器，将其中的物品移动到父容器
+     */
+    fun deleteSubWarehouse(warehouse: Warehouse) {
+        viewModelScope.launch {
+            try {
+                _operationState.value = OperationState.Deleting
+                warehouseRepository.deleteSubWarehouse(warehouse)
+                _operationState.value = OperationState.Success("删除成功")
+                kotlinx.coroutines.delay(2000)
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                _operationState.value = OperationState.Error("删除失败: ${e.message}")
+                kotlinx.coroutines.delay(2000)
+                _operationState.value = OperationState.Idle
+            }
+        }
+    }
 
     /**
      * 计算容器的层级（基于父容器）

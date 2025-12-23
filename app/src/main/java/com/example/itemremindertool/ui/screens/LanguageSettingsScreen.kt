@@ -72,7 +72,7 @@ fun LanguageSettingsScreen(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            val languages = listOf("zh", "en", "fr", "de", "es", "it", "pt")
+            val languages = listOf("zh", "en", "fr", "de")
             languages.forEach { lang ->
                 ListItem(
                     headlineContent = { 
@@ -82,9 +82,6 @@ fun LanguageSettingsScreen(
                                 "en" -> stringResource(R.string.language_en)
                                 "fr" -> stringResource(R.string.language_fr)
                                 "de" -> stringResource(R.string.language_de)
-                                "es" -> stringResource(R.string.language_es)
-                                "it" -> stringResource(R.string.language_it)
-                                "pt" -> stringResource(R.string.language_pt)
                                 else -> lang
                             }
                         )

@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import com.google.common.util.concurrent.ListenableFuture
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -78,7 +79,9 @@ fun CameraCaptureDialog(
             .build()
     }
     
-    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    val cameraProviderFuture: ListenableFuture<ProcessCameraProvider> = remember { 
+        ProcessCameraProvider.getInstance(context)
+    }
     val previewView = remember { PreviewView(context) }
     
     LaunchedEffect(Unit) {
@@ -116,7 +119,13 @@ fun CameraCaptureDialog(
     
     DisposableEffect(Unit) {
         onDispose {
+            try {
+                if (cameraProviderFuture.isDone) {
             cameraProviderFuture.get().unbindAll()
+                }
+            } catch (e: Exception) {
+                // 忽略清理时的错误
+            }
         }
     }
     

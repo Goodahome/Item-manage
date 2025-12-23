@@ -87,6 +87,10 @@
     <string name="invalid_color">无效的颜色格式</string>
     <string name="color_applied">颜色已应用</string>
     <string name="color_scheme_cold_blue">🧊 冷冽囤老板</string>
+
+    <string name="discord_icon_shape">Discord风格容器图标形状</string>
+    <string name="discord_icon_circle">圆形</string>
+    <string name="discord_icon_round_rect">圆角方形</string>
     <string name="color_scheme_cream">🍊 奶油治愈系</string>
     <string name="color_scheme_mint">🌿 薄荷冷感</string>
     <string name="color_scheme_space">🌌 深空高级灰</string>
@@ -268,7 +272,7 @@
     <string name="clear_feature_code">清除特征码</string>
     
     <!-- 条形码扫描 -->
-    <string name="barcode_scanner">扫码添加</string>
+    <string name="barcode_scanner">扫码</string>
     <string name="switch_layout_style">切换布局风格</string>
     <string name="generate_qr_code">生成二维码</string>
     <string name="warehouse_qr_code">容器二维码</string>
@@ -301,6 +305,7 @@
     <string name="no_items">暂无物品</string>
     <string name="no_categories">暂无分类</string>
     <string name="no_warehouses">暂无容器</string>
+    <string name="select_warehouse">选择容器</string>
     <string name="no_shopping_items">购物篮为空</string>
     
     <!-- 操作提示 -->
@@ -417,6 +422,9 @@
     
     <!-- 首页新功能 -->
     <string name="quick_add">快速添加</string>
+    <string name="quick_add_item">快速添加物品</string>
+    <string name="warehouse_image">容器图片</string>
+    <string name="select_image">选择图片</string>
     <string name="voice_quick_note">语音快速记</string>
     <string name="voice_quick_note_hint">使用语音快速记录物品</string>
     <string name="search_all_items">搜索所有物品</string>
@@ -557,4 +565,31 @@
     <string name="time_minutes_ago">%1$d分钟前</string>
     <string name="time_hours_ago">%1$d小时前</string>
     <string name="time_days_ago">%1$d天前</string>
+    
+    <!-- 首次使用引导 -->
+    <string name="onboarding_welcome_title">欢迎使用盒记</string>
+    <string name="onboarding_welcome_description">这是一个简单易用的物品管理工具，帮助您轻松管理您的物品、容器和提醒。让我们开始吧！</string>
+    <string name="onboarding_home_area_title">首页区域</string>
+    <string name="onboarding_home_area_description">首页显示您的统计信息，包括物品总数、容器数量和待购物品。左侧是容器列表，点击可以查看不同容器中的物品。顶部有搜索和扫码功能，方便快速查找和添加物品。</string>
+    <string name="onboarding_add_warehouse_title">添加容器</string>
+    <string name="onboarding_add_warehouse_description">点击左侧容器列表底部的「+」按钮可以添加新容器。容器可以帮助您分类管理物品，比如「厨房」、「卧室」、「办公室」等。您还可以创建子容器，实现更细致的分类。</string>
+    <string name="onboarding_add_item_title">添加物品</string>
+    <string name="onboarding_add_item_description">点击右下角的「+」按钮可以添加新物品。添加物品时，您可以设置名称、数量、价格、到期日期等信息。选择容器后，物品会自动归类到对应容器中。</string>
+    <string name="onboarding_settings_title">设置功能</string>
+    <string name="onboarding_settings_description">点击左上角菜单按钮可以打开设置。在设置中，您可以：\n• 自定义外观主题和配色\n• 设置提醒功能\n• 管理容器和分类\n• 备份和恢复数据\n• 配置云端同步\n• 切换语言</string>
+    <string name="onboarding_complete_title">开始使用</string>
+    <string name="onboarding_complete_description">现在您已经了解了基本功能，可以开始使用盒记管理您的物品了！如有疑问，可以随时查看设置中的帮助信息。</string>
+    <string name="onboarding_next">下一步</string>
+    <string name="onboarding_skip">跳过</string>
+    <string name="onboarding_get_started">开始使用</string>
+    <string name="pinch_to_zoom">双指捏合缩放图片</string>
+    <string name="ad_banner_unit_id">广告横幅单元 ID</string>
+    <string name="ad_banner_unit_id_desc">设置 Google AdMob 广告横幅单元 ID。留空则使用测试 ID。</string>
+    <string name="ad_banner_unit_id_hint">输入广告单元 ID</string>
+    <string name="ad_banner_unit_id_example">例如: ca-app-pub-3940256099942544/6300978111</string>
+    <string name="no_items_with_selected_tags">没有符合选中标签的物品</string>
+    <string name="clear_activity_data">清除动态数据</string>
+    <string name="clear_activity_data_desc">清除首页显示的所有动态记录</string>
+    <string name="clear_activity_data_confirm">确定要清除所有动态数据吗？此操作不可恢复。</string>
+    <string name="clear">清除</string>
 </resources>

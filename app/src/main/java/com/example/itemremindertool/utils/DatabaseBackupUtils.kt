@@ -59,6 +59,7 @@ object DatabaseBackupUtils {
      * 注意：此方法不会关闭数据库连接，可以在数据库打开时安全地备份
      * Room 使用 WAL 模式，支持在数据库打开时复制文件
      * 直接复制数据库文件（包括 WAL 和 SHM），不需要执行 checkpoint
+     * 同时备份所有物品、容器和购物清单项的图片文件
      * @return 备份文件的 File 对象
      */
     suspend fun backupDatabase(context: Context): Result<File> = withContext(Dispatchers.IO) {
@@ -77,6 +78,10 @@ object DatabaseBackupUtils {
                 return@withContext Result.failure(IOException("数据库文件不存在"))
             }
             
+            // 收集所有需要备份的图片文件
+            val imageFiles = collectImageFiles(context)
+            Log.d(TAG, "收集到 ${imageFiles.size} 个图片文件需要备份")
+            
             // 创建备份目录（使用应用的 files 目录下的子目录）
             val externalFilesDir = context.getExternalFilesDir(null)
                 ?: context.getFilesDir() // 如果外部存储不可用，使用内部存储
@@ -90,16 +95,114 @@ object DatabaseBackupUtils {
             val backupFileName = "item_reminder_backup_$timestamp.zip"
             val backupFile = File(backupDir, backupFileName)
             
-            // 将数据库文件压缩为 zip（数据库连接保持打开状态）
+            // 将数据库文件和图片文件压缩为 zip（数据库连接保持打开状态）
             // WAL 模式允许在数据库打开时安全地复制文件
-            ZipUtils.zipFiles(databaseFiles, backupFile)
+            ZipUtils.zipFilesWithImages(databaseFiles, imageFiles, backupFile, context)
             
-            Log.d(TAG, "数据库备份成功: ${backupFile.absolutePath} (数据库连接保持打开，不影响其他操作)")
+            Log.d(TAG, "数据库和图片备份成功: ${backupFile.absolutePath}, 大小: ${backupFile.length()} bytes (数据库连接保持打开，不影响其他操作)")
             Result.success(backupFile)
         } catch (e: Exception) {
             Log.e(TAG, "数据库备份失败", e)
             Result.failure(e)
         }
+    }
+    
+    /**
+     * 收集所有需要备份的图片文件
+     * 包括：物品图片（imageUri 和 imageUris）、容器图片、购物清单项图片
+     */
+    private suspend fun collectImageFiles(context: Context): List<File> {
+        val imageFiles = mutableSetOf<File>()
+        val imagesDir = File(context.filesDir, "images")
+        
+        try {
+            val db = AppDatabase.getDatabase(context)
+            
+            // 收集物品图片
+            val items = db.itemDao().getAllItemsList()
+            for (item in items) {
+                // 旧版 imageUri
+                item.imageUri?.let { path ->
+                    val file = File(path)
+                    if (file.exists()) {
+                        imageFiles.add(file)
+                        // 同时检查是否有裁剪后的图片
+                        val croppedPath = ImageUtils.getCroppedImagePath(path)
+                        croppedPath?.let {
+                            val cropped = File(it)
+                            if (cropped.exists()) {
+                                imageFiles.add(cropped)
+                            }
+                        }
+                    }
+                }
+                // 新版 imageUris（多张图片）
+                item.imageUris.forEach { path ->
+                    val file = File(path)
+                    if (file.exists()) {
+                        imageFiles.add(file)
+                        // 同时检查是否有裁剪后的图片
+                        val croppedPath = ImageUtils.getCroppedImagePath(path)
+                        croppedPath?.let {
+                            val cropped = File(it)
+                            if (cropped.exists()) {
+                                imageFiles.add(cropped)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 收集容器图片
+            val warehouses = db.warehouseDao().getAllWarehousesSync()
+            for (warehouse in warehouses) {
+                warehouse.imageUri?.let { path ->
+                    val file = File(path)
+                    if (file.exists()) {
+                        imageFiles.add(file)
+                        // 同时检查是否有裁剪后的图片
+                        val croppedPath = ImageUtils.getCroppedImagePath(path)
+                        croppedPath?.let {
+                            val cropped = File(it)
+                            if (cropped.exists()) {
+                                imageFiles.add(cropped)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 收集购物清单项图片
+            val shoppingItems = db.shoppingItemDao().getAllShoppingItemsSync()
+            for (shoppingItem in shoppingItems) {
+                shoppingItem.imageUri?.let { path ->
+                    val file = File(path)
+                    if (file.exists()) {
+                        imageFiles.add(file)
+                        // 同时检查是否有裁剪后的图片
+                        val croppedPath = ImageUtils.getCroppedImagePath(path)
+                        croppedPath?.let {
+                            val cropped = File(it)
+                            if (cropped.exists()) {
+                                imageFiles.add(cropped)
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "收集图片文件时出错", e)
+            // 如果收集失败，至少尝试备份整个 images 目录
+            if (imagesDir.exists() && imagesDir.isDirectory) {
+                imagesDir.listFiles()?.forEach { file ->
+                    if (file.isFile) {
+                        imageFiles.add(file)
+                    }
+                }
+            }
+        }
+        
+        return imageFiles.toList()
     }
     
     /**
@@ -211,6 +314,9 @@ object DatabaseBackupUtils {
                 return Result.failure(IOException("备份文件中没有找到数据库文件"))
             }
             
+            // 恢复图片文件
+            restoreImageFiles(context, tempDir)
+            
             // 确保 Room 的内部表存在（room_table_modification_log），避免 InvalidationTracker 崩溃
             try {
                 val db = SQLiteDatabase.openDatabase(dbPath.path, null, SQLiteDatabase.OPEN_READWRITE)
@@ -243,11 +349,54 @@ object DatabaseBackupUtils {
                 .putLong("database_restore_timestamp", System.currentTimeMillis())
                 .apply()
             
-            Log.d(TAG, "数据库恢复成功，已重新初始化数据库实例")
+            Log.d(TAG, "数据库和图片恢复成功，已重新初始化数据库实例")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "数据库恢复失败", e)
             Result.failure(e)
+        }
+    }
+    
+    /**
+     * 恢复图片文件
+     */
+    private fun restoreImageFiles(context: Context, tempDir: File) {
+        try {
+            val imagesDir = File(context.filesDir, "images")
+            if (!imagesDir.exists()) {
+                imagesDir.mkdirs()
+            }
+            
+            // 检查是否有 images 目录在备份中
+            val restoredImagesDir = File(tempDir, "images")
+            if (restoredImagesDir.exists() && restoredImagesDir.isDirectory) {
+                // 恢复整个 images 目录
+                restoredImagesDir.listFiles()?.forEach { file ->
+                    if (file.isFile) {
+                        val targetFile = File(imagesDir, file.name)
+                        file.copyTo(targetFile, overwrite = true)
+                        Log.d(TAG, "恢复图片文件: ${file.name}")
+                    }
+                }
+                Log.d(TAG, "图片文件恢复完成")
+            } else {
+                // 如果没有 images 目录，尝试从根目录恢复图片文件
+                // 查找所有图片文件（.jpg, .jpeg, .png, .webp）
+                tempDir.listFiles()?.forEach { file ->
+                    if (file.isFile) {
+                        val name = file.name.lowercase()
+                        if (name.endsWith(".jpg") || name.endsWith(".jpeg") || 
+                            name.endsWith(".png") || name.endsWith(".webp")) {
+                            val targetFile = File(imagesDir, file.name)
+                            file.copyTo(targetFile, overwrite = true)
+                            Log.d(TAG, "恢复图片文件: ${file.name}")
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "恢复图片文件时出错", e)
+            // 图片恢复失败不应该阻止数据库恢复
         }
     }
     
@@ -356,6 +505,9 @@ object DatabaseBackupUtils {
  * 简单的 ZIP 工具类
  */
 object ZipUtils {
+    /**
+     * 压缩文件列表（旧方法，保持向后兼容）
+     */
     fun zipFiles(files: List<File>, zipFile: File) {
         FileOutputStream(zipFile).use { fos ->
             java.util.zip.ZipOutputStream(BufferedOutputStream(fos)).use { zos ->
@@ -366,6 +518,65 @@ object ZipUtils {
                             zos.putNextEntry(entry)
                             fis.copyTo(zos)
                             zos.closeEntry()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * 压缩数据库文件和图片文件
+     * @param databaseFiles 数据库文件列表
+     * @param imageFiles 图片文件列表
+     * @param zipFile 输出的 zip 文件
+     * @param context Context 用于确定图片的相对路径
+     */
+    fun zipFilesWithImages(
+        databaseFiles: List<File>,
+        imageFiles: List<File>,
+        zipFile: File,
+        context: Context
+    ) {
+        FileOutputStream(zipFile).use { fos ->
+            java.util.zip.ZipOutputStream(BufferedOutputStream(fos)).use { zos ->
+                // 压缩数据库文件（放在根目录）
+                databaseFiles.forEach { file ->
+                    if (file.exists()) {
+                        FileInputStream(file).use { fis ->
+                            val entry = java.util.zip.ZipEntry(file.name)
+                            zos.putNextEntry(entry)
+                            fis.copyTo(zos)
+                            zos.closeEntry()
+                        }
+                    }
+                }
+                
+                // 压缩图片文件（放在 images/ 目录下）
+                val imagesDir = File(context.filesDir, "images")
+                val imagesDirPath = imagesDir.absolutePath
+                
+                imageFiles.forEach { file ->
+                    if (file.exists()) {
+                        try {
+                            // 计算相对路径，保持 images/ 目录结构
+                            val relativePath = if (file.absolutePath.startsWith(imagesDirPath)) {
+                                // 如果文件在 images 目录下，保持相对路径
+                                val relative = file.absolutePath.substring(imagesDirPath.length)
+                                "images${relative.replace(File.separator, "/")}"
+                            } else {
+                                // 如果文件不在 images 目录下，只保存文件名
+                                "images/${file.name}"
+                            }
+                            
+                            FileInputStream(file).use { fis ->
+                                val entry = java.util.zip.ZipEntry(relativePath)
+                                zos.putNextEntry(entry)
+                                fis.copyTo(zos)
+                                zos.closeEntry()
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("ZipUtils", "压缩图片文件失败: ${file.absolutePath}", e)
                         }
                     }
                 }

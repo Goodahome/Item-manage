@@ -16,9 +16,6 @@ object LocaleHelper {
             "en" -> Locale.ENGLISH
             "fr" -> Locale.FRENCH
             "de" -> Locale.GERMAN
-            "es" -> Locale("es", "ES")
-            "it" -> Locale.ITALIAN
-            "pt" -> Locale("pt", "PT")
             else -> Locale.getDefault()
         }
         
@@ -73,9 +70,6 @@ object LocaleHelper {
             "en" -> "en"
             "fr" -> "fr"
             "de" -> "de"
-            "es" -> "es"
-            "it" -> "it"
-            "pt" -> "pt"
             else -> "zh" // 默认使用中文
         }
     }

@@ -22,12 +22,12 @@ interface ShoppingItemDao {
     suspend fun insertShoppingItem(item: ShoppingItem): Long
 
     @Update
-    suspend fun updateShoppingItem(item: ShoppingItem)
+    suspend fun updateShoppingItem(item: ShoppingItem): Unit
 
     @Delete
-    suspend fun deleteShoppingItem(item: ShoppingItem)
+    suspend fun deleteShoppingItem(item: ShoppingItem): Unit
 
     @Query("DELETE FROM shopping_items WHERE id = :id")
-    suspend fun deleteShoppingItemById(id: Long)
+    suspend fun deleteShoppingItemById(id: Long): Unit
 }
 

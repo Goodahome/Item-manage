@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import com.google.common.util.concurrent.ListenableFuture
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -234,7 +235,9 @@ fun CameraRecognitionDialog(
             .build()
     }
     
-    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    val cameraProviderFuture: ListenableFuture<ProcessCameraProvider> = remember { 
+        ProcessCameraProvider.getInstance(context)
+    }
     val previewView = remember { PreviewView(context) }
     
     LaunchedEffect(Unit) {
@@ -270,7 +273,13 @@ fun CameraRecognitionDialog(
     
     DisposableEffect(Unit) {
         onDispose {
-            cameraProviderFuture.get().unbindAll()
+            try {
+                if (cameraProviderFuture.isDone) {
+                    cameraProviderFuture.get().unbindAll()
+                }
+            } catch (e: Exception) {
+                // 忽略清理时的错误
+            }
         }
     }
     

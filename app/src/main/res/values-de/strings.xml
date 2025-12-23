@@ -87,6 +87,10 @@
     <string name="invalid_color">Ungültiges Farbformat</string>
     <string name="color_applied">Farbe angewendet</string>
     <string name="color_scheme_cold_blue">🧊 Kalter Vorratsboss</string>
+
+    <string name="discord_icon_shape">Discord-Icon-Form</string>
+    <string name="discord_icon_circle">Kreis</string>
+    <string name="discord_icon_round_rect">Abgerundetes Quadrat</string>
     <string name="color_scheme_cream">🍊 Creme-Heilung</string>
     <string name="color_scheme_mint">🌿 Minze-Kühle</string>
     <string name="color_scheme_space">🌌 Tiefes Weltraumgrau</string>
@@ -257,7 +261,7 @@
     <string name="clear_feature_code">Merkmalscode löschen</string>
     
     <!-- 条形码扫描 -->
-    <string name="barcode_scanner">Scannen zum Hinzufügen</string>
+    <string name="barcode_scanner">Scannen</string>
     <string name="switch_layout_style">Layout-Stil wechseln</string>
     <string name="generate_qr_code">QR-Code generieren</string>
     <string name="warehouse_qr_code">Behälter-QR-Code</string>
@@ -520,4 +524,20 @@
     <string name="reminder_type_daily">Täglich</string>
     <string name="reminder_type_monthly">Monatlich</string>
     <string name="reminder_type_yearly">Jährlich</string>
+
+    <string name="onboarding_welcome_title">Willkommen bei Heji</string>
+    <string name="onboarding_welcome_description">Dies ist ein einfaches und benutzerfreundliches Werkzeug zur Verwaltung von Gegenständen. Es hilft Ihnen, Ihre Artikel, Behälter und Erinnerungen mühelos zu verwalten. Los geht’s!</string>
+    <string name="onboarding_home_area_title">Startbereich</string>
+    <string name="onboarding_home_area_description">Der Startbildschirm zeigt Ihre Statistiken, einschließlich der Gesamtzahl der Artikel, der Anzahl der Behälter und der zu kaufenden Artikel. Links befindet sich die Behälterliste – tippen Sie darauf, um die Artikel in verschiedenen Behältern anzuzeigen. Oben gibt es Such- und Scan-Funktionen, um Artikel schnell zu finden und hinzuzufügen.</string>
+    <string name="onboarding_add_warehouse_title">Behälter hinzufügen</string>
+    <string name="onboarding_add_warehouse_description">Tippen Sie auf die „+“-Schaltfläche unten in der Behälterliste links, um einen neuen Behälter hinzuzufügen. Behälter helfen Ihnen, Artikel zu kategorisieren, z. B. „Küche“, „Schlafzimmer“ oder „Büro“. Sie können auch Unterbehälter erstellen, um eine detailliertere Organisation zu erreichen.</string>
+    <string name="onboarding_add_item_title">Artikel hinzufügen</string>
+    <string name="onboarding_add_item_description">Tippen Sie auf die „+“-Schaltfläche rechts unten, um einen neuen Artikel hinzuzufügen. Beim Hinzufügen können Sie Name, Menge, Preis, Verfallsdatum usw. festlegen. Nach der Auswahl eines Behälters wird der Artikel automatisch diesem zugeordnet.</string>
+    <string name="onboarding_settings_title">Einstellungen</string>
+    <string name="onboarding_settings_description">Tippen Sie auf die Menü-Schaltfläche oben links, um die Einstellungen zu öffnen. Dort können Sie:\n• Design-Themen und Farben anpassen\n• Erinnerungsfunktionen einrichten\n• Behälter und Kategorien verwalten\n• Daten sichern und wiederherstellen\n• Cloud-Synchronisation konfigurieren\n• Sprache wechseln</string>
+    <string name="onboarding_complete_title">Loslegen</string>
+    <string name="onboarding_complete_description">Sie kennen nun die grundlegenden Funktionen und können Heji zur Verwaltung Ihrer Artikel nutzen! Bei Fragen können Sie jederzeit die Hilfeseiten in den Einstellungen aufrufen.</string>
+    <string name="onboarding_next">Weiter</string>
+    <string name="onboarding_skip">Überspringen</string>
+    <string name="onboarding_get_started">Loslegen</string>
 </resources>
