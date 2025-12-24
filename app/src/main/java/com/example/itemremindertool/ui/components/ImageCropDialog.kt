@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -50,6 +52,7 @@ fun ImageCropDialog(
     var frameOffset by remember { mutableStateOf(Offset.Zero) }
     var imageScale by remember { mutableStateOf(1f) }
     var imageOffset by remember { mutableStateOf(Offset.Zero) }
+    var imageRotation by remember { mutableStateOf(0f) } // 图片旋转角度（度）
     
     // 裁剪框的宽高比 - 固定为1:1正方形
     val aspectRatio = 1f
@@ -89,6 +92,16 @@ fun ImageCropDialog(
                         }
                     },
                     actions = {
+                        // 旋转按钮
+                        IconButton(
+                            onClick = {
+                                // 旋转90度
+                                imageRotation = (imageRotation + 90f) % 360f
+                            }
+                        ) {
+                            Icon(Icons.Default.RotateRight, stringResource(R.string.rotate_image))
+                        }
+                        // 确认按钮
                         IconButton(
                             onClick = {
                                 // 执行裁剪
@@ -98,7 +111,8 @@ fun ImageCropDialog(
                                     frameSize,
                                     canvasSize,
                                     imageScale,
-                                    imageOffset
+                                    imageOffset,
+                                    imageRotation
                                 )
                                 onCropped(croppedBitmap)
                             }
@@ -199,12 +213,29 @@ fun ImageCropDialog(
                     val drawLeft = baseDrawLeft + imageOffset.x
                     val drawTop = baseDrawTop + imageOffset.y
                     
-                    // 绘制图片
-                    drawImage(
-                        image = bitmap.asImageBitmap(),
-                        dstOffset = androidx.compose.ui.unit.IntOffset(drawLeft.toInt(), drawTop.toInt()),
-                        dstSize = androidx.compose.ui.unit.IntSize(drawWidth.toInt(), drawHeight.toInt())
-                    )
+                    // 绘制图片（支持旋转）
+                    if (imageRotation != 0f) {
+                        // 需要旋转时，先旋转画布
+                        val centerX = drawLeft + drawWidth / 2
+                        val centerY = drawTop + drawHeight / 2
+                        rotate(
+                            degrees = imageRotation,
+                            pivot = Offset(centerX, centerY)
+                        ) {
+                            drawImage(
+                                image = bitmap.asImageBitmap(),
+                                dstOffset = androidx.compose.ui.unit.IntOffset(drawLeft.toInt(), drawTop.toInt()),
+                                dstSize = androidx.compose.ui.unit.IntSize(drawWidth.toInt(), drawHeight.toInt())
+                            )
+                        }
+                    } else {
+                        // 不需要旋转时，直接绘制
+                        drawImage(
+                            image = bitmap.asImageBitmap(),
+                            dstOffset = androidx.compose.ui.unit.IntOffset(drawLeft.toInt(), drawTop.toInt()),
+                            dstSize = androidx.compose.ui.unit.IntSize(drawWidth.toInt(), drawHeight.toInt())
+                        )
+                    }
                     
                     // 绘制半透明遮罩（裁剪框外的区域）
                     // 上方
@@ -340,7 +371,7 @@ fun ImageCropDialog(
 }
 
 /**
- * 根据裁剪框位置裁剪图片（支持缩放和拖动）
+ * 根据裁剪框位置裁剪图片（支持缩放、拖动和旋转）
  */
 private fun cropBitmap(
     bitmap: Bitmap,
@@ -348,7 +379,8 @@ private fun cropBitmap(
     frameSize: Size,
     canvasSize: IntSize,
     imageScale: Float,
-    imageOffset: Offset
+    imageOffset: Offset,
+    imageRotation: Float
 ): Bitmap {
     // 计算图片在画布上的显示位置和尺寸
     val canvasWidth = canvasSize.width.toFloat()
@@ -393,6 +425,24 @@ private fun cropBitmap(
     // 确保是正方形（取较小的尺寸）
     val finalCropSize = minOf(cropWidth, cropHeight)
     
-    return Bitmap.createBitmap(bitmap, cropX, cropY, finalCropSize, finalCropSize)
+    // 先裁剪图片
+    var croppedBitmap = Bitmap.createBitmap(bitmap, cropX, cropY, finalCropSize, finalCropSize)
+    
+    // 如果需要旋转，应用旋转
+    if (imageRotation != 0f) {
+        val matrix = android.graphics.Matrix()
+        matrix.postRotate(imageRotation)
+        croppedBitmap = Bitmap.createBitmap(
+            croppedBitmap,
+            0,
+            0,
+            croppedBitmap.width,
+            croppedBitmap.height,
+            matrix,
+            true
+        )
+    }
+    
+    return croppedBitmap
 }
 

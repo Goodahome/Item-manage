@@ -118,7 +118,7 @@ fun DynamicBannerAd(
     modifier: Modifier = Modifier,
     isAdManager: Boolean = false,
     testAdUnitId: String = "ca-app-pub-3940256099942544/6300978111", // Google 官方测试横幅 ID
-    productionAdUnitId: String? = null,
+    productionAdUnitId: String = "ca-app-pub-9384252615968132/7853152781",
     maxRetries: Int = 3,
     retryDelayMs: Long = 5000,
     hideOnFailure: Boolean = false

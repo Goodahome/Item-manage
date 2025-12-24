@@ -53,7 +53,7 @@ fun AppSettingsScreen(
     
     // 广告单元 ID
     var adBannerUnitId by remember { 
-        mutableStateOf(prefs.getString("ad_banner_unit_id", null) ?: "") 
+        mutableStateOf(prefs.getString("ad_banner_unit_id", null) ?: "")
     }
     
     Scaffold(
@@ -124,30 +124,30 @@ fun AppSettingsScreen(
             Divider()
             
             // 广告横幅单元 ID
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.ad_banner_unit_id)) },
-                supportingContent = { 
-                    Text(
-                        text = if (adBannerUnitId.isNotEmpty()) {
-                            adBannerUnitId
-                        } else {
-                            stringResource(R.string.ad_banner_unit_id_desc) + " (当前使用测试 ID)"
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = ColorHelpers.getGroup4TextColor(0.7f)
-                    )
-                },
-                trailingContent = { 
-                    TextButton(
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = ColorHelpers.getGroup4TextColor()
-                        ),
-                        onClick = { showAdUnitIdDialog = true }) {
-                        Text(stringResource(R.string.modify))
-                    }
-                },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-            )
+//            ListItem(
+//                headlineContent = { Text(stringResource(R.string.ad_banner_unit_id)) },
+//                supportingContent = {
+//                    Text(
+//                        text = if (adBannerUnitId.isNotEmpty()) {
+//                            adBannerUnitId
+//                        } else {
+//                            stringResource(R.string.ad_banner_unit_id_desc) + " (当前使用测试 ID)"
+//                        },
+//                        style = MaterialTheme.typography.bodySmall,
+//                        color = ColorHelpers.getGroup4TextColor(0.7f)
+//                    )
+//                },
+//                trailingContent = {
+//                    TextButton(
+//                        colors = ButtonDefaults.textButtonColors(
+//                            contentColor = ColorHelpers.getGroup4TextColor()
+//                        ),
+//                        onClick = { showAdUnitIdDialog = true }) {
+//                        Text(stringResource(R.string.modify))
+//                    }
+//                },
+//                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+//            )
             
             Divider()
             
@@ -172,6 +172,8 @@ fun AppSettingsScreen(
                             } else {
                                 // 如果禁用密码，清除密码
                                 prefs.edit().putString("app_password", "").commit()
+                                // 显示重启提醒
+                                showRestartDialog = true
                             }
                         }
                     )
@@ -253,6 +255,8 @@ fun AppSettingsScreen(
                     prefs.edit().putBoolean("password_enabled", true).commit()
                     isPasswordEnabled = true
                     showPasswordDialog = false
+                    // 显示重启提醒
+                    showRestartDialog = true
                 }
             },
             confirmEnabled = newPassword == confirmPassword && newPassword.isNotEmpty()
@@ -350,7 +354,13 @@ fun AppSettingsScreen(
             confirmText = stringResource(R.string.now),
             dismissText = stringResource(R.string.later)
         ) {
-            Text(context.getString(R.string.app_name_changed))
+            Text(
+                if (isPasswordEnabled) {
+                    context.getString(R.string.password_enabled_restart_message)
+                } else {
+                    context.getString(R.string.password_disabled_restart_message)
+                }
+            )
         }
     }
     

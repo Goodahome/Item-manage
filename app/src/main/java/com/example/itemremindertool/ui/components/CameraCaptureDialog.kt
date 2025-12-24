@@ -294,7 +294,7 @@ fun CameraCaptureDialog(
                         ) {
                             Icon(
                                 Icons.Default.CameraAlt,
-                                contentDescription = stringResource(R.string.take_photo),
+                                contentDescription = "Take Photo",
                                 tint = Color.Black,
                                 modifier = Modifier.size(36.dp)
                             )

@@ -110,7 +110,7 @@ fun PasswordLockScreen(
         if (canUseBiometric && activity != null && biometricPrompt != null) {
             val promptInfo = BiometricPrompt.PromptInfo.Builder()
                 .setTitle(biometricUnlockTitle)
-                .setSubtitle(biometricUnlockSubtitle)
+                // 移除 subtitle 避免与屏下指纹传感器提示重叠
                 .setNegativeButtonText(cancelText)
                 .build()
             biometricPrompt.authenticate(promptInfo)
@@ -208,7 +208,7 @@ fun PasswordLockScreen(
                     onClick = {
                         val promptInfo = BiometricPrompt.PromptInfo.Builder()
                             .setTitle(biometricUnlockTitle)
-                            .setSubtitle(biometricUnlockSubtitle)
+                            // 移除 subtitle 避免与屏下指纹传感器提示重叠
                             .setNegativeButtonText(cancelText)
                             .build()
                         biometricPrompt.authenticate(promptInfo)

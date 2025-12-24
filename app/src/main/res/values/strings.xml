@@ -138,6 +138,8 @@
     <string name="confirm_password">确认密码</string>
     <string name="password_mismatch">两次输入的密码不一致</string>
     <string name="password_empty">密码不能为空</string>
+    <string name="password_enabled_restart_message">密码保护已启用，需要重启应用才能生效。是否现在重启？</string>
+    <string name="password_disabled_restart_message">密码保护已关闭，需要重启应用才能生效。是否现在重启？</string>
     
     <!-- 生物识别 -->
     <string name="biometric_unlock_title">使用生物识别解锁</string>
@@ -265,11 +267,11 @@
     
     <!-- 图片相关 -->
     <string name="take_photo">拍照</string>
-    <string name="select_from_gallery">相册</string>
-    <string name="item_image_capture">物品图片</string>
+    <!-- <string name="select_from_gallery">相册</string>
+    <string name="item_image_capture">物品图片</string> -->
     <string name="crop_image">裁剪图片</string>
-    <string name="delete_image">删除图片</string>
-    <string name="clear_feature_code">清除特征码</string>
+    <!-- <string name="delete_image">删除图片</string>
+    <string name="clear_feature_code">清除特征码</string> -->
     
     <!-- 条形码扫描 -->
     <string name="barcode_scanner">扫码</string>
@@ -386,7 +388,7 @@
     <string name="custom_warehouse_items_suffix">自定义容器物品后缀</string>
     <string name="custom_warehouse_items_suffix_desc">设置容器路径中最后一个容器显示的后缀文本</string>
     <string name="containers">容器管理</string>
-    <string name="add_container">添加容器</string>
+    <!-- <string name="add_container">添加容器</string> -->
     <string name="edit_container">编辑容器</string>
     <string name="delete_container">删除容器</string>
     <string name="delete_container_confirm">确定要删除这个容器吗？删除后该容器下的物品将变为未分配容器。</string>
@@ -424,7 +426,7 @@
     <string name="quick_add">快速添加</string>
     <string name="quick_add_item">快速添加物品</string>
     <string name="warehouse_image">容器图片</string>
-    <string name="select_image">选择图片</string>
+    <!-- <string name="select_image">选择图片</string> -->
     <string name="voice_quick_note">语音快速记</string>
     <string name="voice_quick_note_hint">使用语音快速记录物品</string>
     <string name="search_all_items">搜索所有物品</string>
@@ -536,7 +538,7 @@
     <string name="reminder_reason_placeholder">提醒原因（可选）</string>
     
     <!-- 图片选择 -->
-    <string name="select_multiple">选择多张</string>
+    <!-- <string name="select_multiple">选择多张</string> -->
     
     <!-- 提醒类型 -->
     <string name="reminder_type_once">一次性</string>
@@ -583,6 +585,7 @@
     <string name="onboarding_skip">跳过</string>
     <string name="onboarding_get_started">开始使用</string>
     <string name="pinch_to_zoom">双指捏合缩放图片</string>
+    <string name="rotate_image">旋转图片</string>
     <string name="ad_banner_unit_id">广告横幅单元 ID</string>
     <string name="ad_banner_unit_id_desc">设置 Google AdMob 广告横幅单元 ID。留空则使用测试 ID。</string>
     <string name="ad_banner_unit_id_hint">输入广告单元 ID</string>

@@ -254,11 +254,11 @@
     
     <!-- 图片相关 -->
     <string name="take_photo">Prendre une photo</string>
-    <string name="select_from_gallery">Galerie</string>
-    <string name="item_image_capture">Image de l\'article</string>
+    <!-- <string name="select_from_gallery">Galerie</string>
+    <string name="item_image_capture">Image de l\'article</string> -->
     <string name="crop_image">Recadrer l\'image</string>
-    <string name="delete_image">Supprimer l\'image</string>
-    <string name="clear_feature_code">Effacer le code de caractéristique</string>
+    <!-- <string name="delete_image">Supprimer l\'image</string>
+    <string name="clear_feature_code">Effacer le code de caractéristique</string> -->
     
     <!-- 条形码扫描 -->
     <string name="barcode_scanner">Scanner</string>
@@ -370,7 +370,7 @@
     <string name="item_container">Conteneur</string>
     <string name="container">Conteneur</string>
     <string name="containers">Gestion des conteneurs</string>
-    <string name="add_container">Ajouter un conteneur</string>
+    <!-- <string name="add_container">Ajouter un conteneur</string> -->
     <string name="edit_container">Modifier le conteneur</string>
     <string name="delete_container">Supprimer le conteneur</string>
     <string name="delete_container_confirm">Voulez-vous vraiment supprimer ce conteneur ? Les articles deviendront non assignés.</string>
@@ -517,7 +517,7 @@
     <string name="reminder_reason_placeholder">Raison du rappel (optionnel)</string>
     
     <!-- 图片选择 -->
-    <string name="select_multiple">Sélectionner plusieurs</string>
+    <!-- <string name="select_multiple">Sélectionner plusieurs</string> -->
     
     <!-- 提醒类型 -->
     <string name="reminder_type_once">Unique</string>

@@ -267,11 +267,11 @@
     
     <!-- 图片相关 -->
     <string name="take_photo">Take Photo</string>
-    <string name="select_from_gallery">Gallery</string>
-    <string name="item_image_capture">Item Image</string>
+    <!-- <string name="select_from_gallery">Gallery</string>
+    <string name="item_image_capture">Item Image</string> -->
     <string name="crop_image">Crop Image</string>
-    <string name="delete_image">Delete Image</string>
-    <string name="clear_feature_code">Clear Feature Code</string>
+    <!-- <string name="delete_image">Delete Image</string>
+    <string name="clear_feature_code">Clear Feature Code</string> -->
     
     <!-- 条形码扫描 -->
     <string name="barcode_scanner">Scan</string>
@@ -387,7 +387,7 @@
     <string name="custom_warehouse_items_suffix">Custom Container Items Suffix</string>
     <string name="custom_warehouse_items_suffix_desc">Set the suffix text displayed for the last container in the container path</string>
     <string name="containers">Container Management</string>
-    <string name="add_container">Add Container</string>
+    <!-- <string name="add_container">Add Container</string> -->
     <string name="edit_container">Edit Container</string>
     <string name="delete_container">Delete Container</string>
     <string name="delete_container_confirm">Are you sure you want to delete this container? Items inside will become unassigned.</string>
@@ -534,7 +534,7 @@
     <string name="reminder_reason_placeholder">Reminder reason (optional)</string>
     
     <!-- 图片选择 -->
-    <string name="select_multiple">Select Multiple</string>
+    <!-- <string name="select_multiple">Select Multiple</string> -->
     
     <!-- 提醒类型 -->
     <string name="reminder_type_once">One-time</string>

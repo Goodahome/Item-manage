@@ -83,6 +83,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -117,6 +118,7 @@ fun ItemEditScreen(
     var showCameraDialog by remember { mutableStateOf(false) }
     var showCropDialog by remember { mutableStateOf(false) }
     var bitmapToCrop by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var cropImageIndex by remember { mutableStateOf<Int?>(null) } // 记录正在裁剪的图片索引，null表示是新图片
     // 获取 Context 和协程作用域
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -195,13 +197,23 @@ fun ItemEditScreen(
                 barcode = item.barcode ?: ""
                 expiryDate = item.expiryDate
                 enableStockAlert = item.enableStockAlert
-                imageUri = item.imageUri
                 // 加载多图：如果有imageUris则使用，否则兼容旧的imageUri
+                // 同时检查图片文件是否存在，只加载存在的图片
                 imageUris = if (item.imageUris.isNotEmpty()) {
-                    item.imageUris
+                    item.imageUris.filter { path ->
+                        java.io.File(path).exists()
+                    }
                 } else {
-                    item.imageUri?.let { listOf(it) } ?: emptyList()
+                    item.imageUri?.let { path ->
+                        if (java.io.File(path).exists()) {
+                            listOf(path)
+                        } else {
+                            emptyList()
+                        }
+                    } ?: emptyList()
                 }
+                // 根据实际加载的图片列表设置imageUri
+                imageUri = imageUris.getOrNull(primaryImageIndex)
                 // 安全设置主图索引：如果列表为空，设置为0；否则限制在有效范围内
                 primaryImageIndex = if (imageUris.isEmpty()) {
                     0
@@ -270,8 +282,11 @@ fun ItemEditScreen(
                                 quantity = quantity.toIntOrNull() ?: 1,
                                 barcode = barcode.ifEmpty { null },
                                 expiryDate = expiryDate,
-                                imageUri = imageUris.getOrNull(primaryImageIndex)
-                                    ?: imageUri, // 向后兼容
+                                imageUri = if (imageUris.isNotEmpty()) {
+                                    imageUris.getOrNull(primaryImageIndex)
+                                } else {
+                                    null // 如果没有图片，清空imageUri
+                                },
                                 imageUris = imageUris,
                                 primaryImageIndex = if (imageUris.isNotEmpty()) {
                                     primaryImageIndex.coerceIn(0, imageUris.size - 1)
@@ -352,6 +367,7 @@ fun ItemEditScreen(
                 .fillMaxSize()
                 .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
+                .imePadding() // 添加键盘避让，确保输入框不被键盘遮挡
                 .clickable {
                     keyboardController?.hide()
                     focusManager.clearFocus()
@@ -376,9 +392,15 @@ fun ItemEditScreen(
             val cardHeightPx = remember { with(density) { 200.dp.toPx().toInt() } }
 
             // 从相册选择单张图片的启动器（用于裁剪）
+            val prefs = remember { 
+                context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) 
+            }
             val imagePickerLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.GetContent()
             ) { uri: Uri? ->
+                // 清除ActivityResult处理标记
+                prefs.edit().putBoolean("is_processing_activity_result", false).apply()
+                
                 if (uri != null) {
                     // 处理选中的图片
                     try {
@@ -389,6 +411,7 @@ fun ItemEditScreen(
                         if (bitmap != null) {
                             // 显示裁剪对话框
                             bitmapToCrop = bitmap
+                            cropImageIndex = null // 新图片，索引为null
                             showCropDialog = true
                         }
                     } catch (e: Exception) {
@@ -420,46 +443,57 @@ fun ItemEditScreen(
                 }
             }
 
-            // 切换主图时，删除旧的主图裁剪文件，创建新的主图裁剪文件
+            // 切换主图时，只更新索引，不再自动裁剪（因为图片已经处理过了）
             val switchPrimaryImage: (Int) -> Unit = { newIndex ->
-                scope.launch(Dispatchers.IO) {
-                    val oldPrimaryPath = imageUris.getOrNull(primaryImageIndex)
-                    val newPrimaryPath = imageUris.getOrNull(newIndex)
-
-                    // 删除旧的主图裁剪文件
-                    oldPrimaryPath?.let { ImageUtils.deleteCroppedImageFile(it) }
-
-                    // 创建新的主图裁剪文件
-                    newPrimaryPath?.let { cropImageForPrimary(it) }
-                }
+                // 切换主图时不再自动裁剪，保持原有图片
+                // 如果用户需要裁剪，可以通过点击编辑按钮手动处理
             }
 
-            // 从相册选择多张图片的启动器（保存原图，不裁剪）
+            // 从相册选择多张图片的启动器（弹出裁剪对话框）
             val multipleImagePickerLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.PickMultipleVisualMedia()
             ) { uris: List<Uri> ->
-                scope.launch(Dispatchers.IO) {
-                    uris.forEach { uri ->
+                // 清除ActivityResult处理标记
+                prefs.edit().putBoolean("is_processing_activity_result", false).apply()
+                
+                // 选择第一张图片弹出裁剪对话框
+                if (uris.isNotEmpty()) {
+                    scope.launch(Dispatchers.IO) {
                         try {
+                            val uri = uris[0]
                             val inputStream = context.contentResolver.openInputStream(uri)
                             val bitmap = BitmapFactory.decodeStream(inputStream)
                             inputStream?.close()
 
                             if (bitmap != null) {
-                                // 保存原图，不裁剪
-                                val fileName =
-                                    "item_${itemId ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
-                                val savedPath = ImageUtils.saveImageToInternalStorage(
-                                    context,
-                                    bitmap,
-                                    fileName
-                                )
-                                savedPath?.let {
-                                    imageUris = imageUris + it
-                                    if (imageUris.size == 1) {
-                                        primaryImageIndex = 0
-                                        // 第一张图片自动设为主图，需要裁剪
-                                        cropImageForPrimary(it)
+                                // 显示裁剪对话框
+                                bitmapToCrop = bitmap
+                                cropImageIndex = null // 新图片，索引为null
+                                showCropDialog = true
+                            }
+                            
+                            // 处理剩余的图片（如果有）
+                            if (uris.size > 1) {
+                                uris.drop(1).forEach { remainingUri ->
+                                    try {
+                                        val remainingInputStream = context.contentResolver.openInputStream(remainingUri)
+                                        val remainingBitmap = BitmapFactory.decodeStream(remainingInputStream)
+                                        remainingInputStream?.close()
+
+                                        if (remainingBitmap != null) {
+                                            val fileName =
+                                                "item_${itemId ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
+                                            val savedPath = ImageUtils.saveImageToInternalStorage(
+                                                context,
+                                                remainingBitmap,
+                                                fileName
+                                            )
+                                            savedPath?.let {
+                                                imageUris = imageUris + it
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
                                     }
                                 }
                             }
@@ -492,10 +526,12 @@ fun ItemEditScreen(
                                     tint = iconColor
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.take_photo), color = textColor)
+                                // Text(stringResource(R.string.take_photo), color = textColor)
                             }
                             Button(
                                 onClick = {
+                                    // 设置ActivityResult处理标记，防止密码锁屏
+                                    prefs.edit().putBoolean("is_processing_activity_result", true).apply()
                                     multipleImagePickerLauncher.launch(
                                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                     )
@@ -514,7 +550,7 @@ fun ItemEditScreen(
                                     tint = iconColor
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.select_multiple), color = textColor)
+                                // Text(stringResource(R.string.select_multiple), color = textColor)
                             }
                         }
 
@@ -558,6 +594,7 @@ fun ItemEditScreen(
                                                     modifier = Modifier
                                                         .fillMaxSize()
                                                         .clickable {
+                                                            // 点击图片卡片时，设置为主图
                                                             val oldPrimaryIndex = primaryImageIndex
                                                             if (oldPrimaryIndex != index) {
                                                                 primaryImageIndex = index
@@ -583,7 +620,31 @@ fun ItemEditScreen(
                                                     )
                                                 }
                                             }
-                                            // 删除按钮
+                                            
+                                            // 编辑按钮（左下角）- 弹出裁剪对话框
+                                            IconButton(
+                                                onClick = {
+                                                    // 点击编辑按钮时，弹出裁剪对话框进行手动处理
+                                                    val imageBitmap = ImageUtils.loadBitmapFromPath(imagePath)
+                                                    if (imageBitmap != null) {
+                                                        bitmapToCrop = imageBitmap
+                                                        cropImageIndex = index // 记录正在裁剪的图片索引
+                                                        showCropDialog = true
+                                                    }
+                                                },
+                                                modifier = Modifier
+                                                    .align(Alignment.BottomStart)
+                                                    .size(24.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Edit,
+                                                    contentDescription = "编辑图片",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                            
+                                            // 删除按钮（右上角）
                                             IconButton(
                                                 onClick = {
                                                     scope.launch(Dispatchers.IO) {
@@ -592,14 +653,15 @@ fun ItemEditScreen(
                                                     }
                                                     imageUris =
                                                         imageUris.filterIndexed { i, _ -> i != index }
+                                                    // 如果删除后没有图片了，清空imageUri
+                                                    if (imageUris.isEmpty()) {
+                                                        imageUri = null
+                                                    }
                                                     if (primaryImageIndex >= imageUris.size - 1) {
                                                         primaryImageIndex =
                                                             maxOf(0, imageUris.size - 1)
-                                                        // 如果删除的是主图，需要为新主图创建裁剪文件
-                                                        imageUris.getOrNull(primaryImageIndex)
-                                                            ?.let {
-                                                                switchPrimaryImage(primaryImageIndex)
-                                                            }
+                                                        // 如果删除的是主图，切换新主图（不再自动裁剪）
+                                                        // switchPrimaryImage现在不再自动裁剪，保持原有图片
                                                     }
                                                 },
                                                 modifier = Modifier
@@ -919,7 +981,9 @@ fun ItemEditScreen(
                                                 Text(
                                                     text = stringResource(R.string.add_tag),
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    fontSize = 12.sp
+                                                    fontSize = 12.sp,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
                                                 )
                                             }
                                         }
@@ -936,6 +1000,8 @@ fun ItemEditScreen(
                                                         alpha = 0.7f
                                                     ),
                                                     fontSize = 12.sp,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
                                                     modifier = Modifier.padding(start = 2.dp)
                                                 )
                                             }
@@ -993,7 +1059,7 @@ fun ItemEditScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = stringResource(R.string.enable_stock_alert),  // 修改
+                                    text = stringResource(R.string.enable_stock_alert),
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(
@@ -1046,29 +1112,29 @@ fun ItemEditScreen(
                     }
 
                     // ==================== 特征码（只读显示）====================
-                    if (featureCode != null) {
-                        OutlinedTextField(
-                            value = "特征码已生成 (${featureCode!!.length} 字符)",
-                            onValueChange = { },
-                            readOnly = true,
-                            label = { Text(stringResource(R.string.feature_code)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = { Icon(Icons.Default.ImageSearch, null) },
-                            trailingIcon = {
-                                IconButton(onClick = { featureCode = null }) {
-                                    Icon(
-                                        Icons.Default.Close,
-                                        stringResource(R.string.clear_feature_code)
-                                    )
-                                }
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        )
-                    }
+//                    if (featureCode != null) {
+//                        OutlinedTextField(
+//                            value = "特征码已生成 (${featureCode!!.length} 字符)",
+//                            onValueChange = { },
+//                            readOnly = true,
+//                            label = { Text(stringResource(R.string.feature_code)) },
+//                            modifier = Modifier.fillMaxWidth(),
+//                            leadingIcon = { Icon(Icons.Default.ImageSearch, null) },
+//                            trailingIcon = {
+//                                IconButton(onClick = { featureCode = null }) {
+//                                    Icon(
+//                                        Icons.Default.Close,
+//                                        stringResource(R.string.clear_feature_code)
+//                                    )
+//                                }
+//                            },
+//                            colors = OutlinedTextFieldDefaults.colors(
+//                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+//                                disabledBorderColor = MaterialTheme.colorScheme.outline,
+//                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+//                            )
+//                        )
+//                    }
 
                     // ==================== 到期日期 ====================
                     val dateFormat = remember {
@@ -1142,25 +1208,13 @@ fun ItemEditScreen(
                                 showCameraDialog = false
                                 if (imagePath != null) {
                                     scope.launch(Dispatchers.IO) {
-                                        // 加载图片，保存原图（不裁剪）
+                                        // 加载图片，弹出裁剪对话框
                                         val bitmap = ImageUtils.loadBitmapFromPath(imagePath)
                                         if (bitmap != null) {
-                                            val fileName =
-                                                "item_${itemId ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
-                                            val savedPath = ImageUtils.saveImageToInternalStorage(
-                                                context,
-                                                bitmap,
-                                                fileName
-                                            )
-                                            savedPath?.let {
-                                                imageUris = imageUris + it
-                                                if (imageUris.size == 1) {
-                                                    primaryImageIndex = 0
-                                                    // 第一张图片自动设为主图，需要创建裁剪文件
-                                                    cropImageForPrimary(it)
-                                                }
-                                                imageUri = it // 向后兼容
-                                            }
+                                            // 显示裁剪对话框
+                                            bitmapToCrop = bitmap
+                                            cropImageIndex = null // 新图片，索引为null
+                                            showCropDialog = true
                                             // 删除原始临时文件
                                             ImageUtils.deleteImageFile(imagePath)
                                         }
@@ -1179,30 +1233,57 @@ fun ItemEditScreen(
                             bitmap = bitmapToCrop!!,
                             onCropped = { croppedBitmap ->
                                 showCropDialog = false
+                                val currentCropIndex = cropImageIndex
                                 scope.launch(Dispatchers.IO) {
-                                    // 保存原图（不立即裁剪）
-                                    val fileName =
-                                        "item_${itemId ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
-                                    val savedPath = ImageUtils.saveImageToInternalStorage(
-                                        context,
-                                        croppedBitmap,
-                                        fileName
-                                    )
-                                    savedPath?.let {
-                                        imageUris = imageUris + it
-                                        if (imageUris.size == 1) {
-                                            primaryImageIndex = 0
-                                            // 第一张图片自动设为主图，需要创建裁剪文件
-                                            cropImageForPrimary(it)
+                                    if (currentCropIndex != null && currentCropIndex < imageUris.size) {
+                                        // 更新已存在的图片
+                                        val oldPath = imageUris[currentCropIndex]
+                                        // 删除旧图片和裁剪图
+                                        ImageUtils.deleteImageAndCropped(oldPath)
+                                        // 保存新图片
+                                        val fileName =
+                                            "item_${itemId ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
+                                        val savedPath = ImageUtils.saveImageToInternalStorage(
+                                            context,
+                                            croppedBitmap,
+                                            fileName
+                                        )
+                                        savedPath?.let {
+                                            // 更新图片列表
+                                            imageUris = imageUris.toMutableList().apply {
+                                                set(currentCropIndex, it)
+                                            }
+                                            // 图片已经通过裁剪对话框处理过了，不再自动裁剪
+                                            if (currentCropIndex == 0) {
+                                                imageUri = it // 向后兼容
+                                            }
                                         }
-                                        imageUri = it // 向后兼容
+                                    } else {
+                                        // 添加新图片
+                                        val fileName =
+                                            "item_${itemId ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
+                                        val savedPath = ImageUtils.saveImageToInternalStorage(
+                                            context,
+                                            croppedBitmap,
+                                            fileName
+                                        )
+                                        savedPath?.let {
+                                            imageUris = imageUris + it
+                                            if (imageUris.size == 1) {
+                                                primaryImageIndex = 0
+                                                // 第一张图片自动设为主图，但图片已经通过裁剪对话框处理过了，不再自动裁剪
+                                            }
+                                            imageUri = it // 向后兼容
+                                        }
                                     }
                                 }
                                 bitmapToCrop = null
+                                cropImageIndex = null
                             },
                             onDismiss = {
                                 showCropDialog = false
                                 bitmapToCrop = null
+                                cropImageIndex = null
                             },
                             cardWidth = cardWidthPx,
                             cardHeight = cardHeightPx

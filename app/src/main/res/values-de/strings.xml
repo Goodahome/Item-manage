@@ -254,11 +254,11 @@
     
     <!-- 图片相关 -->
     <string name="take_photo">Foto aufnehmen</string>
-    <string name="select_from_gallery">Galerie</string>
-    <string name="item_image_capture">Artikelbild</string>
+    <!-- <string name="select_from_gallery">Galerie</string>
+    <string name="item_image_capture">Artikelbild</string> -->
     <string name="crop_image">Bild zuschneiden</string>
-    <string name="delete_image">Bild löschen</string>
-    <string name="clear_feature_code">Merkmalscode löschen</string>
+    <!-- <string name="delete_image">Bild löschen</string>
+    <string name="clear_feature_code">Merkmalscode löschen</string> -->
     
     <!-- 条形码扫描 -->
     <string name="barcode_scanner">Scannen</string>
@@ -370,7 +370,7 @@
     <string name="item_container">Behälter</string>
     <string name="container">Behälter</string>
     <string name="containers">Behälterverwaltung</string>
-    <string name="add_container">Behälter hinzufügen</string>
+    <!-- <string name="add_container">Behälter hinzufügen</string> -->
     <string name="edit_container">Behälter bearbeiten</string>
     <string name="delete_container">Behälter löschen</string>
     <string name="delete_container_confirm">Möchten Sie diesen Behälter wirklich löschen? Die darin enthaltenen Artikel werden nicht zugewiesen.</string>
@@ -517,7 +517,7 @@
     <string name="reminder_reason_placeholder">Erinnerungsgrund (optional)</string>
     
     <!-- 图片选择 -->
-    <string name="select_multiple">Mehrere auswählen</string>
+    <!-- <string name="select_multiple">Mehrere auswählen</string> -->
     
     <!-- 提醒类型 -->
     <string name="reminder_type_once">Einmalig</string>

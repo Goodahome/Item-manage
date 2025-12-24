@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import android.content.Context
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -80,9 +81,15 @@ fun WarehouseEditScreen(
     val cardHeightPx = cardSizePx
     
     // 从相册选择单张图片的启动器（用于裁剪）
+    val prefs = remember { 
+        context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) 
+    }
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
+        // 清除ActivityResult处理标记
+        prefs.edit().putBoolean("is_processing_activity_result", false).apply()
+        
         if (uri != null) {
             scope.launch(Dispatchers.IO) {
                 try {
@@ -337,10 +344,12 @@ fun WarehouseEditScreen(
                         tint = iconColor
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.take_photo), color = textColor)
+                    // Text(stringResource(R.string.take_photo), color = textColor)
                 }
                 Button(
                     onClick = {
+                        // 设置ActivityResult处理标记，防止密码锁屏
+                        prefs.edit().putBoolean("is_processing_activity_result", true).apply()
                         imagePickerLauncher.launch("image/*")
                     },
                     modifier = Modifier.weight(1f),
@@ -357,7 +366,7 @@ fun WarehouseEditScreen(
                         tint = iconColor
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.select_image), color = textColor)
+                    // Text(stringResource(R.string.select_image), color = textColor)
                 }
             }
 

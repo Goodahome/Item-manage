@@ -278,40 +278,64 @@ fun ItemCard(
                         onDismissRequest = { showMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text(stringResource(R.string.edit)) },
+                            text = { 
+                                Text(
+                                    stringResource(R.string.edit),
+                                    maxLines = 2 // 允许最多2行，支持文字换行
+                                ) 
+                            },
                             onClick = {
                                 showMenu = false
                                 onEdit()
                             },
-                            leadingIcon = { Icon(Icons.Default.Edit, null) }
+                            leadingIcon = { Icon(Icons.Default.Edit, null) },
+                            modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
                         )
                         if (onAddToShoppingCart != null) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.add_to_shopping_cart)) },
+                                text = { 
+                                    Text(
+                                        stringResource(R.string.add_to_shopping_cart),
+                                        maxLines = 2 // 允许最多2行，支持文字换行
+                                    ) 
+                                },
                                 onClick = {
                                     showMenu = false
                                     onAddToShoppingCart()
                                 },
-                                leadingIcon = { Icon(Icons.Default.ShoppingCart, null) }
+                                leadingIcon = { Icon(Icons.Default.ShoppingCart, null) },
+                                modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
                             )
                         }
                         if (onMoveToContainer != null) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.move_to_container)) },
+                                text = { 
+                                    Text(
+                                        stringResource(R.string.move_to_container),
+                                        maxLines = 2 // 允许最多2行，支持文字换行
+                                    ) 
+                                },
                                 onClick = {
                                     showMenu = false
                                     onMoveToContainer()
                                 },
-                                leadingIcon = { Icon(Icons.Default.CompareArrows, null) }
+                                leadingIcon = { Icon(Icons.Default.CompareArrows, null) },
+                                modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text(stringResource(R.string.delete)) },
+                            text = { 
+                                Text(
+                                    stringResource(R.string.delete),
+                                    maxLines = 2 // 允许最多2行，支持文字换行
+                                ) 
+                            },
                             onClick = {
                                 showMenu = false
                                 onDelete()
                             },
-                            leadingIcon = { Icon(Icons.Default.Delete, null) }
+                            leadingIcon = { Icon(Icons.Default.Delete, null) },
+                            modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
                         )
                     }
                 }

@@ -148,7 +148,8 @@ fun WarehouseDetailScreen(
                                 text = { 
                                     Text(
                                         stringResource(R.string.edit),
-                                        color = ColorHelpers.getGroup4TextColor()
+                                        color = ColorHelpers.getGroup4TextColor(),
+                                        maxLines = 2 // 允许最多2行，支持文字换行
                                     ) 
                                 },
                                 onClick = {
@@ -161,13 +162,15 @@ fun WarehouseDetailScreen(
                                         null,
                                         tint = ColorHelpers.getGroup4IconColor()
                                     ) 
-                                }
+                                },
+                                modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
                             )
                             DropdownMenuItem(
                                 text = { 
                                     Text(
                                         stringResource(R.string.generate_qr_code),
-                                        color = ColorHelpers.getGroup4TextColor()
+                                        color = ColorHelpers.getGroup4TextColor(),
+                                        maxLines = 2 // 允许最多2行，支持文字换行
                                     ) 
                                 },
                                 onClick = {
@@ -180,13 +183,15 @@ fun WarehouseDetailScreen(
                                         null,
                                         tint = ColorHelpers.getGroup4IconColor()
                                     ) 
-                                }
+                                },
+                                modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
                             )
                             DropdownMenuItem(
                                 text = { 
                                     Text(
                                         stringResource(R.string.delete),
-                                        color = MaterialTheme.colorScheme.error
+                                        color = MaterialTheme.colorScheme.error,
+                                        maxLines = 2 // 允许最多2行，支持文字换行
                                     ) 
                                 },
                                 onClick = {
@@ -199,7 +204,8 @@ fun WarehouseDetailScreen(
                                         null,
                                         tint = MaterialTheme.colorScheme.error
                                     ) 
-                                }
+                                },
+                                modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
                             )
                         }
                     }

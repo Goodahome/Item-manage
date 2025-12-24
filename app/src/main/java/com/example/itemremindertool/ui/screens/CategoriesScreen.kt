@@ -176,20 +176,32 @@ fun CategoryCard(
                     onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.edit)) },
+                        text = { 
+                            Text(
+                                stringResource(R.string.edit),
+                                maxLines = 2 // 允许最多2行，支持文字换行
+                            ) 
+                        },
                         onClick = {
                             showMenu = false
                             onEdit()
                         },
-                        leadingIcon = { Icon(Icons.Default.Edit, null) }
+                        leadingIcon = { Icon(Icons.Default.Edit, null) },
+                        modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
                     )
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.delete)) },
+                        text = { 
+                            Text(
+                                stringResource(R.string.delete),
+                                maxLines = 2 // 允许最多2行，支持文字换行
+                            ) 
+                        },
                         onClick = {
                             showMenu = false
                             onDelete()
                         },
-                        leadingIcon = { Icon(Icons.Default.Delete, null) }
+                        leadingIcon = { Icon(Icons.Default.Delete, null) },
+                        modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
                     )
                 }
             }
