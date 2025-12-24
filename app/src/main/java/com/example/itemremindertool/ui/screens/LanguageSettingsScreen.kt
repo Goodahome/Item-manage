@@ -35,7 +35,6 @@ fun LanguageSettingsScreen(
     }
     
     var selectedLanguage by remember { mutableStateOf(prefs.getString("language", "zh") ?: "zh") }
-    var showRestartDialog by remember { mutableStateOf(false) }
     
     Scaffold(
         topBar = {
@@ -55,7 +54,8 @@ fun LanguageSettingsScreen(
                 FloatingActionButton(
                     onClick = {
                         prefs.edit().putString("language", selectedLanguage).apply()
-                        showRestartDialog = true
+                        // 使用 AppRefreshManager 重新创建Activity以刷新整个UI（包括折叠菜单、设置页面、程序名称等）
+                        com.example.itemremindertool.utils.AppRefreshManager.requestRecreate(context)
                     },
                     containerColor = ColorHelpers.getGroup5FabColor(),
                     modifier = Modifier.size(UIConstants.FAB_SIZE)
@@ -104,44 +104,6 @@ fun LanguageSettingsScreen(
                 }
             }
         }
-    }
-    
-    val isDarkTheme = isSystemInDarkTheme()
-    val dialogBackgroundColor = if (isDarkTheme) {
-        Color.Black.copy(alpha = 0.7f) // 深色模式：半透明黑色毛玻璃
-    } else {
-        Color.White.copy(alpha = 0.7f) // 浅色模式：半透明白色毛玻璃
-    }
-    
-    // 重启提示对话框
-    if (showRestartDialog) {
-        AlertDialog(
-            onDismissRequest = { showRestartDialog = false },
-            containerColor = dialogBackgroundColor,
-            title = { Text(stringResource(R.string.restart_app)) },
-            text = {
-                Text(stringResource(R.string.restart_app))
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        android.os.Process.killProcess(android.os.Process.myPid())
-                    }
-                ) {
-                    Text(stringResource(R.string.now))
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showRestartDialog = false
-                        onApply()
-                    }
-                ) {
-                    Text(stringResource(R.string.later))
-                }
-            }
-        )
     }
 }
 

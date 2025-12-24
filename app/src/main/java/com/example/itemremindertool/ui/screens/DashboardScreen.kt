@@ -1779,6 +1779,8 @@ fun SearchBoxSection(
             placeholder = { 
                 Text(
                     stringResource(R.string.search_all_items),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 ) 
             },
@@ -2841,7 +2843,8 @@ fun WarehouseIconItem(
                     Text(
                         stringResource(R.string.edit),
                         fontSize = 14.sp,
-                        color = ColorHelpers.getGroup4TextColor()
+                        color = ColorHelpers.getGroup4TextColor(),
+                        maxLines = 2 // 允许最多2行，支持文字换行
                     ) 
                 },
                         onClick = {
@@ -2856,7 +2859,7 @@ fun WarehouseIconItem(
                         tint = ColorHelpers.getGroup4IconColor()
                     ) 
                 },
-                modifier = Modifier.height(36.dp),
+                modifier = Modifier.heightIn(min = 36.dp), // 最小高度36dp，但允许根据内容自动扩展
                 colors = MenuDefaults.itemColors(
                     textColor = ColorHelpers.getGroup4TextColor(),
                     leadingIconColor = ColorHelpers.getGroup4IconColor()
@@ -2870,7 +2873,8 @@ fun WarehouseIconItem(
                         Text(
                             stringResource(R.string.generate_qr_code),
                             fontSize = 14.sp,
-                            color = ColorHelpers.getGroup4TextColor()
+                            color = ColorHelpers.getGroup4TextColor(),
+                            maxLines = 2 // 允许最多2行，支持文字换行
                         ) 
                     },
                     onClick = {
@@ -2885,7 +2889,7 @@ fun WarehouseIconItem(
                             tint = ColorHelpers.getGroup4IconColor()
                         ) 
                     },
-                    modifier = Modifier.height(36.dp),
+                    modifier = Modifier.heightIn(min = 36.dp), // 最小高度36dp，但允许根据内容自动扩展
                     colors = MenuDefaults.itemColors(
                         textColor = ColorHelpers.getGroup4TextColor(),
                         leadingIconColor = ColorHelpers.getGroup4IconColor()
@@ -2906,7 +2910,8 @@ fun WarehouseIconItem(
                     Text(
                         stringResource(R.string.delete),
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
+                        maxLines = 2 // 允许最多2行，支持文字换行
                     ) 
                 },
                         onClick = {
@@ -2922,7 +2927,7 @@ fun WarehouseIconItem(
                         tint = MaterialTheme.colorScheme.error
                     ) 
                 },
-                modifier = Modifier.height(36.dp),
+                modifier = Modifier.heightIn(min = 36.dp), // 最小高度36dp，但允许根据内容自动扩展
                 colors = MenuDefaults.itemColors(
                     textColor = MaterialTheme.colorScheme.error,
                     leadingIconColor = MaterialTheme.colorScheme.error
@@ -3293,7 +3298,7 @@ fun SubWarehouseIcon(
             Text(
                 text = warehouse.name,
                 style = MaterialTheme.typography.labelSmall,
-                fontSize = 11.sp, // 减小字体
+                fontSize = 9.sp, // 减小字体：11.sp → 9.sp
                 color = ColorHelpers.getGroup4TextColor(),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -3320,33 +3325,51 @@ fun SubWarehouseIcon(
             tonalElevation = 8.dp
         ) {
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.edit)) },
+                text = { 
+                    Text(
+                        stringResource(R.string.edit),
+                        maxLines = 2 // 允许最多2行，支持文字换行
+                    ) 
+                },
                 onClick = {
                     showMenu = false
                     onEditWarehouse(warehouse)
                 },
-                leadingIcon = { Icon(Icons.Default.Edit, null) }
+                leadingIcon = { Icon(Icons.Default.Edit, null) },
+                modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
             )
             
             // 生成二维码选项
             if (onGenerateQRCode != null) {
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.generate_qr_code_action)) },
+                    text = { 
+                        Text(
+                            stringResource(R.string.generate_qr_code_action),
+                            maxLines = 2 // 允许最多2行，支持文字换行
+                        ) 
+                    },
                     onClick = {
                         showMenu = false
                         onGenerateQRCode(warehouse)
                     },
-                    leadingIcon = { Icon(Icons.Default.QrCode, null) }
+                    leadingIcon = { Icon(Icons.Default.QrCode, null) },
+                    modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
                 )
             }
             
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.delete)) },
+                text = { 
+                    Text(
+                        stringResource(R.string.delete),
+                        maxLines = 2 // 允许最多2行，支持文字换行
+                    ) 
+                },
                 onClick = {
                     showMenu = false
                     onDeleteWarehouse(warehouse)
                 },
-                leadingIcon = { Icon(Icons.Default.Delete, null) }
+                leadingIcon = { Icon(Icons.Default.Delete, null) },
+                modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
             )
         }
     }
@@ -3511,11 +3534,11 @@ fun SubWarehouseRow(
                             )
                         }
                         
-                        Text(
-                            text = stringResource(R.string.add_container_action),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = ColorHelpers.getGroup4TextColor()
-                        )
+                        // Text(
+                        //    text = stringResource(R.string.add_container_action),
+                        //    style = MaterialTheme.typography.labelSmall,
+                        //    color = ColorHelpers.getGroup4TextColor()
+                        // )
                     }
                 }
             }
@@ -3547,6 +3570,7 @@ fun ItemListRow(
     onAddAlert: (Item) -> Unit = {},
     onQuantityChange: ((Item, Int) -> Unit)? = null, // 数量变化回调
     warehouseName: String? = null, // 容器名称（可选）
+    useCircleIcon: Boolean = false, // Discord风格图标形状设置
     modifier: Modifier = Modifier
 ) {
     // 菜单展开状态
@@ -3586,6 +3610,7 @@ fun ItemListRow(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 3.dp)
+            // .heightIn(min = 80.dp) // 设置最小高度，确保条形码等信息能够显示
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
@@ -3598,23 +3623,27 @@ fun ItemListRow(
                 .fillMaxWidth()
                 .padding(10.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically // 垂直居中对齐，避免图标太靠顶部
         ) {
-            // 左侧圆形主图/占位
+            // 左侧主图/占位 - 支持Discord风格图标形状
             val itemBackgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
             val itemTextColor = ColorHelpers.getContrastColor(itemBackgroundColor)
+            val itemIconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(CircleShape)
+                    .clip(itemIconShape)
                     .background(itemBackgroundColor),
                 contentAlignment = Alignment.Center
             ) {
                 if (avatarBitmap != null) {
+                    // 图片也需要应用相同的clip，确保圆角一致
                     Image(
                         bitmap = avatarBitmap,
                         contentDescription = item.name,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(itemIconShape), // 确保图片也应用相同的圆角
                         contentScale = ContentScale.Crop
                     )
                 } else {
@@ -3629,51 +3658,61 @@ fun ItemListRow(
             
             // 中间物品信息
             Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
-                // 物品名称（粗体）
+                // 物品名称（粗体）- 只显示一行
                 Text(
                     text = item.name,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = ColorHelpers.getGroup4TextColor(),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 
-                // 容器名称（如果提供）
-                if (warehouseName != null) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Inventory2 ,
-                            contentDescription = null,
-                            modifier = Modifier.size(12.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                // 容器名称和描述在同一行显示（如果提供）
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (warehouseName != null) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Inventory2 ,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = warehouseName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    
+                    // 物品描述 - 只显示一行
+                    if (item.description.isNotBlank()) {
                         Text(
-                            text = warehouseName,
+                            text = item.description,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 11.sp,
+                            color = ColorHelpers.getGroup4TextColor(0.7f),
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
                         )
                     }
-                }
-                
-                // 物品描述
-                if (item.description.isNotBlank()) {
-                    Text(
-                        text = item.description,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = ColorHelpers.getGroup4TextColor(0.7f),
-                        maxLines = if (warehouseName != null) 1 else 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
                 }
                 
                 // 标签显示：到期日结束后（次日00:01起）才算过期
@@ -3740,51 +3779,56 @@ fun ItemListRow(
                     }
                 }
                 
-                // 过期日期或条码信息
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (item.expiryDate != null) {
-                        val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault()) }
-                        val dateStr = remember(item.expiryDate) { dateFormat.format(item.expiryDate) }
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.CalendarToday,
-                                contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = ColorHelpers.getGroup4IconColor(0.6f)
-                            )
-                            Text(
-                                text = dateStr,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontSize = 10.sp,
-                                color = ColorHelpers.getGroup4TextColor(0.6f)
-                            )
-                        }
+                // 过期日期和条码信息 - 分行显示，确保都能看到
+                if (item.expiryDate != null) {
+                    val dateFormat = remember { DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault()) }
+                    val dateStr = remember(item.expiryDate) { dateFormat.format(item.expiryDate) }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.CalendarToday,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = ColorHelpers.getGroup4IconColor(0.6f)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = dateStr,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            color = ColorHelpers.getGroup4TextColor(0.6f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
-                    
-                    if (item.barcode != null && item.barcode.isNotBlank()) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.QrCode,
-                                contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = ColorHelpers.getGroup4IconColor(0.6f)
-                            )
-                            Text(
-                                text = item.barcode.take(8),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontSize = 10.sp,
-                                color = ColorHelpers.getGroup4TextColor(0.6f)
-                            )
-                        }
+                }
+                
+                // 条形码单独一行显示，确保不会被截断
+                if (item.barcode != null && item.barcode.isNotBlank()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.QrCode,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = ColorHelpers.getGroup4IconColor(0.6f)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = item.barcode,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            color = ColorHelpers.getGroup4TextColor(0.6f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
@@ -3907,7 +3951,8 @@ fun ItemListRow(
                                 Text(
                                     stringResource(R.string.edit),
                                     fontSize = 14.sp,
-                                    color = ColorHelpers.getGroup4TextColor()
+                                    color = ColorHelpers.getGroup4TextColor(),
+                                    maxLines = 2 // 允许最多2行，支持文字换行
                                 ) 
                             },
                             onClick = {
@@ -3922,7 +3967,7 @@ fun ItemListRow(
                                     tint = ColorHelpers.getGroup4IconColor()
                                 ) 
                             },
-                            modifier = Modifier.height(36.dp),
+                            modifier = Modifier.heightIn(min = 36.dp), // 最小高度36dp，但允许根据内容自动扩展
                             colors = MenuDefaults.itemColors(
                                 textColor = ColorHelpers.getGroup4TextColor(),
                                 leadingIconColor = ColorHelpers.getGroup4IconColor()
@@ -3935,7 +3980,8 @@ fun ItemListRow(
                                 Text(
                                     stringResource(R.string.nav_shopping_basket),
                                     fontSize = 14.sp,
-                                    color = ColorHelpers.getGroup4TextColor()
+                                    color = ColorHelpers.getGroup4TextColor(),
+                                    maxLines = 2 // 允许最多2行，支持文字换行
                                 ) 
                             },
                             onClick = {
@@ -3950,7 +3996,7 @@ fun ItemListRow(
                                     tint = ColorHelpers.getGroup4IconColor()
                                 ) 
                             },
-                            modifier = Modifier.height(36.dp),
+                            modifier = Modifier.heightIn(min = 36.dp), // 最小高度36dp，但允许根据内容自动扩展
                             colors = MenuDefaults.itemColors(
                                 textColor = ColorHelpers.getGroup4TextColor(),
                                 leadingIconColor = ColorHelpers.getGroup4IconColor()
@@ -3963,7 +4009,8 @@ fun ItemListRow(
                                 Text(
                                     stringResource(R.string.alert_settings),
                                     fontSize = 14.sp,
-                                    color = ColorHelpers.getGroup4TextColor()
+                                    color = ColorHelpers.getGroup4TextColor(),
+                                    maxLines = 2 // 允许最多2行，支持文字换行
                                 ) 
                             },
                             onClick = {
@@ -3978,7 +4025,7 @@ fun ItemListRow(
                                     tint = ColorHelpers.getGroup4IconColor()
                                 ) 
                             },
-                            modifier = Modifier.height(36.dp),
+                            modifier = Modifier.heightIn(min = 36.dp), // 最小高度36dp，但允许根据内容自动扩展
                             colors = MenuDefaults.itemColors(
                                 textColor = ColorHelpers.getGroup4TextColor(),
                                 leadingIconColor = ColorHelpers.getGroup4IconColor()
@@ -3998,7 +4045,8 @@ fun ItemListRow(
                                 Text(
                                     stringResource(R.string.delete),
                                     fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.error
+                                    color = MaterialTheme.colorScheme.error,
+                                    maxLines = 2 // 允许最多2行，支持文字换行
                                 ) 
                             },
                             onClick = {
@@ -4013,7 +4061,7 @@ fun ItemListRow(
                                     tint = MaterialTheme.colorScheme.error
                                 ) 
                             },
-                            modifier = Modifier.height(36.dp),
+                            modifier = Modifier.heightIn(min = 36.dp), // 最小高度36dp，但允许根据内容自动扩展
                             colors = MenuDefaults.itemColors(
                                 textColor = MaterialTheme.colorScheme.error,
                                 leadingIconColor = MaterialTheme.colorScheme.error
@@ -4109,6 +4157,7 @@ fun ItemListSection(
     onDeleteItem: (Item) -> Unit = {},
     onAddAlert: (Item) -> Unit = {},
     allWarehouses: List<Warehouse>? = null, // 所有容器列表（用于显示容器名称）
+    useCircleIcon: Boolean = false, // Discord风格图标形状设置
     modifier: Modifier = Modifier
 ) {
     // 标签筛选状态
@@ -4241,6 +4290,7 @@ fun ItemListSection(
                     onClick = { onViewItem(item.id) },
                     onEditItem = onEditItem,
                     warehouseName = warehouseName, // 传递容器名称
+                    useCircleIcon = useCircleIcon, // 传递Discord风格图标形状设置
                     onAddToShoppingCart = { item ->
                         shoppingItemViewModel?.let { vm ->
                             val shoppingItem = com.example.itemremindertool.data.model.ShoppingItem(
@@ -4491,6 +4541,7 @@ fun DiscordStyleMainLayout(
                                 alertSettingsManager = alertSettingsManager,
                                 onDeleteItem = onDeleteItem,
                                 onAddAlert = onAddAlert,
+                                useCircleIcon = useCircleIcon,
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -4629,6 +4680,7 @@ fun DiscordStyleMainLayout(
                                 onDeleteItem = onDeleteItem,
                                 onAddAlert = onAddAlert,
                                 allWarehouses = allContainers, // 传递所有容器信息用于显示容器名称
+                                useCircleIcon = useCircleIcon,
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -4762,6 +4814,7 @@ fun DiscordStyleMainLayout(
                             alertSettingsManager = alertSettingsManager,
                             onDeleteItem = onDeleteItem,
                             onAddAlert = onAddAlert,
+                            useCircleIcon = useCircleIcon,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -5060,9 +5113,10 @@ fun StatisticItem(
             )
         }
         
-        // 数值和标签（同一行，数字在前文字在后）
+        // 数值和标签（同一行，数字在前文字在后）- 防止换行
         Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -5070,14 +5124,19 @@ fun StatisticItem(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = ColorHelpers.getGroup4TextColor(),
-                fontSize = 18.sp
+                fontSize = 18.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
+            Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 fontSize = 11.sp,
                 color = ColorHelpers.getGroup4TextColor(0.65f),
-                letterSpacing = 0.3.sp
+                letterSpacing = 0.3.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

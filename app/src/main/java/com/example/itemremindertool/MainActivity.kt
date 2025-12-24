@@ -220,24 +220,45 @@ fun ItemReminderToolApp(
     
     // 监听应用生命周期，当应用进入后台时标记需要锁屏，从后台返回时检查密码
     // 注意：如果正在处理 ActivityResult（如选择图片），不应该触发密码验证
-    var isProcessingActivityResult by remember { mutableStateOf(false) }
+    // 使用 SharedPreferences 来标记正在处理 ActivityResult，这样可以在各个 Screen 中设置
+    var isProcessingActivityResult by remember { 
+        mutableStateOf(prefs.getBoolean("is_processing_activity_result", false)) 
+    }
     var shouldLockOnResume by remember { mutableStateOf(false) }
+    
+    // 监听 is_processing_activity_result 标记的变化
+    LaunchedEffect(Unit) {
+        snapshotFlow {
+            prefs.getBoolean("is_processing_activity_result", false)
+        }.collect { processing ->
+            isProcessingActivityResult = processing
+        }
+    }
     
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_PAUSE -> {
                     // 应用进入后台时，如果密码已启用且已解锁，标记需要在恢复时锁屏
-                    if (isPasswordEnabled && isUnlocked && !isProcessingActivityResult) {
-                        shouldLockOnResume = true
+                    // 但不要立即标记，等待一小段时间，让 ActivityResult 有机会设置标记
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                        kotlinx.coroutines.delay(100) // 延迟100ms，让ActivityResult有机会设置标记
+                        val processing = prefs.getBoolean("is_processing_activity_result", false)
+                        if (isPasswordEnabled && isUnlocked && !processing) {
+                            shouldLockOnResume = true
+                        }
                     }
                 }
                 Lifecycle.Event.ON_RESUME -> {
-                    // 从后台返回时，如果需要锁屏且密码已启用，显示锁屏
-                    if (shouldLockOnResume && isPasswordEnabled && !isProcessingActivityResult) {
-                        shouldShowLockScreen = true
-                        isUnlocked = false
-                        shouldLockOnResume = false
+                    // 从后台返回时，延迟检查是否需要锁屏，给ActivityResult处理时间
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                        kotlinx.coroutines.delay(200) // 延迟200ms，确保ActivityResult已经处理
+                        val processing = prefs.getBoolean("is_processing_activity_result", false)
+                        if (shouldLockOnResume && isPasswordEnabled && !processing) {
+                            shouldShowLockScreen = true
+                            isUnlocked = false
+                            shouldLockOnResume = false
+                        }
                     }
                 }
                 else -> {}
@@ -304,7 +325,20 @@ fun ItemReminderToolApp(
     val scope = rememberCoroutineScope()
     
     // 维护当前选中的容器ID状态
-    var selectedWarehouseId by remember { mutableStateOf<Long?>(null) }
+    // 从SharedPreferences恢复状态，用于Discord风格下解锁后保持容器页面
+    val savedWarehouseId = prefs.getLong("selected_warehouse_id", -1L)
+    var selectedWarehouseId by remember { 
+        mutableStateOf<Long?>(if (savedWarehouseId != -1L) savedWarehouseId else null) 
+    }
+    
+    // 保存selectedWarehouseId到SharedPreferences，用于解锁后恢复状态
+    LaunchedEffect(selectedWarehouseId) {
+        if (selectedWarehouseId != null) {
+            prefs.edit().putLong("selected_warehouse_id", selectedWarehouseId!!).apply()
+        } else {
+            prefs.edit().remove("selected_warehouse_id").apply()
+        }
+    }
     
     ModalNavigationDrawer(
         drawerState = drawerState,
