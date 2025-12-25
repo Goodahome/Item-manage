@@ -247,8 +247,17 @@
     <string name="delete_tag_confirm_with_usage">Möchten Sie das Tag „%1$s“ wirklich löschen? Es wird von %2$d Artikeln verwendet und wird entfernt.</string>
     <string name="tag_hint">Tag eingeben (max. 12 Zeichen)</string>
     <string name="tag_limit_exceeded">Tag-Länge darf 12 Zeichen nicht überschreiten</string>
-    
-    <!-- 日期选择 -->
+    <string name="password_enabled_restart_message">Passwortschutz wurde aktiviert. Die App muss neu gestartet werden, damit die Änderungen wirksam werden. Jetzt neu starten?</string>
+    <string name="password_disabled_restart_message">Passwortschutz wurde deaktiviert. Die App muss neu gestartet werden, damit die Änderungen wirksam werden. Jetzt neu starten?</string>
+    <!-- Biometrisch -->
+    <string name="biometric_unlock_title">Mit Biometrie entsperren</string>
+    <string name="biometric_unlock_subtitle">Bitte verwenden Sie Fingerabdruck oder Gesichtserkennung, um die App zu entsperren</string>
+    <string name="use_biometric">Biometrie verwenden</string>
+
+    <!-- Zeit-/Datumsauswahl -->
+    <string name="select_time">Uhrzeit auswählen</string>
+    <string name="select_date_time">Datum und Uhrzeit auswählen</string>
+    <string name="select_expiry_date">Ablaufdatum auswählen</string>
     <string name="select_date">Datum auswählen</string>
     <string name="no_date_selected">Kein Datum ausgewählt</string>
     
@@ -540,4 +549,47 @@
     <string name="onboarding_next">Weiter</string>
     <string name="onboarding_skip">Überspringen</string>
     <string name="onboarding_get_started">Loslegen</string>
+
+    <string name="stat_label_warehouse">Lager</string>
+    <string name="stat_label_item">Gegenstände</string>
+    <string name="stat_label_shopping">Einkaufsliste</string>
+    <string name="select_warehouse">Lager auswählen</string>
+    <string name="unnamed_warehouse">Unbenanntes Lager</string>
+    <string name="warehouse_items_suffix">Gegenstände in</string>
+    <string name="custom_warehouse_items_suffix">Benutzerdefinierter Lager-Suffix</string>
+    <string name="custom_warehouse_items_suffix_desc">Legen Sie den Suffix-Text fest, der nach dem letzten Lager im Pfad angezeigt wird</string>
+    <string name="quick_add_item">Schnell Gegenstand hinzufügen</string>
+    <string name="warehouse_image">Lagerbild</string>
+    <!-- Erinnerungszeit-Text -->
+    <string name="reminder_time_prefix">Zeit: %1$s</string>
+    <string name="reminder_time_not_set">Keine Zeit eingestellt</string>
+    <string name="reminder_daily_prefix">Täglich um %1$s</string>
+    <string name="reminder_monthly_prefix">Jeden Monat am %1$d. um %2$s</string>
+    <string name="reminder_yearly_prefix">Jährlich am %1$d.%2$d um %3$s</string>
+
+    <!-- Anzeige des Erinnerungstyps -->
+    <string name="reminder_type_once_display">Einmalige Erinnerung</string>
+    <string name="reminder_type_daily_display">Tägliche Erinnerung</string>
+    <string name="reminder_type_monthly_display">Monatliche Erinnerung</string>
+    <string name="reminder_type_yearly_display">Jährliche Erinnerung</string>
+
+    <!-- Anzeige des Erinnerungstyps (vereinfacht) -->
+    <string name="reminder_type_once_simple">Einmalige Erinnerung</string>
+
+    <!-- Zeitangabe -->
+    <string name="time_just_now">Gerade eben</string>
+    <string name="time_minutes_ago">Vor %1$d Minuten</string>
+    <string name="time_hours_ago">Vor %1$d Stunden</string>
+    <string name="time_days_ago">Vor %1$d Tagen</string>
+    <string name="pinch_to_zoom">Mit zwei Fingern zoomen</string>
+    <string name="rotate_image">Bild drehen</string>
+    <string name="ad_banner_unit_id">Banner-Werbe-Unit-ID</string>
+    <string name="ad_banner_unit_id_desc">Google AdMob Banner-Werbe-Unit-ID festlegen. Leer lassen für Test-ID.</string>
+    <string name="ad_banner_unit_id_hint">Werbe-Unit-ID eingeben</string>
+    <string name="ad_banner_unit_id_example">Beispiel: ca-app-pub-3940256099942544/6300978111</string>
+    <string name="no_items_with_selected_tags">Keine Gegenstände passen zu den ausgewählten Tags</string>
+    <string name="clear_activity_data">Aktivitätsdaten löschen</string>
+    <string name="clear_activity_data_desc">Alle auf der Startseite angezeigten Aktivitätsdatensätze löschen</string>
+    <string name="clear_activity_data_confirm">Alle Aktivitätsdaten wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.</string>
+    <string name="clear">Löschen</string>
 </resources>

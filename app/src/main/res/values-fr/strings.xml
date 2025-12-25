@@ -247,8 +247,17 @@
     <string name="delete_tag_confirm_with_usage">Voulez-vous vraiment supprimer l\'étiquette « %1$s » ? Elle est utilisée par %2$d articles.</string>
     <string name="tag_hint">Saisir étiquette (max 12 caractères)</string>
     <string name="tag_limit_exceeded">La longueur de l\'étiquette ne peut pas dépasser 12 caractères</string>
-    
-    <!-- 日期选择 -->
+    <string name="password_enabled_restart_message">La protection par mot de passe a été activée. L\'application doit être redémarrée pour que les modifications prennent effet. Redémarrer maintenant ?</string>
+    <string name="password_disabled_restart_message">La protection par mot de passe a été désactivée. L\'application doit être redémarrée pour que les modifications prennent effet. Redémarrer maintenant ?</string>
+    <!-- Biométrique -->
+    <string name="biometric_unlock_title">Déverrouiller avec la biométrie</string>
+    <string name="biometric_unlock_subtitle">Veuillez utiliser votre empreinte digitale ou la reconnaissance faciale pour déverrouiller l\'application</string>
+    <string name="use_biometric">Utiliser la biométrie</string>
+
+    <!-- Sélecteur de date/heure -->
+    <string name="select_time">Sélectionner l\'heure</string>
+    <string name="select_date_time">Sélectionner la date et l\'heure</string>
+    <string name="select_expiry_date">Sélectionner la date d\'expiration</string>
     <string name="select_date">Sélectionner la date</string>
     <string name="no_date_selected">Aucune date sélectionnée</string>
     
@@ -540,4 +549,47 @@
     <string name="onboarding_next">Suivant</string>
     <string name="onboarding_skip">Passer</string>
     <string name="onboarding_get_started">Commencer</string>
+
+    <string name="stat_label_warehouse">Conteneurs</string>
+    <string name="stat_label_item">Objets</string>
+    <string name="stat_label_shopping">Liste d\'achats</string>
+    <string name="select_warehouse">Sélectionner un conteneur</string>
+    <string name="unnamed_warehouse">Conteneur sans nom</string>
+    <string name="warehouse_items_suffix">objets dans</string>
+    <string name="custom_warehouse_items_suffix">Suffixe personnalisé pour les objets du conteneur</string>
+    <string name="custom_warehouse_items_suffix_desc">Définir le texte du suffixe affiché après le dernier conteneur dans le chemin</string>
+    <string name="quick_add_item">Ajout rapide d\'objet</string>
+    <string name="warehouse_image">Image du conteneur</string>
+    <!-- Texte de l'heure du rappel -->
+    <string name="reminder_time_prefix">Heure : %1$s</string>
+    <string name="reminder_time_not_set">Aucune heure définie</string>
+    <string name="reminder_daily_prefix">Tous les jours à %1$s</string>
+    <string name="reminder_monthly_prefix">Tous les mois le %1$d à %2$s</string>
+    <string name="reminder_yearly_prefix">Tous les ans le %1$d/%2$d à %3$s</string>
+
+    <!-- Affichage du type de rappel -->
+    <string name="reminder_type_once_display">Rappel unique</string>
+    <string name="reminder_type_daily_display">Rappel quotidien</string>
+    <string name="reminder_type_monthly_display">Rappel mensuel</string>
+    <string name="reminder_type_yearly_display">Rappel annuel</string>
+
+    <!-- Affichage du type de rappel (version simplifiée) -->
+    <string name="reminder_type_once_simple">Rappel unique</string>
+
+    <!-- Affichage du temps -->
+    <string name="time_just_now">À l\'instant</string>
+    <string name="time_minutes_ago">Il y a %1$d minutes</string>
+    <string name="time_hours_ago">Il y a %1$d heures</string>
+    <string name="time_days_ago">Il y a %1$d jours</string>
+    <string name="pinch_to_zoom">Pincer pour zoomer l\'image</string>
+    <string name="rotate_image">Faire pivoter l\'image</string>
+    <string name="ad_banner_unit_id">ID d\'unité publicitaire bannière</string>
+    <string name="ad_banner_unit_id_desc">Définir l\'ID d\'unité publicitaire bannière Google AdMob. Laisser vide pour utiliser l\'ID de test.</string>
+    <string name="ad_banner_unit_id_hint">Saisir l\'ID d\'unité publicitaire</string>
+    <string name="ad_banner_unit_id_example">Exemple : ca-app-pub-3940256099942544/6300978111</string>
+    <string name="no_items_with_selected_tags">Aucun objet ne correspond aux tags sélectionnés</string>
+    <string name="clear_activity_data">Effacer les données d\'activité</string>
+    <string name="clear_activity_data_desc">Effacer tous les enregistrements d\'activité affichés sur la page d\'accueil</string>
+    <string name="clear_activity_data_confirm">Voulez-vous vraiment effacer toutes les données d\'activité ? Cette action est irréversible.</string>
+    <string name="clear">Effacer</string>
 </resources>

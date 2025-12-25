@@ -261,8 +261,10 @@
     <string name="delete_tag_confirm_with_usage">Are you sure you want to delete tag "%1$s"? It is used by %2$d items and will be removed from them.</string>
     <string name="tag_hint">Enter tag (max 12 characters)</string>
     <string name="tag_limit_exceeded">Tag length cannot exceed 12 characters</string>
-    
-    <!-- 日期选择 -->
+    <string name="password_enabled_restart_message">Password protection has been enabled. The app needs to be restarted for the changes to take effect. Restart now?</string>
+    <string name="password_disabled_restart_message">Password protection has been disabled. The app needs to be restarted for the changes to take effect. Restart now?</string>
+
+    <!-- Date/Time Picker -->
     <string name="no_date_selected">No date selected</string>
     
     <!-- 图片相关 -->
@@ -580,4 +582,21 @@
     <string name="onboarding_next">Next</string>
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_get_started">Get Started</string>
+
+    <string name="select_warehouse">Select warehouse</string>
+
+    <string name="quick_add_item">Quick add item</string>
+    <string name="warehouse_image">Warehouse image</string>
+
+    <string name="pinch_to_zoom">Pinch to zoom image</string>
+    <string name="rotate_image">Rotate image</string>
+    <string name="ad_banner_unit_id">Ad banner unit ID</string>
+    <string name="ad_banner_unit_id_desc">Set the Google AdMob banner ad unit ID. Leave empty to use test ID.</string>
+    <string name="ad_banner_unit_id_hint">Enter ad unit ID</string>
+    <string name="ad_banner_unit_id_example">Example: ca-app-pub-3940256099942544/6300978111</string>
+    <string name="no_items_with_selected_tags">No items match the selected tags</string>
+    <string name="clear_activity_data">Clear activity data</string>
+    <string name="clear_activity_data_desc">Clear all activity records displayed on the home page</string>
+    <string name="clear_activity_data_confirm">Are you sure you want to clear all activity data? This action cannot be undone.</string>
+    <string name="clear">Clear</string>
 </resources>
