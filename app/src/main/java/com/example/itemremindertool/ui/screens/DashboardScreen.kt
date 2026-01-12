@@ -32,6 +32,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -1567,7 +1568,7 @@ fun ChildWarehouseCard(
             containerColor = if (warehouseImageBitmap != null) Color.Transparent else ColorHelpers.getGroup3CardBgColor()
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 6.dp,
+            defaultElevation = 10.dp,
             pressedElevation = 8.dp,
             hoveredElevation = 7.dp,
             focusedElevation = 7.dp
@@ -2915,7 +2916,7 @@ fun WarehouseIconItem(
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .offset(x = 4.dp) // 与图标保持一定距离
+                    .offset(x = 6.dp) // 避开 Card 圆角裁剪区域（8dp 圆角）
                     .width(3.dp)
                     .height(24.dp)
                     .background(
@@ -2980,10 +2981,17 @@ fun WarehouseIconItem(
             var clickJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
             
             Box {
+                val iconShapeForShadow = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
                 Box(
                     modifier = Modifier
                         .size(44.dp) // 略增尺寸
-            .clip(if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp))
+                        .shadow(
+                            elevation = 4.dp,
+                            shape = iconShapeForShadow,
+                            spotColor = Color.Black.copy(alpha = 0.3f),
+                            ambientColor = Color.Black.copy(alpha = 0.15f)
+                        )
+                        .clip(iconShapeForShadow)
                         .then(
                             if (warehouseImageBitmap != null) {
                                 Modifier
@@ -3276,17 +3284,31 @@ fun WarehouseSidebarColumn(
     useCircleIcon: Boolean = true,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    // 使用 Card 提供与右侧卡片一致的立体阴影效果
+    Card(
         modifier = modifier
-            .width(60.dp) // 保持宽度
+            .width(74.dp) // 增加宽度：60dp + 8dp padding = 68dp
             .fillMaxHeight()
-            // 为左侧容器列表添加浅色背景，圆角与其它卡片一致
-            .clip(RoundedCornerShape(8.dp))
-            .background(ColorHelpers.getGroup3CardBgColor())
-            .padding(vertical = 6.dp), // 减小：8dp → 6dp
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp) // 减小：12dp → 8dp
+            .padding(end = 8.dp), // 预留空间让阴影完整显示
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = ColorHelpers.getGroup3CardBgColor()
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp,
+            pressedElevation = 8.dp,
+            hoveredElevation = 7.dp,
+            focusedElevation = 7.dp
+        )
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .fillMaxWidth()
+                .padding(vertical = 6.dp), // 减小：8dp → 6dp
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp) // 减小：12dp → 8dp
+        ) {
         // 首页图标（固定在顶部）
         val isHomeSelected = selectedWarehouseId == null
         val iconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
@@ -3298,7 +3320,7 @@ fun WarehouseSidebarColumn(
                 Box(
                     modifier = Modifier
                         .align(Alignment.CenterStart)
-                        .offset(x = 4.dp) // 与图标保持一定距离
+                        .offset(x = 6.dp) // 避开 Card 圆角裁剪区域（8dp 圆角）
                         .width(3.dp)
                         .height(24.dp)
                         .background(
@@ -3318,6 +3340,12 @@ fun WarehouseSidebarColumn(
                 Box(
                     modifier = Modifier
                         .size(44.dp) // 略增尺寸，提升点击面积
+                        .shadow(
+                            elevation = 4.dp,
+                            shape = iconShape,
+                            spotColor = Color.Black.copy(alpha = 0.3f),
+                            ambientColor = Color.Black.copy(alpha = 0.15f)
+                        )
                         .clip(iconShape)
                         .background(backgroundColor) // 与右侧容器按钮一致
                         .clickable(onClick = onHomeClick),
@@ -3379,6 +3407,12 @@ fun WarehouseSidebarColumn(
                 Box(
                     modifier = Modifier
                         .size(44.dp) // 与容器图标同步增大
+                        .shadow(
+                            elevation = 4.dp,
+                            shape = iconShape,
+                            spotColor = Color.Black.copy(alpha = 0.3f),
+                            ambientColor = Color.Black.copy(alpha = 0.15f)
+                        )
                         .clip(iconShape)
                         .background(backgroundColor) // 与容器图标颜色一致
                         .clickable(onClick = onAddWarehouse),
@@ -3393,6 +3427,7 @@ fun WarehouseSidebarColumn(
                 }
             }
         }
+    }
     }
 }
 
@@ -3982,9 +4017,9 @@ fun ItemListRow(
                             
                             // 更紧凑的自定义标签视图，缩小文字与边框间距
                             Surface(
-                                shape = RoundedCornerShape(4.dp),
+                                shape = RoundedCornerShape(2.dp),
                                 color = Color.Transparent,
-                                border = BorderStroke(1.dp, ColorHelpers.getGroup4TextColor().copy(alpha = 0.6f))
+                                border = BorderStroke(0.5.dp, ColorHelpers.getGroup4TextColor().copy(alpha = 0.6f))
                             ) {
                                 Text(
                                     displayTag, 
@@ -4312,8 +4347,9 @@ fun TagFilterBar(
     LazyRow(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp)
     ) {
         items(allTags, key = { it }) { tag ->
             val isSelected = selectedTags.contains(tag)
@@ -4323,7 +4359,7 @@ fun TagFilterBar(
                 modifier = Modifier
                     .height(28.dp)
                     .clickable { onTagSelected(tag) },
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(8.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = if (isSelected) {
                         MaterialTheme.colorScheme.primary
