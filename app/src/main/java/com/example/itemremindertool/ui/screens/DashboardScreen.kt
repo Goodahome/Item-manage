@@ -55,6 +55,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.rotate
 import com.example.itemremindertool.R
 import com.example.itemremindertool.data.AlertSettingsManager
 import com.example.itemremindertool.data.model.Item
@@ -80,6 +83,8 @@ import com.example.itemremindertool.ui.viewmodel.OperationState
 import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
 import com.example.itemremindertool.utils.ImageUtils
 import com.example.itemremindertool.utils.SyncStateManager
+import com.example.itemremindertool.ui.components.PremiumFeatureDialog
+import com.example.itemremindertool.config.FeatureFlags
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -92,12 +97,13 @@ import java.util.*
  * 首页布局风格枚举
  */
 enum class HomeLayoutStyle(val key: String) {
-    DISCORD("discord"),      // Discord风格（左侧容器列）
+    SIDEBAR("sidebar"),      // 侧边栏风格（左侧容器列）
     CLASSIC("classic")       // 经典风格（卡片式布局）
 }
 
 /**
  * 获取首页布局风格偏好
+ * 如果用户已保存为侧边栏风格但没有高级功能，则降级为经典风格
  */
 @Composable
 fun rememberHomeLayoutStyle(): MutableState<HomeLayoutStyle> {
@@ -107,10 +113,25 @@ fun rememberHomeLayoutStyle(): MutableState<HomeLayoutStyle> {
     }
     
     return remember {
-        val savedStyle = prefs.getString("home_layout_style", HomeLayoutStyle.DISCORD.key)
-        mutableStateOf(
-            HomeLayoutStyle.values().find { it.key == savedStyle } ?: HomeLayoutStyle.DISCORD
-        )
+        var savedStyle = prefs.getString("home_layout_style", HomeLayoutStyle.SIDEBAR.key)
+        
+        // 迁移旧的 "discord" key 到 "sidebar"
+        if (savedStyle == "discord") {
+            savedStyle = HomeLayoutStyle.SIDEBAR.key
+            prefs.edit().putString("home_layout_style", savedStyle).apply()
+        }
+        
+        val requestedStyle = HomeLayoutStyle.values().find { it.key == savedStyle } ?: HomeLayoutStyle.SIDEBAR
+        
+        // 如果用户想使用侧边栏风格但没有高级功能，降级为经典风格
+        val finalStyle = if (requestedStyle == HomeLayoutStyle.SIDEBAR && 
+            !com.example.itemremindertool.billing.PremiumFeatureManager.canAccessPremiumFeatures(context)) {
+            HomeLayoutStyle.CLASSIC
+        } else {
+            requestedStyle
+        }
+        
+        mutableStateOf(finalStyle)
     }
 }
 
@@ -165,12 +186,12 @@ fun DashboardScreen(
     var currentOnboardingStep by remember { mutableStateOf(OnboardingStep.WELCOME) }
     var showOnboarding by remember { mutableStateOf(!hasCompletedOnboarding.value) }
     
-    // Discord 图标圆形设置
-    var discordIconCircle by remember { mutableStateOf(prefs.getBoolean("discord_icon_circle", false)) }
+    // 侧边栏图标圆形设置
+    var sidebarIconCircle by remember { mutableStateOf(prefs.getBoolean("sidebar_icon_circle", false)) }
     DisposableEffect(Unit) {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == "discord_icon_circle") {
-                discordIconCircle = prefs.getBoolean("discord_icon_circle", false)
+            if (key == "sidebar_icon_circle") {
+                sidebarIconCircle = prefs.getBoolean("sidebar_icon_circle", false)
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -261,7 +282,7 @@ fun DashboardScreen(
     }
     
     // 同步外部传入的 initialSelectedWarehouseId 到内部状态
-    // 注意：需要同时监听 initialSelectedWarehouseId 和 homeLayoutStyle，确保 Discord 风格下正确同步
+    // 注意：需要同时监听 initialSelectedWarehouseId 和 homeLayoutStyle，确保侧边栏风格下正确同步
     LaunchedEffect(initialSelectedWarehouseId, homeLayoutStyle) {
         // 总是同步，包括 null 值，确保返回时能正确恢复状态
         selectedWarehouseId = initialSelectedWarehouseId
@@ -280,8 +301,8 @@ fun DashboardScreen(
         }
     }
 
-    // Discord 风格下按系统返回键：若在子容器则返回父容器，否则回到首页
-    if (homeLayoutStyle == HomeLayoutStyle.DISCORD) {
+    // 侧边栏风格下按系统返回键：若在子容器则返回父容器，否则回到首页
+    if (homeLayoutStyle == HomeLayoutStyle.SIDEBAR) {
         val currentWarehouse = allWarehouses.find { it.id == selectedWarehouseId }
         val parentId = currentWarehouse?.parentId
         BackHandler(enabled = selectedWarehouseId != null) {
@@ -306,6 +327,25 @@ fun DashboardScreen(
     var bitmapToCropForQuickAdd by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     var capturedImagePathForQuickAdd by remember { mutableStateOf<String?>(null) }
     
+    // FAB 展开菜单状态（仅用于经典风格）
+    var fabExpanded by remember { mutableStateOf(false) }
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (fabExpanded) 45f else 0f,
+        animationSpec = tween(durationMillis = 300), label = ""
+    )
+    
+    // 高级功能对话框状态
+    var showPremiumFeatureDialog by remember { mutableStateOf(false) }
+    val billingManager = remember {
+        if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
+            com.example.itemremindertool.billing.BillingManager(context).apply {
+                initialize()
+            }
+        } else {
+            null
+        }
+    }
+    
     // 获取密度和卡片尺寸
     val density = LocalDensity.current
     val cardWidthPx = remember { with(density) { 400.dp.toPx().toInt() } }
@@ -327,19 +367,30 @@ fun DashboardScreen(
                     // 风格切换按钮
                     IconButton(
                         onClick = {
-                            homeLayoutStyle = if (homeLayoutStyle == HomeLayoutStyle.DISCORD) {
+                            // 检查是否可以切换到侧边栏风格（高级功能）
+                            if (homeLayoutStyle == HomeLayoutStyle.CLASSIC) {
+                                // 切换到侧边栏风格需要高级功能
+                                val canAccess = com.example.itemremindertool.billing.PremiumFeatureManager.canAccessPremiumFeatures(context)
+                                if (!canAccess) {
+                                    // 显示购买对话框
+                                    showPremiumFeatureDialog = true
+                                    return@IconButton
+                                }
+                            }
+                            
+                            homeLayoutStyle = if (homeLayoutStyle == HomeLayoutStyle.SIDEBAR) {
                                 HomeLayoutStyle.CLASSIC
                             } else {
-                                HomeLayoutStyle.DISCORD
+                                HomeLayoutStyle.SIDEBAR
                             }
                             saveHomeLayoutStyle(context, homeLayoutStyle)
                         }
                     ) {
                         Icon(
-                            if (homeLayoutStyle == HomeLayoutStyle.DISCORD) {
+                            if (homeLayoutStyle == HomeLayoutStyle.SIDEBAR) {
                                 Icons.Default.ViewModule // 切换到经典风格图标
                             } else {
-                                Icons.Default.ViewColumn // 切换到Discord风格图标
+                                Icons.Default.ViewColumn // 切换到侧边栏风格图标
                             },
                             contentDescription = stringResource(R.string.switch_layout_style)
                         )
@@ -365,31 +416,75 @@ fun DashboardScreen(
             )
         },
         floatingActionButton = {
-            // 检测是否在购物列表页面（Discord 风格且显示购物列表）
+            // 检测是否在购物列表页面（侧边栏风格且显示购物列表）
             val isShoppingListVisible = remember(homeLayoutStyle, selectedWarehouseId) {
-                homeLayoutStyle == HomeLayoutStyle.DISCORD && selectedWarehouseId == null
+                homeLayoutStyle == HomeLayoutStyle.SIDEBAR && selectedWarehouseId == null
             }
             
             Column(
-                modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
+                modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING),
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Discord 风格下，使用与左侧圆形容器图标一致的背景色；否则保持原有 FAB 颜色
-                val fabBackground = if (homeLayoutStyle == HomeLayoutStyle.DISCORD) {
+                // 经典风格：显示展开菜单
+                if (homeLayoutStyle == HomeLayoutStyle.CLASSIC && fabExpanded) {
+                    // 添加物品按钮（最上方）
+                    FloatingActionButton(
+                        onClick = {
+                            fabExpanded = false
+                            onAddItem(selectedWarehouseId)
+                        },
+                        containerColor = ColorHelpers.getGroup5FabColor(),
+                        modifier = Modifier.size(UIConstants.FAB_SIZE)
+                    ) {
+                        Icon(
+                            Icons.Default.Category,
+                            contentDescription = stringResource(R.string.add_item),
+                            tint = ColorHelpers.getContrastColor(ColorHelpers.getGroup5FabColor())
+                        )
+                    }
+                    
+                    // 添加容器按钮
+                    FloatingActionButton(
+                        onClick = {
+                            fabExpanded = false
+                            onAddWarehouse()
+                        },
+                        containerColor = ColorHelpers.getGroup5FabColor(),
+                        modifier = Modifier.size(UIConstants.FAB_SIZE)
+                    ) {
+                        Icon(
+                            Icons.Default.Inventory2,
+                            contentDescription = stringResource(R.string.add_warehouse),
+                            tint = ColorHelpers.getContrastColor(ColorHelpers.getGroup5FabColor())
+                        )
+                    }
+                }
+                
+                // 主 FAB 按钮（最下方）
+                // 侧边栏风格下，使用与左侧圆形容器图标一致的背景色；否则保持原有 FAB 颜色
+                val fabBackground = if (homeLayoutStyle == HomeLayoutStyle.SIDEBAR) {
                     ColorHelpers.getGroup2SettingsBtnColor()
                 } else {
                     ColorHelpers.getGroup5FabColor()
                 }
                 val fabIconColor = ColorHelpers.getContrastColor(fabBackground)
-
+                
                 FloatingActionButton(
                     onClick = {
-                        // 如果当前在购物列表页面，设置标记以便 ItemEditScreen 知道需要添加到购物篮
-                        if (isShoppingListVisible) {
-                            val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
-                            prefs.edit().putBoolean("add_to_shopping_list_after_save", true).apply()
+                        if (homeLayoutStyle == HomeLayoutStyle.CLASSIC) {
+                            // 经典风格：切换展开/收起
+                            fabExpanded = !fabExpanded
+                        } else {
+                            // 侧边栏风格：直接添加物品
+                            // 如果当前在购物列表页面，设置标记以便 ItemEditScreen 知道需要添加到购物篮
+                            if (isShoppingListVisible) {
+                                val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+                                prefs.edit().putBoolean("add_to_shopping_list_after_save", true).apply()
+                            }
+                            // 如果当前选中了容器，则带入容器ID
+                            onAddItem(selectedWarehouseId)
                         }
-                        // 如果当前选中了容器，则带入容器ID
-                        onAddItem(selectedWarehouseId)
                     },
                     containerColor = fabBackground,
                     contentColor = fabIconColor,
@@ -397,8 +492,13 @@ fun DashboardScreen(
                 ) {
                     Icon(
                         Icons.Default.Add,
-                        contentDescription = stringResource(R.string.add_item),
-                        tint = fabIconColor
+                        contentDescription = if (homeLayoutStyle == HomeLayoutStyle.CLASSIC && fabExpanded) {
+                            stringResource(R.string.close)
+                        } else {
+                            stringResource(R.string.add_item)
+                        },
+                        tint = fabIconColor,
+                        modifier = Modifier.rotate(if (homeLayoutStyle == HomeLayoutStyle.CLASSIC) rotationAngle else 0f)
                     )
                 }
             }
@@ -446,13 +546,13 @@ fun DashboardScreen(
         ) {
             // 根据风格切换显示不同的布局
             when (homeLayoutStyle) {
-                HomeLayoutStyle.DISCORD -> {
-                    // Discord风格主布局（添加顶部padding为搜索框留出空间）
+                HomeLayoutStyle.SIDEBAR -> {
+                    // 侧边栏风格主布局（添加顶部padding为搜索框留出空间）
                     // 生成二维码对话框状态
                     var showQRCodeDialog by remember { mutableStateOf(false) }
                     var selectedWarehouseForQRCode by remember { mutableStateOf<Warehouse?>(null) }
                     
-                    DiscordStyleMainLayout(
+                    SidebarStyleMainLayout(
                         warehouses = warehouses,
                         allWarehouses = allWarehouses,
                         allItems = items,
@@ -494,7 +594,7 @@ fun DashboardScreen(
                         },
                         onAddAlert = onAddAlert,
                         pullRefreshState = pullRefreshState,
-                        useCircleIcon = discordIconCircle,
+                        useCircleIcon = sidebarIconCircle,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(top = if (showSearchBox) 80.dp else 0.dp) // 仅在搜索框显示时为搜索框留出空间
@@ -711,6 +811,19 @@ fun DashboardScreen(
             }
         } // 关闭 Box
     } // 关闭 Scaffold 的 content lambda
+    
+    // 高级功能对话框（仅在启用购买功能时显示）
+    if (FeatureFlags.ENABLE_PURCHASE_FEATURE && showPremiumFeatureDialog && billingManager != null) {
+        PremiumFeatureDialog(
+            billingManager = billingManager,
+            onDismiss = { showPremiumFeatureDialog = false },
+            onTrialStart = {
+                // 试用开始后，允许切换到侧边栏风格
+                homeLayoutStyle = HomeLayoutStyle.SIDEBAR
+                saveHomeLayoutStyle(context, homeLayoutStyle)
+            }
+        )
+    }
 } // 关闭 DashboardScreen 函数
 
 data class StatCardData(
@@ -1205,6 +1318,38 @@ fun WarehouseInfoScreen(
                         }
                     }
                 }
+            }
+        }
+        
+        // 创建时间
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                Icons.Default.AccessTime,
+                contentDescription = null,
+                tint = iconColor,
+                modifier = Modifier.size(20.dp)
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    stringResource(R.string.created_at),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
+                val dateFormat = remember { java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT, java.util.Locale.getDefault()) }
+                val createdAtStr = remember(warehouse.createdAt) { dateFormat.format(warehouse.createdAt) }
+                Text(
+                    text = createdAtStr,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textColor
+                )
             }
         }
 
@@ -1750,8 +1895,8 @@ fun NewHomeScreenContent(
             DynamicBannerAd(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(90.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(12.dp)),
+                height = 90.dp // 与物品卡片相同的高度
             )
         }
     }
@@ -2219,8 +2364,8 @@ fun RecentlyOpenedItem(
                     )
                         }
                     }
-    }
-}
+                }
+            }
         }
     }
 }
@@ -2438,15 +2583,6 @@ fun LocationCard(
                     )
                         // 有图片时不显示图标
                         if (warehouseImageBitmap == null) {
-                    Icon(
-                        imageVector = Icons.Default.Category,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.4.dp),
-                                tint = iconColor
-                            )
-                        }
-                        // 有图片时不显示图标
-                        if (warehouseImageBitmap == null) {
                             Icon(
                                 imageVector = Icons.Default.Category,
                                 contentDescription = null,
@@ -2462,7 +2598,7 @@ fun LocationCard(
                 }
                 
 // ============================================================================
-// Discord风格新布局组件
+// 侧边栏风格新布局组件
 // ============================================================================
 
 /**
@@ -2488,32 +2624,55 @@ fun WarehouseInfoBottomSheet(
     
     val itemCount = warehouseItemCounts[warehouse.id] ?: 0
     
+    // 加载容器图片
+    var warehouseImageBitmap by remember(warehouse.imageUri) {
+        mutableStateOf<android.graphics.Bitmap?>(null)
+    }
+    
+    LaunchedEffect(warehouse.imageUri) {
+        warehouseImageBitmap = if (warehouse.imageUri != null) {
+            try {
+                val file = java.io.File(warehouse.imageUri)
+                if (file.exists()) {
+                    ImageUtils.loadBitmapFromPath(warehouse.imageUri)
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        } else {
+            null
+        }
+    }
+    
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         modifier = modifier,
         containerColor = ColorHelpers.getGroup2PageBgColor(),
         contentColor = ColorHelpers.getGroup4TextColor(),
-        dragHandle = {
-            // 添加拖动手柄，方便用户知道可以拖动
-            Box(
-                modifier = Modifier
-                    .width(40.dp)
-                    .height(4.dp)
-                    .padding(vertical = 12.dp)
-                    .background(
-                        ColorHelpers.getGroup4IconColor(0.3f),
-                        shape = RoundedCornerShape(2.dp)
-                    )
-            )
-        }
+//        dragHandle = {
+//            // 添加拖动手柄，方便用户知道可以拖动
+//            Box(
+//                modifier = Modifier
+//                    .width(40.dp)
+//                    .height(4.dp)
+//                    .padding(vertical = 12.dp)
+//                    .background(
+//                        ColorHelpers.getGroup4IconColor(0.3f),
+//                        shape = RoundedCornerShape(2.dp)
+//                    )
+//            )
+//        }
     ) {
-        // 使用 BoxWithConstraints 来获取可用高度，设置更大的高度限制
+        // 使用 BoxWithConstraints 来获取可用高度
         BoxWithConstraints(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // maxHeight 已经是 Dp 类型，使用 value 属性进行计算
-            // 使用屏幕高度的90%，但限制在600dp到900dp之间
-            val contentMaxHeight = (maxHeight.value * 0.9f).dp.coerceIn(600.dp, 900.dp)
+            // maxHeight 是 ModalBottomSheet 提供的可用高度（已自动减去系统栏等）
+            // 使用更大的高度百分比，确保所有内容（包括创建时间）都能显示
+            val contentMaxHeight = maxHeight * 0.9f
             
             Column(
                 modifier = Modifier
@@ -2535,6 +2694,31 @@ fun WarehouseInfoBottomSheet(
                     fontWeight = FontWeight.Bold,
                     color = ColorHelpers.getGroup4TextColor()
                 )
+            }
+            
+            // 容器图片
+            if (warehouseImageBitmap != null) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Image(
+                            bitmap = warehouseImageBitmap!!.asImageBitmap(),
+                            contentDescription = warehouse.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                        // 半透明遮罩，提高可读性
+                        //Box(
+                        //    modifier = Modifier
+                        //        .fillMaxSize()
+                        //        .background(Color.Black.copy(alpha = 0.1f))
+                        //)
+                    }
+                }
             }
             
             HorizontalDivider(
@@ -2659,6 +2843,42 @@ fun WarehouseInfoBottomSheet(
                         color = ColorHelpers.getGroup4TextColor(0.7f)
                     )
                 }
+            }
+            
+            // 创建时间（右对齐）
+            HorizontalDivider(
+                color = ColorHelpers.getGroup4TextColor(0.2f)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.AccessTime,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = ColorHelpers.getGroup4IconColor(0.7f)
+                    )
+                    Text(
+                        text = stringResource(R.string.created_at),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = ColorHelpers.getGroup4TextColor(0.7f)
+                    )
+                }
+                val dateFormat = remember { java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT, java.util.Locale.getDefault()) }
+                val createdAtStr = remember(warehouse.createdAt) { dateFormat.format(warehouse.createdAt) }
+                Text(
+                    text = createdAtStr,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ColorHelpers.getGroup4TextColor(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End
+                )
             }
             }
         }
@@ -3570,7 +3790,7 @@ fun ItemListRow(
     onAddAlert: (Item) -> Unit = {},
     onQuantityChange: ((Item, Int) -> Unit)? = null, // 数量变化回调
     warehouseName: String? = null, // 容器名称（可选）
-    useCircleIcon: Boolean = false, // Discord风格图标形状设置
+    useCircleIcon: Boolean = false, // 侧边栏风格图标形状设置
     modifier: Modifier = Modifier
 ) {
     // 菜单展开状态
@@ -3625,7 +3845,7 @@ fun ItemListRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically // 垂直居中对齐，避免图标太靠顶部
         ) {
-            // 左侧主图/占位 - 支持Discord风格图标形状
+            // 左侧主图/占位 - 支持侧边栏风格图标形状
             val itemBackgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
             val itemTextColor = ColorHelpers.getContrastColor(itemBackgroundColor)
             val itemIconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
@@ -4157,7 +4377,7 @@ fun ItemListSection(
     onDeleteItem: (Item) -> Unit = {},
     onAddAlert: (Item) -> Unit = {},
     allWarehouses: List<Warehouse>? = null, // 所有容器列表（用于显示容器名称）
-    useCircleIcon: Boolean = false, // Discord风格图标形状设置
+    useCircleIcon: Boolean = false, // 侧边栏风格图标形状设置
     modifier: Modifier = Modifier
 ) {
     // 标签筛选状态
@@ -4194,7 +4414,7 @@ fun ItemListSection(
     Column(
         modifier = modifier.fillMaxSize()
     ) {
-        // 标签筛选栏（只在Discord风格的物品统计列表显示）
+        // 标签筛选栏（只在侧边栏风格的物品统计列表显示）
         // 使用固定高度确保布局稳定，即使没有标签也保留空间
         Box(
             modifier = Modifier
@@ -4290,7 +4510,7 @@ fun ItemListSection(
                     onClick = { onViewItem(item.id) },
                     onEditItem = onEditItem,
                     warehouseName = warehouseName, // 传递容器名称
-                    useCircleIcon = useCircleIcon, // 传递Discord风格图标形状设置
+                    useCircleIcon = useCircleIcon, // 传递侧边栏风格图标形状设置
                     onAddToShoppingCart = { item ->
                         shoppingItemViewModel?.let { vm ->
                             val shoppingItem = com.example.itemremindertool.data.model.ShoppingItem(
@@ -4324,11 +4544,11 @@ fun ItemListSection(
 }
 
 /**
- * Discord风格的主布局 - 整合左侧容器列和右侧内容区
+ * 侧边栏风格的主布局 - 整合左侧容器列和右侧内容区
  */
 @Composable
 @OptIn(ExperimentalMaterialApi::class)
-fun DiscordStyleMainLayout(
+fun SidebarStyleMainLayout(
     warehouses: List<Warehouse>,
     allWarehouses: List<Warehouse>,
     allItems: List<Item>,
@@ -4829,8 +5049,8 @@ fun DiscordStyleMainLayout(
                     DynamicBannerAd(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(90.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(12.dp)),
+                        height = 90.dp // 与物品卡片相同的高度
                     )
                 }
             }
@@ -5703,7 +5923,7 @@ fun AlertListSection(
     }
 }
 /**
- * 待购列表（右下）- Discord 风格首页
+ * 待购列表（右下）- 侧边栏风格首页
  */
 @Composable
 fun ShoppingListSection(

@@ -23,6 +23,14 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import com.example.itemremindertool.billing.BillingManager
+import com.example.itemremindertool.config.FeatureFlags
+import com.example.itemremindertool.ui.components.PremiumFeatureDialog
+import android.app.Activity
+import android.content.SharedPreferences
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +62,76 @@ fun AppSettingsScreen(
     // 广告单元 ID
     var adBannerUnitId by remember { 
         mutableStateOf(prefs.getString("ad_banner_unit_id", null) ?: "")
+    }
+    
+    // Billing Manager（仅在启用购买功能时初始化）
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val activity = context as? Activity
+    val billingManager = remember {
+        if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
+            BillingManager(context, listOf(BillingManager.PRODUCT_REMOVE_ADS, BillingManager.PRODUCT_PREMIUM_FEATURES)).apply {
+                initialize()
+            }
+        } else {
+            null
+        }
+    }
+    
+    // 高级功能对话框状态
+    var showPremiumFeatureDialog by remember { mutableStateOf(false) }
+    
+    // 检查高级功能访问权限
+    val canAccessPremiumFeatures = remember {
+        com.example.itemremindertool.billing.PremiumFeatureManager.canAccessPremiumFeatures(context)
+    }
+    
+    // 购买状态（仅在启用购买功能时获取）
+    val purchaseState by if (FeatureFlags.ENABLE_PURCHASE_FEATURE && billingManager != null) {
+        billingManager.purchaseState.collectAsState()
+    } else {
+        remember { mutableStateOf(com.example.itemremindertool.billing.PurchaseState.NotPurchased) }
+    }
+    val productDetails by if (FeatureFlags.ENABLE_PURCHASE_FEATURE && billingManager != null) {
+        billingManager.productDetails.collectAsState()
+    } else {
+        remember { mutableStateOf<com.android.billingclient.api.ProductDetails?>(null) }
+    }
+    val isReady by if (FeatureFlags.ENABLE_PURCHASE_FEATURE && billingManager != null) {
+        billingManager.isReady.collectAsState()
+    } else {
+        remember { mutableStateOf(false) }
+    }
+    
+    // 监听购买状态和本地存储
+    var isAdsRemoved by remember { mutableStateOf(prefs.getBoolean("ads_removed", false)) }
+    
+    // 当购买状态变化时更新
+    LaunchedEffect(purchaseState) {
+        isAdsRemoved = purchaseState is com.example.itemremindertool.billing.PurchaseState.Purchased || 
+                       prefs.getBoolean("ads_removed", false)
+    }
+    
+    // 监听 SharedPreferences 变化
+    DisposableEffect(Unit) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { prefs: SharedPreferences, key: String? ->
+            if (key == "ads_removed") {
+                isAdsRemoved = prefs.getBoolean("ads_removed", false)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
+    
+    // 生命周期管理（仅在启用购买功能时）
+    if (FeatureFlags.ENABLE_PURCHASE_FEATURE && billingManager != null) {
+        DisposableEffect(lifecycleOwner) {
+            lifecycleOwner.lifecycle.addObserver(billingManager)
+            onDispose {
+                lifecycleOwner.lifecycle.removeObserver(billingManager)
+            }
+        }
     }
     
     Scaffold(
@@ -90,7 +168,13 @@ fun AppSettingsScreen(
                         colors = ButtonDefaults.textButtonColors(
                             contentColor = ColorHelpers.getGroup4TextColor()
                         ),
-                        onClick = { showAppNameDialog = true }) {
+                        onClick = {
+                            if (!canAccessPremiumFeatures) {
+                                showPremiumFeatureDialog = true
+                            } else {
+                                showAppNameDialog = true
+                            }
+                        }) {
                         Text(stringResource(R.string.modify))
                     }
                 },
@@ -114,7 +198,13 @@ fun AppSettingsScreen(
                         colors = ButtonDefaults.textButtonColors(
                             contentColor = ColorHelpers.getGroup4TextColor()
                         ),
-                        onClick = { showSuffixDialog = true }) {
+                        onClick = {
+                            if (!canAccessPremiumFeatures) {
+                                showPremiumFeatureDialog = true
+                            } else {
+                                showSuffixDialog = true
+                            }
+                        }) {
                         Text(stringResource(R.string.modify))
                     }
                 },
@@ -151,6 +241,95 @@ fun AppSettingsScreen(
             
             Divider()
             
+            // 移除广告（仅在启用购买功能时显示）
+            if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
+                ListItem(
+                    headlineContent = { 
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.remove_ads),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = ColorHelpers.getGroup4TextColor()
+                            )
+                            if (isAdsRemoved) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.purchased),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    supportingContent = { 
+                        Text(
+                            text = if (isAdsRemoved) {
+                                stringResource(R.string.ads_removed_desc)
+                            } else {
+                                val price = productDetails?.oneTimePurchaseOfferDetails?.formattedPrice
+                                if (price != null) {
+                                    stringResource(R.string.remove_ads_desc, price)
+                                } else {
+                                    stringResource(R.string.remove_ads_desc_no_price)
+                                }
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = ColorHelpers.getGroup4TextColor(0.7f)
+                        )
+                    },
+                    trailingContent = {
+                        if (isAdsRemoved) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Button(
+                                onClick = {
+                                    if (isReady && activity != null && billingManager != null) {
+                                        val success = billingManager.launchPurchaseFlow(activity)
+                                        if (!success) {
+                                            // 如果产品未找到，显示提示
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                context.getString(R.string.product_not_available),
+                                                android.widget.Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+                                    } else if (!isReady) {
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            context.getString(R.string.billing_not_ready),
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                },
+                                enabled = isReady && activity != null && billingManager != null
+                            ) {
+                                val price = productDetails?.oneTimePurchaseOfferDetails?.formattedPrice
+                                if (price != null) {
+                                    Text(price)
+                                } else {
+                                    Text(stringResource(R.string.purchase))
+                                }
+                            }
+                        }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+                
+                Divider()
+            }
+            
             // 密码保护
             ListItem(
                 headlineContent = { Text(stringResource(R.string.password_protection)) },
@@ -164,7 +343,12 @@ fun AppSettingsScreen(
                 trailingContent = {
                     Switch(
                         checked = isPasswordEnabled,
+                        enabled = canAccessPremiumFeatures,
                         onCheckedChange = {
+                            if (!canAccessPremiumFeatures) {
+                                showPremiumFeatureDialog = true
+                                return@Switch
+                            }
                             isPasswordEnabled = it
                             prefs.edit().putBoolean("password_enabled", it).commit()
                             if (it) {
@@ -207,6 +391,14 @@ fun AppSettingsScreen(
                 )
             }
         }
+    }
+    
+    // 高级功能对话框（仅在启用购买功能时显示）
+    if (FeatureFlags.ENABLE_PURCHASE_FEATURE && showPremiumFeatureDialog && billingManager != null) {
+        PremiumFeatureDialog(
+            billingManager = billingManager,
+            onDismiss = { showPremiumFeatureDialog = false }
+        )
     }
     
     // 程序名称对话框
