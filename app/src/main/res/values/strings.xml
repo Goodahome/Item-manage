@@ -36,7 +36,7 @@
     <string name="settings_title">设置</string>
     <string name="appearance_settings">外观设置</string>
     <string name="app_settings">应用设置</string>
-    <string name="cloud_storage">云端存储</string>
+<!--    <string name="cloud_storage">云端存储</string>-->
     <string name="alert_settings">设置提醒</string>
     <string name="backup_restore">备份与恢复</string>
     <string name="backup_data">备份数据</string>
@@ -88,9 +88,9 @@
     <string name="color_applied">颜色已应用</string>
     <string name="color_scheme_cold_blue">🧊 冷冽囤老板</string>
 
-    <string name="discord_icon_shape">Discord风格容器图标形状</string>
-    <string name="discord_icon_circle">圆形</string>
-    <string name="discord_icon_round_rect">圆角方形</string>
+    <string name="sidebar_icon_shape">侧边栏风格容器图标形状</string>
+    <string name="sidebar_icon_circle">圆形</string>
+    <string name="sidebar_icon_round_rect">圆角方形</string>
     <string name="color_scheme_cream">🍊 奶油治愈系</string>
     <string name="color_scheme_mint">🌿 薄荷冷感</string>
     <string name="color_scheme_space">🌌 深空高级灰</string>
@@ -107,7 +107,7 @@
     <string name="language_pt">Português</string>
     
     <string name="app_name_label">程序名称</string>
-    <string name="password_protection">密码保护</string>
+<!--    <string name="password_protection">密码保护</string>-->
     <string name="password_enabled">已启用</string>
     <string name="password_disabled">未启用</string>
     
@@ -358,7 +358,40 @@
     <string name="barcode">条形码</string>
     <string name="feature_code">物品特征码</string>
     <string name="expiry_date">到期日期</string>
+    <string name="created_at">创建时间</string>
     <string name="recognizing_image">正在识别图片...</string>
+    
+    <!-- 内购相关 -->
+    <string name="remove_ads">移除广告</string>
+    <string name="remove_ads_desc">购买后永久移除所有广告，享受无干扰的使用体验。价格：%1$s</string>
+    <string name="remove_ads_desc_no_price">购买后永久移除所有广告，享受无干扰的使用体验。</string>
+    <string name="ads_removed_desc">您已购买移除广告功能，所有广告已永久关闭。</string>
+    <string name="purchase">购买</string>
+    <string name="product_not_available">产品暂不可用，请确保已在 Google Play Console 中配置内购产品。</string>
+    <string name="billing_not_ready">购买服务未就绪，请稍后再试。</string>
+    
+    <!-- 高级功能相关 -->
+    <string name="premium_features">高级功能</string>
+    <string name="premium_activated">高级功能已激活</string>
+    <string name="premium_price">价格：%1$s</string>
+    <string name="premium_feature_locked">此功能需要高级版本</string>
+    <string name="premium_feature_locked_desc">此功能需要购买高级版本或使用7天免费试用。</string>
+    <string name="try_free">免费试用7天</string>
+    <string name="trial_active">试用中</string>
+    <string name="trial_remaining_days">剩余 %1$d 天</string>
+    <string name="trial_remaining_hours">剩余 %1$d 小时</string>
+    <string name="trial_started">试用已开始，享受7天高级功能！</string>
+    <string name="trial_already_used">试用已使用，请购买高级版本继续使用。</string>
+    <string name="sidebar_style_home">全新风格首页</string>
+    <string name="sidebar_style_home_desc">使用全新风格的三栏布局，更高效地管理物品</string>
+    <string name="customize_app_name_icon">自定义程序名称和图标</string>
+    <string name="customize_app_name_icon_desc">个性化您的应用名称和图标</string>
+    <string name="password_protection">密码保护</string>
+    <string name="password_protection_desc">为应用添加密码保护，保护您的隐私</string>
+    <string name="cloud_storage">云端存储</string>
+    <string name="cloud_storage_desc">将数据备份到云端，安全可靠</string>
+    <string name="cloud_restore">云端恢复备份</string>
+    <string name="cloud_restore_desc">从云端恢复备份数据</string>
     <string name="take_photo_search">拍照搜索</string>
     <string name="close">关闭</string>
     <string name="take_photo_recognize_button">拍照识别</string>
@@ -489,7 +522,7 @@
     <!-- 备份恢复 -->
     <string name="offline_backup">离线备份</string>
     <string name="backup_file_location">备份文件将保存到设备的Downloads目录，您可以在文件管理器中找到</string>
-    <string name="cloud_restore">云端恢复</string>
+<!--    <string name="cloud_restore">云端恢复</string>-->
     <string name="cloud_restore_description">从云端下载并恢复自动同步的备份文件（将直接恢复所有数据，请先进行离线备份）</string>
     <string name="restore_data_action">恢复数据</string>
     <string name="important_notice">重要提示</string>

@@ -219,6 +219,12 @@ fun WarehouseEditScreen(
                                     return@launch
                                 }
                                 
+                                val existingWarehouse = if (warehouseId != null) {
+                                    selectedWarehouse.selectedWarehouse
+                                } else {
+                                    null
+                                }
+                                
                                 val warehouse = Warehouse(
                                     id = warehouseId ?: 0,
                                     name = name,
@@ -227,7 +233,8 @@ fun WarehouseEditScreen(
                                     capacity = capacity.toIntOrNull(),
                                     parentId = selectedParentId,
                                     level = level,
-                                    imageUri = imageUri
+                                    imageUri = imageUri,
+                                    createdAt = existingWarehouse?.createdAt ?: java.util.Date()
                                 )
                                 if (warehouseId == null) {
                                     viewModel.insertWarehouse(warehouse)

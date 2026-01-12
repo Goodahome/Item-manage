@@ -25,8 +25,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.isSystemInDarkTheme
 import com.example.itemremindertool.utils.NextcloudBackupManager
 import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
+import com.example.itemremindertool.ui.components.PremiumFeatureDialog
+import com.example.itemremindertool.billing.BillingManager
+import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.ui.viewmodel.CloudStorageViewModel
 import com.example.itemremindertool.ui.viewmodel.OperationState
+import android.app.Activity
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +70,20 @@ fun CloudStorageSettingsScreen(
     
     // UI 状态
     var showNextcloudConfigDialog by remember { mutableStateOf(false) }
+    var showPremiumFeatureDialog by remember { mutableStateOf(false) }
+    
+    // 检查高级功能访问权限
+    val canAccessPremiumFeatures = remember {
+        PremiumFeatureManager.canAccessPremiumFeatures(context)
+    }
+    
+    // Billing Manager
+    val activity = context as? Activity
+    val billingManager = remember {
+        BillingManager(context, listOf(BillingManager.PRODUCT_REMOVE_ADS, BillingManager.PRODUCT_PREMIUM_FEATURES)).apply {
+            initialize()
+        }
+    }
     
     Box(modifier = modifier.fillMaxSize()) {
         Scaffold(
@@ -131,7 +149,13 @@ fun CloudStorageSettingsScreen(
                                 )
                             }
                         }
-                        IconButton(onClick = { showNextcloudConfigDialog = true }) {
+                        IconButton(onClick = {
+                            if (!canAccessPremiumFeatures) {
+                                showPremiumFeatureDialog = true
+                            } else {
+                                showNextcloudConfigDialog = true
+                            }
+                        }) {
                             Icon(Icons.Default.Settings, null, tint = ColorHelpers.getGroup4IconColor())
                         }
                     }
@@ -143,6 +167,10 @@ fun CloudStorageSettingsScreen(
                     
                     Button(
                         onClick = {
+                            if (!canAccessPremiumFeatures) {
+                                showPremiumFeatureDialog = true
+                                return@Button
+                            }
                             android.util.Log.d("CloudStorageSettings", "测试连接按钮被点击")
                             if (!isConfigComplete) {
                                 android.util.Log.d("CloudStorageSettings", "配置信息不完整")
@@ -212,7 +240,12 @@ fun CloudStorageSettingsScreen(
                         }
                         Switch(
                             checked = autoSyncEnabled,
+                            enabled = canAccessPremiumFeatures && nextcloudServerUrl.isNotEmpty() && nextcloudUsername.isNotEmpty() && nextcloudPassword.isNotEmpty(),
                             onCheckedChange = {
+                                if (!canAccessPremiumFeatures) {
+                                    showPremiumFeatureDialog = true
+                                    return@Switch
+                                }
                                 autoSyncEnabled = it
                                 prefs.edit().putBoolean("auto_sync_enabled", it).apply()
                                 
@@ -224,8 +257,7 @@ fun CloudStorageSettingsScreen(
                                     com.example.itemremindertool.utils.CloudSyncScheduler.cancelSync(context)
                                     viewModel.showSuccess("自动同步已禁用")
                                 }
-                            },
-                            enabled = nextcloudServerUrl.isNotEmpty() && nextcloudUsername.isNotEmpty() && nextcloudPassword.isNotEmpty()
+                            }
                         )
                     }
                 }
@@ -266,6 +298,14 @@ fun CloudStorageSettingsScreen(
                 }
                 showNextcloudConfigDialog = false
             }
+        )
+    }
+    
+    // 高级功能对话框
+    if (showPremiumFeatureDialog) {
+        PremiumFeatureDialog(
+            billingManager = billingManager,
+            onDismiss = { showPremiumFeatureDialog = false }
         )
     }
 }

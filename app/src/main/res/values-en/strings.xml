@@ -88,9 +88,9 @@
     <string name="color_applied">Color applied</string>
     <string name="color_scheme_cold_blue">🧊 Cold Stock Boss</string>
 
-    <string name="discord_icon_shape">Discord icon shape</string>
-    <string name="discord_icon_circle">Circle</string>
-    <string name="discord_icon_round_rect">Rounded square</string>
+    <string name="sidebar_icon_shape">Sidebar icon shape</string>
+    <string name="sidebar_icon_circle">Circle</string>
+    <string name="sidebar_icon_round_rect">Rounded square</string>
     <string name="color_scheme_cream">🍊 Cream Healing</string>
     <string name="color_scheme_mint">🌿 Mint Cool</string>
     <string name="color_scheme_space">🌌 Deep Space Gray</string>

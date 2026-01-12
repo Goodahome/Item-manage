@@ -39,7 +39,21 @@ fun AppearanceSettingsScreen(
     var selectedTheme by remember { mutableStateOf(prefs.getString("theme", "system") ?: "system") }
     var selectedColorScheme by remember { mutableStateOf(prefs.getString("color_scheme", "cold_blue") ?: "cold_blue") }
     var selectedIcon by remember { mutableStateOf(IconManager.getCurrentIcon(context)) }
-    var discordIconCircle by remember { mutableStateOf(prefs.getBoolean("discord_icon_circle", false)) }
+    // 迁移旧的 "discord_icon_circle" key 到 "sidebar_icon_circle"
+    var sidebarIconCircle by remember { 
+        mutableStateOf(
+            if (prefs.contains("discord_icon_circle")) {
+                val value = prefs.getBoolean("discord_icon_circle", false)
+                prefs.edit()
+                    .putBoolean("sidebar_icon_circle", value)
+                    .remove("discord_icon_circle")
+                    .apply()
+                value
+            } else {
+                prefs.getBoolean("sidebar_icon_circle", false)
+            }
+        )
+    }
     
     // 监听 SharedPreferences 变化
     DisposableEffect(Unit) {
@@ -47,7 +61,7 @@ fun AppearanceSettingsScreen(
             when (key) {
                 "theme" -> selectedTheme = prefs.getString("theme", "system") ?: "system"
                 "color_scheme" -> selectedColorScheme = prefs.getString("color_scheme", "cold_blue") ?: "cold_blue"
-                "discord_icon_circle" -> discordIconCircle = prefs.getBoolean("discord_icon_circle", false)
+                "sidebar_icon_circle" -> sidebarIconCircle = prefs.getBoolean("sidebar_icon_circle", false)
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -144,22 +158,22 @@ fun AppearanceSettingsScreen(
 
             Divider()
 
-            // Discord 容器图标形状
+            // 侧边栏容器图标形状
             ListItem(
-                headlineContent = { Text(stringResource(R.string.discord_icon_shape)) },
+                headlineContent = { Text(stringResource(R.string.sidebar_icon_shape)) },
                 supportingContent = {
                     Text(
-                        text = if (discordIconCircle) stringResource(R.string.discord_icon_circle) else stringResource(R.string.discord_icon_round_rect),
+                        text = if (sidebarIconCircle) stringResource(R.string.sidebar_icon_circle) else stringResource(R.string.sidebar_icon_round_rect),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                 },
                 trailingContent = {
                     Switch(
-                        checked = discordIconCircle,
+                        checked = sidebarIconCircle,
                         onCheckedChange = { checked ->
-                            discordIconCircle = checked
-                            prefs.edit().putBoolean("discord_icon_circle", checked).apply()
+                            sidebarIconCircle = checked
+                            prefs.edit().putBoolean("sidebar_icon_circle", checked).apply()
                         }
                     )
                 },

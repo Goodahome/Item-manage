@@ -88,9 +88,9 @@
     <string name="color_applied">Farbe angewendet</string>
     <string name="color_scheme_cold_blue">🧊 Kalter Vorratsboss</string>
 
-    <string name="discord_icon_shape">Discord-Icon-Form</string>
-    <string name="discord_icon_circle">Kreis</string>
-    <string name="discord_icon_round_rect">Abgerundetes Quadrat</string>
+    <string name="sidebar_icon_shape">Seitenleisten-Icon-Form</string>
+    <string name="sidebar_icon_circle">Kreis</string>
+    <string name="sidebar_icon_round_rect">Abgerundetes Quadrat</string>
     <string name="color_scheme_cream">🍊 Creme-Heilung</string>
     <string name="color_scheme_mint">🌿 Minze-Kühle</string>
     <string name="color_scheme_space">🌌 Tiefes Weltraumgrau</string>

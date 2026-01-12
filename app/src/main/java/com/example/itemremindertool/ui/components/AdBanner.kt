@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -25,6 +27,7 @@ import com.google.android.gms.ads.admanager.AdManagerAdRequest
 import com.google.android.gms.ads.admanager.AdManagerAdView
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
+import com.example.itemremindertool.utils.AdViewManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -40,14 +43,19 @@ import kotlinx.coroutines.launch
 fun AdBanner(
     adUnitId: String? = null,
     modifier: Modifier = Modifier,
-    isAdManager: Boolean = false
+    isAdManager: Boolean = false,
+    height: Dp = 60.dp // 广告高度，默认60dp
 ) {
     val context = LocalContext.current
+    val density = LocalDensity.current
     
     // 如果没有提供广告单元ID，不显示广告
     if (adUnitId.isNullOrBlank()) {
         return
     }
+    
+    // 将高度转换为像素
+    val heightPx = with(density) { height.toPx().toInt() }
     
     // 使用 AndroidView 嵌入原生 AdView
     AndroidView(
@@ -64,7 +72,8 @@ fun AdBanner(
                 }
             }
             
-            // 设置布局参数
+            // 设置布局参数，使用 WRAP_CONTENT 让 AdView 根据 AdSize 自动确定高度
+            // Compose 的 height 修饰符会控制容器大小，但 AdView 内部需要根据 AdSize 渲染
             val layoutParams = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -83,8 +92,13 @@ fun AdBanner(
             // 设置错误监听（可选，用于调试）
             adView.adListener = object : com.google.android.gms.ads.AdListener() {
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                    // 广告加载失败，可以在这里记录日志或处理错误
-                    android.util.Log.d("AdBanner", "广告加载失败: ${loadAdError.message}")
+                    val errorCode = loadAdError.code
+                    // 错误代码 3 (NO_FILL) 是正常情况，使用 DEBUG 级别
+                    if (errorCode == 3) {
+                        android.util.Log.d("AdBanner", "广告暂无填充 (错误代码: $errorCode)")
+                    } else {
+                        android.util.Log.w("AdBanner", "广告加载失败: 错误代码=$errorCode, 消息=${loadAdError.message}")
+                    }
                 }
                 
                 override fun onAdLoaded() {
@@ -96,7 +110,7 @@ fun AdBanner(
         },
         modifier = modifier
             .fillMaxWidth()
-            .height(50.dp) // 标准横幅广告高度
+            .height(height) // 使用参数化的高度
     )
 }
 
@@ -112,6 +126,7 @@ fun AdBanner(
  * @param maxRetries 最大重试次数（默认 3 次）
  * @param retryDelayMs 重试延迟时间（毫秒，默认 5000ms = 5秒）
  * @param hideOnFailure 加载失败时是否隐藏广告视图（默认 false，显示空白区域）
+ * @param height 广告高度（默认 90.dp，与物品卡片相同的高度）
  */
 @Composable
 fun DynamicBannerAd(
@@ -121,7 +136,8 @@ fun DynamicBannerAd(
     productionAdUnitId: String = "ca-app-pub-9384252615968132/7853152781",
     maxRetries: Int = 3,
     retryDelayMs: Long = 5000,
-    hideOnFailure: Boolean = false
+    hideOnFailure: Boolean = false,
+    height: Dp = 90.dp // 广告高度，默认90dp
 ) {
     android.util.Log.d("DynamicBannerAd", "=== DynamicBannerAd 组件开始组合 ===")
     val context = LocalContext.current
@@ -129,6 +145,9 @@ fun DynamicBannerAd(
         context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) 
     }
     val scope = rememberCoroutineScope()
+    
+    // 检查是否已购买移除广告（监听变化）
+    var isAdsRemoved by remember { mutableStateOf(sharedPrefs.getBoolean("ads_removed", false)) }
     
     // 使用 DisposableEffect 监听 SharedPreferences 变化
     var savedAdUnitId by remember { mutableStateOf<String?>(null) }
@@ -145,13 +164,19 @@ fun DynamicBannerAd(
         
         // 监听 SharedPreferences 变化
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == "ad_banner_unit_id") {
-                savedAdUnitId = sharedPrefs.getString("ad_banner_unit_id", null)
-                android.util.Log.d("DynamicBannerAd", "广告ID已更新: $savedAdUnitId")
-                // 重置重试计数
-                retryCount = 0
-                adLoadFailed = false
-                shouldShowAd = true
+            when (key) {
+                "ad_banner_unit_id" -> {
+                    savedAdUnitId = sharedPrefs.getString("ad_banner_unit_id", null)
+                    android.util.Log.d("DynamicBannerAd", "广告ID已更新: $savedAdUnitId")
+                    // 重置重试计数
+                    retryCount = 0
+                    adLoadFailed = false
+                    shouldShowAd = true
+                }
+                "ads_removed" -> {
+                    isAdsRemoved = sharedPrefs.getBoolean("ads_removed", false)
+                    android.util.Log.d("DynamicBannerAd", "广告移除状态已更新: $isAdsRemoved")
+                }
             }
         }
         sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
@@ -163,6 +188,9 @@ fun DynamicBannerAd(
     
     // 获取最终要用的广告 ID（优先用保存的，没保存就用测试 ID 或正式 ID）
     val adUnitId = savedAdUnitId ?: (productionAdUnitId ?: testAdUnitId)
+    
+    // 使用全局管理器检查广告是否已加载
+    var adLoaded by remember(adUnitId) { mutableStateOf(AdViewManager.isAdLoaded(adUnitId)) }
     
     // 记录最终使用的广告ID
     LaunchedEffect(adUnitId) {
@@ -185,6 +213,12 @@ fun DynamicBannerAd(
         )
     }
     
+    // 如果已购买移除广告，不显示广告
+    if (isAdsRemoved) {
+        android.util.Log.d("DynamicBannerAd", "已购买移除广告，不显示广告")
+        return
+    }
+    
     // 如果失败且需要隐藏，则不显示广告
     if (hideOnFailure && adLoadFailed && retryCount >= maxRetries) {
         android.util.Log.d("DynamicBannerAd", "广告加载失败次数过多，隐藏广告视图")
@@ -196,158 +230,70 @@ fun DynamicBannerAd(
         android.util.Log.d("DynamicBannerAd", "准备创建广告视图，广告ID: $adUnitId")
     }
     
+    // 使用全局管理器获取或创建 AdView
+    val adView = remember(adUnitId) {
+        AdViewManager.getOrCreateAdView(context, adUnitId, isAdManager)
+    }
+    
+    // 只在广告加载成功后才显示广告视图，避免显示白屏
+    if (!adLoaded || adView == null) {
+        // 广告未加载成功或 AdView 为空，不显示任何内容（不显示白屏）
+        // 但如果 AdView 存在，尝试加载广告
+        LaunchedEffect(adUnitId, adView) {
+            if (adView != null && !adLoaded) {
+                AdViewManager.loadAdIfNeeded(
+                    adView = adView,
+                    adUnitId = adUnitId,
+                    isAdManager = isAdManager,
+                    onAdLoaded = {
+                        // 广告加载成功，更新状态以触发重组显示广告
+                        adLoaded = true
+                    },
+                    onAdFailedToLoad = { loadAdError ->
+                        adLoadFailed = true
+                        // 重试逻辑
+                        if (retryCount < maxRetries && 
+                            (loadAdError.code == 3 || loadAdError.code == 2 || loadAdError.code == 0)) {
+                            retryCount++
+                            scope.launch {
+                                delay(retryDelayMs)
+                                if (shouldShowAd && adView != null) {
+                                    AdViewManager.loadAdIfNeeded(
+                                        adView = adView,
+                                        adUnitId = adUnitId,
+                                        isAdManager = isAdManager,
+                                        onAdLoaded = {
+                                            adLoaded = true
+                                        },
+                                        onAdFailedToLoad = {}
+                                    )
+                                }
+                            }
+                        }
+                    }
+                )
+            }
+        }
+        return
+    }
+    
     // 使用 AndroidView 嵌入原生 AdView
-    // 使用 key() 确保当 adUnitId 变化时重新创建 AdView（因为 AdView 的 adUnitId 只能设置一次）
+    // 使用 key() 确保当 adUnitId 变化时重新创建 AndroidView（但 AdView 实例由全局管理器保持）
     key(adUnitId) {
         AndroidView(
             modifier = modifier
                 .fillMaxWidth()
-                .height(90.dp) // 与物品卡片相同的高度
+                .height(height) // 使用参数化的高度
                 .background(Color.White, RoundedCornerShape(12.dp)), // 给广告一点背景，避免透明问题，并添加圆角
             factory = { ctx ->
-            android.util.Log.d("DynamicBannerAd", "Factory: 创建 AdView，广告ID: $adUnitId")
-            
-            // 获取屏幕宽度（dp）以确定合适的广告尺寸
-            val displayMetrics = ctx.resources.displayMetrics
-            val screenWidthDp = displayMetrics.widthPixels / displayMetrics.density
-            
-            // 根据屏幕宽度选择合适的广告尺寸
-            // 如果屏幕宽度 >= 728dp，使用 LARGE_BANNER (320x100)，否则使用 BANNER (320x50)
-            // 但为了占满 90dp 高度，我们优先使用 LARGE_BANNER
-            val adSize = if (screenWidthDp >= 320) {
-                AdSize.LARGE_BANNER // 320x100，更适合 90dp 高度
-            } else {
-                AdSize.BANNER // 320x50，标准横幅
+                android.util.Log.d("DynamicBannerAd", "Factory: 使用已存在的 AdView，广告ID: $adUnitId")
+                adView!!
+            },
+            update = { view ->
+                // 不需要做任何操作，AdView 实例由全局管理器保持
+                // 页面切换时不会重新创建 AdView，因此不会触发重新加载
             }
-            
-            val adView = if (isAdManager) {
-                AdManagerAdView(ctx).apply {
-                    setAdUnitId(adUnitId)
-                    setAdSizes(adSize)
-                    android.util.Log.d("DynamicBannerAd", "创建 AdManagerAdView，广告ID: $adUnitId，尺寸: $adSize")
-                }
-            } else {
-                AdView(ctx).apply {
-                    this.adUnitId = adUnitId
-                    setAdSize(adSize)
-                    android.util.Log.d("DynamicBannerAd", "创建 AdView，广告ID: $adUnitId，尺寸: $adSize")
-                }
-            }
-            
-            // 设置布局参数，使用 MATCH_PARENT 让广告占满整个容器
-            val layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT // 改为 MATCH_PARENT 以占满整个高度
-            )
-            adView.layoutParams = layoutParams
-            
-            // 加载广告的函数
-            fun loadAdWithRetry() {
-                // 使用 AdView 的当前 adUnitId，而不是闭包中的值（避免使用过期的值）
-                val currentAdUnitId = if (isAdManager) {
-                    (adView as? AdManagerAdView)?.adUnitId
-                } else {
-                    (adView as? AdView)?.adUnitId
-                } ?: adUnitId
-                
-                android.util.Log.d("DynamicBannerAd", "开始加载广告，广告ID: $currentAdUnitId (AdView当前ID: $currentAdUnitId)")
-                val adRequest = if (isAdManager) {
-                    AdManagerAdRequest.Builder().build()
-                } else {
-                    AdRequest.Builder().build()
-                }
-                adView.loadAd(adRequest)
-                android.util.Log.d("DynamicBannerAd", "已调用 loadAd()")
-            }
-            
-            // 设置错误监听，包含重试逻辑
-            adView.adListener = object : com.google.android.gms.ads.AdListener() {
-                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                    val errorCode = loadAdError.code
-                    val errorMessage = loadAdError.message
-                    val errorDomain = loadAdError.domain
-                    val errorCause = loadAdError.cause
-                    
-                    android.util.Log.w(
-                        "DynamicBannerAd", 
-                        "广告加载失败 [Code: $errorCode, Domain: $errorDomain]: $errorMessage"
-                    )
-                    
-                    // 记录失败原因
-                    if (errorCause != null) {
-                        android.util.Log.w("DynamicBannerAd", "失败原因: ${errorCause.message}")
-                    }
-                    
-                    adLoadFailed = true
-                    
-                    // 错误代码说明：
-                    // ERROR_CODE_INTERNAL_ERROR = 0: 内部错误
-                    // ERROR_CODE_INVALID_REQUEST = 1: 无效请求
-                    // ERROR_CODE_NETWORK_ERROR = 2: 网络错误
-                    // ERROR_CODE_NO_FILL = 3: 广告服务器没有可用的广告（No fill）
-                    // ERROR_CODE_APP_ID_MISSING = 8: App ID 缺失
-                    // ERROR_CODE_INVALID_AD_SIZE = 9: 无效的广告尺寸
-                    
-                    // 对于 "No fill" (ERROR_CODE_NO_FILL = 3) 或其他可重试的错误，进行重试
-                    // ERROR_CODE_NO_FILL = 3 表示广告服务器没有可用的广告（这是正常的，特别是在测试环境中）
-                    // ERROR_CODE_NETWORK_ERROR = 2 表示网络错误
-                    // ERROR_CODE_INTERNAL_ERROR = 0 表示内部错误
-                    if (retryCount < maxRetries && 
-                        (errorCode == 3 || errorCode == 2 || errorCode == 0)) {
-                        retryCount++
-                        android.util.Log.d(
-                            "DynamicBannerAd", 
-                            "准备重试 ($retryCount/$maxRetries)，延迟 ${retryDelayMs}ms..."
-                        )
-                        
-                        // 延迟后重试
-                        scope.launch {
-                            delay(retryDelayMs)
-                            if (shouldShowAd) {
-                                android.util.Log.d("DynamicBannerAd", "开始重试加载广告...")
-                                loadAdWithRetry()
-                            }
-                        }
-                    } else {
-                        android.util.Log.w(
-                            "DynamicBannerAd", 
-                            "已达到最大重试次数或错误不可重试，停止重试"
-                        )
-                    }
-                }
-                
-                override fun onAdLoaded() {
-                    android.util.Log.d("DynamicBannerAd", "广告加载成功")
-                    adLoadFailed = false
-                    retryCount = 0 // 重置重试计数
-                }
-                
-                override fun onAdOpened() {
-                    android.util.Log.d("DynamicBannerAd", "广告被打开")
-                }
-                
-                override fun onAdClosed() {
-                    android.util.Log.d("DynamicBannerAd", "广告被关闭")
-                }
-                
-                override fun onAdClicked() {
-                    android.util.Log.d("DynamicBannerAd", "广告被点击")
-                }
-            }
-            
-            // 初始加载
-            android.util.Log.d("DynamicBannerAd", "准备初始加载广告")
-            loadAdWithRetry()
-            
-            android.util.Log.d("DynamicBannerAd", "AdView 创建完成")
-            adView
-        },
-        update = { adView ->
-            // 由于使用了 key(adUnitId)，当 adUnitId 变化时 AndroidView 会自动重新创建 AdView
-            // 所以 update 块中不需要做任何操作
-            // 这里可以用于其他更新逻辑（如果需要的话）
-        }
-    )
+        )
     }
 }
 

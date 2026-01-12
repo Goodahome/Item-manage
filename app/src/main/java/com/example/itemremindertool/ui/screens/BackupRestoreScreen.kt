@@ -26,10 +26,14 @@ import androidx.core.content.ContextCompat
 import com.example.itemremindertool.R
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
+import com.example.itemremindertool.ui.components.PremiumFeatureDialog
+import com.example.itemremindertool.billing.BillingManager
+import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.viewmodel.BackupRestoreViewModel
 import com.example.itemremindertool.utils.DatabaseBackupUtils
 import com.example.itemremindertool.utils.NextcloudBackupManager
+import android.app.Activity
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
@@ -62,6 +66,20 @@ fun BackupRestoreScreen(
     // 云端恢复确认对话框状态
     var showCloudRestoreDialog by remember { mutableStateOf(false) }
     var showBackupWarningDialog by remember { mutableStateOf(false) }
+    var showPremiumFeatureDialog by remember { mutableStateOf(false) }
+    
+    // 检查高级功能访问权限
+    val canAccessPremiumFeatures = remember {
+        PremiumFeatureManager.canAccessPremiumFeatures(context)
+    }
+    
+    // Billing Manager
+    val activity = context as? Activity
+    val billingManager = remember {
+        BillingManager(context, listOf(BillingManager.PRODUCT_REMOVE_ADS, BillingManager.PRODUCT_PREMIUM_FEATURES)).apply {
+            initialize()
+        }
+    }
     
     // 权限相关
     val hasStoragePermission = remember {
@@ -270,7 +288,11 @@ fun BackupRestoreScreen(
                                 // 云端恢复按钮
                                 Button(
                                     onClick = {
-                                        showBackupWarningDialog = true
+                                        if (!canAccessPremiumFeatures) {
+                                            showPremiumFeatureDialog = true
+                                        } else {
+                                            showBackupWarningDialog = true
+                                        }
                                     },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
@@ -479,6 +501,14 @@ fun BackupRestoreScreen(
                         Text(stringResource(R.string.cancel_button))
                     }
                 }
+            )
+        }
+        
+        // 高级功能对话框
+        if (showPremiumFeatureDialog) {
+            PremiumFeatureDialog(
+                billingManager = billingManager,
+                onDismiss = { showPremiumFeatureDialog = false }
             )
         }
     } // 关闭外层 Box

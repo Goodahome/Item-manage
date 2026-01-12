@@ -15,8 +15,12 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.PremiumFeatureDialog
+import com.example.itemremindertool.billing.BillingManager
+import com.example.itemremindertool.billing.PremiumFeatureManager
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
+import android.app.Activity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,6 +34,20 @@ fun WarehouseSettingsScreen(
     }
     
     var unlimitedContainers by remember { mutableStateOf(prefs.getBoolean("unlimited_containers", false)) }
+    var showPremiumFeatureDialog by remember { mutableStateOf(false) }
+    
+    // 检查高级功能访问权限
+    val canAccessPremiumFeatures = remember {
+        PremiumFeatureManager.canAccessPremiumFeatures(context)
+    }
+    
+    // Billing Manager
+    val activity = context as? Activity
+    val billingManager = remember {
+        BillingManager(context, listOf(BillingManager.PRODUCT_REMOVE_ADS, BillingManager.PRODUCT_PREMIUM_FEATURES)).apply {
+            initialize()
+        }
+    }
     
     Scaffold(
         topBar = {
@@ -63,7 +81,12 @@ fun WarehouseSettingsScreen(
                 trailingContent = {
                     Switch(
                         checked = unlimitedContainers,
+                        enabled = canAccessPremiumFeatures,
                         onCheckedChange = { enabled ->
+                            if (!canAccessPremiumFeatures) {
+                                showPremiumFeatureDialog = true
+                                return@Switch
+                            }
                             unlimitedContainers = enabled
                             prefs.edit().putBoolean("unlimited_containers", enabled).apply()
                         }
@@ -72,6 +95,14 @@ fun WarehouseSettingsScreen(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
         }
+    }
+    
+    // 高级功能对话框
+    if (showPremiumFeatureDialog) {
+        PremiumFeatureDialog(
+            billingManager = billingManager,
+            onDismiss = { showPremiumFeatureDialog = false }
+        )
     }
 }
 

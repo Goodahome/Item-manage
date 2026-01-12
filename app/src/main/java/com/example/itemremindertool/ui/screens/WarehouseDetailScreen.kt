@@ -106,7 +106,7 @@ fun WarehouseDetailScreen(
             var showQRCodeDialog by remember { mutableStateOf(false) }
             GradientTopAppBar(
                 title = {
-                    // 经典模式下显示面包屑导航，Discord模式下只显示当前容器名称
+                    // 经典模式下显示面包屑导航，侧边栏模式下只显示当前容器名称
                     if (homeLayoutStyle.value == HomeLayoutStyle.CLASSIC && warehousePath.isNotEmpty()) {
                         BreadcrumbNavigation(
                             path = warehousePath,

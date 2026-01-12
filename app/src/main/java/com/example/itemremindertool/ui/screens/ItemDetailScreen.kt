@@ -517,6 +517,38 @@ fun ItemDetailScreen(
                             }
                         }
                     }
+                    
+                    // 创建时间
+                    Divider()
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.AccessTime,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = ColorHelpers.getGroup4IconColor(0.7f)
+                            )
+                            Text(
+                                text = stringResource(R.string.created_at),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = ColorHelpers.getGroup4TextColor(0.7f)
+                            )
+                        }
+                        val dateFormat = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, Locale.getDefault()) }
+                        val createdAtStr = remember(item.createdAt) { dateFormat.format(item.createdAt) }
+                        Text(
+                            text = createdAtStr,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = ColorHelpers.getGroup4TextColor()
+                        )
+                    }
                 }
             }
             

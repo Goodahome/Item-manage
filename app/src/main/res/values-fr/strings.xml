@@ -88,9 +88,9 @@
     <string name="color_applied">Couleur appliquée</string>
     <string name="color_scheme_cold_blue">🧊 Boss stock froid</string>
 
-    <string name="discord_icon_shape">Forme des icônes Discord</string>
-    <string name="discord_icon_circle">Cercle</string>
-    <string name="discord_icon_round_rect">Carré arrondi</string>
+    <string name="sidebar_icon_shape">Forme des icônes de la barre latérale</string>
+    <string name="sidebar_icon_circle">Cercle</string>
+    <string name="sidebar_icon_round_rect">Carré arrondi</string>
     <string name="color_scheme_cream">🍊 Crème guérissante</string>
     <string name="color_scheme_mint">🌿 Menthe fraîche</string>
     <string name="color_scheme_space">🌌 Gris espace profond</string>

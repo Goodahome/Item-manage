@@ -143,6 +143,8 @@ dependencies {
     implementation("androidx.biometric:biometric:1.1.0")
     // Google Mobile Ads SDK
     implementation("com.google.android.gms:play-services-ads:24.9.0")
+    // Google Play Billing Library
+    implementation("com.android.billingclient:billing-ktx:7.1.1")
     // Guava for CameraX (required for ListenableFuture)
     implementation("com.google.guava:guava:32.1.3-android")
     testImplementation(libs.junit)

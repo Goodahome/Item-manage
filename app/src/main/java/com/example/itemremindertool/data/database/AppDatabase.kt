@@ -28,7 +28,7 @@ import com.example.itemremindertool.data.dao.ActivityEventDao
 
 @Database(
     entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class, ItemReminder::class, DeletedRecord::class, ActivityEvent::class],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 @TypeConverters(DateConverters::class, StringListConverters::class, ReminderTypeConverters::class, ActivityEventTypeConverters::class)
@@ -108,7 +108,7 @@ abstract class AppDatabase : RoomDatabase() {
                             )
                         }
                     })
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
@@ -229,6 +229,14 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // 为 warehouses 表添加 imageUri 字段
                 database.execSQL("ALTER TABLE warehouses ADD COLUMN imageUri TEXT")
+            }
+        }
+        
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // 为 warehouses 表添加 createdAt 字段，默认值为当前时间
+                val currentTimeMillis = System.currentTimeMillis()
+                database.execSQL("ALTER TABLE warehouses ADD COLUMN createdAt INTEGER NOT NULL DEFAULT $currentTimeMillis")
             }
         }
     }

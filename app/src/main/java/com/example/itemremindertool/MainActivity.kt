@@ -325,7 +325,7 @@ fun ItemReminderToolApp(
     val scope = rememberCoroutineScope()
     
     // 维护当前选中的容器ID状态
-    // 从SharedPreferences恢复状态，用于Discord风格下解锁后保持容器页面
+    // 从SharedPreferences恢复状态，用于侧边栏风格下解锁后保持容器页面
     val savedWarehouseId = prefs.getLong("selected_warehouse_id", -1L)
     var selectedWarehouseId by remember { 
         mutableStateOf<Long?>(if (savedWarehouseId != -1L) savedWarehouseId else null) 
@@ -698,9 +698,14 @@ fun ItemReminderToolApp(
                     context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) 
                 }
                 val homeLayoutStyle = remember {
-                    val savedStyle = prefs.getString("home_layout_style", "discord")
+                    var savedStyle = prefs.getString("home_layout_style", "sidebar")
+                    // 迁移旧的 "discord" key 到 "sidebar"
                     if (savedStyle == "discord") {
-                        com.example.itemremindertool.ui.screens.HomeLayoutStyle.DISCORD
+                        savedStyle = "sidebar"
+                        prefs.edit().putString("home_layout_style", savedStyle).apply()
+                    }
+                    if (savedStyle == "sidebar") {
+                        com.example.itemremindertool.ui.screens.HomeLayoutStyle.SIDEBAR
                     } else {
                         com.example.itemremindertool.ui.screens.HomeLayoutStyle.CLASSIC
                     }
@@ -715,8 +720,8 @@ fun ItemReminderToolApp(
                         val warehouseInfo = com.example.itemremindertool.utils.QRCodeUtils.decodeWarehouseInfo(scannedValue)
                         if (warehouseInfo != null) {
                             // 是容器二维码，打开对应容器
-                            if (homeLayoutStyle == com.example.itemremindertool.ui.screens.HomeLayoutStyle.DISCORD) {
-                                // Discord风格：直接导航到Dashboard并选中容器
+                            if (homeLayoutStyle == com.example.itemremindertool.ui.screens.HomeLayoutStyle.SIDEBAR) {
+                                // 侧边栏风格：直接导航到Dashboard并选中容器
                                 selectedWarehouseId = warehouseInfo.id
                                 navController.navigate(Screen.Dashboard.route) {
                                     popUpTo(Screen.Dashboard.route) { inclusive = true }
