@@ -54,6 +54,10 @@ fun AppSettingsScreen(
     var showAdUnitIdDialog by remember { mutableStateOf(false) }
     var showClearActivityDataDialog by remember { mutableStateOf(false) }
     
+    // 物品展示模式管理器
+    val displayModeManager = remember { com.example.itemremindertool.config.ItemDisplayModeManager.getInstance(context) }
+    val displayMode by displayModeManager.displayMode.collectAsState()
+    
     val defaultSuffix = context.getString(R.string.warehouse_items_suffix)
     var warehouseItemsSuffix by remember { 
         mutableStateOf(prefs.getString("warehouse_items_suffix", defaultSuffix) ?: defaultSuffix) 
@@ -206,6 +210,36 @@ fun AppSettingsScreen(
                             }
                         }) {
                         Text(stringResource(R.string.modify))
+                    }
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+            )
+            
+            Divider()
+            
+            // 物品展示模式
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.item_display_mode)) },
+                supportingContent = { 
+                    Text(
+                        text = when(displayMode) {
+                            com.example.itemremindertool.config.ItemDisplayMode.LIST -> stringResource(R.string.item_display_mode_list)
+                            com.example.itemremindertool.config.ItemDisplayMode.GRID -> stringResource(R.string.item_display_mode_grid)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ColorHelpers.getGroup4TextColor(0.7f)
+                    )
+                },
+                trailingContent = {
+                    TextButton(
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = ColorHelpers.getGroup4TextColor()
+                        ),
+                        onClick = {
+                            displayModeManager.toggleDisplayMode()
+                        }
+                    ) {
+                        Text(stringResource(R.string.toggle))
                     }
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)

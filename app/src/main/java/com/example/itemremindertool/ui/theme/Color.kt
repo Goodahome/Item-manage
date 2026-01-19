@@ -69,7 +69,7 @@ val SpaceSecondary = Color(0xFF64748B)
 val SpaceTertiary = Color(0xFF8B5CF6)
 val SpacePrimaryContainer = Color(0xFFE2E8F0)
 val SpaceOnPrimaryContainer = Color(0xFF0F172A)
-val SpaceBackground = Color(0xFFF8FAFC)
+val SpaceBackground = Color(0xFFF8CABA)
 val SpaceSurface = Color(0xFFFFFFFF)
 val SpaceSurfaceVariant = Color(0xFFF1F5F9)
 

@@ -1,5 +1,8 @@
 package com.example.itemremindertool.ui.screens
 
+import android.app.Activity
+import android.content.Intent
+import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,6 +24,7 @@ import com.example.itemremindertool.ui.components.UIConstants
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.isSystemInDarkTheme
+import com.example.itemremindertool.MainActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,9 +57,15 @@ fun LanguageSettingsScreen(
             ) {
                 FloatingActionButton(
                     onClick = {
-                        prefs.edit().putString("language", selectedLanguage).apply()
-                        // 使用 AppRefreshManager 重新创建Activity以刷新整个UI（包括折叠菜单、设置页面、程序名称等）
-                        com.example.itemremindertool.utils.AppRefreshManager.requestRecreate(context)
+                        // 使用 commit 确保立即写入，避免重启过快导致未持久化
+                        prefs.edit().putString("language", selectedLanguage).commit()
+                        // 清栈重启，避免华为平板透明旧窗口残留导致黑屏
+                        val activity = context as? Activity
+                        val intent = Intent(context, MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        }
+                        context.startActivity(intent)
+                        activity?.finishAffinity()
                     },
                     containerColor = ColorHelpers.getGroup5FabColor(),
                     modifier = Modifier.size(UIConstants.FAB_SIZE)

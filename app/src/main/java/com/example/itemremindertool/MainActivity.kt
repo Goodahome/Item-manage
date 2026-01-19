@@ -64,9 +64,6 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
-        // 设置窗口背景色，避免转场动画时显示白色
-        window.setBackgroundDrawableResource(android.R.color.transparent)
-        
         // 确保语言设置已应用
         val language = LocaleHelper.getCurrentLanguage(this)
         LocaleHelper.setLocale(this, language)
