@@ -50,15 +50,24 @@ fun ColorSchemeSelectionScreen(
             Column(
                 modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
             ) {
+                // 使用与侧边栏风格首页一致的悬浮按钮样式
+                val fabBackground = ColorHelpers.getGroup2SettingsBtnColor()
+                val fabIconColor = ColorHelpers.getContrastColor(fabBackground)
+                
                 FloatingActionButton(
                     onClick = {
                         prefs.edit().putString("color_scheme", selectedColorScheme).apply()
                         onApply()
                     },
-                    containerColor = ColorHelpers.getGroup5FabColor(),
+                    containerColor = fabBackground,
+                    contentColor = fabIconColor,
                     modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
-                    Icon(Icons.Default.Check, stringResource(R.string.apply))
+                    Icon(
+                        Icons.Default.Check,
+                        stringResource(R.string.apply),
+                        tint = fabIconColor
+                    )
                 }
             }
         }

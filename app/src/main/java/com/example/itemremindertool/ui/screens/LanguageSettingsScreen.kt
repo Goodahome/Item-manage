@@ -55,6 +55,10 @@ fun LanguageSettingsScreen(
             Column(
                 modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
             ) {
+                // 使用与侧边栏风格首页一致的悬浮按钮样式
+                val fabBackground = ColorHelpers.getGroup2SettingsBtnColor()
+                val fabIconColor = ColorHelpers.getContrastColor(fabBackground)
+                
                 FloatingActionButton(
                     onClick = {
                         // 使用 commit 确保立即写入，避免重启过快导致未持久化
@@ -67,10 +71,15 @@ fun LanguageSettingsScreen(
                         context.startActivity(intent)
                         activity?.finishAffinity()
                     },
-                    containerColor = ColorHelpers.getGroup5FabColor(),
+                    containerColor = fabBackground,
+                    contentColor = fabIconColor,
                     modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
-                    Icon(Icons.Default.Check, stringResource(R.string.apply))
+                    Icon(
+                        Icons.Default.Check,
+                        stringResource(R.string.apply),
+                        tint = fabIconColor
+                    )
                 }
             }
         }

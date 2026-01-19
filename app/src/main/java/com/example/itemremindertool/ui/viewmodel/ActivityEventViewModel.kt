@@ -75,6 +75,24 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
     }
     
     /**
+     * 记录使用物品动态
+     */
+    fun logItemUsed(itemId: Long, itemName: String, usedQuantity: Int) {
+        viewModelScope.launch {
+            val event = ActivityEvent(
+                type = ActivityEventType.ITEM_USED,
+                title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_used_item),
+                description = "$itemName × $usedQuantity",
+                targetId = itemId,
+                targetName = itemName,
+                iconType = "use_item",
+                createdAt = Date()
+            )
+            activityEventDao.insert(event)
+        }
+    }
+    
+    /**
      * 记录容器添加动态
      */
     fun logWarehouseAdded(warehouseId: Long, warehouseName: String) {

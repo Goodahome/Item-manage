@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,7 +53,7 @@ import java.text.DateFormat
 import java.util.*
 import java.util.Calendar
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ItemDetailScreen(
     itemId: Long,
@@ -488,29 +489,34 @@ fun ItemDetailScreen(
                     // 标签
                     if (item.tags.isNotEmpty()) {
                         Divider()
+                        val pageBgColor = ColorHelpers.getGroup2PageBgColor()
                         Column(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
                                 text = stringResource(R.string.tags),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = ColorHelpers.getGroup4TextColor(0.7f)
+                                color = ColorHelpers.getGroup4TextColorByContrast(pageBgColor, 0.7f)
                             )
-                            Row(
+                            FlowRow(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 item.tags.forEach { tag ->
+                                    val tagBgColor = ColorHelpers.getGroup2SettingsBtnColor()
                                     Surface(
                                         shape = RoundedCornerShape(16.dp),
-                                        color = ColorHelpers.getGroup2SettingsBtnColor(),
+                                        color = tagBgColor,
                                         modifier = Modifier.padding(vertical = 4.dp)
                                     ) {
                                         Text(
                                             text = tag,
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor()),
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                            color = ColorHelpers.getGroup4TextColorByContrast(tagBgColor),
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                            maxLines = 1, // 标签内的文字不换行
+                                            // overflow = TextOverflow.Ellipsis  如果文字太长，显示省略号
                                         )
                                     }
                                 }

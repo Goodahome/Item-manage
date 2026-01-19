@@ -28,12 +28,12 @@ interface WarehouseDao {
     suspend fun insertWarehouse(warehouse: Warehouse): Long
 
     @Update
-    suspend fun updateWarehouse(warehouse: Warehouse): Unit
+    suspend fun updateWarehouse(warehouse: Warehouse): Int
 
     @Delete
-    suspend fun deleteWarehouse(warehouse: Warehouse): Unit
+    suspend fun deleteWarehouse(warehouse: Warehouse): Int
 
     @Query("DELETE FROM warehouses WHERE id = :id")
-    suspend fun deleteWarehouseById(id: Long): Unit
+    suspend fun deleteWarehouseById(id: Long): Int
 }
 

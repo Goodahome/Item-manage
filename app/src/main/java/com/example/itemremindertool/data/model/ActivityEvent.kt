@@ -11,7 +11,8 @@ enum class ActivityEventType {
     ITEM_ADDED,          // 物品添加
     ITEM_DELETED,        // 物品删除
     ITEM_UPDATED,        // 物品更新
-    WAREHOUSE_ADDED,     // 容器添加
+    ITEM_USED,           // 使用了物品
+    WAREHOUSE_ADDED,    // 容器添加
     WAREHOUSE_DELETED,   // 容器删除
     WAREHOUSE_UPDATED,   // 容器更新
     REMINDER_TRIGGERED,  // 提醒触发

@@ -263,7 +263,14 @@ fun ItemEditScreen(
                     }
                 },
                 actions = {
+                    // 获取与返回按钮一致的颜色
+                    val gradientStartColor = ColorHelpers.getTopBarGradientStart()
+                    val contrastColor = ColorHelpers.getGroup4TextColorByContrast(gradientStartColor)
+                    
                     TextButton(
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = contrastColor
+                        ),
                         onClick = {
                             if (selectedWarehouseId == null) {
                                 warehouseError = true
@@ -518,8 +525,8 @@ fun ItemEditScreen(
                                 )
                             ) {
                                 val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                                val iconColor = ColorHelpers.getContrastColor(backgroundColor)
-                                val textColor = ColorHelpers.getContrastColor(backgroundColor)
+                                val iconColor = ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
+                                val textColor = ColorHelpers.getGroup4TextColorByContrast(backgroundColor)
                                 Icon(
                                     Icons.Default.CameraAlt,
                                     contentDescription = null,
@@ -542,8 +549,8 @@ fun ItemEditScreen(
                                 )
                             ) {
                                 val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                                val iconColor = ColorHelpers.getContrastColor(backgroundColor)
-                                val textColor = ColorHelpers.getContrastColor(backgroundColor)
+                                val iconColor = ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
+                                val textColor = ColorHelpers.getGroup4TextColorByContrast(backgroundColor)
                                 Icon(
                                     Icons.Default.PhotoLibrary,
                                     contentDescription = null,
@@ -1047,7 +1054,7 @@ fun ItemEditScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = ColorHelpers.getGroup3CardBgColor()
+                            containerColor = ColorHelpers.getGroup2PageBgColor() // 使用Background背景
                         ),
                     ) {
                         Row(

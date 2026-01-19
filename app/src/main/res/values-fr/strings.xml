@@ -487,6 +487,7 @@
     <string name="event_added_item">Article ajouté</string>
     <string name="event_deleted_item">Article supprimé</string>
     <string name="event_updated_item">Article mis à jour</string>
+    <string name="event_used_item">Article utilisé</string>
     <string name="event_created_warehouse">Conteneur créé</string>
     <string name="event_deleted_warehouse">Conteneur supprimé</string>
     <string name="event_updated_warehouse">Conteneur mis à jour</string>

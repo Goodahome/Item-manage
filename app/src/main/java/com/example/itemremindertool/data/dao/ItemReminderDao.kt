@@ -22,13 +22,13 @@ interface ItemReminderDao {
     suspend fun insertReminder(reminder: ItemReminder): Long
     
     @Update
-    suspend fun updateReminder(reminder: ItemReminder): Unit
+    suspend fun updateReminder(reminder: ItemReminder): Int
     
     @Delete
-    suspend fun deleteReminder(reminder: ItemReminder): Unit
+    suspend fun deleteReminder(reminder: ItemReminder): Int
     
     @Query("DELETE FROM item_reminders WHERE itemId = :itemId")
-    suspend fun deleteRemindersByItemId(itemId: Long): Unit
+    suspend fun deleteRemindersByItemId(itemId: Long): Int
 }
 
 

@@ -59,11 +59,11 @@ private val ColdBlueDarkScheme = darkColorScheme(
     error = ColdBlueTertiaryDark,
     onError = androidx.compose.ui.graphics.Color.White,
     background = ColdBlueBackgroundDark,
-    onBackground = androidx.compose.ui.graphics.Color(0xFFE2E2E5),
+    onBackground = OnSurfaceDarkHighContrast,
     surface = ColdBlueSurfaceDark,
-    onSurface = androidx.compose.ui.graphics.Color(0xFFE2E2E5),
+    onSurface = OnSurfaceDarkHighContrast,
     surfaceVariant = ColdBlueSurfaceVariantDark,
-    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFC2C7CE)
+    onSurfaceVariant = OnSurfaceVariantDarkHighContrast
 )
 
 // ========== 2. 奶油治愈系 ==========

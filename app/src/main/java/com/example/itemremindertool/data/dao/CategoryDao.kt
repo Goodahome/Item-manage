@@ -19,12 +19,12 @@ interface CategoryDao {
     suspend fun insertCategory(category: Category): Long
 
     @Update
-    suspend fun updateCategory(category: Category): Unit
+    suspend fun updateCategory(category: Category): Int
 
     @Delete
-    suspend fun deleteCategory(category: Category): Unit
+    suspend fun deleteCategory(category: Category): Int
 
     @Query("DELETE FROM categories WHERE id = :id")
-    suspend fun deleteCategoryById(id: Long): Unit
+    suspend fun deleteCategoryById(id: Long): Int
 }
 

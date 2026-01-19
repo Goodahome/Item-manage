@@ -109,6 +109,21 @@ fun ItemGridCard(
     // 使用与左侧容器图标一致的主题色
     val cardBackgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
     
+    // 根据背景色和对比度判断，返回对应的边框颜色
+    val selectedBorderColor = if (backgroundBitmap != null) {
+        // 如果有背景图片，根据图片亮度创建一个代表背景的颜色来计算对比度
+        // 亮图片使用浅色背景，暗图片使用深色背景
+        val imageBgColor = if (isImageBright) {
+            Color.White // 亮图片，使用白色作为代表背景色
+        } else {
+            Color.Black // 暗图片，使用黑色作为代表背景色
+        }
+        ColorHelpers.getGroup4TextColorByContrast(imageBgColor)
+    } else {
+        // 无图片时，根据卡片背景色计算对比色
+        ColorHelpers.getGroup4TextColorByContrast(cardBackgroundColor)
+    }
+    
     Card(
         modifier = modifier
             .aspectRatio(1f) // 保持正方形
@@ -122,10 +137,13 @@ fun ItemGridCard(
             }
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 8.dp else 2.dp
+            defaultElevation = 6.dp, // 选中和未选中时使用相同的 elevation
+            pressedElevation = 8.dp,
+            hoveredElevation = 7.dp,
+            focusedElevation = 7.dp
         ),
         border = if (isSelected) {
-            androidx.compose.foundation.BorderStroke(3.dp, MaterialTheme.colorScheme.primary)
+            androidx.compose.foundation.BorderStroke(4.dp, selectedBorderColor) // 使用对比色边框
         } else {
             null
         }
@@ -155,10 +173,16 @@ fun ItemGridCard(
             
             // 根据是否有图片决定文字颜色
             val displayTextColor = if (backgroundBitmap != null) {
-                Color.White // 有图片时统一白色（因为有半透明遮罩）
+                // 有图片时，根据图片亮度创建一个代表背景的颜色来计算对比度
+                val imageBgColor = if (isImageBright) {
+                    Color.White.copy(alpha = 0.3f) // 亮图片，使用浅色背景
+                } else {
+                    Color.Black.copy(alpha = 0.4f) // 暗图片，使用深色背景
+                }
+                ColorHelpers.getGroup4TextColorByContrast(imageBgColor)
             } else {
-                // 无图片时使用与背景色对比的颜色，与左侧容器图标保持一致
-                ColorHelpers.getContrastColor(cardBackgroundColor)
+                // 无图片时使用与背景色对比的颜色
+                ColorHelpers.getGroup4TextColorByContrast(cardBackgroundColor)
             }
             
             // 物品名称 - 有图片时不显示，无图片时居中显示
@@ -199,14 +223,7 @@ fun ItemGridCard(
                 )
             }
             
-            // 选中指示器
-            if (isSelected) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-                )
-            }
+            // 选中时只显示边框，不显示背景遮罩
         }
     }
 }
@@ -233,7 +250,7 @@ fun ItemGridDetailPanel(
             .padding(0.dp),
         shape = RoundedCornerShape(12.dp), // 与物品卡片相同的圆角
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = ColorHelpers.getGroup3CardBgColor()
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // 与物品卡片相同的立体效果
     ) {
@@ -423,42 +440,59 @@ fun ItemGridDetailPanel(
             }
             
             // 按钮行
+            val buttonBgColor = ColorHelpers.getGroup2SettingsBtnColor()
+            val buttonTextColor = ColorHelpers.getGroup4TextColorByContrast(buttonBgColor)
+            val buttonIconColor = ColorHelpers.getGroup4IconColorByContrast(buttonBgColor)
+            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                OutlinedButton(
+                // 详情按钮（改为和使用按钮一致的样式）
+                Button(
                     onClick = onViewDetails,
                     modifier = Modifier.weight(1f).height(36.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = ColorHelpers.getGroup4TextColor()
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonBgColor,
+                        contentColor = buttonTextColor,
+                        disabledContainerColor = buttonBgColor.copy(alpha = 0.5f),
+                        disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
                     ),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                 ) {
                     Icon(
                         Icons.Default.Info,
                         contentDescription = null,
+                        tint = buttonIconColor,
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(3.dp))
-                    Text(stringResource(R.string.details), fontSize = 11.sp)
+                    Text(stringResource(R.string.details), fontSize = 11.sp, color = buttonTextColor)
                 }
                 
+                // 使用按钮
                 Button(
                     onClick = { 
                         onUse(useQuantity)
                     },
                     modifier = Modifier.weight(1f).height(36.dp),
                     enabled = item.quantity > 0,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonBgColor,
+                        contentColor = buttonTextColor,
+                        disabledContainerColor = buttonBgColor.copy(alpha = 0.5f),
+                        disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
+                    ),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                 ) {
                     Icon(
                         Icons.Default.RemoveCircle,
                         contentDescription = null,
+                        tint = buttonIconColor,
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(3.dp))
-                    Text(stringResource(R.string.use_item), fontSize = 11.sp)
+                    Text(stringResource(R.string.use_item), fontSize = 11.sp, color = buttonTextColor)
                 }
             }
         }
@@ -647,25 +681,33 @@ fun ItemDetailPanel(
             )
             
             // 按钮行
+            val buttonBgColor = ColorHelpers.getGroup2SettingsBtnColor()
+            val buttonTextColor = ColorHelpers.getGroup4TextColorByContrast(buttonBgColor)
+            val buttonIconColor = ColorHelpers.getGroup4IconColorByContrast(buttonBgColor)
+            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // 详细信息按钮
-                OutlinedButton(
+                // 详细信息按钮（改为和使用按钮一致的样式）
+                Button(
                     onClick = onViewDetails,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = ColorHelpers.getGroup4TextColor()
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonBgColor,
+                        contentColor = buttonTextColor,
+                        disabledContainerColor = buttonBgColor.copy(alpha = 0.5f),
+                        disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
                     )
                 ) {
                     Icon(
                         Icons.Default.Info,
                         contentDescription = null,
+                        tint = buttonIconColor,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(stringResource(R.string.detail_info))
+                    Text(stringResource(R.string.detail_info), color = buttonTextColor)
                 }
                 
                 // 使用按钮
@@ -675,15 +717,22 @@ fun ItemDetailPanel(
                         onUse(finalQuantity)
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = item.quantity > 0
+                    enabled = item.quantity > 0,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonBgColor,
+                        contentColor = buttonTextColor,
+                        disabledContainerColor = buttonBgColor.copy(alpha = 0.5f),
+                        disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
+                    )
                 ) {
                     Icon(
                         Icons.Default.RemoveCircle,
                         contentDescription = null,
+                        tint = buttonIconColor,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(stringResource(R.string.use_item))
+                    Text(stringResource(R.string.use_item), color = buttonTextColor)
                 }
             }
         }

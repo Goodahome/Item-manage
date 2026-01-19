@@ -196,7 +196,14 @@ fun WarehouseEditScreen(
                     }
                 },
                 actions = {
+                    // 获取与返回按钮一致的颜色
+                    val gradientStartColor = ColorHelpers.getTopBarGradientStart()
+                    val contrastColor = ColorHelpers.getContrastColor(gradientStartColor)
+                    
                     TextButton(
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = contrastColor
+                        ),
                         onClick = {
                             scope.launch {
                                 val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)

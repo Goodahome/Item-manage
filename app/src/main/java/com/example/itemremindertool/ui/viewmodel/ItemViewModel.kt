@@ -111,6 +111,40 @@ class ItemViewModel(
             }
         }
     }
+    
+    /**
+     * 使用物品（减少数量并记录使用事件）
+     */
+    fun useItem(item: Item, usedQuantity: Int) {
+        viewModelScope.launch {
+            try {
+                _operationState.value = OperationState.Saving
+                itemRepository.useItem(item, usedQuantity)
+                _operationState.value = OperationState.Success("使用成功")
+                kotlinx.coroutines.delay(2000) // 成功消息显示2秒
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                // 如果是连接池关闭错误，等待一下然后重试（可能是数据库正在恢复）
+                if (e.message?.contains("connection pool has been closed") == true) {
+                    kotlinx.coroutines.delay(1000) // 等待1秒让数据库恢复
+                    try {
+                        itemRepository.useItem(item, usedQuantity)
+                        _operationState.value = OperationState.Success("使用成功")
+                        kotlinx.coroutines.delay(2000)
+                        _operationState.value = OperationState.Idle
+                    } catch (retryException: Exception) {
+                        _operationState.value = OperationState.Error("使用失败: ${retryException.message}")
+                        kotlinx.coroutines.delay(2000)
+                        _operationState.value = OperationState.Idle
+                    }
+                } else {
+                    _operationState.value = OperationState.Error("使用失败: ${e.message}")
+                    kotlinx.coroutines.delay(2000) // 错误消息也显示2秒
+                    _operationState.value = OperationState.Idle
+                }
+            }
+        }
+    }
 
     fun deleteItem(item: Item) {
         viewModelScope.launch {

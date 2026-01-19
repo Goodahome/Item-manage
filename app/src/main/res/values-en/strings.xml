@@ -497,6 +497,7 @@
     <string name="event_added_item">Added item</string>
     <string name="event_deleted_item">Deleted item</string>
     <string name="event_updated_item">Updated item</string>
+    <string name="event_used_item">Used item</string>
     <string name="event_created_warehouse">Created container</string>
     <string name="event_deleted_warehouse">Deleted container</string>
     <string name="event_updated_warehouse">Updated container</string>

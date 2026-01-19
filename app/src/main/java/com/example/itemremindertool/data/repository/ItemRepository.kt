@@ -84,6 +84,33 @@ class ItemRepository(
             }
         }
     }
+    
+    /**
+     * 使用物品（减少数量并记录使用事件）
+     */
+    suspend fun useItem(item: Item, usedQuantity: Int) {
+        val newQuantity = (item.quantity - usedQuantity).coerceAtLeast(0)
+        val updatedItem = item.copy(quantity = newQuantity, updatedAt = Date())
+        itemDao.updateItem(updatedItem)
+        // 记录使用物品动态
+        context?.let {
+            try {
+                val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
+                val event = com.example.itemremindertool.data.model.ActivityEvent(
+                    type = com.example.itemremindertool.data.model.ActivityEventType.ITEM_USED,
+                    title = it.getString(com.example.itemremindertool.R.string.event_used_item),
+                    description = "${item.name} × $usedQuantity",
+                    targetId = item.id,
+                    targetName = item.name,
+                    iconType = "use_item",
+                    createdAt = Date()
+                )
+                activityEventDao.insert(event)
+            } catch (e: Exception) {
+                android.util.Log.e("ItemRepository", "记录使用物品动态失败", e)
+            }
+        }
+    }
 
     @androidx.room.Transaction
     suspend fun deleteItem(item: Item) {

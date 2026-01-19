@@ -339,7 +339,7 @@ fun ItemReminderToolApp(
     
     ModalNavigationDrawer(
         drawerState = drawerState,
-        gesturesEnabled = false,
+        gesturesEnabled = true, // 启用手势以支持点击外部区域关闭
         drawerContent = {
             ModalDrawerSheet(
                 modifier = Modifier.width(280.dp), // 设置侧边菜单宽度
@@ -352,12 +352,12 @@ fun ItemReminderToolApp(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    // 标题行，包含标题和关闭按钮
+                    // 标题行（移除关闭按钮，点击外部区域可关闭）
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 8.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.Start,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -365,19 +365,6 @@ fun ItemReminderToolApp(
                             style = MaterialTheme.typography.headlineSmall,
                             modifier = Modifier.padding(start = 8.dp)
                         )
-                        IconButton(
-                            onClick = {
-                                scope.launch {
-                                    drawerState.close()
-                                }
-                            }
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = stringResource(R.string.close),
-                                tint = com.example.itemremindertool.ui.theme.ColorHelpers.getGroup4TextColor()
-                            )
-                        }
                     }
                     Divider()
                     

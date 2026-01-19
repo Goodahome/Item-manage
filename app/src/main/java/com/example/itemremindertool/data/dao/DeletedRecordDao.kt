@@ -19,9 +19,9 @@ interface DeletedRecordDao {
     suspend fun insertDeletedRecord(record: DeletedRecord): Unit
     
     @Query("DELETE FROM deleted_records WHERE entityType = :entityType AND entityId = :entityId")
-    suspend fun removeDeletedRecord(entityType: String, entityId: Long): Unit
+    suspend fun removeDeletedRecord(entityType: String, entityId: Long): Int
     
     @Query("DELETE FROM deleted_records WHERE deletedAt < :beforeDate")
-    suspend fun cleanOldRecords(beforeDate: Long): Unit // 清理30天前的删除记录
+    suspend fun cleanOldRecords(beforeDate: Long): Int // 清理30天前的删除记录
 }
 
