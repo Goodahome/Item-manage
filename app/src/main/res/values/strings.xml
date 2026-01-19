@@ -628,4 +628,22 @@
     <string name="clear_activity_data_desc">清除首页显示的所有动态记录</string>
     <string name="clear_activity_data_confirm">确定要清除所有动态数据吗？此操作不可恢复。</string>
     <string name="clear">清除</string>
+    
+    <!-- 物品展示模式 -->
+    <string name="item_display_mode">物品展示模式</string>
+    <string name="item_display_mode_list">列表模式（整行显示）</string>
+    <string name="item_display_mode_grid">网格模式（背包样式）</string>
+    <string name="toggle">切换</string>
+    
+    <!-- 网格模式相关 -->
+    <string name="decrease">减少</string>
+    <string name="increase">增加</string>
+    <string name="details">详情</string>
+    <string name="use_item">使用</string>
+    <string name="expires">到期: %1$s</string>
+    <string name="current_quantity">当前数量</string>
+    <string name="use_quantity">使用数量</string>
+    <string name="input_use_quantity">输入使用数量</string>
+    <string name="detail_info">详细信息</string>
+    <string name="all">全部</string>
 </resources>

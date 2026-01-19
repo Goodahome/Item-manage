@@ -592,4 +592,22 @@
     <string name="clear_activity_data_desc">Alle auf der Startseite angezeigten Aktivitätsdatensätze löschen</string>
     <string name="clear_activity_data_confirm">Alle Aktivitätsdaten wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.</string>
     <string name="clear">Löschen</string>
+    
+    <!-- Artikel-Anzeigemodus -->
+    <string name="item_display_mode">Artikel-Anzeigemodus</string>
+    <string name="item_display_mode_list">Listenmodus (ganze Zeile)</string>
+    <string name="item_display_mode_grid">Rastermodus (Inventar-Stil)</string>
+    <string name="toggle">Umschalten</string>
+    
+    <!-- Rastermodus bezogen -->
+    <string name="decrease">Verringern</string>
+    <string name="increase">Erhöhen</string>
+    <string name="details">Details</string>
+    <string name="use_item">Verwenden</string>
+    <string name="expires">Läuft ab: %1$s</string>
+    <string name="current_quantity">Aktuelle Menge</string>
+    <string name="use_quantity">Verwendete Menge</string>
+    <string name="input_use_quantity">Verwendete Menge eingeben</string>
+    <string name="detail_info">Detaillierte Informationen</string>
+    <string name="all">Alle</string>
 </resources>

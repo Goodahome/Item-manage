@@ -599,4 +599,22 @@
     <string name="clear_activity_data_desc">Clear all activity records displayed on the home page</string>
     <string name="clear_activity_data_confirm">Are you sure you want to clear all activity data? This action cannot be undone.</string>
     <string name="clear">Clear</string>
+    
+    <!-- Item Display Mode -->
+    <string name="item_display_mode">Item Display Mode</string>
+    <string name="item_display_mode_list">List Mode (Full Row)</string>
+    <string name="item_display_mode_grid">Grid Mode (Inventory Style)</string>
+    <string name="toggle">Toggle</string>
+    
+    <!-- Grid Mode Related -->
+    <string name="decrease">Decrease</string>
+    <string name="increase">Increase</string>
+    <string name="details">Details</string>
+    <string name="use_item">Use</string>
+    <string name="expires">Expires: %1$s</string>
+    <string name="current_quantity">Current Quantity</string>
+    <string name="use_quantity">Use Quantity</string>
+    <string name="input_use_quantity">Enter quantity to use</string>
+    <string name="detail_info">Details</string>
+    <string name="all">All</string>
 </resources>

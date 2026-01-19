@@ -16,6 +16,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +33,7 @@ import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -3287,9 +3292,9 @@ fun WarehouseSidebarColumn(
     // 使用 Card 提供与右侧卡片一致的立体阴影效果
     Card(
         modifier = modifier
-            .width(74.dp) // 增加宽度：60dp + 8dp padding = 68dp
+            .width(66.dp)
             .fillMaxHeight()
-            .padding(end = 8.dp), // 预留空间让阴影完整显示
+            .padding(end = 0.dp), // 预留空间让阴影完整显示
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = ColorHelpers.getGroup3CardBgColor()
@@ -4416,9 +4421,55 @@ fun ItemListSection(
     useCircleIcon: Boolean = false, // 侧边栏风格图标形状设置
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    
+    // 获取展示模式
+    val displayModeManager = remember { com.example.itemremindertool.config.ItemDisplayModeManager.getInstance(context) }
+    val displayMode by displayModeManager.displayMode.collectAsState()
+    
     // 标签筛选状态
     var selectedTags by remember { mutableStateOf<Set<String>>(emptySet()) }
+    
+    // 选中的物品（仅网格模式使用）- 使用 rememberSaveable 保存配置变更
+    var selectedItemId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val selectedItem = remember(selectedItemId, items) {
+        items.find { it.id == selectedItemId }
+    }
+    
+    // 配置变更标志位 - 用于在配置变更时延迟复杂渲染
+    var isConfigChanging by remember { mutableStateOf(false) }
+    
+    // 监听配置变更
+    DisposableEffect(configuration) {
+        // 配置变更开始
+        isConfigChanging = true
+        selectedItemId = null
+        
+        onDispose {
+            // 配置变更结束
+            isConfigChanging = false
+        }
+    }
+    
+    // 延迟恢复渲染，给配置变更留出时间
+    LaunchedEffect(isConfigChanging) {
+        if (isConfigChanging) {
+            kotlinx.coroutines.delay(100) // 延迟100ms
+            isConfigChanging = false
+        }
+    }
+    
     val listState = rememberLazyListState(0, 0)
+    val gridState = rememberLazyGridState()
+    
+    // 标签筛选变化时重置网格滚动位置
+    LaunchedEffect(selectedTags) {
+        if (displayMode == com.example.itemremindertool.config.ItemDisplayMode.GRID) {
+            gridState.scrollToItem(0, 0)
+        }
+    }
+    
     // 获取所有唯一标签
     val allTags = remember(items) {
         items.flatMap { it.tags }.distinct().sorted()
@@ -4511,8 +4562,9 @@ fun ItemListSection(
                 }
             }
         } else {
-            // 使用 key 确保标签筛选变化时列表状态重置
-            
+            // 根据展示模式选择显示方式
+            if (displayMode == com.example.itemremindertool.config.ItemDisplayMode.LIST) {
+                // 列表模式（原有显示方式）
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
@@ -4535,47 +4587,291 @@ fun ItemListSection(
                         end = 0.dp
                     )
                 ) {
-                items(filteredItems, key = { it.id }) { item ->
-                // 查找物品所属的容器名称
-                val warehouseName = remember(item.warehouseId, allWarehouses) {
-                    allWarehouses?.find { it.id == item.warehouseId }?.name
+                    items(filteredItems, key = { it.id }) { item ->
+                        // 查找物品所属的容器名称
+                        val warehouseName = remember(item.warehouseId, allWarehouses) {
+                            allWarehouses?.find { it.id == item.warehouseId }?.name
+                        }
+                        
+                        ItemListRow(
+                            item = item,
+                            onClick = { onViewItem(item.id) },
+                            onEditItem = onEditItem,
+                            warehouseName = warehouseName, // 传递容器名称
+                            useCircleIcon = useCircleIcon, // 传递侧边栏风格图标形状设置
+                            onAddToShoppingCart = { item ->
+                                shoppingItemViewModel?.let { vm ->
+                                    val shoppingItem = com.example.itemremindertool.data.model.ShoppingItem(
+                                        name = item.name,
+                                        description = item.description,
+                                        quantity = item.quantity,
+                                        priority = com.example.itemremindertool.data.model.Priority.MEDIUM,
+                                        itemId = item.id // 关联物品ID，用于完成购买时补充库存
+                                    )
+                                    vm.insertShoppingItem(shoppingItem)
+                                }
+                            },
+                            onDeleteItem = { toDelete ->
+                                if (onDeleteItem != {}) {
+                                    onDeleteItem(toDelete)
+                                } else {
+                                    itemViewModel?.deleteItem(toDelete)
+                                }
+                            },
+                            onAddAlert = onAddAlert,
+                            onQuantityChange = { item, newQuantity ->
+                                // 快速更新物品数量
+                                itemViewModel?.updateItem(item.copy(quantity = newQuantity))
+                            }
+                        )
+                    }
+                }
+            } else {
+                // 网格模式（游戏背包样式）- 详细信息面板嵌入网格中
+                
+                // 配置变更期间显示加载状态，避免黑屏
+                if (isConfigChanging) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    // 准确计算网格列数（考虑所有padding和间距）
+                val density = LocalDensity.current
+                val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+                val screenWidthDp = configuration.screenWidthDp.dp
+                val gridColumns = remember(screenWidthDp) {
+                    // Surface padding: 12dp * 2 = 24dp
+                    // LazyVerticalGrid contentPadding: 12dp * 2 = 24dp
+                    // 总padding: 48dp
+                    val totalPadding = 48.dp
+                    val availableWidth = screenWidthDp - totalPadding
+                    
+                    // 卡片最小尺寸
+                    val minCardSize = 72.dp
+                    val spacing = 8.dp
+                    
+                    // 计算可以容纳的列数
+                    var columns = 1
+                    while (true) {
+                        val nextColumns = columns + 1
+                        val totalSpacing = spacing * (nextColumns - 1)
+                        val requiredWidth = minCardSize * nextColumns + totalSpacing
+                        if (requiredWidth <= availableWidth) {
+                            columns = nextColumns
+                        } else {
+                            break
+                        }
+                    }
+                    columns.coerceAtLeast(1)
                 }
                 
-                ItemListRow(
-                    item = item,
-                    onClick = { onViewItem(item.id) },
-                    onEditItem = onEditItem,
-                    warehouseName = warehouseName, // 传递容器名称
-                    useCircleIcon = useCircleIcon, // 传递侧边栏风格图标形状设置
-                    onAddToShoppingCart = { item ->
-                        shoppingItemViewModel?.let { vm ->
-                            val shoppingItem = com.example.itemremindertool.data.model.ShoppingItem(
-                                name = item.name,
-                                description = item.description,
-                                quantity = item.quantity,
-                                priority = com.example.itemremindertool.data.model.Priority.MEDIUM,
-                                itemId = item.id // 关联物品ID，用于完成购买时补充库存
-                            )
-                            vm.insertShoppingItem(shoppingItem)
-                        }
-                    },
-                    onDeleteItem = { toDelete ->
-                        if (onDeleteItem != {}) {
-                            onDeleteItem(toDelete)
+                // 使用 derivedStateOf 优化性能，减少不必要的重组
+                // 添加 filteredItems 作为依赖，确保标签筛选变化时能正确更新
+                val itemsWithDetail by remember(filteredItems, selectedItemId, gridColumns) {
+                    derivedStateOf {
+                        // 添加空列表检查，避免配置变更时的问题
+                        if (filteredItems.isEmpty()) {
+                            emptyList()
+                        } else if (selectedItemId == null) {
+                            filteredItems.map { it to false }
                         } else {
-                            itemViewModel?.deleteItem(toDelete)
+                            val selectedIndex = filteredItems.indexOfFirst { it.id == selectedItemId }
+                            if (selectedIndex == -1) {
+                                filteredItems.map { it to false }
+                            } else {
+                                val selected = filteredItems[selectedIndex]
+                                // 计算选中物品所在行的最后一个位置
+                                val rowEndIndex = ((selectedIndex / gridColumns) + 1) * gridColumns - 1
+                                val insertIndex = (rowEndIndex + 1).coerceAtMost(filteredItems.size)
+                                
+                                buildList {
+                                    filteredItems.forEachIndexed { index, item ->
+                                        add(item to false)
+                                        // 在这一行结束后插入详细信息面板
+                                        if (index == insertIndex - 1 || (index == filteredItems.size - 1 && selectedIndex == filteredItems.size - 1)) {
+                                            add(selected to true)
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    },
-                    onAddAlert = onAddAlert,
-                    onQuantityChange = { item, newQuantity ->
-                        // 快速更新物品数量
-                        itemViewModel?.updateItem(item.copy(quantity = newQuantity))
                     }
-                )
-            
+                }
+                
+                // 确保内容已准备好，避免配置变更时渲染不完整的状态
+                if (itemsWithDetail.isEmpty() && filteredItems.isNotEmpty()) {
+                    // 数据正在准备中，显示加载指示器
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    // 外围容器 - 添加下沉效果和边框
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        color = ColorHelpers.getGroup3CardBgColor(),
+                        border = BorderStroke(1.dp, ColorHelpers.getGroup4IconColor(0.2f)),
+                        shadowElevation = 0.dp, // 无外阴影
+                        tonalElevation = 0.dp
+                    ) {
+                    // 下沉效果 - 使用内阴影（上、左、右三边）
+                    Box(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        // 上边内阴影
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(20.dp)
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Black.copy(alpha = 0.06f),
+                                            Color.Transparent
+                                        )
+                                    )
+                                )
+                        )
+                        
+                        // 左边内阴影
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .width(20.dp)
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(
+                                            Color.Black.copy(alpha = 0.06f),
+                                            Color.Transparent
+                                        )
+                                    )
+                                )
+                        )
+                        
+                        // 右边内阴影
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .width(20.dp)
+                                .align(Alignment.TopEnd)
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            Color.Black.copy(alpha = 0.06f)
+                                        )
+                                    )
+                                )
+                        )
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(gridColumns), // 使用固定列数，确保与计算一致
+                            state = gridState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .nestedScroll(object : NestedScrollConnection {
+                                    override fun onPreScroll(
+                                        available: Offset,
+                                        source: NestedScrollSource
+                                    ): Offset {
+                                        return Offset.Zero
+                                    }
+                                }),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(
+                                bottom = 12.dp,
+                                top = 12.dp,
+                                start = 12.dp,
+                                end = 12.dp
+                            )
+                        ) {
+                    items(
+                        count = itemsWithDetail.size,
+                        key = { index ->
+                            val (item, isDetail) = itemsWithDetail[index]
+                            if (isDetail) "detail_${item.id}" else "item_${item.id}"
+                        },
+                        span = { index ->
+                            val (_, isDetail) = itemsWithDetail[index]
+                            if (isDetail) {
+                                androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan)
+                            } else {
+                                androidx.compose.foundation.lazy.grid.GridItemSpan(1)
+                            }
+                        }
+                    ) { index ->
+                        val (item, isDetail) = itemsWithDetail[index]
+                        
+                        if (isDetail) {
+                            // 详细信息面板 - 嵌入网格中，居中显示并限制最大宽度
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                com.example.itemremindertool.ui.components.ItemGridDetailPanel(
+                                    item = item,
+                                    onQuantityChange = { newQuantity ->
+                                        itemViewModel?.updateItem(item.copy(quantity = newQuantity))
+                                        // 保持选中状态，ID不变
+                                    },
+                                    onUse = { useQuantity ->
+                                        val newQuantity = (item.quantity - useQuantity).coerceAtLeast(0)
+                                        itemViewModel?.updateItem(item.copy(quantity = newQuantity))
+                                        // 保持选中状态，ID不变
+                                    },
+                                    onViewDetails = {
+                                        onViewItem(item.id)
+                                    },
+                                    onAddToShoppingCart = {
+                                        shoppingItemViewModel?.let { vm ->
+                                            val shoppingItem = com.example.itemremindertool.data.model.ShoppingItem(
+                                                name = item.name,
+                                                description = item.description,
+                                                quantity = 1,
+                                                priority = com.example.itemremindertool.data.model.Priority.MEDIUM,
+                                                itemId = item.id
+                                            )
+                                            vm.insertShoppingItem(shoppingItem)
+                                        }
+                                    },
+                                    modifier = Modifier.widthIn(max = 500.dp) // 限制最大宽度，平板上不会太宽
+                                )
+                            }
+                        } else {
+                            // 普通物品卡片
+                            com.example.itemremindertool.ui.components.ItemGridCard(
+                                item = item,
+                                isSelected = selectedItemId == item.id,
+                                onClick = {
+                                    selectedItemId = if (selectedItemId == item.id) {
+                                        null
+                                    } else {
+                                        item.id
+                                    }
+                                }
+                            )
+                        }
+                    }
+                        }
+                    }
+                    }
+                    }
+                }
             }
         }
-    }
     }
 }
 

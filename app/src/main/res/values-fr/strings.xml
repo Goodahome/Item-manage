@@ -592,4 +592,22 @@
     <string name="clear_activity_data_desc">Effacer tous les enregistrements d\'activité affichés sur la page d\'accueil</string>
     <string name="clear_activity_data_confirm">Voulez-vous vraiment effacer toutes les données d\'activité ? Cette action est irréversible.</string>
     <string name="clear">Effacer</string>
+    
+    <!-- Mode d\'affichage des articles -->
+    <string name="item_display_mode">Mode d\'affichage des articles</string>
+    <string name="item_display_mode_list">Mode liste (ligne entière)</string>
+    <string name="item_display_mode_grid">Mode grille (style inventaire)</string>
+    <string name="toggle">Basculer</string>
+    
+    <!-- Mode grille relatif -->
+    <string name="decrease">Diminuer</string>
+    <string name="increase">Augmenter</string>
+    <string name="details">Détails</string>
+    <string name="use_item">Utiliser</string>
+    <string name="expires">Expire : %1$s</string>
+    <string name="current_quantity">Quantité actuelle</string>
+    <string name="use_quantity">Quantité à utiliser</string>
+    <string name="input_use_quantity">Saisir la quantité à utiliser</string>
+    <string name="detail_info">Informations détaillées</string>
+    <string name="all">Tout</string>
 </resources>
