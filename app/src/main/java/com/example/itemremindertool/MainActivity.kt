@@ -677,24 +677,6 @@ fun ItemReminderToolApp(
 
             composable(Screen.BarcodeScanner.route) {
                 // 获取当前布局风格
-                val context = LocalContext.current
-                val prefs = remember { 
-                    context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) 
-                }
-                val homeLayoutStyle = remember {
-                    var savedStyle = prefs.getString("home_layout_style", "sidebar")
-                    // 迁移旧的 "discord" key 到 "sidebar"
-                    if (savedStyle == "discord") {
-                        savedStyle = "sidebar"
-                        prefs.edit().putString("home_layout_style", savedStyle).apply()
-                    }
-                    if (savedStyle == "sidebar") {
-                        com.example.itemremindertool.ui.screens.HomeLayoutStyle.SIDEBAR
-                    } else {
-                        com.example.itemremindertool.ui.screens.HomeLayoutStyle.CLASSIC
-                    }
-                }
-                
                 BarcodeScannerScreen(
                     onBarcodeScanned = { scannedValue ->
                         // 先关闭扫描页面
@@ -703,19 +685,11 @@ fun ItemReminderToolApp(
                         // 尝试解析为容器二维码
                         val warehouseInfo = com.example.itemremindertool.utils.QRCodeUtils.decodeWarehouseInfo(scannedValue)
                         if (warehouseInfo != null) {
-                            // 是容器二维码，打开对应容器
-                            if (homeLayoutStyle == com.example.itemremindertool.ui.screens.HomeLayoutStyle.SIDEBAR) {
-                                // 侧边栏风格：直接导航到Dashboard并选中容器
-                                selectedWarehouseId = warehouseInfo.id
-                                navController.navigate(Screen.Dashboard.route) {
-                                    popUpTo(Screen.Dashboard.route) { inclusive = true }
-                                    launchSingleTop = true
-                                }
-                            } else {
-                                // 经典风格：跳转到容器页面
-                                navController.navigate(Screen.WarehouseItemsTab.createRoute(warehouseInfo.id)) {
-                                    launchSingleTop = true
-                                }
+                            // 是容器二维码，直接导航到Dashboard并选中容器
+                            selectedWarehouseId = warehouseInfo.id
+                            navController.navigate(Screen.Dashboard.route) {
+                                popUpTo(Screen.Dashboard.route) { inclusive = true }
+                                launchSingleTop = true
                             }
                         } else {
                             // 不是容器二维码，尝试作为条形码查找物品

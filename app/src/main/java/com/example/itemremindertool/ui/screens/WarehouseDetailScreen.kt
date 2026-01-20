@@ -52,9 +52,6 @@ fun WarehouseDetailScreen(
 ) {
     val context = LocalContext.current
     
-    // 获取当前布局风格
-    val homeLayoutStyle = rememberHomeLayoutStyle()
-    
     // 记录访问历史
     LaunchedEffect(warehouseId) {
         accessHistoryManager.recordAccess(warehouseId)
@@ -106,17 +103,7 @@ fun WarehouseDetailScreen(
             var showQRCodeDialog by remember { mutableStateOf(false) }
             GradientTopAppBar(
                 title = {
-                    // 经典模式下显示面包屑导航，侧边栏模式下只显示当前容器名称
-                    if (homeLayoutStyle.value == HomeLayoutStyle.CLASSIC && warehousePath.isNotEmpty()) {
-                        BreadcrumbNavigation(
-                            path = warehousePath,
-                            onWarehouseClick = { targetWarehouseId ->
-                                onNavigateToParentWarehouse(targetWarehouseId)
-                            }
-                        )
-                    } else {
-                        Text(warehouse?.name ?: stringResource(R.string.warehouse_items_title))
-                    }
+                    Text(warehouse?.name ?: stringResource(R.string.warehouse_items_title))
                 },
                 navigationIcon = {
                     // 如果有父容器，显示返回按钮；否则不显示
@@ -326,55 +313,4 @@ fun WarehouseDetailScreen(
     }
 }
 
-/**
- * 面包屑导航组件（显示在TopAppBar的title位置）
- */
-@Composable
-fun BreadcrumbNavigation(
-    path: List<com.example.itemremindertool.data.model.Warehouse>,
-    onWarehouseClick: (Long) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val scrollState = rememberScrollState()
-    
-    Row(
-        modifier = modifier
-            .horizontalScroll(scrollState),
-        horizontalArrangement = Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        path.forEachIndexed { index, warehouse ->
-            if (index > 0) {
-                // 分隔符
-                Icon(
-                    Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(14.dp)
-                        .padding(horizontal = 2.dp),
-                    tint = ColorHelpers.getGroup4IconColor(0.6f)
-                )
-            }
-            
-            // 容器名称（可点击）
-            Text(
-                text = warehouse.name,
-                style = MaterialTheme.typography.titleMedium,
-                color = if (index == path.size - 1) {
-                    ColorHelpers.getGroup4TextColor()
-                } else {
-                    ColorHelpers.getGroup2SettingsBtnColor()
-                },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .clickable(enabled = index < path.size - 1) {
-                        onWarehouseClick(warehouse.id)
-                    }
-                    .padding(horizontal = 2.dp, vertical = 2.dp)
-            )
-        }
-    }
-}
 

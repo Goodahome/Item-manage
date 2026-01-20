@@ -62,9 +62,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.ui.draw.rotate
 import com.example.itemremindertool.R
 import com.example.itemremindertool.data.AlertSettingsManager
 import com.example.itemremindertool.data.model.Item
@@ -94,7 +91,6 @@ import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 import com.example.itemremindertool.config.FeatureFlags
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.text.DateFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -104,13 +100,11 @@ import java.util.*
  * 首页布局风格枚举
  */
 enum class HomeLayoutStyle(val key: String) {
-    SIDEBAR("sidebar"),      // 侧边栏风格（左侧容器列）
-    CLASSIC("classic")       // 经典风格（卡片式布局）
+    SIDEBAR("sidebar")      // 侧边栏风格（左侧容器列）
 }
 
 /**
  * 获取首页布局风格偏好
- * 如果用户已保存为侧边栏风格但没有高级功能，则降级为经典风格
  */
 @Composable
 fun rememberHomeLayoutStyle(): MutableState<HomeLayoutStyle> {
@@ -122,23 +116,15 @@ fun rememberHomeLayoutStyle(): MutableState<HomeLayoutStyle> {
     return remember {
         var savedStyle = prefs.getString("home_layout_style", HomeLayoutStyle.SIDEBAR.key)
         
-        // 迁移旧的 "discord" key 到 "sidebar"
-        if (savedStyle == "discord") {
+        // 迁移旧的 "discord" 或 "classic" key 到 "sidebar"
+        if (savedStyle == "discord" || savedStyle == "classic") {
             savedStyle = HomeLayoutStyle.SIDEBAR.key
             prefs.edit().putString("home_layout_style", savedStyle).apply()
         }
         
         val requestedStyle = HomeLayoutStyle.values().find { it.key == savedStyle } ?: HomeLayoutStyle.SIDEBAR
         
-        // 如果用户想使用侧边栏风格但没有高级功能，降级为经典风格
-        val finalStyle = if (requestedStyle == HomeLayoutStyle.SIDEBAR && 
-            !com.example.itemremindertool.billing.PremiumFeatureManager.canAccessPremiumFeatures(context)) {
-            HomeLayoutStyle.CLASSIC
-        } else {
-            requestedStyle
-        }
-        
-        mutableStateOf(finalStyle)
+        mutableStateOf(requestedStyle)
     }
 }
 
@@ -268,10 +254,6 @@ fun DashboardScreen(
     
     val alertSettingsManager = remember { AlertSettingsManager(context) }
     
-    // 首页布局风格状态
-    val homeLayoutStyleState = rememberHomeLayoutStyle()
-    var homeLayoutStyle by homeLayoutStyleState
-
     // 容器物品数量映射（包含所有容器，不仅仅是顶层容器）
     var warehouseItemCounts by remember { mutableStateOf<Map<Long, Int>>(emptyMap()) }
     
@@ -289,8 +271,7 @@ fun DashboardScreen(
     }
     
     // 同步外部传入的 initialSelectedWarehouseId 到内部状态
-    // 注意：需要同时监听 initialSelectedWarehouseId 和 homeLayoutStyle，确保侧边栏风格下正确同步
-    LaunchedEffect(initialSelectedWarehouseId, homeLayoutStyle) {
+    LaunchedEffect(initialSelectedWarehouseId) {
         // 总是同步，包括 null 值，确保返回时能正确恢复状态
         selectedWarehouseId = initialSelectedWarehouseId
     }
@@ -308,16 +289,14 @@ fun DashboardScreen(
         }
     }
 
-    // 侧边栏风格下按系统返回键：若在子容器则返回父容器，否则回到首页
-    if (homeLayoutStyle == HomeLayoutStyle.SIDEBAR) {
-        val currentWarehouse = allWarehouses.find { it.id == selectedWarehouseId }
-        val parentId = currentWarehouse?.parentId
-        BackHandler(enabled = selectedWarehouseId != null) {
-            if (parentId != null) {
-                selectedWarehouseId = parentId
-            } else {
-                selectedWarehouseId = null
-            }
+    // 按系统返回键：若在子容器则返回父容器，否则回到首页
+    val currentWarehouse = allWarehouses.find { it.id == selectedWarehouseId }
+    val parentId = currentWarehouse?.parentId
+    BackHandler(enabled = selectedWarehouseId != null) {
+        if (parentId != null) {
+            selectedWarehouseId = parentId
+        } else {
+            selectedWarehouseId = null
         }
     }
     
@@ -334,12 +313,6 @@ fun DashboardScreen(
     var bitmapToCropForQuickAdd by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     var capturedImagePathForQuickAdd by remember { mutableStateOf<String?>(null) }
     
-    // FAB 展开菜单状态（仅用于经典风格）
-    var fabExpanded by remember { mutableStateOf(false) }
-    val rotationAngle by animateFloatAsState(
-        targetValue = if (fabExpanded) 45f else 0f,
-        animationSpec = tween(durationMillis = 300), label = ""
-    )
     
     // 高级功能对话框状态
     var showPremiumFeatureDialog by remember { mutableStateOf(false) }
@@ -371,35 +344,26 @@ fun DashboardScreen(
                     }
                 },
                 actions = {
-                    // 风格切换按钮
+                    // 显示模式切换按钮（网格/整行）
+                    val displayModeManager = remember { com.example.itemremindertool.config.ItemDisplayModeManager.getInstance(context) }
+                    val displayMode by displayModeManager.displayMode.collectAsState()
+                    
                     IconButton(
                         onClick = {
-                            // 检查是否可以切换到侧边栏风格（高级功能）
-                            if (homeLayoutStyle == HomeLayoutStyle.CLASSIC) {
-                                // 切换到侧边栏风格需要高级功能
-                                val canAccess = com.example.itemremindertool.billing.PremiumFeatureManager.canAccessPremiumFeatures(context)
-                                if (!canAccess) {
-                                    // 显示购买对话框
-                                    showPremiumFeatureDialog = true
-                                    return@IconButton
-                                }
-                            }
-                            
-                            homeLayoutStyle = if (homeLayoutStyle == HomeLayoutStyle.SIDEBAR) {
-                                HomeLayoutStyle.CLASSIC
-                            } else {
-                                HomeLayoutStyle.SIDEBAR
-                            }
-                            saveHomeLayoutStyle(context, homeLayoutStyle)
+                            displayModeManager.toggleDisplayMode()
                         }
                     ) {
                         Icon(
-                            if (homeLayoutStyle == HomeLayoutStyle.SIDEBAR) {
-                                Icons.Default.ViewModule // 切换到经典风格图标
+                            if (displayMode == com.example.itemremindertool.config.ItemDisplayMode.GRID) {
+                                Icons.Default.ViewColumn // 切换到列表模式图标
                             } else {
-                                Icons.Default.ViewColumn // 切换到侧边栏风格图标
+                                Icons.Default.ViewModule // 切换到网格模式图标
                             },
-                            contentDescription = stringResource(R.string.switch_layout_style)
+                            contentDescription = if (displayMode == com.example.itemremindertool.config.ItemDisplayMode.GRID) {
+                                stringResource(R.string.item_display_mode_list)
+                            } else {
+                                stringResource(R.string.item_display_mode_grid)
+                            }
                         )
                     }
                     // 拍照快速添加物品按钮（替换搜索按钮）
@@ -428,92 +392,38 @@ fun DashboardScreen(
             )
         },
         floatingActionButton = {
-            // 检测是否在购物列表页面（侧边栏风格且显示购物列表）
-            val isShoppingListVisible = remember(homeLayoutStyle, selectedWarehouseId) {
-                homeLayoutStyle == HomeLayoutStyle.SIDEBAR && selectedWarehouseId == null
+            // 检测是否在购物列表页面（显示购物列表）
+            val isShoppingListVisible = remember(selectedWarehouseId) {
+                selectedWarehouseId == null
             }
             
-            Column(
-                modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING),
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            // 主 FAB 按钮
+            // 使用与左侧圆形容器图标一致的背景色
+            val fabBackground = ColorHelpers.getGroup2SettingsBtnColor()
+            val fabIconColor = ColorHelpers.getGroup4IconColorByContrast(fabBackground)
+            
+            FloatingActionButton(
+                onClick = {
+                    // 直接添加物品
+                    // 如果当前在购物列表页面，设置标记以便 ItemEditScreen 知道需要添加到购物篮
+                    if (isShoppingListVisible) {
+                        val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+                        prefs.edit().putBoolean("add_to_shopping_list_after_save", true).apply()
+                    }
+                    // 如果当前选中了容器，则带入容器ID
+                    onAddItem(selectedWarehouseId)
+                },
+                containerColor = fabBackground,
+                contentColor = fabIconColor,
+                modifier = Modifier
+                    .size(UIConstants.FAB_SIZE)
+                    .padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
             ) {
-                // 经典风格：显示展开菜单
-                if (homeLayoutStyle == HomeLayoutStyle.CLASSIC && fabExpanded) {
-                    // 添加物品按钮（最上方）
-                    val fabBgColor = ColorHelpers.getGroup5FabColor()
-                    FloatingActionButton(
-                        onClick = {
-                            fabExpanded = false
-                            onAddItem(selectedWarehouseId)
-                        },
-                        containerColor = fabBgColor,
-                        modifier = Modifier.size(UIConstants.FAB_SIZE)
-                    ) {
-                        Icon(
-                            Icons.Default.Category,
-                            contentDescription = stringResource(R.string.add_item),
-                            tint = ColorHelpers.getGroup4IconColorByContrast(fabBgColor)
-                        )
-                    }
-                    
-                    // 添加容器按钮
-                    FloatingActionButton(
-                        onClick = {
-                            fabExpanded = false
-                            onAddWarehouse()
-                        },
-                        containerColor = fabBgColor,
-                        modifier = Modifier.size(UIConstants.FAB_SIZE)
-                    ) {
-                        Icon(
-                            Icons.Default.Inventory2,
-                            contentDescription = stringResource(R.string.add_warehouse),
-                            tint = ColorHelpers.getGroup4IconColorByContrast(fabBgColor)
-                        )
-                    }
-                }
-                
-                // 主 FAB 按钮（最下方）
-                // 侧边栏风格下，使用与左侧圆形容器图标一致的背景色；否则保持原有 FAB 颜色
-                val fabBackground = if (homeLayoutStyle == HomeLayoutStyle.SIDEBAR) {
-                    ColorHelpers.getGroup2SettingsBtnColor()
-                } else {
-                    ColorHelpers.getGroup5FabColor()
-                }
-                val fabIconColor = ColorHelpers.getGroup4IconColorByContrast(fabBackground)
-                
-                FloatingActionButton(
-                    onClick = {
-                        if (homeLayoutStyle == HomeLayoutStyle.CLASSIC) {
-                            // 经典风格：切换展开/收起
-                            fabExpanded = !fabExpanded
-                        } else {
-                            // 侧边栏风格：直接添加物品
-                            // 如果当前在购物列表页面，设置标记以便 ItemEditScreen 知道需要添加到购物篮
-                            if (isShoppingListVisible) {
-                                val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
-                                prefs.edit().putBoolean("add_to_shopping_list_after_save", true).apply()
-                            }
-                            // 如果当前选中了容器，则带入容器ID
-                            onAddItem(selectedWarehouseId)
-                        }
-                    },
-                    containerColor = fabBackground,
-                    contentColor = fabIconColor,
-                    modifier = Modifier.size(UIConstants.FAB_SIZE)
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = if (homeLayoutStyle == HomeLayoutStyle.CLASSIC && fabExpanded) {
-                            stringResource(R.string.close)
-                        } else {
-                            stringResource(R.string.add_item)
-                        },
-                        tint = fabIconColor,
-                        modifier = Modifier.rotate(if (homeLayoutStyle == HomeLayoutStyle.CLASSIC) rotationAngle else 0f)
-                    )
-                }
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = stringResource(R.string.add_item),
+                    tint = fabIconColor
+                )
             }
         },
         contentWindowInsets = WindowInsets(0.dp) // 不使用系统 insets，手动控制 padding
@@ -557,101 +467,69 @@ fun DashboardScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
-            // 根据风格切换显示不同的布局
-            when (homeLayoutStyle) {
-                HomeLayoutStyle.SIDEBAR -> {
-                    // 侧边栏风格主布局（添加顶部padding为搜索框留出空间）
-                    // 生成二维码对话框状态
-                    var showQRCodeDialog by remember { mutableStateOf(false) }
-                    var selectedWarehouseForQRCode by remember { mutableStateOf<Warehouse?>(null) }
-                    
-                    SidebarStyleMainLayout(
-                        warehouses = warehouses,
-                        allWarehouses = allWarehouses,
-                        allItems = items,
-                        warehouseItemCounts = warehouseItemCounts,
-                        selectedWarehouseId = selectedWarehouseId,
-                        shoppingItemsCount = activeShoppingItemsCount,
-                        alertSettingsManager = alertSettingsManager,
-                        shoppingItemViewModel = shoppingItemViewModel,
-                        itemViewModel = itemViewModel,
-                        itemReminderViewModel = itemReminderViewModel,
-                        activityEventViewModel = activityEventViewModel,
-                        warehouseViewModel = warehouseViewModel,
-                        searchQuery = searchQuery, // 传递搜索查询
-                        onWarehouseSelect = { warehouse ->
-                            selectedWarehouseId = warehouse.id
-                        },
-                        onHomeClick = {
-                            // 点击首页图标，取消容器选中，显示统计和提醒
-                            selectedWarehouseId = null
-                        },
-                        onSubWarehouseClick = { subWarehouse ->
-                            // 点击子容器，切换到该子容器显示其物品
-                            selectedWarehouseId = subWarehouse.id
-                        },
-                        onAddWarehouse = onAddWarehouse,
-                        onNavigateToWarehouseItemsTab = onNavigateToWarehouseItemsTab,
-                        onAddChildWarehouse = { parentId ->
-                            onAddChildWarehouse(parentId)
-                        },
-                        onEditWarehouse = onEditWarehouse,
-                        onDeleteWarehouse = onDeleteWarehouse,
-                        onGenerateQRCode = { warehouse ->
-                            selectedWarehouseForQRCode = warehouse
-                            showQRCodeDialog = true
-                        },
-                        onEditItem = onEditItem,
-                        onViewItem = onViewItem,
-                        onDeleteItem = { item ->
-                            itemViewModel.deleteItem(item)
-                        },
-                        onAddAlert = onAddAlert,
-                        pullRefreshState = pullRefreshState,
-                        useCircleIcon = sidebarIconCircle,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = if (showSearchBox) 80.dp else 0.dp) // 仅在搜索框显示时为搜索框留出空间
-                    )
-                    
-                    // 显示二维码对话框
-                    if (showQRCodeDialog && selectedWarehouseForQRCode != null) {
-                        WarehouseQRCodeDialog(
-                            warehouse = selectedWarehouseForQRCode!!,
-                            onDismiss = {
-                                showQRCodeDialog = false
-                                selectedWarehouseForQRCode = null
-                            }
-                        )
-                    }
-                }
-                HomeLayoutStyle.CLASSIC -> {
-                    // 经典风格布局（卡片式）
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .pullRefresh(pullRefreshState)
-                    ) {
-            NewHomeScreenContent(
-                items = items,
+            // 侧边栏风格主布局（添加顶部padding为搜索框留出空间）
+            // 生成二维码对话框状态
+            var showQRCodeDialog by remember { mutableStateOf(false) }
+            var selectedWarehouseForQRCode by remember { mutableStateOf<Warehouse?>(null) }
+            
+            SidebarStyleMainLayout(
                 warehouses = warehouses,
                 allWarehouses = allWarehouses,
+                allItems = items,
                 warehouseItemCounts = warehouseItemCounts,
-                stats = stats,
-                shoppingItemViewModel = shoppingItemViewModel,
-                accessHistoryManager = accessHistoryManager,
+                selectedWarehouseId = selectedWarehouseId,
+                shoppingItemsCount = activeShoppingItemsCount,
                 alertSettingsManager = alertSettingsManager,
-                onNavigateToItems = onNavigateToItems,
-                onNavigateToShoppingList = onNavigateToShoppingList,
-                onNavigateToWarehouse = onNavigateToWarehouseItemsTab,
+                shoppingItemViewModel = shoppingItemViewModel,
+                itemViewModel = itemViewModel,
+                itemReminderViewModel = itemReminderViewModel,
+                activityEventViewModel = activityEventViewModel,
+                warehouseViewModel = warehouseViewModel,
+                searchQuery = searchQuery, // 传递搜索查询
+                onWarehouseSelect = { warehouse ->
+                    selectedWarehouseId = warehouse.id
+                },
+                onHomeClick = {
+                    // 点击首页图标，取消容器选中，显示统计和提醒
+                    selectedWarehouseId = null
+                },
+                onSubWarehouseClick = { subWarehouse ->
+                    // 点击子容器，切换到该子容器显示其物品
+                    selectedWarehouseId = subWarehouse.id
+                },
+                onAddWarehouse = onAddWarehouse,
+                onNavigateToWarehouseItemsTab = onNavigateToWarehouseItemsTab,
+                onAddChildWarehouse = { parentId ->
+                    onAddChildWarehouse(parentId)
+                },
+                onEditWarehouse = onEditWarehouse,
+                onDeleteWarehouse = onDeleteWarehouse,
+                onGenerateQRCode = { warehouse ->
+                    selectedWarehouseForQRCode = warehouse
+                    showQRCodeDialog = true
+                },
                 onEditItem = onEditItem,
-                searchQuery = searchQuery,
-                isSearching = isSearching,
-                showSearchBox = showSearchBox, // 传递搜索框显示状态
-                        modifier = Modifier.fillMaxSize()
-                    )
+                onViewItem = onViewItem,
+                onDeleteItem = { item ->
+                    itemViewModel.deleteItem(item)
+                },
+                onAddAlert = onAddAlert,
+                pullRefreshState = pullRefreshState,
+                useCircleIcon = sidebarIconCircle,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = if (showSearchBox) 80.dp else 0.dp) // 仅在搜索框显示时为搜索框留出空间
+            )
+            
+            // 显示二维码对话框
+            if (showQRCodeDialog && selectedWarehouseForQRCode != null) {
+                WarehouseQRCodeDialog(
+                    warehouse = selectedWarehouseForQRCode!!,
+                    onDismiss = {
+                        showQRCodeDialog = false
+                        selectedWarehouseForQRCode = null
                     }
-                }
+                )
             }
             
             // 搜索框浮动在顶部（毛玻璃效果）- 仅在showSearchBox为true时显示
@@ -832,211 +710,11 @@ fun DashboardScreen(
             billingManager = billingManager,
             onDismiss = { showPremiumFeatureDialog = false },
             onTrialStart = {
-                // 试用开始后，允许切换到侧边栏风格
-                homeLayoutStyle = HomeLayoutStyle.SIDEBAR
-                saveHomeLayoutStyle(context, homeLayoutStyle)
+                // 试用开始后的处理（现在只有侧边栏风格，无需切换）
             }
         )
     }
 } // 关闭 DashboardScreen 函数
-
-data class StatCardData(
-    val title: String,
-    val value: String,
-    val icon: ImageVector,
-    val color: Color,
-    val backgroundColor: Color,
-    val onClick: (() -> Unit)? = null
-)
-
-@Composable
-fun StatCard(statCard: StatCardData) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(140.dp)
-            .then(
-                if (statCard.onClick != null) {
-                    Modifier.clickable(onClick = statCard.onClick!!)
-                } else {
-                    Modifier
-                }
-            ),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = statCard.backgroundColor
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Icon(
-                imageVector = statCard.icon,
-                contentDescription = statCard.title,
-                tint = statCard.color,
-                modifier = Modifier.size(32.dp)
-            )
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = statCard.value,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = statCard.color,
-                    maxLines = 1
-                )
-                Text(
-                    text = statCard.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = statCard.color.copy(alpha = 0.7f),
-                    maxLines = 2
-                )
-            }
-        }
-    }
-}
-
-/**
- * 容器统计卡片
- */
-@Composable
-fun WarehouseStatCard(
-    warehouse: Warehouse,
-    itemCount: Int,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var warehouseImageBitmap by remember(warehouse.imageUri) {
-        mutableStateOf<Bitmap?>(null)
-    }
-   
-    LaunchedEffect(warehouse.imageUri) {
-        warehouseImageBitmap = if (warehouse.imageUri != null) {
-            try {
-                val file = File(warehouse.imageUri)
-                if (file.exists()) {
-                    ImageUtils.loadBitmapFromPath(warehouse.imageUri)
-                } else {
-                    null
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        } else {
-            null
-        }
-    }
-   
-    val isImageBright = remember(warehouseImageBitmap) {
-        val bitmap = warehouseImageBitmap
-        if (bitmap != null) {
-            try {
-                ImageUtils.calculateImageBrightness(bitmap)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        } else {
-            null
-        }
-    }
-   
-    val cardBgColor = ColorHelpers.getGroup3CardBgColor()
-    val textColor = if (warehouseImageBitmap != null && isImageBright != null) {
-        if (isImageBright) Color.Black else Color.White
-    } else {
-        ColorHelpers.getGroup4TextColor(cardBgColor)
-    }
-   
-    val iconColor = if (warehouseImageBitmap != null && isImageBright != null) {
-        if (isImageBright) Color.Black else Color.White
-    } else {
-        ColorHelpers.getGroup4IconColor(cardBgColor)
-    }
-   
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(140.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            // ✅ 始终透明，让内部 Box 控制背景
-            containerColor = Color.Transparent
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // 1. 背景图片（底层）
-            val bitmap = warehouseImageBitmap
-            if (bitmap != null) {
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                // 没图片时显示默认背景色
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(ColorHelpers.getGroup3CardBgColor())
-                )
-            }
-            
-            // 2. 半透明遮罩（图片时显示）
-            if (bitmap != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.5f))
-                )
-            }
-            
-            // 3. 内容区域（图标 + 文字，永远在最上层）
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Inventory2,
-                    contentDescription = warehouse.name,
-                    tint = iconColor,
-                    modifier = Modifier.size(32.dp)
-                )
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.items_count, itemCount),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = textColor,
-                        maxLines = 1
-                    )
-                    Text(
-                        text = warehouse.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = textColor.copy(alpha = 0.7f),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
-    }
-}
 
 /**
  * 容器信息页面
@@ -1080,9 +758,10 @@ fun WarehouseInfoScreen(
     
     // 计算图片亮度（如果有图片）
     val isImageBright = remember(warehouse.imageUri, warehouseImageBitmap) {
-        if (warehouse.imageUri != null && warehouseImageBitmap != null) {
+        val bitmap = warehouseImageBitmap
+        if (warehouse.imageUri != null && bitmap != null) {
             try {
-                ImageUtils.calculateImageBrightness(warehouseImageBitmap!!)
+                ImageUtils.calculateImageBrightness(bitmap)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
@@ -1558,208 +1237,6 @@ fun countAllItemsInWarehouse(
  * 新的首页内容布局
  */
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun NewHomeScreenContent(
-    items: List<Item>,
-    warehouses: List<Warehouse>,
-    allWarehouses: List<Warehouse>,
-    warehouseItemCounts: Map<Long, Int>,
-    stats: com.example.itemremindertool.ui.viewmodel.DashboardStats,
-    shoppingItemViewModel: com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel,
-    accessHistoryManager: com.example.itemremindertool.data.AccessHistoryManager,
-    alertSettingsManager: AlertSettingsManager,
-    onNavigateToItems: (String?) -> Unit, // 接收筛选类型参数
-    onNavigateToShoppingList: () -> Unit,
-    onNavigateToWarehouse: (Long) -> Unit,
-    onEditItem: (Long) -> Unit,
-    searchQuery: String = "",
-    isSearching: Boolean = false,
-    showSearchBox: Boolean = false, // 搜索框显示状态
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    
-    // 获取提醒设置
-    val expiryReminderDays = remember { alertSettingsManager.getExpiryReminderDays() }
-    val lowStockThreshold = remember { alertSettingsManager.getLowStockThreshold() }
-    
-    // 搜索过滤（支持标签搜索）
-    val filteredItems = remember(items, searchQuery) {
-        if (searchQuery.isBlank()) {
-            emptyList()
-        } else {
-            items.filter { item ->
-                item.name.contains(searchQuery, ignoreCase = true) ||
-                item.description.contains(searchQuery, ignoreCase = true) ||
-                (item.barcode?.contains(searchQuery, ignoreCase = true) == true) ||
-                item.tags.any { tag -> tag.contains(searchQuery, ignoreCase = true) }
-            }
-        }
-    }
-    
-    // 根据设置计算到期提醒物品
-    val calendar = Calendar.getInstance()
-    val currentTime = calendar.timeInMillis
-    calendar.add(Calendar.DAY_OF_YEAR, expiryReminderDays)
-    val reminderEndTime = calendar.timeInMillis
-    
-    val expiringItems = remember(items, currentTime, reminderEndTime, expiryReminderDays) {
-        items.filter { item ->
-            item.expiryDate != null && 
-            item.expiryDate.time >= currentTime && 
-            item.expiryDate.time <= reminderEndTime
-        }
-    }
-    
-    // 根据设置计算库存不足的物品（只包含启用了库存提醒的物品）
-    val lowStockItems = remember(items, lowStockThreshold) {
-        items.filter { item ->
-            item.enableStockAlert && item.quantity <= lowStockThreshold
-        }
-    }
-    
-    val alertCount = expiringItems.size + lowStockItems.size
-    
-    // 格式化日期 - 使用系统默认格式
-    val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault()) }
-    val todayStr = remember { dateFormat.format(Date()) }
-    val greeting = stringResource(R.string.greeting_today, todayStr)
-    
-    Box(
-        modifier = modifier.fillMaxSize()
-    ) {
-        // 内容列表（增加底部 padding 为固定广告预留空间 140dp + 间距 16dp）
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                top = if (showSearchBox) 80.dp else 0.dp,
-                // 为底部广告（60dp）和额外间距预留空间，避免出现大片空白
-                bottom = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding() + 60.dp + 16.dp
-            )
-        ) {
-            // 搜索模式下显示搜索结果
-            if (isSearching) {
-                item { Spacer(modifier = Modifier.height(16.dp)) }
-                if (filteredItems.isEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 64.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Search,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(64.dp),
-                                    tint = ColorHelpers.getGroup4IconColor(0.6f, ColorHelpers.getGroup2PageBgColor())
-                                )
-                                Text(
-                                    stringResource(R.string.no_search_results),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = ColorHelpers.getGroup4TextColor(0.6f, ColorHelpers.getGroup2PageBgColor())
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    item {
-                        Text(
-                            text = stringResource(R.string.search_results, filteredItems.size),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
-                    items(filteredItems, key = { it.id }) { item ->
-                        ItemCard(
-                            item = item,
-                            onEdit = { onEditItem(item.id) },
-                            onDelete = { /* 搜索模式下不提供删除功能 */ },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                        )
-                    }
-                }
-            } else {
-                // 正常首页内容
-                item { Spacer(modifier = Modifier.height(16.dp)) }
-                item {
-                    Text(
-                        text = greeting,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = ColorHelpers.getGroup4TextColor(ColorHelpers.getGroup2PageBgColor()),
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-                }
-                item { Spacer(modifier = Modifier.height(12.dp)) }
-
-                if (alertCount > 0) {
-                    item {
-                        val filterTypeAllAlerts = stringResource(R.string.filter_type_all_alerts)
-                        AlertCard(
-                            count = alertCount,
-                            expiringCount = expiringItems.size,
-                            lowStockCount = lowStockItems.size,
-                            expiryReminderDays = expiryReminderDays,
-                            onClick = { onNavigateToItems(filterTypeAllAlerts) },
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                    }
-                    item { Spacer(modifier = Modifier.height(16.dp)) }
-                }
-
-                item {
-                    QuickAccessSection(
-                        shoppingItemCount = stats.activeShoppingItems,
-                        onNavigateToShoppingList = onNavigateToShoppingList
-                    )
-                }
-                item { Spacer(modifier = Modifier.height(16.dp)) }
-
-                item {
-                    RecentlyOpenedSection(
-                        allWarehouses = allWarehouses,
-                        warehouseItemCounts = warehouseItemCounts,
-                        items = items,
-                        accessHistoryManager = accessHistoryManager,
-                        onNavigateToWarehouse = onNavigateToWarehouse
-                    )
-                }
-                item { Spacer(modifier = Modifier.height(16.dp)) }
-
-                item {
-                    AllLocationsSection(
-                        warehouses = warehouses,
-                        allWarehouses = allWarehouses,
-                        items = items,
-                        warehouseItemCounts = warehouseItemCounts,
-                        onNavigateToWarehouse = onNavigateToWarehouse
-                    )
-                }
-                item { Spacer(modifier = Modifier.height(16.dp)) }
-            }
-        }
-
-        // 固定底部广告（不随列表滚动）
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(bottom = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding() + 8.dp)
-        ) {
-            DynamicBannerAd(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp)),
-                height = 90.dp // 与物品卡片相同的高度
-            )
-        }
-    }
-}
-
 /**
  * 搜索框部分
  */
@@ -1850,645 +1327,6 @@ fun SearchBoxSection(
     }
 }
 
-/**
- * 提醒卡片
- */
-@Composable
-fun AlertCard(
-    count: Int,
-    expiringCount: Int,
-    lowStockCount: Int,
-    expiryReminderDays: Int,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (expiringCount > 0) {
-                MaterialTheme.colorScheme.errorContainer
-            } else {
-                ColorHelpers.getGroup5AlertCardColor()
-            }
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)  // 设置阴影
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = stringResource(R.string.expiring_soon_alert, expiryReminderDays, count),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (expiringCount > 0) {
-                        MaterialTheme.colorScheme.onErrorContainer
-                    } else {
-                        MaterialTheme.colorScheme.onTertiaryContainer
-                    }
-                )
-            }
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = ColorHelpers.getGroup4IconColor(0.6f, ColorHelpers.getGroup3CardBgColor())
-            )
-        }
-    }
-}
-
-/**
- * 快捷入口部分（只显示购物篮）
- */
-@Composable
-fun QuickAccessSection(
-    shoppingItemCount: Int,
-    onNavigateToShoppingList: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = stringResource(R.string.quick_access),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = ColorHelpers.getGroup4TextColor(ColorHelpers.getGroup2PageBgColor()),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-        
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp)
-        ) {
-            // 待购清单
-            item {
-                CommonEntryCard(
-                    title = stringResource(R.string.shopping_list_entry),
-                    count = shoppingItemCount,
-                    onClick = onNavigateToShoppingList
-                )
-            }
-        }
-    }
-}
-
-/**
- * 常用入口卡片（正方形）
- */
-@Composable
-fun CommonEntryCard(
-    title: String,
-    count: Int,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .width(96.dp)
-            .aspectRatio(1f), // 正方形
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = ColorHelpers.getGroup3CardBgColor()
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 6.dp,
-            pressedElevation = 8.dp,
-            hoveredElevation = 7.dp,
-            focusedElevation = 7.dp
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(9.6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            val cardBgColor = ColorHelpers.getGroup3CardBgColor()
-            Text(
-                text = title,
-                fontSize = 13.2.sp,
-                fontWeight = FontWeight.Bold,
-                color = ColorHelpers.getGroup4TextColor(cardBgColor),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(4.8.dp))
-            Text(
-                text = stringResource(R.string.items_count_format, count),
-                fontSize = 10.8.sp,
-                color = ColorHelpers.getGroup4TextColor(0.6f, cardBgColor)
-            )
-        }
-    }
-}
-
-/**
- * 最近打开部分
- */
-@Composable
-fun RecentlyOpenedSection(
-    allWarehouses: List<Warehouse>,
-    warehouseItemCounts: Map<Long, Int>,
-    items: List<Item>,
-    accessHistoryManager: com.example.itemremindertool.data.AccessHistoryManager,
-    onNavigateToWarehouse: (Long) -> Unit
-) {
-    // 获取最近访问的容器ID列表（按时间降序，最新的在前）
-    val recentAccessHistory by accessHistoryManager.accessHistory.collectAsState()
-    val recentWarehouses = remember(recentAccessHistory, allWarehouses) {
-        recentAccessHistory
-            .mapNotNull { access ->
-                allWarehouses.find { it.id == access.warehouseId }
-            }
-            .take(10) // 最多显示10个
-    }
-    
-    // 创建 LazyRow 的滚动状态
-    val lazyListState = rememberLazyListState()
-    
-    // 当列表的第一个元素改变时（即最新打开的容器改变），重置滚动位置到开始
-    val firstWarehouseId = remember(recentWarehouses) {
-        recentWarehouses.firstOrNull()?.id
-    }
-    
-    LaunchedEffect(firstWarehouseId) {
-        // 当第一个容器改变时，重置滚动位置到开始（确保列表左对齐）
-        if (lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0) {
-            lazyListState.animateScrollToItem(0, scrollOffset = 0)
-        }
-    }
-    
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = stringResource(R.string.recently_opened),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = ColorHelpers.getGroup4TextColor(ColorHelpers.getGroup2PageBgColor()),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-        
-        if (recentWarehouses.isNotEmpty()) {
-            // 横向滚动的正方形卡片（最新的在左边第一个）
-            LazyRow(
-                state = lazyListState,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp)
-            ) {
-                items(recentWarehouses, key = { it.id }) { warehouse ->
-                    val itemCount = countAllItemsInWarehouse(
-                        warehouse.id,
-                        allWarehouses,
-                        items,
-                        warehouseItemCounts
-                    )
-                    val childWarehouseCount = countAllChildWarehouses(warehouse.id, allWarehouses)
-                    RecentlyOpenedItem(
-                        warehouse = warehouse,
-                        itemCount = itemCount,
-                        childWarehouseCount = childWarehouseCount,
-                        onClick = { onNavigateToWarehouse(warehouse.id) }
-                    )
-                }
-            }
-            
-        } else {
-            // 空状态占位
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.no_recently_opened),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = ColorHelpers.getGroup4TextColor(0.6f)
-                )
-            }
-        }
-    }
-}
-
-/**
- * 最近打开项（正方形卡片）
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun RecentlyOpenedItem(
-    warehouse: Warehouse,
-    itemCount: Int,
-    childWarehouseCount: Int,
-    onClick: () -> Unit
-) {
-    // 使用 mutableStateOf 来存储图片，确保能正确触发重新计算
-    var warehouseImageBitmap by remember(warehouse.imageUri) { 
-        mutableStateOf<android.graphics.Bitmap?>(null) 
-    }
-    
-    // 异步加载图片
-    LaunchedEffect(warehouse.imageUri) {
-        warehouseImageBitmap = if (warehouse.imageUri != null) {
-            try {
-                val file = java.io.File(warehouse.imageUri)
-                if (file.exists()) {
-                    ImageUtils.loadBitmapFromPath(warehouse.imageUri)
-                } else {
-                    null
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        } else {
-            null
-        }
-    }
-    
-    // 计算图片亮度（如果有图片）
-    val isImageBright = remember(warehouseImageBitmap) {
-        val bitmap = warehouseImageBitmap
-        if (bitmap != null) {
-            try {
-                ImageUtils.calculateImageBrightness(bitmap)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        } else {
-            null
-        }
-    }
-    
-    // 获取卡片背景色
-    val cardBgColor = if (warehouseImageBitmap != null) {
-        // 有图片时，根据图片亮度创建一个代表背景的颜色
-        if (isImageBright != null) {
-            if (isImageBright) {
-                Color.White.copy(alpha = 0.3f) // 亮图片，使用浅色背景
-            } else {
-                Color.Black.copy(alpha = 0.3f) // 暗图片，使用深色背景
-            }
-        } else {
-            ColorHelpers.getGroup3CardBgColor()
-        }
-    } else {
-        ColorHelpers.getGroup3CardBgColor()
-    }
-    
-    // 根据背景色和对比度判断，返回对应的文字和图标颜色
-    val textColor = ColorHelpers.getGroup4TextColorByContrast(cardBgColor)
-    val iconColor = ColorHelpers.getGroup4IconColorByContrast(cardBgColor)
-    
-    // primaryIconColor 用于特殊图标（如 Inventory2），也使用对比度颜色
-    val primaryIconColor = iconColor
-    
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .width(96.dp)
-            .aspectRatio(1f), // 正方形
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (warehouseImageBitmap != null) Color.Transparent else ColorHelpers.getGroup3CardBgColor()
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 6.dp,
-            pressedElevation = 8.dp,
-            hoveredElevation = 7.dp,
-            focusedElevation = 7.dp
-        )
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // 背景图片
-            val bitmap = warehouseImageBitmap
-            if (bitmap != null) {
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-                // 半透明遮罩，提高文字可读性
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.3f))
-                )
-            }
-            
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(9.6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // 容器名称
-            ScrollingText(
-                text = warehouse.name,
-                fontSize = 13.2.sp,
-                fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    color = textColor
-            )
-            
-            Spacer(modifier = Modifier.height(3.6.dp))
-            
-                // 统计信息（有图片时不显示图标，只显示数字）
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(7.2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 子容器数量统计
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(2.4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "$childWarehouseCount",
-                        fontSize = 10.8.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = textColor
-                    )
-                        // 有图片时不显示图标
-                        if (warehouseImageBitmap == null) {
-                    Icon(
-                        imageVector = Icons.Default.Inventory2,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.4.dp),
-                                tint = primaryIconColor
-                    )
-                        }
-                }
-                
-                // 物品数量统计
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(2.4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "$itemCount",
-                        fontSize = 10.8.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = textColor
-                    )
-                        // 有图片时不显示图标
-                        if (warehouseImageBitmap == null) {
-                    Icon(
-                        imageVector = Icons.Default.Category,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.4.dp),
-                                tint = iconColor
-                    )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * 所有容器部分
- */
-@Composable
-fun AllLocationsSection(
-    warehouses: List<Warehouse>,
-    allWarehouses: List<Warehouse>,
-    items: List<Item>,
-    warehouseItemCounts: Map<Long, Int>,
-    onNavigateToWarehouse: (Long) -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = stringResource(R.string.all_locations),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-        
-        // 使用横向滚动显示正方形卡片（与最近打开的卡片保持一致）
-        if (warehouses.isNotEmpty()) {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp)
-            ) {
-                items(warehouses, key = { it.id }) { warehouse ->
-                    val itemCount = countAllItemsInWarehouse(
-                        warehouse.id,
-                        allWarehouses,
-                        items,
-                        warehouseItemCounts
-                    )
-                    val childWarehouseCount = countAllChildWarehouses(warehouse.id, allWarehouses)
-                    LocationCard(
-                        warehouse = warehouse,
-                        itemCount = itemCount,
-                        childWarehouseCount = childWarehouseCount,
-                        onClick = { onNavigateToWarehouse(warehouse.id) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * 容器卡片（正方形）
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun LocationCard(
-    warehouse: Warehouse,
-    itemCount: Int,
-    childWarehouseCount: Int,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    // 使用 mutableStateOf 来存储图片，确保能正确触发重新计算
-    var warehouseImageBitmap by remember(warehouse.imageUri) { 
-        mutableStateOf<android.graphics.Bitmap?>(null) 
-    }
-    
-    // 异步加载图片
-    LaunchedEffect(warehouse.imageUri) {
-        warehouseImageBitmap = if (warehouse.imageUri != null) {
-            try {
-                val file = java.io.File(warehouse.imageUri)
-                if (file.exists()) {
-                    ImageUtils.loadBitmapFromPath(warehouse.imageUri)
-                } else {
-                    null
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        } else {
-            null
-        }
-    }
-    
-    // 计算图片亮度（如果有图片）
-    val isImageBright = remember(warehouseImageBitmap) {
-        val bitmap = warehouseImageBitmap
-        if (bitmap != null) {
-            try {
-                ImageUtils.calculateImageBrightness(bitmap)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        } else {
-            null
-        }
-    }
-    
-    // 获取卡片背景色
-    val cardBgColor = if (warehouseImageBitmap != null) {
-        // 有图片时，根据图片亮度创建一个代表背景的颜色
-        if (isImageBright != null) {
-            if (isImageBright) {
-                Color.White.copy(alpha = 0.3f) // 亮图片，使用浅色背景
-            } else {
-                Color.Black.copy(alpha = 0.3f) // 暗图片，使用深色背景
-            }
-        } else {
-            ColorHelpers.getGroup3CardBgColor()
-        }
-    } else {
-        ColorHelpers.getGroup3CardBgColor()
-    }
-    
-    // 根据背景色和对比度判断，返回对应的文字和图标颜色
-    val textColor = ColorHelpers.getGroup4TextColorByContrast(cardBgColor)
-    val iconColor = ColorHelpers.getGroup4IconColorByContrast(cardBgColor)
-    
-    // primaryIconColor 用于特殊图标（如 Inventory2），也使用对比度颜色
-    val primaryIconColor = iconColor
-    
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .then(modifier)
-            .width(96.dp)
-            .aspectRatio(1f), // 正方形
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (warehouseImageBitmap != null) Color.Transparent else ColorHelpers.getGroup3CardBgColor()
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 6.dp,
-            pressedElevation = 8.dp,
-            hoveredElevation = 7.dp,
-            focusedElevation = 7.dp
-        )
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // 背景图片
-            val bitmap = warehouseImageBitmap
-            if (bitmap != null) {
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-                // 半透明遮罩，提高文字可读性
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.3f))
-                )
-            }
-            
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(9.6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // 容器名称（居中）
-            ScrollingText(
-                text = warehouse.name,
-                fontSize = 13.2.sp,
-                fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    color = textColor
-            )
-            
-            Spacer(modifier = Modifier.height(3.6.dp))
-            
-                // 统计信息
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(7.2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 子容器数量统计
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(2.4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "$childWarehouseCount",
-                        fontSize = 10.8.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = textColor
-                    )
-                        
-                        
-                        // 有图片时不显示图标
-                        if (warehouseImageBitmap == null) {
-                    Icon(
-                        imageVector = Icons.Default.Inventory2,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.4.dp),
-                                tint = primaryIconColor
-                    )
-                        }
-                        
-                }
-                
-                // 物品数量统计
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(2.4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "$itemCount",
-                        fontSize = 10.8.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = textColor
-                    )
-                        // 有图片时不显示图标
-                        if (warehouseImageBitmap == null) {
-                            Icon(
-                                imageVector = Icons.Default.Category,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.4.dp),
-                                tint = iconColor
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-                }
-                
 // ============================================================================
 // 侧边栏风格新布局组件
 // ============================================================================
@@ -2581,7 +1419,7 @@ fun WarehouseInfoBottomSheet(
                 }
 
                 // 容器图片
-                if (warehouseImageBitmap != null) {
+                warehouseImageBitmap?.let { bitmap ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -2590,7 +1428,7 @@ fun WarehouseInfoBottomSheet(
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
                             Image(
-                                bitmap = warehouseImageBitmap!!.asImageBitmap(),
+                                bitmap = bitmap.asImageBitmap(),
                                 contentDescription = warehouse.name,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
@@ -2836,9 +1674,10 @@ fun WarehouseIconItem(
             
             // 计算图片亮度（如果有图片）
             val isImageBright = remember(warehouse.imageUri, warehouseImageBitmap) {
-                if (warehouse.imageUri != null && warehouseImageBitmap != null) {
+                val bitmap = warehouseImageBitmap
+                if (warehouse.imageUri != null && bitmap != null) {
                     try {
-                        ImageUtils.calculateImageBrightness(warehouseImageBitmap!!)
+                        ImageUtils.calculateImageBrightness(bitmap)
                     } catch (e: Exception) {
                         e.printStackTrace()
                         null
