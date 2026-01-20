@@ -2,6 +2,28 @@ package com.example.itemremindertool.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+// ==================== 浅色模式通用 ====================
+
+// 文字/图标颜色（对比度低于0.5时使用）- 通用颜色，所有配色方案共用
+val OnSurfaceLowContrast      = Color(0xFF000000)   // 黑色文字，用于浅色背景
+val OnSurfaceVariantLowContrast = Color(0xFF000000)   // 黑色文字，用于次要文字
+
+// 文字/图标颜色（对比度高于0.5时使用）- 通用颜色，所有配色方案共用
+val OnSurfaceHighContrast     = Color(0xFFFFFFFF)   // 白色文字，用于深色背景
+val OnSurfaceVariantHighContrast = Color(0xFFFFFFFF)   // 白色文字，用于次要文字   
+
+// ==================== 深色模式通用 ====================
+
+// 文字/图标颜色（对比度低于0.5时使用）- 通用颜色，所有配色方案共用
+val OnSurfaceDarkLowContrast      = Color(0xFF000000)   // 黑色文字，用于浅色背景（深色主题下）
+val OnSurfaceVariantDarkLowContrast = Color(0xFF000000)   // 黑色文字，用于次要文字
+
+// 文字/图标颜色（对比度高于0.5时使用）- 通用颜色，所有配色方案共用
+val OnSurfaceDarkHighContrast     = Color(0xFFFFFFFF)   // 白色文字，用于深色背景（深色主题下）
+val OnSurfaceVariantDarkHighContrast = Color(0xFFFFFFFF)   // 白色文字，用于次要文字
+
+
+
 // ========== 1. 冷冽囤老板（首推）==========
 // 浅色主题
 // val ColdBluePrimary = Color(0xFF0066FF)
@@ -38,13 +60,7 @@ val ColdBlueSearchBoxBg = Color(0xFF4A69B3) // 搜索框背景色
 // 搜索框边框颜色（浅色主题）
 val ColdBlueSearchBoxBorder = Color(0xFF4A69B3) // 搜索框边框颜色
 
-// 文字/图标颜色（对比度低于0.5时使用）- 通用颜色，所有配色方案共用
-val OnSurfaceLowContrast      = Color(0xFF000000)   // 黑色文字，用于浅色背景
-val OnSurfaceVariantLowContrast = Color(0xFF000000)   // 黑色文字，用于次要文字
 
-// 文字/图标颜色（对比度高于0.5时使用）- 通用颜色，所有配色方案共用
-val OnSurfaceHighContrast     = Color(0xFFFFFFFF)   // 白色文字，用于深色背景
-val OnSurfaceVariantHighContrast = Color(0xFFFFFFFF)   // 白色文字，用于次要文字   
 
 // ==================== 深色模式 - 温暖砖橙主题 ====================
 
@@ -89,13 +105,7 @@ val ColdBlueSearchBoxBgDark       = Color(0xFF2A1F17)   // 深暖灰棕
 // 搜索框边框（可以更亮一点突出）
 val ColdBlueSearchBoxBorderDark   = Color(0xFFFFA270)   // 浅暖橙，微发光感
 
-// 文字/图标颜色（对比度低于0.5时使用）- 通用颜色，所有配色方案共用
-val OnSurfaceDarkLowContrast      = Color(0xFF000000)   // 黑色文字，用于浅色背景（深色主题下）
-val OnSurfaceVariantDarkLowContrast = Color(0xFF000000)   // 黑色文字，用于次要文字
 
-// 文字/图标颜色（对比度高于0.5时使用）- 通用颜色，所有配色方案共用
-val OnSurfaceDarkHighContrast     = Color(0xFFFFFFFF)   // 白色文字，用于深色背景（深色主题下）
-val OnSurfaceVariantDarkHighContrast = Color(0xFFFFFFFF)   // 白色文字，用于次要文字
 
 // ========== 2. 奶油治愈系 ==========
 // 浅色主题
