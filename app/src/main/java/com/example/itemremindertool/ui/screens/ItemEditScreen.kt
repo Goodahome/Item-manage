@@ -974,7 +974,7 @@ fun ItemEditScreen(
                                         if (!isTagInputFocused) {
                                             Row(
                                                 modifier = Modifier
-                                                    .padding(horizontal = 6.dp)
+                                                    .padding(horizontal = 4.dp)
                                                     .fillMaxSize()
                                                     .clickable(
                                                         interactionSource = remember { MutableInteractionSource() },
@@ -991,7 +991,7 @@ fun ItemEditScreen(
                                                     modifier = Modifier.size(16.dp),
                                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
-                                                Spacer(Modifier.width(4.dp))
+                                                Spacer(Modifier.width(0.dp))
                                                 Text(
                                                     text = stringResource(R.string.add_tag),
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant,

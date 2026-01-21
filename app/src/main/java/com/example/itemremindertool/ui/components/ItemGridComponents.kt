@@ -150,9 +150,9 @@ fun ItemGridCard(
                         .fillMaxSize()
                         .background(
                             if (isImageBright) {
-                                Color.White.copy(alpha = 0.3f)
+                                Color.White.copy(alpha = 0.18f)
                             } else {
-                                Color.Black.copy(alpha = 0.4f)
+                                Color.Black.copy(alpha = 0f)
                             }
                         )
                 )
@@ -162,9 +162,9 @@ fun ItemGridCard(
             val displayTextColor = if (backgroundBitmap != null) {
                 // 有图片时，根据图片亮度创建一个代表背景的颜色来计算对比度
                 val imageBgColor = if (isImageBright) {
-                    Color.White.copy(alpha = 0.3f) // 亮图片，使用浅色背景
+                    Color.White.copy(alpha = 0.18f) // 亮图片，使用浅色背景
                 } else {
-                    Color.Black.copy(alpha = 0.4f) // 暗图片，使用深色背景
+                    Color.Black.copy(alpha = 0.28f) // 暗图片，使用深色背景
                 }
                 ColorHelpers.getGroup4TextColorByContrast(imageBgColor)
             } else {
