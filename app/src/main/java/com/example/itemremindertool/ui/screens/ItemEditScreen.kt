@@ -79,13 +79,17 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.PickVisualMediaRequest
 import android.net.Uri
+import android.os.Build
+import androidx.annotation.RequiresApi
 import java.io.File
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.core.content.edit
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ItemEditScreen(
@@ -407,7 +411,7 @@ fun ItemEditScreen(
                 contract = ActivityResultContracts.GetContent()
             ) { uri: Uri? ->
                 // 清除ActivityResult处理标记
-                prefs.edit().putBoolean("is_processing_activity_result", false).apply()
+                prefs.edit { putBoolean("is_processing_activity_result", false) }
                 
                 if (uri != null) {
                     // 处理选中的图片
@@ -462,7 +466,7 @@ fun ItemEditScreen(
                 contract = ActivityResultContracts.PickMultipleVisualMedia()
             ) { uris: List<Uri> ->
                 // 清除ActivityResult处理标记
-                prefs.edit().putBoolean("is_processing_activity_result", false).apply()
+                prefs.edit { putBoolean("is_processing_activity_result", false) }
                 
                 // 选择第一张图片弹出裁剪对话框
                 if (uris.isNotEmpty()) {
@@ -511,16 +515,19 @@ fun ItemEditScreen(
                     }
                 }
             }
-
+            // 设置拍照和相册的按钮样式
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Button(
                                 onClick = { showCameraDialog = true },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier
+                                    .weight(1f),
+                                shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = ColorHelpers.getGroup2SettingsBtnColor()
                                 )
@@ -539,12 +546,13 @@ fun ItemEditScreen(
                             Button(
                                 onClick = {
                                     // 设置ActivityResult处理标记，防止密码锁屏
-                                    prefs.edit().putBoolean("is_processing_activity_result", true).apply()
+                                    prefs.edit { putBoolean("is_processing_activity_result", true) }
                                     multipleImagePickerLauncher.launch(
                                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                     )
                                 },
                                 modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = ColorHelpers.getGroup2SettingsBtnColor()
                                 )
@@ -900,7 +908,7 @@ fun ItemEditScreen(
                                             Color.Transparent
                                     )
                                     .border(
-                                        width = 1.5.dp,
+                                        width = 1.25.dp,
                                         color = if (isTagInputFocused)
                                             MaterialTheme.colorScheme.primary
                                         else

@@ -33,7 +33,15 @@ fun ColorSchemeSelectionScreen(
         context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
     }
     
-    var selectedColorScheme by remember { mutableStateOf(prefs.getString("color_scheme", "cold_blue") ?: "cold_blue") }
+    val rawColorScheme = prefs.getString("color_scheme", "red_blue") ?: "red_blue"
+    val normalizedColorScheme = if (rawColorScheme == "cold_blue") "red_blue" else rawColorScheme
+    var selectedColorScheme by remember { mutableStateOf(normalizedColorScheme) }
+
+    LaunchedEffect(Unit) {
+        if (rawColorScheme == "cold_blue") {
+            prefs.edit().putString("color_scheme", "red_blue").apply()
+        }
+    }
     
     Scaffold(
         topBar = {
@@ -80,7 +88,7 @@ fun ColorSchemeSelectionScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             val colorSchemes = listOf(
-                "cold_blue" to R.string.color_scheme_cold_blue,
+                "red_blue" to R.string.color_scheme_red_blue,
                 "cream" to R.string.color_scheme_cream,
                 "mint" to R.string.color_scheme_mint,
                 "space" to R.string.color_scheme_space,

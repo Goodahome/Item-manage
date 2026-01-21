@@ -4,11 +4,11 @@
 
 已为「盒记」量身定制6套完整配色方案，全部基于 **Material You 动态取色规范**，支持 Android 12+ 自动深浅色切换。
 
-### 1. 🧊 冷冽囤老板（首推）
+### 1. 🔴🔵 红蓝配色（首推）
 - **气质**：冷静、掌控感、靠谱
 - **推荐用户群**：囤货狂魔、工程师、极简党
 - **主色**：鲜亮蓝 (#0066FF)
-- **配置键**：`cold_blue`
+- **配置键**：`red_blue`
 
 ### 2. 🍊 奶油治愈系
 - **气质**：温暖、柔软、生活感
@@ -50,7 +50,7 @@
 
 ```kotlin
 val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-prefs.edit().putString("color_scheme", "cold_blue").apply()
+prefs.edit().putString("color_scheme", "red_blue").apply()
 ```
 
 ### 方法二：在设置界面添加配色选择器
@@ -59,7 +59,7 @@ prefs.edit().putString("color_scheme", "cold_blue").apply()
 // 在 SettingsScreen 中添加配色选择
 val colorSchemes = remember {
     listOf(
-        ColorSchemeType.COLD_BLUE,
+        ColorSchemeType.RED_BLUE,
         ColorSchemeType.CREAM,
         ColorSchemeType.MINT,
         ColorSchemeType.SPACE,
@@ -173,11 +173,11 @@ Card(
 override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     
-    // 首次启动时设置默认配色为"冷冽囤老板"
+    // 首次启动时设置默认配色为"红蓝配色"
     val prefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
     if (!prefs.contains("color_scheme")) {
         prefs.edit()
-            .putString("color_scheme", "cold_blue")
+            .putString("color_scheme", "red_blue")
             .apply()
     }
     

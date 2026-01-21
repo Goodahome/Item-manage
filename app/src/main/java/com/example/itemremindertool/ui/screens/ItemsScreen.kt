@@ -42,6 +42,7 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.DraggableFab
 import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
 import com.example.itemremindertool.ui.components.UIConstants
 import androidx.compose.foundation.background
@@ -77,62 +78,71 @@ fun ItemsScreen(
                 }
             )
         },
-        floatingActionButton = {
-            Column(
-                modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
-            ) {
-                FloatingActionButton(
-                    onClick = onAddItem,
-                    containerColor = ColorHelpers.getGroup5FabColor(),
-                    modifier = Modifier.size(UIConstants.FAB_SIZE)
-                ) {
-                    Icon(Icons.Default.Add, stringResource(R.string.add_item))
-                }
-            }
-        }
+        floatingActionButton = {}
         ) { paddingValues ->
-        if (items.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(ColorHelpers.getGroup2PageBgColor())
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (items.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(ColorHelpers.getGroup2PageBgColor())
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Default.Category,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                    Text(
-                        stringResource(R.string.no_items),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                    Button(onClick = onAddItem) {
-                        Text(stringResource(R.string.add_first_item))
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Category,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                        Text(
+                            stringResource(R.string.no_items),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                        Button(onClick = onAddItem) {
+                            Text(stringResource(R.string.add_first_item))
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(items, key = { it.id }) { item ->
+                        ItemCard(
+                            item = item,
+                            onEdit = { onEditItem(item.id) },
+                            onDelete = { viewModel.deleteItem(item) }
+                        )
                     }
                 }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(items, key = { it.id }) { item ->
-                    ItemCard(
-                        item = item,
-                        onEdit = { onEditItem(item.id) },
-                        onDelete = { viewModel.deleteItem(item) }
-                    )
+
+            val fabBoundsPadding = PaddingValues(
+                start = 12.dp,
+                top = paddingValues.calculateTopPadding() + 8.dp,
+                end = 12.dp,
+                bottom = UIConstants.FAB_BOTTOM_PADDING + paddingValues.calculateBottomPadding()
+            )
+            DraggableFab(
+                modifier = Modifier.fillMaxSize(),
+                boundsPadding = fabBoundsPadding
+            ) { fabModifier ->
+                FloatingActionButton(
+                    onClick = onAddItem,
+                    containerColor = ColorHelpers.getGroup5FabColor(),
+                    modifier = fabModifier.size(UIConstants.FAB_SIZE)
+                ) {
+                    Icon(Icons.Default.Add, stringResource(R.string.add_item))
                 }
             }
         }

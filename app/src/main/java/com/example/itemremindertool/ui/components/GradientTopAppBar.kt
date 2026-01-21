@@ -1,7 +1,6 @@
 package com.example.itemremindertool.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,13 +10,12 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.R
 import com.example.itemremindertool.ui.theme.ColorHelpers
@@ -42,19 +40,19 @@ fun GradientTopAppBar(
     // 判断是否需要渐变：如果开始和结束颜色相同，则使用纯色，否则使用渐变
     val useGradient = gradientStartColor != gradientEndColor
     
-    // 创建渐变背景（仅在需要渐变时使用）
-    val backgroundBrush = remember(gradientStartColor, gradientEndColor) {
+    // 创建背景修饰（需要渐变时使用 Brush，否则使用纯色）
+    val backgroundModifier = remember(gradientStartColor, gradientEndColor, useGradient) {
         if (useGradient) {
-            // 如果两种颜色不同，使用渐变
-            Brush.horizontalGradient(
-                colors = listOf(
-                    gradientStartColor,  // 左侧：渐变开始颜色
-                    gradientEndColor     // 右侧：渐变结束颜色
+            Modifier.background(
+                Brush.horizontalGradient(
+                    colors = listOf(
+                        gradientStartColor,  // 左侧：渐变开始颜色
+                        gradientEndColor     // 右侧：渐变结束颜色
+                    )
                 )
             )
         } else {
-            // 如果两种颜色相同，返回 null（将使用纯色背景）
-            null
+            Modifier.background(gradientStartColor)
         }
     }
     
@@ -64,16 +62,13 @@ fun GradientTopAppBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            // 让背景铺满到状态栏区域，避免状态栏出现白色
-            .then(
-                if (useGradient && backgroundBrush != null) {
-                    // 使用渐变背景
-                    Modifier.background(backgroundBrush)
-                } else {
-                    // 使用纯色背景（显示用户设置的颜色）
-                    Modifier.background(gradientStartColor)
-                }
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(0.dp),
+                clip = false
             )
+            // 让背景铺满到状态栏区域，避免状态栏出现白色
+            .then(backgroundModifier)
             .statusBarsPadding()
     ) {
         if (navigationIcon != null) {

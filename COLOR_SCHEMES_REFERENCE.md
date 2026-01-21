@@ -4,7 +4,7 @@
 
 | 方案名称 | 配置键 | 主色 | 适用场景 | 推荐指数 |
 |---------|--------|------|----------|---------|
-| 🧊 冷冽囤老板 | `cold_blue` | #0066FF | 工具应用、专业场景 | ⭐⭐⭐⭐⭐ |
+| 🔴🔵 红蓝配色 | `red_blue` | #0066FF | 工具应用、专业场景 | ⭐⭐⭐⭐⭐ |
 | 🍊 奶油治愈系 | `cream` | #FFB84D | 家庭使用、温馨场景 | ⭐⭐⭐⭐ |
 | 🌿 薄荷冷感 | `mint` | #00C853 | 清新风格、年轻用户 | ⭐⭐⭐⭐ |
 | 🌌 深空高级灰 | `space` | #475569 | 高端用户、收藏管理 | ⭐⭐⭐⭐ |
@@ -15,11 +15,11 @@
 
 ## 详细配色信息
 
-### 1. 🧊 冷冽囤老板（首推）
+### 1. 🔴🔵 红蓝配色（首推）
 
 #### 浅色主题
 ```kotlin
-val ColdBlueLightScheme = lightColorScheme(
+val RedBlueLightScheme = lightColorScheme(
     primary = Color(0xFF0066FF),           // 鲜亮蓝
     onPrimary = Color.White,
     primaryContainer = Color(0xFFD8E2FF),  // 浅蓝容器
@@ -37,7 +37,7 @@ val ColdBlueLightScheme = lightColorScheme(
 
 #### 深色主题
 ```kotlin
-val ColdBlueDarkScheme = darkColorScheme(
+val RedBlueDarkScheme = darkColorScheme(
     primary = Color(0xFF4D94FF),           // 明亮蓝
     onPrimary = Color.Black,
     primaryContainer = Color(0xFF0040B2),
@@ -288,7 +288,7 @@ prefs.edit().putString("color_scheme", "christmas").apply()
 
 ## 💡 配色搭配建议
 
-### 冷冽囤老板（推荐首发）
+### 红蓝配色（推荐首发）
 - **优势**：专业、可靠、符合工具应用定位
 - **搭配**：白色icon + 深色文字
 - **典型用户**：效率达人、工程师、数据控
@@ -322,14 +322,14 @@ prefs.edit().putString("color_scheme", "christmas").apply()
 
 ## 📈 推荐使用策略
 
-1. **默认配色**：首推"冷冽囤老板"（`cold_blue`）
+1. **默认配色**：首推"红蓝配色"（`red_blue`）
    - 专业可靠，适合大多数用户
-   - 蓝色符合工具类应用定位
+   - 红蓝风格符合工具类应用定位
 
 2. **用户画像匹配**：
    - 25岁以下 → 薄荷冷感
    - 25-40岁女性 → 奶油治愈系
-   - 25-40岁男性 → 冷冽囤老板或深空高级灰
+   - 25-40岁男性 → 红蓝配色或深空高级灰
    - 40岁以上 → 红酒沉稳
 
 3. **节日营销**：

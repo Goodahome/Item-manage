@@ -24,86 +24,78 @@ val OnSurfaceVariantDarkHighContrast = Color(0xFFFFFFFF)   // 白色文字，用
 
 
 
-// ========== 1. 冷冽囤老板（首推）==========
+// ========== 1. 红蓝配色（首推）==========
 // 浅色主题
-// val ColdBluePrimary = Color(0xFF0066FF)
-// val ColdBlueSecondary = Color(0xFF0051C7)
-// val ColdBlueTertiary = Color(0xFFFF3B30)
-// val ColdBluePrimaryContainer = Color(0xFFD8E2FF)
-// val ColdBlueOnPrimaryContainer = Color(0xFF001A41)
-// val ColdBlueBackground = Color(0xFFF8F9FC)
-// val ColdBlueSurface = Color(0xFFFFFFFF)
-// val ColdBlueSurfaceVariant = Color(0xFFE0E7FF)
-val ColdBluePrimary = Color(0xFFBA3801)
-val ColdBlueSecondary = Color(0xFFFFFFFF) // 在 Theme.kt 中使用：secondary
-val ColdBlueTertiary = Color(0xFFFF3B30) // 在 Theme.kt 中使用：tertiary 和 error
-val ColdBluePrimaryContainer = Color(0xFFFFFFFF) // 在 Theme.kt 中使用：primaryContainer
-val ColdBlueOnPrimaryContainer = Color(0xFF001A41) // 在 Theme.kt 中使用：onPrimaryContainer
-val ColdBlueBackground = Color(0xFFFFFFFF)
-val ColdBlueSurface = Color(0xFFFFFFFF) // 在 Theme.kt 中使用：surface
-val ColdBlueSurfaceVariant = Color(0xFFFFEC89)
+val RedBluePrimary = Color(0xFFBA3801)
+val RedBlueSecondary = Color(0xFFFFFFFF) // 在 Theme.kt 中使用：secondary
+val RedBlueTertiary = Color(0xFFFF3B30) // 在 Theme.kt 中使用：tertiary 和 error
+val RedBluePrimaryContainer = Color(0xFFFFFFFF) // 在 Theme.kt 中使用：primaryContainer
+val RedBlueOnPrimaryContainer = Color(0xFF001A41) // 在 Theme.kt 中使用：onPrimaryContainer
+val RedBlueBackground = Color(0xFFFFFFFF)
+val RedBlueSurface = Color(0xFFFFFFFF) // 在 Theme.kt 中使用：surface
+val RedBlueSurfaceVariant = Color(0xFFFFFFFF)
 
 // 面包屑导航文字/图标颜色（浅色主题）
-val ColdBlueBreadcrumbText = Color(0xFF8B6914) // 面包屑文字颜色
-val ColdBlueBreadcrumbIcon = Color(0xFF8B6914) // 面包屑图标颜色
+val RedBlueBreadcrumbText = Color(0xFF8B6914) // 面包屑文字颜色
+val RedBlueBreadcrumbIcon = Color(0xFF8B6914) // 面包屑图标颜色
 
 // 子容器名称颜色（浅色主题）
-val ColdBlueSubWarehouseName = Color(0xFF6B4F0A) // 子容器名称颜色
+val RedBlueSubWarehouseName = Color(0xFF6B4F0A) // 子容器名称颜色
 
 // 顶部渐变颜色（浅色主题）
-val ColdBlueGradientStart = Color(0xFFBA3801) // 渐变开始颜色（左侧）
-val ColdBlueGradientEnd = Color(0xFFBA3801) // 渐变结束颜色（右侧），如果与开始颜色相同则无渐变
+val RedBlueGradientStart = Color(0xFFBA3801) // 渐变开始颜色（左侧）
+val RedBlueGradientEnd = Color(0xFFBA3801) // 渐变结束颜色（右侧），如果与开始颜色相同则无渐变
 
 // 搜索框背景颜色（浅色主题）
-val ColdBlueSearchBoxBg = Color(0xFF4A69B3) // 搜索框背景色
+val RedBlueSearchBoxBg = Color(0xFF4A69B3) // 搜索框背景色
 
 // 搜索框边框颜色（浅色主题）
-val ColdBlueSearchBoxBorder = Color(0xFF4A69B3) // 搜索框边框颜色
+val RedBlueSearchBoxBorder = Color(0xFF4A69B3) // 搜索框边框颜色
 
 
 
 // ==================== 深色模式 - 温暖砖橙主题 ====================
 
 // 主要强调色（按钮、链接、选中态） - 从浅色 #BA3801 衍生，提亮+降饱和
-val ColdBluePrimaryDark     = Color(0xFFFF8C5E)   // 明亮温暖橙，视觉焦点
+val RedBluePrimaryDark     = Color(0xFFFF8C5E)   // 明亮温暖橙，视觉焦点
 
 // 次要色（辅助按钮、chip等）
-val ColdBlueSecondaryDark   = Color(0xFFFFB69A)   // 更柔和的浅橙
+val RedBlueSecondaryDark   = Color(0xFFFFB69A)   // 更柔和的浅橙
 
 // 错误/警告/tertiary（保留原有的红色系，但稍微柔化）
-val ColdBlueTertiaryDark       = Color(0xFFFF7A70)   // 柔和珊瑚红
+val RedBlueTertiaryDark       = Color(0xFFFF7A70)   // 柔和珊瑚红
 
 // Primary Container（卡片、填充区域）
-val ColdBluePrimaryContainerDark = Color(0xFF5C2A0F)  // 深暖棕橙
+val RedBluePrimaryContainerDark = Color(0xFF5C2A0F)  // 深暖棕橙
 
 // On Primary Container（在上面的文字）
-val ColdBlueOnPrimaryContainerDark    = Color(0xFFFFD8C2)   // 暖米白
+val RedBlueOnPrimaryContainerDark    = Color(0xFFFFD8C2)   // 暖米白
 
 // 背景（最底层）
-val ColdBlueBackgroundDark        = Color(0xFF16100A)   // 非常深的暖黑棕
+val RedBlueBackgroundDark        = Color(0xFF16100A)   // 非常深的暖黑棕
 
 // Surface（卡片、对话框、底部导航等主要层）
-val ColdBlueSurfaceDark           = Color(0xFF1E150F)   // 比背景略亮一点的暖深灰
+val RedBlueSurfaceDark           = Color(0xFF1E150F)   // 比背景略亮一点的暖深灰
 
 // Surface Variant（次级区分，如列表分隔、输入框底色）
-val ColdBlueSurfaceVariantDark    = Color(0xFF32251C)   // 更明显的暖棕灰
+val RedBlueSurfaceVariantDark    = Color(0xFF32251C)   // 更明显的暖棕灰
 
 // 面包屑导航文字/图标颜色（深色主题）
-val ColdBlueBreadcrumbTextDark = Color(0xFFFFD8A3) // 面包屑文字颜色
-val ColdBlueBreadcrumbIconDark = Color(0xFFFFD8A3) // 面包屑图标颜色
+val RedBlueBreadcrumbTextDark = Color(0xFFFFD8A3) // 面包屑文字颜色
+val RedBlueBreadcrumbIconDark = Color(0xFFFFD8A3) // 面包屑图标颜色
 
 // 子容器名称颜色（深色主题）
-val ColdBlueSubWarehouseNameDark = Color(0xFFFFE5B8) // 子容器名称颜色
+val RedBlueSubWarehouseNameDark = Color(0xFFFFE5B8) // 子容器名称颜色
 
 // 顶部渐变（建议从亮到暗，保持温暖过渡）
-val ColdBlueGradientStartDark     = Color(0xFF2A1A10)   // 与 Primary 一致
-val ColdBlueGradientEndDark       = Color(0xFF2A1A10)   // 深暖棕
+val RedBlueGradientStartDark     = Color(0xFF2A1A10)   // 与 Primary 一致
+val RedBlueGradientEndDark       = Color(0xFF2A1A10)   // 深暖棕
 
 // 搜索框背景（深色模式下建议半透或较暗的暖色）
-val ColdBlueSearchBoxBgDark       = Color(0xFF2A1F17)   // 深暖灰棕
+val RedBlueSearchBoxBgDark       = Color(0xFF2A1F17)   // 深暖灰棕
 
 // 搜索框边框（可以更亮一点突出）
-val ColdBlueSearchBoxBorderDark   = Color(0xFFFFA270)   // 浅暖橙，微发光感
+val RedBlueSearchBoxBorderDark   = Color(0xFFFFA270)   // 浅暖橙，微发光感
 
 
 

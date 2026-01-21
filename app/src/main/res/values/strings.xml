@@ -86,7 +86,7 @@
     <string name="reset">重置</string>
     <string name="invalid_color">无效的颜色格式</string>
     <string name="color_applied">颜色已应用</string>
-    <string name="color_scheme_cold_blue">🧊 冷冽囤老板</string>
+    <string name="color_scheme_red_blue">经典红蓝配色</string>
 
     <string name="sidebar_icon_shape">侧边栏风格容器图标形状</string>
     <string name="sidebar_icon_circle">圆形</string>

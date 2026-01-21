@@ -86,7 +86,7 @@
     <string name="reset">Réinitialiser</string>
     <string name="invalid_color">Format de couleur invalide</string>
     <string name="color_applied">Couleur appliquée</string>
-    <string name="color_scheme_cold_blue">🧊 Boss stock froid</string>
+    <string name="color_scheme_red_blue">🔴🔵 Thème rouge-bleu</string>
 
     <string name="sidebar_icon_shape">Forme des icônes de la barre latérale</string>
     <string name="sidebar_icon_circle">Cercle</string>

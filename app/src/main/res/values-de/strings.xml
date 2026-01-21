@@ -86,7 +86,7 @@
     <string name="reset">Zurücksetzen</string>
     <string name="invalid_color">Ungültiges Farbformat</string>
     <string name="color_applied">Farbe angewendet</string>
-    <string name="color_scheme_cold_blue">🧊 Kalter Vorratsboss</string>
+    <string name="color_scheme_red_blue">🔴🔵 Rot-Blau-Design</string>
 
     <string name="sidebar_icon_shape">Seitenleisten-Icon-Form</string>
     <string name="sidebar_icon_circle">Kreis</string>

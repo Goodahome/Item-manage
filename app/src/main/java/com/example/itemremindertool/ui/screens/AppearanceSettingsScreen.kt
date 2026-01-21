@@ -37,7 +37,9 @@ fun AppearanceSettingsScreen(
     }
     
     var selectedTheme by remember { mutableStateOf(prefs.getString("theme", "system") ?: "system") }
-    var selectedColorScheme by remember { mutableStateOf(prefs.getString("color_scheme", "cold_blue") ?: "cold_blue") }
+    val rawColorScheme = prefs.getString("color_scheme", "red_blue") ?: "red_blue"
+    val normalizedColorScheme = if (rawColorScheme == "cold_blue") "red_blue" else rawColorScheme
+    var selectedColorScheme by remember { mutableStateOf(normalizedColorScheme) }
     var selectedIcon by remember { mutableStateOf(IconManager.getCurrentIcon(context)) }
     // 迁移旧的 "discord_icon_circle" key 到 "sidebar_icon_circle"
     var sidebarIconCircle by remember { 
@@ -55,12 +57,22 @@ fun AppearanceSettingsScreen(
         )
     }
     
+    // 迁移旧的 "cold_blue" key 到 "red_blue"
+    LaunchedEffect(Unit) {
+        if (rawColorScheme == "cold_blue") {
+            prefs.edit().putString("color_scheme", "red_blue").apply()
+        }
+    }
+
     // 监听 SharedPreferences 变化
     DisposableEffect(Unit) {
         val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             when (key) {
                 "theme" -> selectedTheme = prefs.getString("theme", "system") ?: "system"
-                "color_scheme" -> selectedColorScheme = prefs.getString("color_scheme", "cold_blue") ?: "cold_blue"
+                "color_scheme" -> {
+                    val value = prefs.getString("color_scheme", "red_blue") ?: "red_blue"
+                    selectedColorScheme = if (value == "cold_blue") "red_blue" else value
+                }
                 "sidebar_icon_circle" -> sidebarIconCircle = prefs.getBoolean("sidebar_icon_circle", false)
             }
         }
@@ -118,13 +130,14 @@ fun AppearanceSettingsScreen(
                 supportingContent = { 
                     Text(
                         text = when (selectedColorScheme) {
-                            "cold_blue" -> stringResource(R.string.color_scheme_cold_blue)
+                            "red_blue" -> stringResource(R.string.color_scheme_red_blue)
+                            "cold_blue" -> stringResource(R.string.color_scheme_red_blue)
                             "cream" -> stringResource(R.string.color_scheme_cream)
                             "mint" -> stringResource(R.string.color_scheme_mint)
                             "space" -> stringResource(R.string.color_scheme_space)
                             "wine" -> stringResource(R.string.color_scheme_wine)
                             "christmas" -> stringResource(R.string.color_scheme_christmas)
-                            else -> stringResource(R.string.color_scheme_cold_blue)
+                            else -> stringResource(R.string.color_scheme_red_blue)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)

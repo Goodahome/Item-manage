@@ -86,7 +86,7 @@
     <string name="reset">Reset</string>
     <string name="invalid_color">Invalid color format</string>
     <string name="color_applied">Color applied</string>
-    <string name="color_scheme_cold_blue">🧊 Cold Stock Boss</string>
+    <string name="color_scheme_red_blue">🔴🔵 Red-Blue Theme</string>
 
     <string name="sidebar_icon_shape">Sidebar icon shape</string>
     <string name="sidebar_icon_circle">Circle</string>

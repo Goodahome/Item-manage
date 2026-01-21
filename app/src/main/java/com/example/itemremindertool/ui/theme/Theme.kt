@@ -27,42 +27,42 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 
-// ========== 1. 冷冽囤老板（首推）==========
-private val ColdBlueLightScheme = lightColorScheme(
-    primary = ColdBluePrimary,
+// ========== 1. 红蓝配色（首推）==========
+private val RedBlueLightScheme = lightColorScheme(
+    primary = RedBluePrimary,
     onPrimary = androidx.compose.ui.graphics.Color.White,
-    primaryContainer = ColdBluePrimaryContainer,
-    onPrimaryContainer = ColdBlueOnPrimaryContainer,
-    secondary = ColdBlueSecondary,
+    primaryContainer = RedBluePrimaryContainer,
+    onPrimaryContainer = RedBlueOnPrimaryContainer,
+    secondary = RedBlueSecondary,
     onSecondary = androidx.compose.ui.graphics.Color.White,
-    tertiary = ColdBlueTertiary,                    // 到期提醒红色
+    tertiary = RedBlueTertiary,                    // 到期提醒红色
     onTertiary = androidx.compose.ui.graphics.Color.White,
-    error = ColdBlueTertiary,                       // 错误也用到期红
+    error = RedBlueTertiary,                       // 错误也用到期红
     onError = androidx.compose.ui.graphics.Color.White,
-    background = ColdBlueBackground,
+    background = RedBlueBackground,
     onBackground = androidx.compose.ui.graphics.Color(0xFF1A1C1E),
-    surface = ColdBlueSurface,
+    surface = RedBlueSurface,
     onSurface = androidx.compose.ui.graphics.Color(0xFF1A1C1E),
-    surfaceVariant = ColdBlueSurfaceVariant,
+    surfaceVariant = RedBlueSurfaceVariant,
     onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF42474E)
 )
 
-private val ColdBlueDarkScheme = darkColorScheme(
-    primary = ColdBluePrimaryDark,
+private val RedBlueDarkScheme = darkColorScheme(
+    primary = RedBluePrimaryDark,
     onPrimary = androidx.compose.ui.graphics.Color.Black,
-    primaryContainer = ColdBluePrimaryContainerDark,
+    primaryContainer = RedBluePrimaryContainerDark,
     onPrimaryContainer = androidx.compose.ui.graphics.Color(0xFFD8E2FF),
-    secondary = ColdBlueSecondaryDark,
+    secondary = RedBlueSecondaryDark,
     onSecondary = androidx.compose.ui.graphics.Color.Black,
-    tertiary = ColdBlueTertiaryDark,
+    tertiary = RedBlueTertiaryDark,
     onTertiary = androidx.compose.ui.graphics.Color.White,
-    error = ColdBlueTertiaryDark,
+    error = RedBlueTertiaryDark,
     onError = androidx.compose.ui.graphics.Color.White,
-    background = ColdBlueBackgroundDark,
+    background = RedBlueBackgroundDark,
     onBackground = OnSurfaceDarkHighContrast,
-    surface = ColdBlueSurfaceDark,
+    surface = RedBlueSurfaceDark,
     onSurface = OnSurfaceDarkHighContrast,
-    surfaceVariant = ColdBlueSurfaceVariantDark,
+    surfaceVariant = RedBlueSurfaceVariantDark,
     onSurfaceVariant = OnSurfaceVariantDarkHighContrast
 )
 
@@ -268,12 +268,12 @@ data class AppSettings(
     val appName: String,
     val theme: String, // "light", "dark", "system"
     val language: String, // "zh", "en"
-    val colorScheme: String = "cold_blue" // "cold_blue", "cream", "mint", "space", "wine", "christmas"
+    val colorScheme: String = "red_blue" // "red_blue", "cream", "mint", "space", "wine", "christmas"
 )
 
 // 配色方案枚举
 enum class ColorSchemeType(val key: String, val displayName: String) {
-    COLD_BLUE("cold_blue", "冷冽囤老板"),
+    RED_BLUE("red_blue", "红蓝配色"),
     CREAM("cream", "奶油治愈系"),
     MINT("mint", "薄荷冷感"),
     SPACE("space", "深空高级灰"),
@@ -282,7 +282,10 @@ enum class ColorSchemeType(val key: String, val displayName: String) {
     
     companion object {
         fun fromKey(key: String): ColorSchemeType {
-            return values().find { it.key == key } ?: COLD_BLUE
+            if (key == "cold_blue") {
+                return RED_BLUE
+            }
+            return values().find { it.key == key } ?: RED_BLUE
         }
     }
 }
@@ -304,7 +307,7 @@ fun ItemReminderToolTheme(
     var themeSetting by remember { mutableStateOf(prefs.getString("theme", "system") ?: "system") }
     var appName by remember { mutableStateOf(prefs.getString("app_name", defaultAppName) ?: defaultAppName) }
     var language by remember { mutableStateOf(prefs.getString("language", "zh") ?: "zh") }
-    var colorSchemeSetting by remember { mutableStateOf(prefs.getString("color_scheme", "cold_blue") ?: "cold_blue") }
+    var colorSchemeSetting by remember { mutableStateOf(prefs.getString("color_scheme", "red_blue") ?: "red_blue") }
     
     // 监听 SharedPreferences 变化
     DisposableEffect(Unit) {
@@ -313,7 +316,7 @@ fun ItemReminderToolTheme(
                 "theme" -> themeSetting = prefs.getString("theme", "system") ?: "system"
                 "app_name" -> appName = prefs.getString("app_name", defaultAppName) ?: defaultAppName
                 "language" -> language = prefs.getString("language", "zh") ?: "zh"
-                "color_scheme" -> colorSchemeSetting = prefs.getString("color_scheme", "cold_blue") ?: "cold_blue"
+                "color_scheme" -> colorSchemeSetting = prefs.getString("color_scheme", "red_blue") ?: "red_blue"
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -344,7 +347,7 @@ fun ItemReminderToolTheme(
             val schemeType = ColorSchemeType.fromKey(colorSchemeSetting)
             if (shouldUseDarkTheme) {
                 when (schemeType) {
-                    ColorSchemeType.COLD_BLUE -> ColdBlueDarkScheme
+                    ColorSchemeType.RED_BLUE -> RedBlueDarkScheme
                     ColorSchemeType.CREAM -> CreamDarkScheme
                     ColorSchemeType.MINT -> MintDarkScheme
                     ColorSchemeType.SPACE -> SpaceDarkScheme
@@ -353,7 +356,7 @@ fun ItemReminderToolTheme(
                 }
             } else {
                 when (schemeType) {
-                    ColorSchemeType.COLD_BLUE -> ColdBlueLightScheme
+                    ColorSchemeType.RED_BLUE -> RedBlueLightScheme
                     ColorSchemeType.CREAM -> CreamLightScheme
                     ColorSchemeType.MINT -> MintLightScheme
                     ColorSchemeType.SPACE -> SpaceLightScheme

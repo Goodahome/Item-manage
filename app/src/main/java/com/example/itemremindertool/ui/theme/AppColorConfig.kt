@@ -9,7 +9,7 @@ package com.example.itemremindertool.ui.theme
  * 
  * ✅ 已支持的功能：
  * - 浅色/深色主题切换
- * - 6 种预设配色方案（冷冽蓝、奶油橙、薄荷绿、深空灰、红酒红、圣诞）
+ * - 6 种预设配色方案（红蓝配色、奶油橙、薄荷绿、深空灰、红酒红、圣诞）
  * - 跟随系统主题
  * - 所有 UI 元素（导航栏、页面背景、卡片、按钮、文字、图标、FAB）统一响应主题变化
  * 
@@ -23,9 +23,9 @@ package com.example.itemremindertool.ui.theme
  * 步骤 2：找到要修改的配色方案
  * Color.kt 中定义了 6 种配色方案，每种都有浅色和深色版本：
  * 
- * 1. 冷冽蓝（ColdBlue）
- *    - 浅色：ColdBluePrimary, ColdBlueBackground, ColdBlueSurface 等
- *    - 深色：ColdBluePrimaryDark, ColdBlueBackgroundDark, ColdBlueSurfaceDark 等
+ * 1. 红蓝配色（RedBlue）
+ *    - 浅色：RedBluePrimary, RedBlueBackground, RedBlueSurface 等
+ *    - 深色：RedBluePrimaryDark, RedBlueBackgroundDark, RedBlueSurfaceDark 等
  * 
  * 2. 奶油橙（Cream）
  *    - 浅色：CreamPrimary, CreamBackground, CreamSurface 等
@@ -48,17 +48,17 @@ package com.example.itemremindertool.ui.theme
  *    - 深色：ChristmasPrimaryDark, ChristmasBackgroundDark, ChristmasSurfaceDark 等
  * 
  * 步骤 3：修改色号
- * 例如，要修改"冷冽蓝"配色方案的导航栏颜色：
+ * 例如，要修改"红蓝配色"配色方案的导航栏颜色：
  * 
  * // 浅色主题的导航栏
- * val ColdBlueSurface = Color(0xFFFFFFFF)  // 原始白色
+ * val RedBlueSurface = Color(0xFFFFFFFF)  // 原始白色
  * 改为：
- * val ColdBlueSurface = Color(0xFFEB8B78)  // 您想要的橙色
+ * val RedBlueSurface = Color(0xFFEB8B78)  // 您想要的橙色
  * 
  * // 深色主题的导航栏
- * val ColdBlueSurfaceDark = Color(0xFF1E293B)  // 原始深色
+ * val RedBlueSurfaceDark = Color(0xFF1E293B)  // 原始深色
  * 改为：
- * val ColdBlueSurfaceDark = Color(0xFF2D2520)  // 您想要的深色
+ * val RedBlueSurfaceDark = Color(0xFF2D2520)  // 您想要的深色
  * 
  * 步骤 4：保存并重新编译
  * 修改完成后，重新编译应用即可看到效果。
@@ -78,8 +78,8 @@ package com.example.itemremindertool.ui.theme
  * 
  * 映射到：MaterialTheme.colorScheme.surface
  * Color.kt 中的变量：
- * - 浅色：*Surface（如 ColdBlueSurface）
- * - 深色：*SurfaceDark（如 ColdBlueSurfaceDark）
+ * - 浅色：*Surface（如 RedBlueSurface）
+ * - 深色：*SurfaceDark（如 RedBlueSurfaceDark）
  * 
  * 
  * 第二组：页面背景
@@ -90,8 +90,8 @@ package com.example.itemremindertool.ui.theme
  * 
  * 映射到：MaterialTheme.colorScheme.background
  * Color.kt 中的变量：
- * - 浅色：*Background（如 ColdBlueBackground）
- * - 深色：*BackgroundDark（如 ColdBlueBackgroundDark）
+ * - 浅色：*Background（如 RedBlueBackground）
+ * - 深色：*BackgroundDark（如 RedBlueBackgroundDark）
  * 
  * 
  * 第二组：按钮背景
@@ -104,8 +104,8 @@ package com.example.itemremindertool.ui.theme
  * 
  * 映射到：MaterialTheme.colorScheme.primary
  * Color.kt 中的变量：
- * - 浅色：*Primary（如 ColdBluePrimary）
- * - 深色：*PrimaryDark（如 ColdBluePrimaryDark）
+ * - 浅色：*Primary（如 RedBluePrimary）
+ * - 深色：*PrimaryDark（如 RedBluePrimaryDark）
  * 
  * 
  * 第三组：卡片背景
@@ -120,8 +120,8 @@ package com.example.itemremindertool.ui.theme
  * 
  * 映射到：MaterialTheme.colorScheme.surfaceVariant
  * Color.kt 中的变量：
- * - 浅色：*SurfaceVariant（如 ColdBlueSurfaceVariant）
- * - 深色：*SurfaceVariantDark（如 ColdBlueSurfaceVariantDark）
+ * - 浅色：*SurfaceVariant（如 RedBlueSurfaceVariant）
+ * - 深色：*SurfaceVariantDark（如 RedBlueSurfaceVariantDark）
  * 
  * 
  * 第四组：文字、图标
@@ -149,8 +149,8 @@ package com.example.itemremindertool.ui.theme
  * 
  * 映射到：MaterialTheme.colorScheme.error
  * Color.kt 中的变量：
- * - 浅色：*Tertiary（如 ColdBlueTertiary）用作 error
- * - 深色：*TertiaryDark（如 ColdBlueTertiaryDark）用作 error
+ * - 浅色：*Tertiary（如 RedBlueTertiary）用作 error
+ * - 深色：*TertiaryDark（如 RedBlueTertiaryDark）用作 error
  * 
  * 
  * 第五组：悬浮操作按钮（FAB）
@@ -163,24 +163,24 @@ package com.example.itemremindertool.ui.theme
  * 
  * 映射到：MaterialTheme.colorScheme.primaryContainer
  * Color.kt 中的变量：
- * - 浅色：*PrimaryContainer（如 ColdBluePrimaryContainer）
- * - 深色：*PrimaryContainerDark（如 ColdBluePrimaryContainerDark）
+ * - 浅色：*PrimaryContainer（如 RedBluePrimaryContainer）
+ * - 深色：*PrimaryContainerDark（如 RedBluePrimaryContainerDark）
  * 
  * =============================================================================
  * 💡 快速修改示例
  * =============================================================================
  * 
- * 示例 1：修改"冷冽蓝"配色方案的导航栏颜色
+ * 示例 1：修改"红蓝配色"配色方案的导航栏颜色
  * ----------------------------------------------
  * 文件：Color.kt
  * 
  * 找到：
- * val ColdBlueSurface = Color(0xFFFFFFFF)  // 浅色导航栏（白色）
- * val ColdBlueSurfaceDark = Color(0xFF1E293B)  // 深色导航栏（深蓝灰）
+ * val RedBlueSurface = Color(0xFFFFFFFF)  // 浅色导航栏（白色）
+ * val RedBlueSurfaceDark = Color(0xFF1E293B)  // 深色导航栏（深蓝灰）
  * 
  * 修改为：
- * val ColdBlueSurface = Color(0xFFEB8B78)  // 浅色导航栏（橙色）
- * val ColdBlueSurfaceDark = Color(0xFF2D2520)  // 深色导航栏（深棕色）
+ * val RedBlueSurface = Color(0xFFEB8B78)  // 浅色导航栏（橙色）
+ * val RedBlueSurfaceDark = Color(0xFF2D2520)  // 深色导航栏（深棕色）
  * 
  * 
  * 示例 2：修改"奶油橙"配色方案的卡片背景
@@ -281,7 +281,7 @@ package com.example.itemremindertool.ui.theme
  * 在 Theme.kt 的 ColorSchemeType 枚举中添加：
  * 
  * enum class ColorSchemeType(val key: String, val displayName: String) {
- *     COLD_BLUE("cold_blue", "冷冽囤老板"),
+ *     RED_BLUE("red_blue", "红蓝配色"),
  *     CREAM("cream", "奶油治愈系"),
  *     MINT("mint", "薄荷冷感"),
  *     SPACE("space", "深空高级灰"),

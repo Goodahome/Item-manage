@@ -15,7 +15,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
  * 所有颜色从 MaterialTheme.colorScheme 动态获取
  * 支持以下功能：
  * - ✅ 自动适配浅色/深色主题
- * - ✅ 支持 6 种配色方案切换（冷冽蓝、奶油橙、薄荷绿、深空灰、红酒红、圣诞）
+ * - ✅ 支持 6 种配色方案切换（红蓝配色、奶油橙、薄荷绿、深空灰、红酒红、圣诞）
  * - ✅ 跟随系统主题
  * 
  * 颜色分组映射到 MaterialTheme：
@@ -324,7 +324,7 @@ object ColorHelpers {
         
         return if (isDarkTheme) {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueGradientStartDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueGradientStartDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamGradientStartDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.MINT -> MintGradientStartDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceGradientStartDark
@@ -333,7 +333,7 @@ object ColorHelpers {
             }
         } else {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueGradientStart
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueGradientStart
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamGradientStart
                 com.example.itemremindertool.ui.theme.ColorSchemeType.MINT -> MintGradientStart
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceGradientStart
@@ -362,7 +362,7 @@ object ColorHelpers {
         
         return if (isDarkTheme) {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueGradientEndDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueGradientEndDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamGradientEndDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.MINT -> MintGradientEndDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceGradientEndDark
@@ -371,7 +371,7 @@ object ColorHelpers {
             }
         } else {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueGradientEnd
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueGradientEnd
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamGradientEnd
                 com.example.itemremindertool.ui.theme.ColorSchemeType.MINT -> MintGradientEnd
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceGradientEnd
@@ -401,7 +401,7 @@ object ColorHelpers {
         
         return if (isDarkTheme) {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueSearchBoxBgDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSearchBoxBgDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamSearchBoxBgDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.MINT -> MintSearchBoxBgDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceSearchBoxBgDark
@@ -410,7 +410,7 @@ object ColorHelpers {
             }
         } else {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueSearchBoxBg
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSearchBoxBg
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamSearchBoxBg
                 com.example.itemremindertool.ui.theme.ColorSchemeType.MINT -> MintSearchBoxBg
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceSearchBoxBg
@@ -440,7 +440,7 @@ object ColorHelpers {
         
         return if (isDarkTheme) {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueSearchBoxBorderDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSearchBoxBorderDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamSearchBoxBorderDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.MINT -> MintSearchBoxBorderDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceSearchBoxBorderDark
@@ -449,7 +449,7 @@ object ColorHelpers {
             }
         } else {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueSearchBoxBorder
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSearchBoxBorder
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamSearchBoxBorder
                 com.example.itemremindertool.ui.theme.ColorSchemeType.MINT -> MintSearchBoxBorder
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceSearchBoxBorder
@@ -479,15 +479,15 @@ object ColorHelpers {
         
         return if (isDarkTheme) {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueBreadcrumbTextDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueBreadcrumbTextDark
                 // 其他配色方案暂时使用相同的颜色，后续可以扩展
-                else -> ColdBlueBreadcrumbTextDark
+                else -> RedBlueBreadcrumbTextDark
             }
         } else {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueBreadcrumbText
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueBreadcrumbText
                 // 其他配色方案暂时使用相同的颜色，后续可以扩展
-                else -> ColdBlueBreadcrumbText
+                else -> RedBlueBreadcrumbText
             }
         }
     }
@@ -510,15 +510,15 @@ object ColorHelpers {
         
         return if (isDarkTheme) {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueBreadcrumbIconDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueBreadcrumbIconDark
                 // 其他配色方案暂时使用相同的颜色，后续可以扩展
-                else -> ColdBlueBreadcrumbIconDark
+                else -> RedBlueBreadcrumbIconDark
             }
         } else {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueBreadcrumbIcon
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueBreadcrumbIcon
                 // 其他配色方案暂时使用相同的颜色，后续可以扩展
-                else -> ColdBlueBreadcrumbIcon
+                else -> RedBlueBreadcrumbIcon
             }
         }
     }
@@ -543,15 +543,15 @@ object ColorHelpers {
         
         return if (isDarkTheme) {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueSubWarehouseNameDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSubWarehouseNameDark
                 // 其他配色方案暂时使用相同的颜色，后续可以扩展
-                else -> ColdBlueSubWarehouseNameDark
+                else -> RedBlueSubWarehouseNameDark
             }
         } else {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueSubWarehouseName
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSubWarehouseName
                 // 其他配色方案暂时使用相同的颜色，后续可以扩展
-                else -> ColdBlueSubWarehouseName
+                else -> RedBlueSubWarehouseName
             }
         }
     }
@@ -576,7 +576,7 @@ object ColorHelpers {
         
         return if (isDarkTheme) {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueSurfaceVariantDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSurfaceVariantDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamSurfaceVariantDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.MINT -> MintSurfaceVariantDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceSurfaceVariantDark
@@ -585,7 +585,7 @@ object ColorHelpers {
             }
         } else {
             when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.COLD_BLUE -> ColdBlueSurfaceVariant
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSurfaceVariant
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamSurfaceVariant
                 com.example.itemremindertool.ui.theme.ColorSchemeType.MINT -> MintSurfaceVariant
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceSurfaceVariant

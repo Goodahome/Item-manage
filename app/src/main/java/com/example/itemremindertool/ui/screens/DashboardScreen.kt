@@ -77,6 +77,7 @@ import com.example.itemremindertool.ui.components.UIConstants
 import com.example.itemremindertool.ui.components.OnboardingOverlay
 import com.example.itemremindertool.ui.components.OnboardingStep
 import com.example.itemremindertool.ui.components.DynamicBannerAd
+import com.example.itemremindertool.ui.components.DraggableFab
 import com.example.itemremindertool.ui.components.WarehouseSelectionBottomSheet
 import com.example.itemremindertool.ui.components.CameraCaptureDialog
 import com.example.itemremindertool.ui.components.ImageCropDialog
@@ -397,43 +398,7 @@ fun DashboardScreen(
                 }
             )
         },
-        floatingActionButton = {
-            // 检测是否在购物列表页面（显示购物列表）
-            val isShoppingListVisible = remember(selectedWarehouseId) {
-                selectedWarehouseId == null
-            }
-            
-            // 主 FAB 按钮
-            // 使用与左侧圆形容器图标一致的背景色
-            val fabBackground = ColorHelpers.getGroup2SettingsBtnColor()
-            val fabIconColor = ColorHelpers.getGroup4IconColorByContrast(fabBackground)
-            
-            Column(
-                modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
-            ) {
-                FloatingActionButton(
-                    onClick = {
-                        // 直接添加物品
-                        // 如果当前在购物列表页面，设置标记以便 ItemEditScreen 知道需要添加到购物篮
-                        if (isShoppingListVisible) {
-                            val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
-                            prefs.edit().putBoolean("add_to_shopping_list_after_save", true).apply()
-                        }
-                        // 如果当前选中了容器，则带入容器ID
-                        onAddItem(selectedWarehouseId)
-                    },
-                    containerColor = fabBackground,
-                    contentColor = fabIconColor,
-                    modifier = Modifier.size(UIConstants.FAB_SIZE)
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = stringResource(R.string.add_item),
-                        tint = fabIconColor
-                    )
-                }
-            }
-        },
+        floatingActionButton = {},
         contentWindowInsets = WindowInsets(0.dp) // 不使用系统 insets，手动控制 padding
     ) { paddingValues ->
         // 获取待购物品数量
@@ -537,6 +502,48 @@ fun DashboardScreen(
                 modifier = Modifier
                     .fillMaxSize()
             )
+
+            // 可拖拽的主 FAB（侧边栏风格首页）
+            val isShoppingListVisible = remember(selectedWarehouseId) {
+                selectedWarehouseId == null
+            }
+            val fabBackground = ColorHelpers.getGroup2SettingsBtnColor()
+            val fabIconColor = ColorHelpers.getGroup4IconColorByContrast(fabBackground)
+            val sidebarOccupiedWidth = 66.dp + 6.dp + 4.dp
+            val fabBoundsPadding = PaddingValues(
+                start = sidebarOccupiedWidth,
+                top = paddingValues.calculateTopPadding() + 8.dp,
+                end = 12.dp,
+                bottom = UIConstants.FAB_BOTTOM_PADDING + adBottomPadding
+            )
+            DraggableFab(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .zIndex(2f),
+                boundsPadding = fabBoundsPadding
+            ) { fabModifier ->
+                FloatingActionButton(
+                    onClick = {
+                        // 直接添加物品
+                        // 如果当前在购物列表页面，设置标记以便 ItemEditScreen 知道需要添加到购物篮
+                        if (isShoppingListVisible) {
+                            val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+                            prefs.edit().putBoolean("add_to_shopping_list_after_save", true).apply()
+                        }
+                        // 如果当前选中了容器，则带入容器ID
+                        onAddItem(selectedWarehouseId)
+                    },
+                    containerColor = fabBackground,
+                    contentColor = fabIconColor,
+                    modifier = fabModifier.size(UIConstants.FAB_SIZE)
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = stringResource(R.string.add_item),
+                        tint = fabIconColor
+                    )
+                }
+            }
 
             // 固定底部广告（覆盖左侧列表和右侧内容，仅在加载成功后占位）
             val adOverlayHeight = if (isBannerAdLoaded) 90.dp + bottomInset + 8.dp else 0.dp
@@ -1306,6 +1313,11 @@ fun SearchBoxSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 52.dp)
+                .shadow(
+                    elevation = 4.dp,
+                    shape = RoundedCornerShape(12.dp),
+                    clip = false
+                )
                 // 使用 modifier.border() 添加加粗边框（4.dp）
                 .border(
                     width = 2.dp,

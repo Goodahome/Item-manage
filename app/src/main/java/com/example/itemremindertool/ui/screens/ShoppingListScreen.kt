@@ -39,6 +39,7 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.DraggableFab
 import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
 import com.example.itemremindertool.ui.components.UIConstants
 import com.example.itemremindertool.data.model.Priority
@@ -75,74 +76,83 @@ fun ShoppingListScreen(
                 }
             )
         },
-        floatingActionButton = {
-            Column(
-                modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
-            ) {
-                FloatingActionButton(
-                    onClick = onAddItem,
-                    containerColor = ColorHelpers.getGroup5FabColor(),
-                    modifier = Modifier.size(UIConstants.FAB_SIZE)
-                ) {
-                    Icon(Icons.Default.Add, stringResource(R.string.add_shopping_item))
-                }
-            }
-        }
+        floatingActionButton = {}
     ) { paddingValues ->
-        if (shoppingItems.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(ColorHelpers.getGroup2PageBgColor())
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (shoppingItems.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(ColorHelpers.getGroup2PageBgColor())
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Default.ShoppingCart,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = ColorHelpers.getGroup4IconColor(0.6f)
-                    )
-                    Text(
-                        stringResource(R.string.no_shopping_items),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = ColorHelpers.getGroup4TextColor(0.6f)
-                    )
-                    Button(
-                        onClick = onAddItem,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ColorHelpers.getGroup2SettingsBtnColor()
-                        )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text(stringResource(R.string.add_first_shopping_item), color = ColorHelpers.getGroup4TextColor())
+                        Icon(
+                            Icons.Default.ShoppingCart,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = ColorHelpers.getGroup4IconColor(0.6f)
+                        )
+                        Text(
+                            stringResource(R.string.no_shopping_items),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = ColorHelpers.getGroup4TextColor(0.6f)
+                        )
+                        Button(
+                            onClick = onAddItem,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = ColorHelpers.getGroup2SettingsBtnColor()
+                            )
+                        ) {
+                            Text(stringResource(R.string.add_first_shopping_item), color = ColorHelpers.getGroup4TextColor())
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(ColorHelpers.getGroup2PageBgColor())
+                        .padding(paddingValues),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // 排序：未完成的在前，已完成的在后
+                    val sortedItems = shoppingItems.sortedBy { it.isCompleted }
+                    items(sortedItems, key = { it.id }) { item ->
+                        ShoppingItemCard(
+                            item = item,
+                            onEdit = { onEditItem(item.id) },
+                            onDelete = { viewModel.deleteShoppingItem(item) },
+                            onToggleComplete = { viewModel.toggleComplete(item) },
+                            onQuantityChange = { newQuantity ->
+                                viewModel.updateShoppingItem(item.copy(quantity = newQuantity))
+                            }
+                        )
                     }
                 }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(ColorHelpers.getGroup2PageBgColor())
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // 排序：未完成的在前，已完成的在后
-                val sortedItems = shoppingItems.sortedBy { it.isCompleted }
-                items(sortedItems, key = { it.id }) { item ->
-                    ShoppingItemCard(
-                        item = item,
-                        onEdit = { onEditItem(item.id) },
-                        onDelete = { viewModel.deleteShoppingItem(item) },
-                        onToggleComplete = { viewModel.toggleComplete(item) },
-                        onQuantityChange = { newQuantity ->
-                            viewModel.updateShoppingItem(item.copy(quantity = newQuantity))
-                        }
-                    )
+
+            val fabBoundsPadding = PaddingValues(
+                start = 12.dp,
+                top = paddingValues.calculateTopPadding() + 8.dp,
+                end = 12.dp,
+                bottom = UIConstants.FAB_BOTTOM_PADDING + paddingValues.calculateBottomPadding()
+            )
+            DraggableFab(
+                modifier = Modifier.fillMaxSize(),
+                boundsPadding = fabBoundsPadding
+            ) { fabModifier ->
+                FloatingActionButton(
+                    onClick = onAddItem,
+                    containerColor = ColorHelpers.getGroup5FabColor(),
+                    modifier = fabModifier.size(UIConstants.FAB_SIZE)
+                ) {
+                    Icon(Icons.Default.Add, stringResource(R.string.add_shopping_item))
                 }
             }
         }
