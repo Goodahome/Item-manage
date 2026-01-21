@@ -137,7 +137,8 @@ fun DynamicBannerAd(
     maxRetries: Int = 3,
     retryDelayMs: Long = 5000,
     hideOnFailure: Boolean = false,
-    height: Dp = 90.dp // 广告高度，默认90dp
+    height: Dp = 90.dp, // 广告高度，默认90dp
+    onAdLoaded: (Boolean) -> Unit = {}
 ) {
     android.util.Log.d("DynamicBannerAd", "=== DynamicBannerAd 组件开始组合 ===")
     val context = LocalContext.current
@@ -216,12 +217,18 @@ fun DynamicBannerAd(
     // 如果已购买移除广告，不显示广告
     if (isAdsRemoved) {
         android.util.Log.d("DynamicBannerAd", "已购买移除广告，不显示广告")
+        LaunchedEffect(Unit) {
+            onAdLoaded(false)
+        }
         return
     }
     
     // 如果失败且需要隐藏，则不显示广告
     if (hideOnFailure && adLoadFailed && retryCount >= maxRetries) {
         android.util.Log.d("DynamicBannerAd", "广告加载失败次数过多，隐藏广告视图")
+        LaunchedEffect(Unit) {
+            onAdLoaded(false)
+        }
         return
     }
     
@@ -275,6 +282,10 @@ fun DynamicBannerAd(
             }
         }
         return
+    }
+
+    LaunchedEffect(adLoaded) {
+        onAdLoaded(adLoaded)
     }
     
     // 使用 AndroidView 嵌入原生 AdView

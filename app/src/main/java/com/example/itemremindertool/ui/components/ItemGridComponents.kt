@@ -1,6 +1,5 @@
 package com.example.itemremindertool.ui.components
 
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -12,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -39,6 +39,8 @@ import com.example.itemremindertool.R
 import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.utils.ImageUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.*
 
@@ -52,50 +54,35 @@ fun ItemGridCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // 获取主图路径（优先使用裁剪后的主图）
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    
+    // 获取主图路径（原图路径，用于生成缩略图）
     val primaryImagePath = remember(item.imageUris, item.primaryImageIndex, item.imageUri) {
         if (item.imageUris.isNotEmpty() && item.primaryImageIndex < item.imageUris.size) {
-            val originalPath = item.imageUris[item.primaryImageIndex]
-            val croppedPath = ImageUtils.getCroppedImagePath(originalPath)
-            if (croppedPath != null) {
-                val croppedFile = java.io.File(croppedPath)
-                if (croppedFile.exists()) croppedPath else originalPath
-            } else {
-                originalPath
-            }
+            item.imageUris[item.primaryImageIndex]
         } else {
             item.imageUri
         }
     }
     
-    // 加载背景图片
-    val backgroundBitmap = remember(primaryImagePath) {
-        if (primaryImagePath != null) {
-            try {
-                BitmapFactory.decodeFile(primaryImagePath)?.asImageBitmap()
-            } catch (e: Exception) {
-                null
-            }
-        } else {
-            null
-        }
-    }
+    // 使用缩略图加载背景图片（异步加载，避免阻塞UI）
+    var backgroundBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var isImageBright by remember { mutableStateOf(true) }
     
-    // 计算背景图片的亮度，决定文字颜色
-    val isImageBright = remember(primaryImagePath) {
+    LaunchedEffect(primaryImagePath) {
+        backgroundBitmap = null
+        isImageBright = true
+        
         if (primaryImagePath != null) {
-            try {
-                val bitmap = BitmapFactory.decodeFile(primaryImagePath)
-                if (bitmap != null) {
-                    ImageUtils.calculateImageBrightness(bitmap)
-                } else {
-                    true
+            scope.launch(Dispatchers.IO) {
+                // 加载缩略图（最大400像素，用于列表展示）
+                val thumbnail = ImageUtils.loadThumbnail(context, primaryImagePath, maxSize = 400)
+                if (thumbnail != null) {
+                    backgroundBitmap = thumbnail
+                    isImageBright = ImageUtils.calculateImageBrightness(thumbnail)
                 }
-            } catch (e: Exception) {
-                true
             }
-        } else {
-            true
         }
     }
     
@@ -149,10 +136,10 @@ fun ItemGridCard(
         }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // 背景图片
-            if (backgroundBitmap != null) {
+            // 背景图片（使用缩略图）
+            backgroundBitmap?.let { bitmap ->
                 Image(
-                    bitmap = backgroundBitmap,
+                    bitmap = bitmap.asImageBitmap(),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -602,7 +589,7 @@ fun ItemDetailPanel(
                 }
             }
             
-            Divider(color = ColorHelpers.getGroup4IconColor(0.2f))
+            HorizontalDivider(color = ColorHelpers.getGroup4IconColor(0.2f))
             
             // 当前数量显示
             Row(

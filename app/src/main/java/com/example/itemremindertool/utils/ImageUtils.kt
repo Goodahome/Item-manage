@@ -230,13 +230,14 @@ object ImageUtils {
     }
     
     /**
-     * 删除图片及其裁剪图
+     * 删除图片及其裁剪图和缩略图
      */
     fun deleteImageAndCropped(originalPath: String?) {
         if (originalPath != null) {
             try {
                 deleteImageFile(originalPath)
                 deleteCroppedImageFile(originalPath)
+                deleteThumbnailFile(originalPath)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -267,6 +268,204 @@ object ImageUtils {
         val averageBrightness = totalBrightness / (pixelCount / (sampleSize * sampleSize))
         // 如果平均亮度大于 128，图片较亮，使用深色文字；否则使用浅色文字
         return averageBrightness > 128
+    }
+    
+    /**
+     * 获取缩略图的文件路径（基于原图路径）
+     * 缩略图用于列表展示，文件名为原图名_thumb.jpg
+     */
+    fun getThumbnailPath(originalPath: String): String? {
+        return try {
+            val file = File(originalPath)
+            if (!file.exists()) {
+                return null
+            }
+            val nameWithoutExt = file.nameWithoutExtension
+            val parent = file.parent
+            if (parent == null) {
+                return null
+            }
+            // 缩略图统一使用 .jpg 格式以节省空间
+            File(parent, "${nameWithoutExt}_thumb.jpg").absolutePath
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+    
+    /**
+     * 生成缩略图（用于列表展示，压缩尺寸和质量）
+     * @param originalPath 原图路径
+     * @param maxSize 缩略图的最大宽度或高度（像素），默认 400
+     * @param quality 压缩质量（0-100），默认 75
+     * @return 缩略图路径，如果生成失败返回 null
+     */
+    fun generateThumbnail(context: Context, originalPath: String, maxSize: Int = 400, quality: Int = 75): String? {
+        return try {
+            val originalFile = File(originalPath)
+            if (!originalFile.exists()) {
+                return null
+            }
+            
+            // 先使用 BitmapFactory.Options 获取图片尺寸，避免加载完整图片到内存
+            val options = BitmapFactory.Options()
+            options.inJustDecodeBounds = true
+            BitmapFactory.decodeFile(originalPath, options)
+            
+            val originalWidth = options.outWidth
+            val originalHeight = options.outHeight
+            
+            if (originalWidth <= 0 || originalHeight <= 0) {
+                return null
+            }
+            
+            // 计算缩放比例
+            val scale = if (originalWidth > originalHeight) {
+                maxSize.toFloat() / originalWidth
+            } else {
+                maxSize.toFloat() / originalHeight
+            }
+            
+            // 如果原图已经很小，不需要生成缩略图
+            if (scale >= 1.0f) {
+                return originalPath
+            }
+            
+            // 计算采样率，减少内存占用
+            var inSampleSize = 1
+            val reqWidth = (originalWidth * scale).toInt()
+            val reqHeight = (originalHeight * scale).toInt()
+            
+            if (originalHeight > reqHeight || originalWidth > reqWidth) {
+                val halfHeight = originalHeight / 2
+                val halfWidth = originalWidth / 2
+                while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+                    inSampleSize *= 2
+                }
+            }
+            
+            // 加载并缩放图片
+            val decodeOptions = BitmapFactory.Options()
+            decodeOptions.inSampleSize = inSampleSize
+            val bitmap = loadBitmapFromPath(originalPath) ?: return null
+            
+            val scaledWidth = (bitmap.width * scale).toInt().coerceAtLeast(1)
+            val scaledHeight = (bitmap.height * scale).toInt().coerceAtLeast(1)
+            val thumbnailBitmap = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
+            
+            // 释放原图内存
+            if (bitmap != thumbnailBitmap) {
+                bitmap.recycle()
+            }
+            
+            // 保存缩略图
+            val thumbnailPath = getThumbnailPath(originalPath) ?: return null
+            val thumbnailFile = File(thumbnailPath)
+            val parentDir = thumbnailFile.parentFile
+            if (parentDir != null && !parentDir.exists()) {
+                parentDir.mkdirs()
+            }
+            
+            FileOutputStream(thumbnailFile).use { out ->
+                thumbnailBitmap.compress(Bitmap.CompressFormat.JPEG, quality, out)
+            }
+            
+            thumbnailBitmap.recycle()
+            thumbnailPath
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+    
+    /**
+     * 加载缩略图，如果缩略图不存在则自动生成
+     * @param context 上下文
+     * @param originalPath 原图路径
+     * @param maxSize 缩略图的最大宽度或高度（像素），默认 400
+     * @return 缩略图的 Bitmap，如果失败返回 null
+     */
+    fun loadThumbnail(context: Context, originalPath: String?, maxSize: Int = 400): Bitmap? {
+        if (originalPath == null) {
+            return null
+        }
+        
+        return try {
+            val thumbnailPath = getThumbnailPath(originalPath)
+            
+            // 如果缩略图存在，直接加载
+            if (thumbnailPath != null) {
+                val thumbnailFile = File(thumbnailPath)
+                if (thumbnailFile.exists()) {
+                    // 检查缩略图是否比原图新（如果原图被更新，需要重新生成）
+                    val originalFile = File(originalPath)
+                    if (originalFile.exists() && thumbnailFile.lastModified() >= originalFile.lastModified()) {
+                        return loadBitmapFromPath(thumbnailPath)
+                    }
+                }
+            }
+            
+            // 缩略图不存在或已过期，生成新的缩略图
+            val generatedPath = generateThumbnail(context, originalPath, maxSize)
+            if (generatedPath != null) {
+                loadBitmapFromPath(generatedPath)
+            } else {
+                // 生成失败，返回原图（但会先缩放以减少内存占用）
+                val bitmap = loadBitmapFromPath(originalPath)
+                if (bitmap != null) {
+                    val scale = if (bitmap.width > bitmap.height) {
+                        maxSize.toFloat() / bitmap.width
+                    } else {
+                        maxSize.toFloat() / bitmap.height
+                    }
+                    if (scale < 1.0f) {
+                        val scaledWidth = (bitmap.width * scale).toInt().coerceAtLeast(1)
+                        val scaledHeight = (bitmap.height * scale).toInt().coerceAtLeast(1)
+                        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
+                        bitmap.recycle()
+                        scaledBitmap
+                    } else {
+                        bitmap
+                    }
+                } else {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+    
+    /**
+     * 删除缩略图文件
+     */
+    fun deleteThumbnailFile(originalPath: String?) {
+        if (originalPath != null) {
+            try {
+                val thumbnailPath = getThumbnailPath(originalPath)
+                if (thumbnailPath != null) {
+                    File(thumbnailPath).delete()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+    
+    /**
+     * 删除图片及其裁剪图和缩略图
+     */
+    fun deleteImageAndAllVariants(originalPath: String?) {
+        if (originalPath != null) {
+            try {
+                deleteImageFile(originalPath)
+                deleteCroppedImageFile(originalPath)
+                deleteThumbnailFile(originalPath)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }
 

@@ -2,6 +2,8 @@ package com.example.itemremindertool.ui.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.isSystemInDarkTheme
 
@@ -136,7 +138,9 @@ object ColorHelpers {
         }
         
         // 计算背景色的相对亮度（0.0 = 黑色, 1.0 = 白色）
-        val luminance = 0.299 * backgroundColor.red + 0.587 * backgroundColor.green + 0.114 * backgroundColor.blue
+        // 对透明色进行复合，使用当前主题背景色，避免系统主题影响
+        val baseBackground = backgroundColor.compositeOver(MaterialTheme.colorScheme.background)
+        val luminance = baseBackground.luminance()
         
         // 根据背景亮度选择文字颜色：
         // - 亮度 > 0.5：背景较亮，使用深色文字（OnSurfaceLowContrast，黑色）

@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -29,9 +30,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import android.graphics.BitmapFactory
 import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.utils.ImageUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
 import com.example.itemremindertool.data.model.ItemStatus
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.R
@@ -155,35 +159,34 @@ fun ItemCard(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     
-    // 加载背景图片
-    val backgroundBitmap = remember(item.imageUri) {
-        if (item.imageUri != null) {
-            try {
-                BitmapFactory.decodeFile(item.imageUri)?.asImageBitmap()
-            } catch (e: Exception) {
-                null
-            }
+    // 获取主图路径（原图路径，用于生成缩略图）
+    val primaryImagePath = remember(item.imageUris, item.primaryImageIndex, item.imageUri) {
+        if (item.imageUris.isNotEmpty() && item.primaryImageIndex < item.imageUris.size) {
+            item.imageUris[item.primaryImageIndex]
         } else {
-            null
+            item.imageUri
         }
     }
     
-    // 计算背景图片的亮度，决定文字颜色
-    val isImageBright = remember(item.imageUri) {
-        if (item.imageUri != null) {
-            try {
-                val bitmap = BitmapFactory.decodeFile(item.imageUri)
-                if (bitmap != null) {
-                    ImageUtils.calculateImageBrightness(bitmap)
-                } else {
-                    true // 默认使用深色文字
+    // 使用缩略图加载背景图片（异步加载，避免阻塞UI）
+    var backgroundBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var isImageBright by remember { mutableStateOf(true) }
+    
+    LaunchedEffect(primaryImagePath) {
+        backgroundBitmap = null
+        isImageBright = true
+        
+        if (primaryImagePath != null) {
+            scope.launch(Dispatchers.IO) {
+                // 加载缩略图（最大400像素，用于列表展示）
+                val thumbnail = ImageUtils.loadThumbnail(context, primaryImagePath, maxSize = 400)
+                if (thumbnail != null) {
+                    backgroundBitmap = thumbnail
+                    isImageBright = ImageUtils.calculateImageBrightness(thumbnail)
                 }
-            } catch (e: Exception) {
-                true // 默认使用深色文字
             }
-        } else {
-            true // 默认使用深色文字
         }
     }
     
@@ -205,10 +208,10 @@ fun ItemCard(
         )
     ) {
         Box {
-            // 背景图片
-            if (backgroundBitmap != null) {
+            // 背景图片（使用缩略图）
+            backgroundBitmap?.let { bitmap ->
                 Image(
-                    bitmap = backgroundBitmap,
+                    bitmap = bitmap.asImageBitmap(),
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -319,7 +322,7 @@ fun ItemCard(
                                     showMenu = false
                                     onMoveToContainer()
                                 },
-                                leadingIcon = { Icon(Icons.Default.CompareArrows, null) },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.CompareArrows, null) },
                                 modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
                             )
                         }

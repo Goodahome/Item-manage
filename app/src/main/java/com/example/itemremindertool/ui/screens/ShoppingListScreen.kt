@@ -1,8 +1,10 @@
 package com.example.itemremindertool.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,6 +31,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.itemremindertool.R
@@ -152,6 +156,7 @@ fun ShoppingListScreen(
     } // 关闭外层 Box
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ShoppingItemCard(
     item: ShoppingItem,
@@ -269,51 +274,66 @@ fun ShoppingItemCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(0.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                val fabBackground = ColorHelpers.getGroup2SettingsBtnColor()
+                val deleteIconColor = ColorHelpers.getGroup4IconColorByContrast(fabBackground)
+                val nameColor = if (item.isCompleted) {
+                    if (backgroundBitmap != null) {
+                        textColor.copy(alpha = 0.5f)
+                    } else {
+                        ColorHelpers.getGroup4TextColor(0.5f)
+                    }
+                } else {
+                    if (backgroundBitmap != null) {
+                        textColor
+                    } else {
+                        ColorHelpers.getGroup4TextColor()
+                    }
+                }
+                val descColor = if (backgroundBitmap != null) {
+                    textColor.copy(alpha = 0.85f)
+                } else {
+                    ColorHelpers.getGroup4TextColor().copy(alpha = 0.7f)
+                }
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .combinedClickable(
+                            onClick = { onToggleComplete() },
+                            onLongClick = { onEdit() }
+                        )
                 ) {
-                Checkbox(
-                    checked = item.isCompleted,
-                    onCheckedChange = { onToggleComplete() }
-                )
-                Column(modifier = Modifier.weight(1f)) {
+                    val minNameFontSize = 12.sp
+                    var nameFontSize by remember(item.name) { mutableStateOf(16.sp) }
                     Text(
                         text = item.name,
-                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = nameFontSize,
                         fontWeight = FontWeight.Bold,
-                        color = if (item.isCompleted) {
-                            if (backgroundBitmap != null) {
-                                textColor.copy(alpha = 0.5f)
-                            } else {
-                                ColorHelpers.getGroup4TextColor(0.5f)
-                            }
-                        } else {
-                            if (backgroundBitmap != null) {
-                                textColor
-                            } else {
-                                ColorHelpers.getGroup4TextColor()
+                        textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                        color = nameColor,
+                        onTextLayout = { result ->
+                            if (result.hasVisualOverflow && nameFontSize > minNameFontSize) {
+                                nameFontSize = (nameFontSize.value - 1f).sp
                             }
                         }
                     )
                     if (item.description.isNotEmpty()) {
                         Text(
                             text = item.description,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (backgroundBitmap != null) {
-                                textColor.copy(alpha = 0.9f)
-                            } else {
-                                ColorHelpers.getGroup4TextColor().copy(alpha = 0.7f)
-                            }
+                            textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                            color = descColor
                         )
                     }
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
@@ -325,30 +345,75 @@ fun ShoppingItemCard(
                                 labelColor = priorityColor
                             )
                         )
-                        // 直接显示为可编辑的数量输入框（使用BasicTextField自定义内边距）
+                        val quantityWidth = when (quantityText.length) {
+                            0, 1 -> 24.dp
+                            2 -> 30.dp
+                            3 -> 36.dp
+                            else -> 42.dp
+                        }
                         var isFocused by remember { mutableStateOf(false) }
-                        BasicTextField(
-                            value = quantityText,
-                            onValueChange = { newValue: String ->
-                                quantityText = newValue.filter { char: Char -> char.isDigit() }
-                            },
-                            modifier = Modifier
-                                .width(60.dp)
-                                .heightIn(min = 30.dp) // 使用 heightIn 而不是固定 height，允许内容自适应
-                                .border(
-                                    width = 1.dp,
-                                    color = if (isFocused) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.outline
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    val current = quantityText.toIntOrNull() ?: item.quantity
+                                    val newQuantity = (current - 1).coerceAtLeast(1)
+                                    quantityText = newQuantity.toString()
+                                    onQuantityChange(newQuantity)
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(Icons.Default.Remove, contentDescription = null, modifier = Modifier.size(14.dp))
+                            }
+                            BasicTextField(
+                                value = quantityText,
+                                onValueChange = { newValue: String ->
+                                    quantityText = newValue.filter { char: Char -> char.isDigit() }
+                                },
+                                modifier = Modifier
+                                    .widthIn(min = quantityWidth, max = 56.dp)
+                                    .heightIn(min = 24.dp)
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (isFocused) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.outline
+                                        },
+                                        shape = RoundedCornerShape(6.dp)
+                                    )
+                                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                                    .onFocusChanged { focusState ->
+                                        isFocused = focusState.isFocused
+                                        if (!focusState.isFocused) {
+                                            val newQuantity = quantityText.toIntOrNull() ?: 1
+                                            if (newQuantity > 0) {
+                                                onQuantityChange(newQuantity)
+                                            } else {
+                                                quantityText = item.quantity.toString()
+                                            }
+                                        }
                                     },
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-                                .padding(horizontal = 8.dp, vertical = 4.dp) // 自定义内边距
-                                .onFocusChanged { focusState ->
-                                    isFocused = focusState.isFocused
-                                    if (!focusState.isFocused) {
-                                        // 失去焦点时保存数量
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodySmall.copy(
+                                    color = if (backgroundBitmap != null) {
+                                        if (isFocused) textColor else textColor.copy(alpha = 0.8f)
+                                    } else {
+                                        if (isFocused) {
+                                            ColorHelpers.getGroup4TextColor()
+                                        } else {
+                                            ColorHelpers.getGroup4TextColor().copy(alpha = 0.8f)
+                                        }
+                                    }
+                                ),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number,
+                                    imeAction = ImeAction.Done
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
                                         val newQuantity = quantityText.toIntOrNull() ?: 1
                                         if (newQuantity > 0) {
                                             onQuantityChange(newQuantity)
@@ -356,83 +421,42 @@ fun ShoppingItemCard(
                                             quantityText = item.quantity.toString()
                                         }
                                     }
-                                },
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodySmall.copy(
-                                color = if (backgroundBitmap != null) {
-                                    if (isFocused) textColor else textColor.copy(alpha = 0.8f)
-                                } else {
-                                    if (isFocused) {
-                                        ColorHelpers.getGroup4TextColor()
-                                    } else {
-                                        ColorHelpers.getGroup4TextColor().copy(alpha = 0.8f)
-                                    }
-                                }
-                            ),
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                                imeAction = ImeAction.Done
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onDone = {
-                                    val newQuantity = quantityText.toIntOrNull() ?: 1
-                                    if (newQuantity > 0) {
-                                        onQuantityChange(newQuantity)
-                                    } else {
-                                        quantityText = item.quantity.toString()
-                                    }
-                                }
+                                )
                             )
-                        )
+                            IconButton(
+                                onClick = {
+                                    val current = quantityText.toIntOrNull() ?: item.quantity
+                                    val newQuantity = (current + 1).coerceAtLeast(1)
+                                    quantityText = newQuantity.toString()
+                                    onQuantityChange(newQuantity)
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
+                            }
+                        }
                     }
                 }
-                }
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(
-                        Icons.Default.MoreVert,
-                        stringResource(R.string.more_options),
-                        tint = if (backgroundBitmap != null && !item.isCompleted) {
-                            textColor
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        }
-                    )
-                }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.heightIn(min = 48.dp)
                 ) {
-                    DropdownMenuItem(
-                        text = { 
-                            Text(
-                                stringResource(R.string.edit),
-                                maxLines = 2 // 允许最多2行，支持文字换行
-                            ) 
-                        },
-                        onClick = {
-                            showMenu = false
-                            onEdit()
-                        },
-                        leadingIcon = { Icon(Icons.Default.Edit, null) },
-                        modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(28.dp)
+                            .background(ColorHelpers.getGroup4TextColor().copy(alpha = 0.2f))
                     )
-                    DropdownMenuItem(
-                        text = { 
-                            Text(
-                                stringResource(R.string.delete),
-                                maxLines = 2 // 允许最多2行，支持文字换行
-                            ) 
-                        },
-                        onClick = {
-                            showMenu = false
-                            onDelete()
-                        },
-                        leadingIcon = { Icon(Icons.Default.Delete, null) },
-                        modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
-                    )
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null, tint = deleteIconColor, modifier = Modifier.size(18.dp))
+                    }
                 }
-            }
             }
         }
     }
