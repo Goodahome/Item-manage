@@ -48,10 +48,20 @@ fun CloudStorageSettingsScreen(
     
     // 确保正确观察状态
     val operationState by viewModel.operationState.collectAsState(initial = OperationState.Idle)
+    val snackbarHostState = remember { SnackbarHostState() }
     
     // 调试：监听状态变化
     LaunchedEffect(operationState) {
         android.util.Log.d("CloudStorageSettings", "operationState 变化: $operationState")
+        when (val state = operationState) {
+            is OperationState.Success -> {
+                snackbarHostState.showSnackbar(state.message)
+            }
+            is OperationState.Error -> {
+                snackbarHostState.showSnackbar(state.message)
+            }
+            else -> Unit
+        }
     }
     
     // Nextcloud 配置
@@ -87,6 +97,7 @@ fun CloudStorageSettingsScreen(
     
     Box(modifier = modifier.fillMaxSize()) {
         Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 GradientTopAppBar(
                     title = { Text(stringResource(R.string.cloud_storage)) },

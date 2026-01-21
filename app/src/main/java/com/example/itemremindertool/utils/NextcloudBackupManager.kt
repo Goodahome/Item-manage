@@ -100,16 +100,19 @@ object NextcloudBackupManager {
         try {
             Log.d(TAG, "开始列出云端备份文件，备份目录: $BACKUP_DIR")
             val client = NextcloudClient(serverUrl, username, password)
+            var testConnectionError: Throwable? = null
             
             // 只在需要时测试连接
             if (!skipConnectionTest) {
                 Log.d(TAG, "测试连接...")
                 val testResult = client.testConnection()
                 if (testResult.isFailure) {
-                    Log.e(TAG, "连接测试失败: ${testResult.exceptionOrNull()?.message}")
-                    return@withContext Result.failure(testResult.exceptionOrNull() ?: IOException("连接测试失败"))
+                    testConnectionError = testResult.exceptionOrNull() ?: IOException("连接测试失败")
+                    Log.e(TAG, "连接测试失败: ${testConnectionError?.message}")
+                    Log.w(TAG, "连接测试失败，继续尝试列出文件")
+                } else {
+                    Log.d(TAG, "连接测试成功")
                 }
-                Log.d(TAG, "连接测试成功")
             } else {
                 Log.d(TAG, "跳过连接测试（已在之前测试过）")
             }
@@ -120,6 +123,13 @@ object NextcloudBackupManager {
             if (listResult.isFailure) {
                 Log.e(TAG, "列出文件失败: ${listResult.exceptionOrNull()?.message}")
                 listResult.exceptionOrNull()?.printStackTrace()
+                if (testConnectionError != null) {
+                    return@withContext Result.failure(
+                        IOException(
+                            "连接测试失败: ${testConnectionError?.message}; 列出文件失败: ${listResult.exceptionOrNull()?.message}"
+                        )
+                    )
+                }
                 return@withContext listResult
             }
             
@@ -134,7 +144,10 @@ object NextcloudBackupManager {
             val backupFiles = files.filter { filePath ->
                 val fileName = filePath.substringAfterLast("/")
                 val isZip = fileName.endsWith(".zip")
-                val matchesPattern = fileName.startsWith("item_reminder_backup_") || fileName == "item_reminder_backup_latest.zip"
+                val matchesPattern = fileName.startsWith("item_reminder_backup_") ||
+                    fileName.startsWith("item_remider_backup_") ||
+                    fileName == "item_reminder_backup_latest.zip" ||
+                    fileName == "item_remider_backup_latest.zip"
                 Log.d(TAG, "检查文件: fileName=$fileName, isZip=$isZip, matchesPattern=$matchesPattern")
                 isZip && matchesPattern
             }

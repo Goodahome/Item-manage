@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -171,6 +172,8 @@ fun ItemReminderToolApp(
             currentRoute == Screen.Dashboard.route -> Screen.Dashboard
             currentRoute == Screen.Tags.route -> Screen.Tags
             currentRoute == Screen.Settings.route -> Screen.Settings
+            currentRoute == Screen.Help.route -> Screen.Help
+            currentRoute == Screen.About.route -> Screen.About
             else -> Screen.Dashboard // 默认返回首页
         }
     }
@@ -368,6 +371,12 @@ fun ItemReminderToolApp(
                         icon = { Icon(Screen.Tags.icon, null) },
                         label = { Text(stringResource(R.string.nav_tag_management)) },
                         selected = currentDestination == Screen.Tags,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                            selectedTextColor = MaterialTheme.colorScheme.onPrimary
+                        ),
                         onClick = {
                             navController.navigate(Screen.Tags.route) {
                                 popUpTo(Screen.Dashboard.route) {
@@ -381,14 +390,68 @@ fun ItemReminderToolApp(
                         }
                     )
                     
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    // Divider(modifier = Modifier.padding(vertical = 8.dp))
                     
                     NavigationDrawerItem(
                         icon = { Icon(Screen.Settings.icon, null) },
                         label = { Text(stringResource(R.string.settings)) },
                         selected = currentDestination == Screen.Settings,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                            selectedTextColor = MaterialTheme.colorScheme.onPrimary
+                        ),
                         onClick = {
                             navController.navigate(Screen.Settings.route) {
+                                popUpTo(Screen.Dashboard.route) {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
+                    
+                    // Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    
+                    NavigationDrawerItem(
+                        icon = { Icon(Screen.Help.icon, null) },
+                        label = { Text(stringResource(R.string.help)) },
+                        selected = currentDestination == Screen.Help,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                            selectedTextColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        onClick = {
+                            navController.navigate(Screen.Help.route) {
+                                popUpTo(Screen.Dashboard.route) {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
+                    
+                    NavigationDrawerItem(
+                        icon = { Icon(Screen.About.icon, null) },
+                        label = { Text(stringResource(R.string.about)) },
+                        selected = currentDestination == Screen.About,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                            selectedTextColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        onClick = {
+                            navController.navigate(Screen.About.route) {
                                 popUpTo(Screen.Dashboard.route) {
                                     inclusive = false
                                 }
@@ -641,6 +704,18 @@ fun ItemReminderToolApp(
                     onNavigateToCloudStorage = { navController.navigate(Screen.CloudStorageSettings.route) },
                     onNavigateToAlert = { navController.navigate(Screen.AlertSettings.route) },
                     onNavigateToBackupRestore = { navController.navigate(Screen.BackupRestore.route) }
+                )
+            }
+            
+            composable(Screen.Help.route) {
+                HelpScreen(
+                    onNavigateBack = { navController.popBackOrDashboard() }
+                )
+            }
+            
+            composable(Screen.About.route) {
+                AboutScreen(
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
             

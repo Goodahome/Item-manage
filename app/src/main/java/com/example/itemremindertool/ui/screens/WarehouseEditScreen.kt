@@ -432,7 +432,9 @@ fun WarehouseEditScreen(
                 DropdownMenu(
                     expanded = showParentDropdown,
                     onDismissRequest = { showParentDropdown = false },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
                 ) {
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.no_warehouse_option)) },

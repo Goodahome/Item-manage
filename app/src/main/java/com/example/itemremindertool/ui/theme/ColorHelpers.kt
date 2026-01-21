@@ -204,6 +204,15 @@ object ColorHelpers {
     fun getGroup3CardBgColor(): Color {
         return MaterialTheme.colorScheme.surfaceVariant
     }
+
+    /**
+     * 网格模式物品信息卡片背景色（独立于通用卡片）
+     * 映射到 MaterialTheme.colorScheme.surface
+     */
+    @Composable
+    fun getGroup3GridInfoCardBgColor(): Color {
+        return MaterialTheme.colorScheme.surface
+    }
     
     
     // ==================== 第四组：文字与图标 ====================

@@ -41,6 +41,7 @@ import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.utils.CurrencyUtils
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.DraggableFab
 import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
@@ -467,7 +468,7 @@ fun ItemCard(
                 }
                 if (item.price != null) {
                     Text(
-                        text = stringResource(R.string.price_with_value, item.price),
+                        text = CurrencyUtils.formatPrice(LocalContext.current, item.price),
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium,
                         color = if (backgroundBitmap != null) {

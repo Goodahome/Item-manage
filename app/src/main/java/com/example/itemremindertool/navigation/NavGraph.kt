@@ -56,5 +56,9 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
     object LanguageSettings : Screen("language_settings", R.string.language, Icons.Default.Language, Icons.Default.Language)
     object AlertSettings : Screen("alert_settings", R.string.alert_settings, Icons.Default.Notifications, Icons.Default.Notifications)
     object BackupRestore : Screen("backup_restore", R.string.backup_restore, Icons.Default.Backup, Icons.Default.Backup)
+    
+    // 帮助与关于
+    object Help : Screen("help", R.string.help, Icons.Outlined.HelpOutline, Icons.Filled.Help)
+    object About : Screen("about", R.string.about, Icons.Outlined.Info, Icons.Filled.Info)
 }
 
