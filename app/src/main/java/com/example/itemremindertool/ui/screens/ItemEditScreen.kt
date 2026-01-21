@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -259,7 +260,7 @@ fun ItemEditScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 actions = {
@@ -354,7 +355,7 @@ fun ItemEditScreen(
                                 }
                             } else {
                                 // 更新物品
-                                viewModel.updateItem(item.copy(id = itemId!!))
+                                viewModel.updateItem(item.copy(id = itemId))
                             }
                             // 直接返回，导航栈会自动返回到打开前的页面
                             onNavigateBack()
@@ -396,7 +397,7 @@ fun ItemEditScreen(
             val context = LocalContext.current
             val density = LocalDensity.current
             val cardWidthPx = remember { with(density) { 400.dp.toPx().toInt() } }
-            val cardHeightPx = remember { with(density) { 200.dp.toPx().toInt() } }
+            val cardHeightPx = remember { with(density) { 400.dp.toPx().toInt() } } // 改为正方形
 
             // 从相册选择单张图片的启动器（用于裁剪）
             val prefs = remember { 
@@ -440,7 +441,7 @@ fun ItemEditScreen(
                         )
                         // 保存为单独的裁剪文件
                         val croppedPath = ImageUtils.getCroppedImagePath(imagePath)
-                        val croppedFileName = File(croppedPath).name
+                        val croppedFileName = croppedPath?.let { File(it).name } ?: "cropped_${File(imagePath).name}"
                         ImageUtils.saveImageToInternalStorage(
                             context,
                             croppedBitmap,
@@ -590,11 +591,7 @@ fun ItemEditScreen(
                                             }
 
                                             val bitmap = remember(displayPath) {
-                                                if (displayPath != null) {
-                                                    ImageUtils.loadBitmapFromPath(displayPath)
-                                                } else {
-                                                    null
-                                                }
+                                                ImageUtils.loadBitmapFromPath(displayPath)
                                             }
                                             if (bitmap != null) {
                                                 Card(
@@ -741,10 +738,11 @@ fun ItemEditScreen(
                     }
 
                     // ==================== 标签 + 自定义标签（核心改动）===================
-                    Text(
-                        stringResource(R.string.status_tags),
-                        style = MaterialTheme.typography.labelLarge
-                    )
+//                    Text(
+//                        stringResource(R.string.status_tags),
+//                        color = MaterialTheme.colorScheme.onSurface,
+//                        style = MaterialTheme.typography.labelLarge
+//                    )
 
                     // 获取所有已创建的标签
                     val allTags by tagManager.allTags.collectAsState()
@@ -833,7 +831,7 @@ fun ItemEditScreen(
                                             borderColor = MaterialTheme.colorScheme.primary,
                                             selectedBorderColor = MaterialTheme.colorScheme.primary,
                                             borderWidth = 1.25.dp,
-                                            selectedBorderWidth = 1.25.dp
+                                            selectedBorderWidth = 2.25.dp
                                         ),
                                         colors = FilterChipDefaults.filterChipColors(
                                             selectedContainerColor = Color.Transparent,
@@ -870,7 +868,7 @@ fun ItemEditScreen(
                                     border = FilterChipDefaults.filterChipBorder(
                                         enabled = true,
                                         selected = false,
-                                        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
+                                        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 1f),
                                         selectedBorderColor = MaterialTheme.colorScheme.outline.copy(
                                             alpha = 0.7f
                                         ),
@@ -889,12 +887,12 @@ fun ItemEditScreen(
                         item {
                             Box(
                                 modifier = Modifier
-                                    .height(40.dp)
+                                    .height(32.dp)
                                     .widthIn(
-                                        min = if (isTagInputFocused) 140.dp else 108.dp,
-                                        max = 120.dp
+                                        min = if (isTagInputFocused) 100.dp else 108.dp,
+                                        max = 100.dp
                                     )
-                                    .clip(RoundedCornerShape(20.dp))
+                                    .clip(RoundedCornerShape(8.dp))
                                     .background(
                                         if (isTagInputFocused)
                                             MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
@@ -906,15 +904,15 @@ fun ItemEditScreen(
                                         color = if (isTagInputFocused)
                                             MaterialTheme.colorScheme.primary
                                         else
-                                            MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                                        shape = RoundedCornerShape(20.dp)
+                                            MaterialTheme.colorScheme.outline.copy(alpha = 1f),
+                                        shape = RoundedCornerShape(8.dp)
                                     )
                                     .clickable(
                                         enabled = !isTagInputFocused,
                                         indication = null,
                                         interactionSource = remember { MutableInteractionSource() }
                                     ) { isTagInputFocused = true }
-                                    .padding(horizontal = 16.dp),
+                                    .padding(horizontal = 6.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 BasicTextField(
@@ -968,6 +966,7 @@ fun ItemEditScreen(
                                         if (!isTagInputFocused) {
                                             Row(
                                                 modifier = Modifier
+                                                    .padding(horizontal = 6.dp)
                                                     .fillMaxSize()
                                                     .clickable(
                                                         interactionSource = remember { MutableInteractionSource() },
@@ -976,7 +975,7 @@ fun ItemEditScreen(
                                                         isTagInputFocused = true
                                                     },
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.Center
+//                                                horizontalArrangement = Arrangement.Center
                                             ) {
                                                 Icon(
                                                     Icons.Default.Add,
@@ -1067,6 +1066,7 @@ fun ItemEditScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = stringResource(R.string.enable_stock_alert),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 1f),
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(
@@ -1117,31 +1117,6 @@ fun ItemEditScreen(
                             onDismiss = { showBarcodeScanner = false }
                         )
                     }
-
-                    // ==================== 特征码（只读显示）====================
-//                    if (featureCode != null) {
-//                        OutlinedTextField(
-//                            value = "特征码已生成 (${featureCode!!.length} 字符)",
-//                            onValueChange = { },
-//                            readOnly = true,
-//                            label = { Text(stringResource(R.string.feature_code)) },
-//                            modifier = Modifier.fillMaxWidth(),
-//                            leadingIcon = { Icon(Icons.Default.ImageSearch, null) },
-//                            trailingIcon = {
-//                                IconButton(onClick = { featureCode = null }) {
-//                                    Icon(
-//                                        Icons.Default.Close,
-//                                        stringResource(R.string.clear_feature_code)
-//                                    )
-//                                }
-//                            },
-//                            colors = OutlinedTextFieldDefaults.colors(
-//                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
-//                                disabledBorderColor = MaterialTheme.colorScheme.outline,
-//                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-//                            )
-//                        )
-//                    }
 
                     // ==================== 到期日期 ====================
                     val dateFormat = remember {

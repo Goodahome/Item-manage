@@ -31,7 +31,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -51,7 +51,7 @@ fun CameraCaptureDialog(
     onImageCaptured: (String?) -> Unit,
     onDismiss: () -> Unit,
     cardWidth: Int = 400, // 物品卡片宽度（px）
-    cardHeight: Int = 200 // 物品卡片高度（px）
+    cardHeight: Int = 400 // 物品卡片高度（px）- 使用正方形
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current

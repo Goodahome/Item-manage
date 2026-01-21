@@ -299,7 +299,7 @@ fun WarehouseEditScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp)
+                            .aspectRatio(1f) // 改为正方形
                             .clip(RoundedCornerShape(12.dp))
                             .background(ColorHelpers.getGroup3CardBgColor())
                     ) {

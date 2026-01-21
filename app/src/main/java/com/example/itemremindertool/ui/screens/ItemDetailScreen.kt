@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -89,7 +90,7 @@ fun ItemDetailScreen(
                     title = { Text(stringResource(R.string.item_detail)) },
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                         }
                     }
                 )
@@ -159,18 +160,14 @@ fun ItemDetailScreen(
                 }
                 
                 val bitmap = remember(displayPath) {
-                    if (displayPath != null) {
-                        ImageUtils.loadBitmapFromPath(displayPath)
-                    } else {
-                        null
-                    }
+                    ImageUtils.loadBitmapFromPath(displayPath)
                 }
                 
                 if (bitmap != null) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp)
+                            .aspectRatio(1f) // 改为正方形
                             .clickable {
                                 if (allImages.isNotEmpty()) {
                                     selectedImageIndex = primaryImageIndex
@@ -192,7 +189,7 @@ fun ItemDetailScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp),
+                        .aspectRatio(1f), // 改为正方形
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = ColorHelpers.getGroup3CardBgColor()
@@ -243,11 +240,7 @@ fun ItemDetailScreen(
                         }
                         
                         val thumbnailBitmap = remember(displayPath) {
-                            if (displayPath != null) {
-                                ImageUtils.loadBitmapFromPath(displayPath)
-                            } else {
-                                null
-                            }
+                            ImageUtils.loadBitmapFromPath(displayPath)
                         }
                         if (thumbnailBitmap != null) {
                             Card(
@@ -311,7 +304,7 @@ fun ItemDetailScreen(
                         )
                     }
                     
-                    Divider()
+                    HorizontalDivider()
                     
                     // 描述
                     if (item.description.isNotBlank()) {
@@ -329,7 +322,7 @@ fun ItemDetailScreen(
                                 color = ColorHelpers.getGroup4TextColor()
                             )
                         }
-                        Divider()
+                        HorizontalDivider()
                     }
                     
                     // 数量（带快速调整按钮）
@@ -399,7 +392,7 @@ fun ItemDetailScreen(
                     
                     // 价格
                     if (item.price != null) {
-                        Divider()
+                        HorizontalDivider()
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -421,7 +414,7 @@ fun ItemDetailScreen(
                     
                     // 条码
                     if (item.barcode != null && item.barcode.isNotBlank()) {
-                        Divider()
+                        HorizontalDivider()
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -454,7 +447,7 @@ fun ItemDetailScreen(
                     
                     // 到期日期
                     if (item.expiryDate != null) {
-                        Divider()
+                        HorizontalDivider()
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -488,7 +481,7 @@ fun ItemDetailScreen(
                     
                     // 标签
                     if (item.tags.isNotEmpty()) {
-                        Divider()
+                        HorizontalDivider()
                         val pageBgColor = ColorHelpers.getGroup2PageBgColor()
                         Column(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -525,7 +518,7 @@ fun ItemDetailScreen(
                     }
                     
                     // 创建时间
-                    Divider()
+                    HorizontalDivider()
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -594,7 +587,7 @@ fun ItemDetailScreen(
                         }
                     }
                     
-                    Divider()
+                    HorizontalDivider()
                     
                     if (reminders.isEmpty()) {
                         // 无提醒
@@ -644,45 +637,47 @@ fun ItemDetailScreen(
     }
     
     // 图片查看弹窗
-    if (showImageDialog && item != null) {
-        val allImages = if (item.imageUris.isNotEmpty()) {
-            item.imageUris
-        } else {
-            item.imageUri?.let { listOf(it) } ?: emptyList()
-        }
-        val currentImagePath = allImages.getOrNull(selectedImageIndex)
-        
-        if (currentImagePath != null) {
-            Dialog(
-                onDismissRequest = { showImageDialog = false },
-                properties = DialogProperties(
-                    usePlatformDefaultWidth = false,
-                    dismissOnBackPress = true,
-                    dismissOnClickOutside = true
-                )
-            ) {
-                // 图片查看弹窗：始终显示原图（完整大小）
-                val bitmap = remember(currentImagePath) {
-                    ImageUtils.loadBitmapFromPath(currentImagePath)
-                }
-                
-                if (bitmap != null) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.9f))
-                            .clickable { showImageDialog = false },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = item.name,
+    if (showImageDialog) {
+        item?.let { currentItem ->
+            val allImages = if (currentItem.imageUris.isNotEmpty()) {
+                currentItem.imageUris
+            } else {
+                currentItem.imageUri?.let { listOf(it) } ?: emptyList()
+            }
+            val currentImagePath = allImages.getOrNull(selectedImageIndex)
+            
+            if (currentImagePath != null) {
+                Dialog(
+                    onDismissRequest = { showImageDialog = false },
+                    properties = DialogProperties(
+                        usePlatformDefaultWidth = false,
+                        dismissOnBackPress = true,
+                        dismissOnClickOutside = true
+                    )
+                ) {
+                    // 图片查看弹窗：始终显示原图（完整大小）
+                    val bitmap = remember(currentImagePath) {
+                        ImageUtils.loadBitmapFromPath(currentImagePath)
+                    }
+                    
+                    if (bitmap != null) {
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .fillMaxHeight()
-                                .padding(16.dp),
-                            contentScale = ContentScale.Fit
-                        )
+                                .fillMaxSize()
+                                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.9f))
+                                .clickable { showImageDialog = false },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = currentItem.name,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .fillMaxHeight()
+                                    .padding(16.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
                     }
                 }
             }
