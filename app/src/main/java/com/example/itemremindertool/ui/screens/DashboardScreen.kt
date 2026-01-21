@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -28,9 +29,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.DisposableEffect
@@ -39,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -51,6 +55,8 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -74,6 +80,10 @@ import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.WarehouseQRCodeDialog
 import com.example.itemremindertool.ui.components.UIConstants
+import com.example.itemremindertool.ui.components.HighlightShape
+import com.example.itemremindertool.ui.components.HighlightedArea
+import com.example.itemremindertool.ui.components.OnboardingAnchorKey
+import com.example.itemremindertool.ui.components.OnboardingHint
 import com.example.itemremindertool.ui.components.OnboardingOverlay
 import com.example.itemremindertool.ui.components.OnboardingStep
 import com.example.itemremindertool.ui.components.DynamicBannerAd
@@ -82,6 +92,7 @@ import com.example.itemremindertool.ui.components.WarehouseSelectionBottomSheet
 import com.example.itemremindertool.ui.components.CameraCaptureDialog
 import com.example.itemremindertool.ui.components.ImageCropDialog
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.utils.CurrencyUtils
 import kotlinx.coroutines.Dispatchers
 import java.io.File
 import com.example.itemremindertool.ui.theme.LocalAppSettings
@@ -138,14 +149,75 @@ fun DashboardScreen(
     val context = LocalContext.current
     
     // 首次启动引导状态
-    val prefs = remember(context) { 
+    val prefs = remember(context) {
         context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
     }
-    val hasCompletedOnboarding = remember { 
+    val hasCompletedOnboarding = remember {
         mutableStateOf(prefs.getBoolean("has_completed_onboarding", false))
     }
-    var currentOnboardingStep by remember { mutableStateOf(OnboardingStep.WELCOME) }
+    val onboardingAnchors = remember { mutableStateMapOf<OnboardingAnchorKey, androidx.compose.ui.geometry.Rect>() }
+    val savedOnboardingStep = remember {
+        prefs.getString("onboarding_step", null)?.let { stepName ->
+            runCatching { OnboardingStep.valueOf(stepName) }.getOrNull()
+        }
+    }
+    var currentOnboardingStep by remember {
+        mutableStateOf(savedOnboardingStep ?: OnboardingStep.HOME_TOP_BAR)
+    }
     var showOnboarding by remember { mutableStateOf(!hasCompletedOnboarding.value) }
+
+    fun updateOnboardingAnchor(
+        key: OnboardingAnchorKey,
+        coordinates: androidx.compose.ui.layout.LayoutCoordinates
+    ) {
+        val rect = coordinates.boundsInRoot()
+        if (rect.width > 1f && rect.height > 1f) {
+            onboardingAnchors[key] = rect
+        }
+    }
+
+    fun setOnboardingStep(step: OnboardingStep) {
+        currentOnboardingStep = step
+        prefs.edit().putString("onboarding_step", step.name).apply()
+    }
+
+    fun completeOnboarding() {
+        prefs.edit()
+            .putBoolean("has_completed_onboarding", true)
+            .remove("onboarding_step")
+            .apply()
+        hasCompletedOnboarding.value = true
+        showOnboarding = false
+    }
+
+    fun nextOnboardingStep(step: OnboardingStep): OnboardingStep {
+        return when (step) {
+            OnboardingStep.HOME_TOP_BAR -> OnboardingStep.HOME_SEARCH
+            OnboardingStep.HOME_SEARCH -> OnboardingStep.HOME_STATS_CONTAINER_BUTTON
+            OnboardingStep.HOME_STATS_CONTAINER_BUTTON -> OnboardingStep.HOME_STATS_CONTAINER_PAGE
+            OnboardingStep.HOME_STATS_CONTAINER_PAGE -> OnboardingStep.HOME_STATS_ITEM_BUTTON
+            OnboardingStep.HOME_STATS_ITEM_BUTTON -> OnboardingStep.HOME_STATS_ITEM_PAGE
+            OnboardingStep.HOME_STATS_ITEM_PAGE -> OnboardingStep.HOME_STATS_SHOPPING_BUTTON
+            OnboardingStep.HOME_STATS_SHOPPING_BUTTON -> OnboardingStep.HOME_STATS_SHOPPING_PAGE
+            OnboardingStep.HOME_STATS_SHOPPING_PAGE -> OnboardingStep.HOME_SIDEBAR_ADD
+            OnboardingStep.HOME_SIDEBAR_ADD -> OnboardingStep.HOME_SIDEBAR_SAMPLE
+            OnboardingStep.HOME_SIDEBAR_SAMPLE -> OnboardingStep.WAREHOUSE_CHILDREN_BREADCRUMB
+            OnboardingStep.WAREHOUSE_CHILDREN_BREADCRUMB -> OnboardingStep.WAREHOUSE_TAG_FILTER
+            OnboardingStep.WAREHOUSE_TAG_FILTER -> OnboardingStep.WAREHOUSE_LAYOUT_TOGGLE
+            OnboardingStep.WAREHOUSE_LAYOUT_TOGGLE -> OnboardingStep.WAREHOUSE_GRID_ITEM
+            OnboardingStep.WAREHOUSE_GRID_ITEM -> OnboardingStep.WAREHOUSE_INFO_CARD
+            OnboardingStep.WAREHOUSE_INFO_CARD -> OnboardingStep.COMPLETE
+            OnboardingStep.COMPLETE -> OnboardingStep.COMPLETE
+        }
+    }
+
+    fun advanceOnboarding() {
+        if (currentOnboardingStep == OnboardingStep.COMPLETE) {
+            completeOnboarding()
+        } else {
+            setOnboardingStep(nextOnboardingStep(currentOnboardingStep))
+        }
+    }
     
     // 侧边栏图标圆形设置
     var sidebarIconCircle by remember { mutableStateOf(prefs.getBoolean("sidebar_icon_circle", false)) }
@@ -179,6 +251,7 @@ fun DashboardScreen(
     val items by itemViewModel.items.collectAsState(initial = emptyList())
     val warehouses by warehouseViewModel.topLevelWarehouses.collectAsState(initial = emptyList())
     val allWarehouses by warehouseViewModel.warehouses.collectAsState(initial = emptyList())
+    val sampleWarehouseId = remember(warehouses) { warehouses.firstOrNull()?.id }
     val itemOperationState by itemViewModel.operationState.collectAsState()
     val shoppingOperationState by shoppingItemViewModel.operationState.collectAsState()
     val warehouseOperationState by warehouseViewModel.operationState.collectAsState()
@@ -302,6 +375,9 @@ fun DashboardScreen(
                 title = { 
                     Text(appSettings.appName)
                 },
+                modifier = Modifier.onGloballyPositioned {
+                    updateOnboardingAnchor(OnboardingAnchorKey.TOP_BAR, it)
+                },
                 navigationIcon = {
                     IconButton(onClick = onMenuClick) {
                         Icon(Icons.Default.Menu, stringResource(R.string.settings))
@@ -314,7 +390,17 @@ fun DashboardScreen(
                     
                     IconButton(
                         onClick = {
+                            val wasListMode = displayMode == com.example.itemremindertool.config.ItemDisplayMode.LIST
                             displayModeManager.toggleDisplayMode()
+                            if (showOnboarding &&
+                                currentOnboardingStep == OnboardingStep.WAREHOUSE_LAYOUT_TOGGLE &&
+                                wasListMode
+                            ) {
+                                setOnboardingStep(OnboardingStep.WAREHOUSE_GRID_ITEM)
+                            }
+                        },
+                        modifier = Modifier.onGloballyPositioned {
+                            updateOnboardingAnchor(OnboardingAnchorKey.TOP_BAR_LAYOUT_TOGGLE, it)
                         }
                     ) {
                         Icon(
@@ -330,8 +416,53 @@ fun DashboardScreen(
                             }
                         )
                     }
-                    // 拍照快速添加物品按钮（替换搜索按钮）
+                    // 云端同步按钮
                     val topBarBgColor = ColorHelpers.getTopBarGradientStart()
+                    val syncRotation = if (isRefreshing) {
+                        val infiniteTransition = rememberInfiniteTransition(label = "sync_rotation")
+                        infiniteTransition.animateFloat(
+                            initialValue = 0f,
+                            targetValue = -360f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(1000, easing = LinearEasing)
+                            ),
+                            label = "sync_rotation_value"
+                        ).value
+                    } else {
+                        0f
+                    }
+                    IconButton(
+                        onClick = {
+                            if (isRefreshing) return@IconButton
+                            val serverUrl = prefs.getString("nextcloud_server_url", "") ?: ""
+                            val username = prefs.getString("nextcloud_username", "") ?: ""
+                            val password = prefs.getString("nextcloud_password", "") ?: ""
+                            val hasCloudConfig = serverUrl.isNotEmpty() && username.isNotEmpty() && password.isNotEmpty()
+                            if (hasCloudConfig) {
+                                Log.d("DashboardScreen", "手动触发云端同步")
+                                isRefreshing = true
+                                com.example.itemremindertool.utils.CloudSyncScheduler.syncNow(context)
+                            } else {
+                                Log.d("DashboardScreen", "未配置云端同步，仅刷新本地数据")
+                                isRefreshing = true
+                                scope.launch {
+                                    kotlinx.coroutines.delay(500)
+                                    dashboardViewModel.refresh()
+                                    isRefreshing = false
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (isRefreshing) Icons.Default.Sync else Icons.Default.CloudUpload,
+                            contentDescription = stringResource(R.string.cloud_storage),
+                            tint = ColorHelpers.getGroup4IconColorByContrast(topBarBgColor),
+                            modifier = Modifier
+                                .size(20.dp)
+                                .rotate(syncRotation)
+                        )
+                    }
+                    // 拍照快速添加物品按钮（替换搜索按钮）
                     IconButton(
                         onClick = {
                             // 显示容器选择弹窗
@@ -363,34 +494,6 @@ fun DashboardScreen(
         val activeShoppingItemsCount = remember(shoppingItems) {
             shoppingItems.count { !it.isCompleted }
         }
-
-        // 下拉刷新状态
-        val pullRefreshState = rememberPullRefreshState(
-            refreshing = isRefreshing,
-            onRefresh = {
-                // 检查是否配置了云端同步
-                val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
-                val serverUrl = prefs.getString("nextcloud_server_url", "") ?: ""
-                val username = prefs.getString("nextcloud_username", "") ?: ""
-                val password = prefs.getString("nextcloud_password", "") ?: ""
-                
-                if (serverUrl.isNotEmpty() && username.isNotEmpty() && password.isNotEmpty()) {
-                    // 触发手动同步
-                    Log.d("DashboardScreen", "手动触发云端同步")
-                    isRefreshing = true
-                    com.example.itemremindertool.utils.CloudSyncScheduler.syncNow(context)
-                } else {
-                    // 没有配置云端同步，只刷新本地数据
-                    Log.d("DashboardScreen", "未配置云端同步，仅刷新本地数据")
-                    isRefreshing = true
-                    scope.launch {
-                        kotlinx.coroutines.delay(500)
-                        dashboardViewModel.refresh()
-                        isRefreshing = false
-                    }
-                }
-            }
-        )
 
         var isBannerAdLoaded by remember { mutableStateOf(false) }
         val bottomInset = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()
@@ -428,6 +531,13 @@ fun DashboardScreen(
                 adBottomPadding = adBottomPadding,
                 onWarehouseSelect = { warehouse ->
                     onSelectedWarehouseIdChanged(warehouse.id)
+                    if (showOnboarding &&
+                        currentOnboardingStep == OnboardingStep.HOME_SIDEBAR_SAMPLE &&
+                        sampleWarehouseId != null &&
+                        warehouse.id == sampleWarehouseId
+                    ) {
+                        setOnboardingStep(OnboardingStep.WAREHOUSE_CHILDREN_BREADCRUMB)
+                    }
                 },
                 onHomeClick = {
                     // 点击首页图标，取消容器选中，显示统计和提醒
@@ -454,8 +564,12 @@ fun DashboardScreen(
                     itemViewModel.deleteItem(item)
                 },
                 onAddAlert = onAddAlert,
-                pullRefreshState = pullRefreshState,
                 useCircleIcon = sidebarIconCircle,
+                onboardingEnabled = showOnboarding,
+                onboardingStep = currentOnboardingStep,
+                onAdvanceOnboarding = { advanceOnboarding() },
+                onSetOnboardingStep = { step -> setOnboardingStep(step) },
+                onUpdateOnboardingAnchor = { key, coords -> updateOnboardingAnchor(key, coords) },
                 modifier = Modifier
                     .fillMaxSize()
             )
@@ -547,41 +661,150 @@ fun DashboardScreen(
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
             
-            // 下拉刷新指示器
-            PullRefreshIndicator(
-                refreshing = isRefreshing,
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
-            
             // 首次使用引导覆盖层
             if (showOnboarding) {
-                OnboardingOverlay(
-                    currentStep = currentOnboardingStep,
-                    onNext = {
-                        currentOnboardingStep = when (currentOnboardingStep) {
-                            OnboardingStep.WELCOME -> OnboardingStep.HOME_AREA
-                            OnboardingStep.HOME_AREA -> OnboardingStep.ADD_WAREHOUSE
-                            OnboardingStep.ADD_WAREHOUSE -> OnboardingStep.ADD_ITEM
-                            OnboardingStep.ADD_ITEM -> OnboardingStep.SETTINGS
-                            OnboardingStep.SETTINGS -> OnboardingStep.COMPLETE
-                            OnboardingStep.COMPLETE -> OnboardingStep.COMPLETE
-                        }
-                    },
-                    onSkip = {
-                        // 跳过引导，标记为已完成
-                        prefs.edit().putBoolean("has_completed_onboarding", true).apply()
-                        hasCompletedOnboarding.value = true
-                        showOnboarding = false
-                    },
-                    onComplete = {
-                        // 完成引导，标记为已完成
-                        prefs.edit().putBoolean("has_completed_onboarding", true).apply()
-                        hasCompletedOnboarding.value = true
-                        showOnboarding = false
-                    },
-                    highlightedArea = null // 可以根据步骤设置高亮区域
-                )
+                val onboardingHint = when (currentOnboardingStep) {
+                    OnboardingStep.HOME_TOP_BAR -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_home_topbar_title),
+                        description = stringResource(R.string.onboarding_home_topbar_desc),
+                        requiresClick = false
+                    )
+                    OnboardingStep.HOME_SEARCH -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_home_search_title),
+                        description = stringResource(R.string.onboarding_home_search_desc),
+                        requiresClick = false
+                    )
+                    OnboardingStep.HOME_STATS_CONTAINER_BUTTON -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_home_stat_container_button_title),
+                        description = stringResource(R.string.onboarding_home_stat_container_button_desc),
+                        requiresClick = true
+                    )
+                    OnboardingStep.HOME_STATS_CONTAINER_PAGE -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_home_stat_container_page_title),
+                        description = stringResource(R.string.onboarding_home_stat_container_page_desc),
+                        requiresClick = false
+                    )
+                    OnboardingStep.HOME_STATS_ITEM_BUTTON -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_home_stat_item_button_title),
+                        description = stringResource(R.string.onboarding_home_stat_item_button_desc),
+                        requiresClick = true
+                    )
+                    OnboardingStep.HOME_STATS_ITEM_PAGE -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_home_stat_item_page_title),
+                        description = stringResource(R.string.onboarding_home_stat_item_page_desc),
+                        requiresClick = false
+                    )
+                    OnboardingStep.HOME_STATS_SHOPPING_BUTTON -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_home_stat_shopping_button_title),
+                        description = stringResource(R.string.onboarding_home_stat_shopping_button_desc),
+                        requiresClick = true
+                    )
+                    OnboardingStep.HOME_STATS_SHOPPING_PAGE -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_home_stat_shopping_page_title),
+                        description = stringResource(R.string.onboarding_home_stat_shopping_page_desc),
+                        requiresClick = false
+                    )
+                    OnboardingStep.HOME_SIDEBAR_ADD -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_home_sidebar_add_title),
+                        description = stringResource(R.string.onboarding_home_sidebar_add_desc),
+                        requiresClick = false
+                    )
+                    OnboardingStep.HOME_SIDEBAR_SAMPLE -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_home_sidebar_sample_title),
+                        description = stringResource(R.string.onboarding_home_sidebar_sample_desc),
+                        requiresClick = true
+                    )
+                    OnboardingStep.WAREHOUSE_CHILDREN_BREADCRUMB -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_warehouse_children_breadcrumb_title),
+                        description = stringResource(R.string.onboarding_warehouse_children_breadcrumb_desc),
+                        requiresClick = false
+                    )
+                    OnboardingStep.WAREHOUSE_TAG_FILTER -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_warehouse_tag_filter_title),
+                        description = stringResource(R.string.onboarding_warehouse_tag_filter_desc),
+                        requiresClick = false
+                    )
+                    OnboardingStep.WAREHOUSE_LAYOUT_TOGGLE -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_warehouse_layout_toggle_title),
+                        description = stringResource(R.string.onboarding_warehouse_layout_toggle_desc),
+                        requiresClick = true
+                    )
+                    OnboardingStep.WAREHOUSE_GRID_ITEM -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_warehouse_grid_item_title),
+                        description = stringResource(R.string.onboarding_warehouse_grid_item_desc),
+                        requiresClick = true
+                    )
+                    OnboardingStep.WAREHOUSE_INFO_CARD -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_warehouse_info_card_title),
+                        description = stringResource(R.string.onboarding_warehouse_info_card_desc),
+                        requiresClick = false
+                    )
+                    OnboardingStep.COMPLETE -> OnboardingHint(
+                        title = stringResource(R.string.onboarding_complete_title),
+                        description = stringResource(R.string.onboarding_complete_description),
+                        requiresClick = false,
+                        showFinger = false
+                    )
+                }
+
+                val highlightedArea = when (currentOnboardingStep) {
+                    OnboardingStep.HOME_TOP_BAR -> onboardingAnchors[OnboardingAnchorKey.TOP_BAR]?.let {
+                        HighlightedArea(it, HighlightShape.RECTANGLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.HOME_SEARCH -> onboardingAnchors[OnboardingAnchorKey.SEARCH_BOX]?.let {
+                        HighlightedArea(it, HighlightShape.RECTANGLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.HOME_STATS_CONTAINER_BUTTON -> onboardingAnchors[OnboardingAnchorKey.STAT_CONTAINER]?.let {
+                        HighlightedArea(it, HighlightShape.CIRCLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.HOME_STATS_CONTAINER_PAGE -> onboardingAnchors[OnboardingAnchorKey.STAT_PAGE_CONTAINER]?.let {
+                        HighlightedArea(it, HighlightShape.RECTANGLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.HOME_STATS_ITEM_BUTTON -> onboardingAnchors[OnboardingAnchorKey.STAT_ITEM]?.let {
+                        HighlightedArea(it, HighlightShape.CIRCLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.HOME_STATS_ITEM_PAGE -> onboardingAnchors[OnboardingAnchorKey.STAT_PAGE_ITEM]?.let {
+                        HighlightedArea(it, HighlightShape.RECTANGLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.HOME_STATS_SHOPPING_BUTTON -> onboardingAnchors[OnboardingAnchorKey.STAT_SHOPPING]?.let {
+                        HighlightedArea(it, HighlightShape.CIRCLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.HOME_STATS_SHOPPING_PAGE -> onboardingAnchors[OnboardingAnchorKey.STAT_PAGE_SHOPPING]?.let {
+                        HighlightedArea(it, HighlightShape.RECTANGLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.HOME_SIDEBAR_ADD -> onboardingAnchors[OnboardingAnchorKey.SIDEBAR_ADD]?.let {
+                        HighlightedArea(it, HighlightShape.CIRCLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.HOME_SIDEBAR_SAMPLE -> onboardingAnchors[OnboardingAnchorKey.SIDEBAR_SAMPLE]?.let {
+                        HighlightedArea(it, HighlightShape.CIRCLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.WAREHOUSE_CHILDREN_BREADCRUMB -> onboardingAnchors[OnboardingAnchorKey.SUBWAREHOUSE_ROW]?.let {
+                        HighlightedArea(it, HighlightShape.RECTANGLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.WAREHOUSE_TAG_FILTER -> onboardingAnchors[OnboardingAnchorKey.TAG_FILTER]?.let {
+                        HighlightedArea(it, HighlightShape.RECTANGLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.WAREHOUSE_LAYOUT_TOGGLE -> onboardingAnchors[OnboardingAnchorKey.TOP_BAR_LAYOUT_TOGGLE]?.let {
+                        HighlightedArea(it, HighlightShape.CIRCLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.WAREHOUSE_GRID_ITEM -> onboardingAnchors[OnboardingAnchorKey.GRID_ITEM]?.let {
+                        HighlightedArea(it, HighlightShape.RECTANGLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.WAREHOUSE_INFO_CARD -> onboardingAnchors[OnboardingAnchorKey.INFO_CARD]?.let {
+                        HighlightedArea(it, HighlightShape.RECTANGLE, paddingDp = 6f)
+                    }
+                    OnboardingStep.COMPLETE -> null
+                }
+
+                val shouldShowOverlay = highlightedArea != null || currentOnboardingStep == OnboardingStep.COMPLETE
+                if (shouldShowOverlay) {
+                    OnboardingOverlay(
+                        hint = onboardingHint,
+                        highlightedArea = highlightedArea,
+                        onNext = { advanceOnboarding() },
+                        onSkip = { completeOnboarding() }
+                    )
+                }
             }
             
             // 容器选择弹窗（用于快速添加物品）
@@ -1851,6 +2074,8 @@ fun WarehouseSidebarColumn(
     onGenerateQRCode: ((Warehouse) -> Unit)? = null, // 新增：生成二维码回调
     warehouseViewModel: WarehouseViewModel? = null, // 用于获取删除统计信息
     useCircleIcon: Boolean = true,
+    onFirstWarehousePositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
+    onAddButtonPositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     // Card 容器（与右侧子容器列表样式一致）
@@ -1950,7 +2175,7 @@ fun WarehouseSidebarColumn(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp) // 减小：12dp → 8dp
             ) {
-                items(warehouses, key = { it.id }) { warehouse ->
+                itemsIndexed(warehouses, key = { _, warehouse -> warehouse.id }) { index, warehouse ->
                     WarehouseIconItem(
                         warehouse = warehouse,
                         isSelected = warehouse.id == selectedWarehouseId,
@@ -1961,7 +2186,12 @@ fun WarehouseSidebarColumn(
                         onViewInfo = onViewInfo,
                         onGenerateQRCode = onGenerateQRCode,
                         warehouseViewModel = warehouseViewModel,
-                        useCircleIcon = useCircleIcon
+                        useCircleIcon = useCircleIcon,
+                        modifier = if (index == 0 && onFirstWarehousePositioned != null) {
+                            Modifier.onGloballyPositioned { onFirstWarehousePositioned(it) }
+                        } else {
+                            Modifier
+                        }
                     )
                 }
 
@@ -1981,7 +2211,14 @@ fun WarehouseSidebarColumn(
                             )
                             .clip(addButtonIconShape)
                             .background(backgroundColor) // 与容器图标颜色一致
-                            .clickable(onClick = onAddWarehouse),
+                            .clickable(onClick = onAddWarehouse)
+                            .then(
+                                if (onAddButtonPositioned != null) {
+                                    Modifier.onGloballyPositioned { onAddButtonPositioned(it) }
+                                } else {
+                                    Modifier
+                                }
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -2687,7 +2924,7 @@ fun ItemListRow(
                     // 价格显示
                     if (item.price != null) {
                         Text(
-                            text = stringResource(R.string.price_with_value, item.price),
+                            text = CurrencyUtils.formatPrice(LocalContext.current, item.price),
                             style = MaterialTheme.typography.labelSmall,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
@@ -3003,6 +3240,11 @@ fun ItemListSection(
     onAddAlert: (Item) -> Unit = {},
     allWarehouses: List<Warehouse>? = null, // 所有容器列表（用于显示容器名称）
     useCircleIcon: Boolean = false, // 侧边栏风格图标形状设置
+    onTagFilterPositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
+    onGridItemPositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
+    onInfoCardPositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
+    onTagFilterMissing: (() -> Unit)? = null,
+    onOnboardingGridItemClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -3069,6 +3311,12 @@ fun ItemListSection(
             items.flatMap { it.tags }.distinct().sorted()
         }
     }
+
+    LaunchedEffect(allTags.isEmpty()) {
+        if (allTags.isEmpty()) {
+            onTagFilterMissing?.invoke()
+        }
+    }
     
     // 根据选中的标签过滤物品（使用 derivedStateOf 优化性能）
     val filteredItems by remember(items, selectedTags) {
@@ -3109,6 +3357,11 @@ fun ItemListSection(
                     .heightIn(min = if (allTags.isNotEmpty()) 36.dp else 0.dp)
             ) {
                 if (allTags.isNotEmpty()) {
+                    val tagFilterModifier = if (onTagFilterPositioned != null) {
+                        Modifier.onGloballyPositioned { onTagFilterPositioned(it) }
+                    } else {
+                        Modifier
+                    }
                     TagFilterBar(
                         allTags = allTags,
                         selectedTags = selectedTags,
@@ -3118,7 +3371,8 @@ fun ItemListSection(
                             } else {
                                 selectedTags + tag
                             }
-                        }
+                        },
+                        modifier = tagFilterModifier
                     )
                 }
             }
@@ -3331,6 +3585,11 @@ fun ItemListSection(
                         ) {
                             // 标签筛选栏（在网格模式下显示在 Card 内部顶部）
                             if (allTags.isNotEmpty()) {
+                                val tagFilterModifier = if (onTagFilterPositioned != null) {
+                                    Modifier.onGloballyPositioned { onTagFilterPositioned(it) }
+                                } else {
+                                    Modifier
+                                }
                                 TagFilterBar(
                                     allTags = allTags,
                                     selectedTags = selectedTags,
@@ -3341,7 +3600,7 @@ fun ItemListSection(
                                             selectedTags + tag
                                         }
                                     },
-                                    modifier = Modifier.padding(top = 8.dp)
+                                    modifier = tagFilterModifier.then(Modifier.padding(top = 8.dp))
                                 )
                                 
                                 // 分割线
@@ -3376,6 +3635,7 @@ fun ItemListSection(
                                     end = 12.dp // 右侧留出空间显示圆角
                                 )
                             ) {
+                            val firstGridItemId = filteredItems.firstOrNull()?.id
                             items(
                                 count = itemsWithDetail.size,
                                 key = { index ->
@@ -3424,7 +3684,22 @@ fun ItemListSection(
                                                     vm.insertShoppingItem(shoppingItem)
                                                 }
                                             },
-                                            modifier = Modifier.widthIn(max = 500.dp) // 限制最大宽度，平板上不会太宽
+                                            onDelete = {
+                                                if (onDeleteItem != {}) {
+                                                    onDeleteItem(item)
+                                                } else {
+                                                    itemViewModel?.deleteItem(item)
+                                                }
+                                            },
+                                            modifier = Modifier
+                                                .widthIn(max = 500.dp)
+                                                .then(
+                                                    if (onInfoCardPositioned != null) {
+                                                        Modifier.onGloballyPositioned { onInfoCardPositioned(it) }
+                                                    } else {
+                                                        Modifier
+                                                    }
+                                                ) // 限制最大宽度，平板上不会太宽
                                         )
                                     }
                                 } else {
@@ -3433,11 +3708,20 @@ fun ItemListSection(
                                         item = item,
                                         isSelected = selectedItemId == item.id,
                                         onClick = {
-                                            selectedItemId = if (selectedItemId == item.id) {
-                                                null
-                                            } else {
+                                            val willSelect = selectedItemId != item.id
+                                            selectedItemId = if (willSelect) {
                                                 item.id
+                                            } else {
+                                                null
                                             }
+                                            if (willSelect) {
+                                                onOnboardingGridItemClick?.invoke()
+                                            }
+                                        },
+                                        modifier = if (item.id == firstGridItemId && onGridItemPositioned != null) {
+                                            Modifier.onGloballyPositioned { onGridItemPositioned(it) }
+                                        } else {
+                                            Modifier
                                         }
                                     )
                                 }
@@ -3489,8 +3773,12 @@ fun SidebarStyleMainLayout(
     onDeleteItem: (Item) -> Unit = {},
     onAddAlert: (Item) -> Unit = {},
     onNavigateToWarehouseItemsTab: (Long) -> Unit = {}, // 导航到容器详情页面
-    pullRefreshState: androidx.compose.material.pullrefresh.PullRefreshState, // 下拉刷新状态
     useCircleIcon: Boolean = true, // 新增：是否使用圆形图标
+    onboardingEnabled: Boolean = false,
+    onboardingStep: OnboardingStep = OnboardingStep.COMPLETE,
+    onAdvanceOnboarding: () -> Unit = {},
+    onSetOnboardingStep: (OnboardingStep) -> Unit = {},
+    onUpdateOnboardingAnchor: (OnboardingAnchorKey, androidx.compose.ui.layout.LayoutCoordinates) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     // 搜索过滤（支持标签搜索）
@@ -3612,6 +3900,12 @@ fun SidebarStyleMainLayout(
                 onGenerateQRCode = onGenerateQRCode,
                 warehouseViewModel = warehouseViewModel,
                 useCircleIcon = useCircleIcon,
+                onFirstWarehousePositioned = { coords ->
+                    onUpdateOnboardingAnchor(OnboardingAnchorKey.SIDEBAR_SAMPLE, coords)
+                },
+                onAddButtonPositioned = { coords ->
+                    onUpdateOnboardingAnchor(OnboardingAnchorKey.SIDEBAR_ADD, coords)
+                },
                 modifier = Modifier.padding(
                     start = 6.dp,
                     end = 4.dp,
@@ -3626,7 +3920,6 @@ fun SidebarStyleMainLayout(
                 .weight(1f)
                 .fillMaxHeight()
                 .background(ColorHelpers.getGroup2PageBgColor())
-                .pullRefresh(pullRefreshState)
                 .padding(top = topPadding, bottom = bottomPadding + adBottomPadding)
         ) {
             Box(
@@ -3640,7 +3933,11 @@ fun SidebarStyleMainLayout(
                             searchQuery = searchQuery,
                             onSearchQueryChange = onSearchQueryChange,
                             onCloseSearch = onCloseSearch,
-                            modifier = Modifier.padding(start = 6.dp, end = 5.dp, top = 3.dp, bottom = 3.dp)
+                            modifier = Modifier
+                                .padding(start = 6.dp, end = 5.dp, top = 3.dp, bottom = 3.dp)
+                                .onGloballyPositioned {
+                                    onUpdateOnboardingAnchor(OnboardingAnchorKey.SEARCH_BOX, it)
+                                }
                         )
                     }
                     // 搜索模式：显示搜索结果
@@ -3703,6 +4000,28 @@ fun SidebarStyleMainLayout(
                     val allContainers = remember(allWarehouses, warehouses) {
                         (allWarehouses + warehouses).distinctBy { it.id }
                     }
+
+                    LaunchedEffect(onboardingEnabled, onboardingStep) {
+                        if (!onboardingEnabled) return@LaunchedEffect
+                        when (onboardingStep) {
+                            OnboardingStep.HOME_STATS_CONTAINER_PAGE -> {
+                                showContainerList = true
+                                showItemList = false
+                                showShoppingList = false
+                            }
+                            OnboardingStep.HOME_STATS_ITEM_PAGE -> {
+                                showContainerList = false
+                                showItemList = true
+                                showShoppingList = false
+                            }
+                            OnboardingStep.HOME_STATS_SHOPPING_PAGE -> {
+                                showContainerList = false
+                                showItemList = false
+                                showShoppingList = true
+                            }
+                            else -> Unit
+                        }
+                    }
                     
                     // 右上：统计卡片
                     HomeStatisticCards(
@@ -3711,37 +4030,67 @@ fun SidebarStyleMainLayout(
                         shoppingItemsCount = shoppingItemsCount,
                         useCircleIcon = useCircleIcon,
                         onContainerClick = {
-                            if (showContainerList) {
-                                showContainerList = false
-                                showItemList = false
-                                showShoppingList = false
-                            } else {
+                            if (onboardingEnabled && onboardingStep == OnboardingStep.HOME_STATS_CONTAINER_BUTTON) {
                                 showContainerList = true
                                 showItemList = false
                                 showShoppingList = false
+                                onSetOnboardingStep(OnboardingStep.HOME_STATS_CONTAINER_PAGE)
+                            } else {
+                                if (showContainerList) {
+                                    showContainerList = false
+                                    showItemList = false
+                                    showShoppingList = false
+                                } else {
+                                    showContainerList = true
+                                    showItemList = false
+                                    showShoppingList = false
+                                }
                             }
                         },
                         onItemClick = {
-                            if (showItemList) {
-                                showContainerList = false
-                                showItemList = false
-                                showShoppingList = false
-                            } else {
+                            if (onboardingEnabled && onboardingStep == OnboardingStep.HOME_STATS_ITEM_BUTTON) {
                                 showItemList = true
                                 showContainerList = false
                                 showShoppingList = false
+                                onSetOnboardingStep(OnboardingStep.HOME_STATS_ITEM_PAGE)
+                            } else {
+                                if (showItemList) {
+                                    showContainerList = false
+                                    showItemList = false
+                                    showShoppingList = false
+                                } else {
+                                    showItemList = true
+                                    showContainerList = false
+                                    showShoppingList = false
+                                }
                             }
                         },
                         onShoppingClick = {
-                            if (showShoppingList) {
-                                showShoppingList = false
-                                showContainerList = false
-                                showItemList = false
-                            } else {
+                            if (onboardingEnabled && onboardingStep == OnboardingStep.HOME_STATS_SHOPPING_BUTTON) {
                                 showShoppingList = true
                                 showContainerList = false
                                 showItemList = false
+                                onSetOnboardingStep(OnboardingStep.HOME_STATS_SHOPPING_PAGE)
+                            } else {
+                                if (showShoppingList) {
+                                    showShoppingList = false
+                                    showContainerList = false
+                                    showItemList = false
+                                } else {
+                                    showShoppingList = true
+                                    showContainerList = false
+                                    showItemList = false
+                                }
                             }
+                        },
+                        onContainerPositioned = { coords ->
+                            onUpdateOnboardingAnchor(OnboardingAnchorKey.STAT_CONTAINER, coords)
+                        },
+                        onItemPositioned = { coords ->
+                            onUpdateOnboardingAnchor(OnboardingAnchorKey.STAT_ITEM, coords)
+                        },
+                        onShoppingPositioned = { coords ->
+                            onUpdateOnboardingAnchor(OnboardingAnchorKey.STAT_SHOPPING, coords)
                         }
                     )
                     
@@ -3749,7 +4098,11 @@ fun SidebarStyleMainLayout(
                     when {
                         showContainerList -> {
                             Box(
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .onGloballyPositioned {
+                                        onUpdateOnboardingAnchor(OnboardingAnchorKey.STAT_PAGE_CONTAINER, it)
+                                    }
                             ) {
                                 LazyColumn(
                                     modifier = Modifier
@@ -3818,27 +4171,43 @@ fun SidebarStyleMainLayout(
                         }
                         showItemList -> {
                             // 物品统计 - 显示所有物品及其所属容器
-                            ItemListSection(
-                                items = allItems,
-                                onEditItem = onEditItem,
-                                onViewItem = onViewItem,
-                                shoppingItemViewModel = shoppingItemViewModel,
-                                itemViewModel = itemViewModel,
-                                alertSettingsManager = alertSettingsManager,
-                                onDeleteItem = onDeleteItem,
-                                onAddAlert = onAddAlert,
-                                allWarehouses = allContainers, // 传递所有容器信息用于显示容器名称
-                                useCircleIcon = useCircleIcon,
-                                modifier = Modifier.weight(1f)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .onGloballyPositioned {
+                                        onUpdateOnboardingAnchor(OnboardingAnchorKey.STAT_PAGE_ITEM, it)
+                                    }
+                            ) {
+                                ItemListSection(
+                                    items = allItems,
+                                    onEditItem = onEditItem,
+                                    onViewItem = onViewItem,
+                                    shoppingItemViewModel = shoppingItemViewModel,
+                                    itemViewModel = itemViewModel,
+                                    alertSettingsManager = alertSettingsManager,
+                                    onDeleteItem = onDeleteItem,
+                                    onAddAlert = onAddAlert,
+                                    allWarehouses = allContainers, // 传递所有容器信息用于显示容器名称
+                                    useCircleIcon = useCircleIcon,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
                         }
                         showShoppingList -> {
                             // 待购列表 - 增加底部 padding 避免被 FAB 挡住删除按钮
-                            ShoppingListSection(
-                                shoppingItemViewModel = shoppingItemViewModel,
-                                itemViewModel = itemViewModel,
-                                modifier = Modifier.weight(1f)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .onGloballyPositioned {
+                                        onUpdateOnboardingAnchor(OnboardingAnchorKey.STAT_PAGE_SHOPPING, it)
+                                    }
+                            ) {
+                                ShoppingListSection(
+                                    shoppingItemViewModel = shoppingItemViewModel,
+                                    itemViewModel = itemViewModel,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
                         }
                         else -> {
                             // 提醒列表
@@ -3948,7 +4317,10 @@ fun SidebarStyleMainLayout(
                                 },
                                 onViewInfo = onViewWarehouseInfo,
                                 onGenerateQRCode = onGenerateQRCode,
-                                useCircleIcon = useCircleIcon
+                                useCircleIcon = useCircleIcon,
+                                modifier = Modifier.onGloballyPositioned {
+                                    onUpdateOnboardingAnchor(OnboardingAnchorKey.SUBWAREHOUSE_ROW, it)
+                                }
                             )
                         }
                     
@@ -3963,6 +4335,25 @@ fun SidebarStyleMainLayout(
                             onDeleteItem = onDeleteItem,
                             onAddAlert = onAddAlert,
                             useCircleIcon = useCircleIcon,
+                            onTagFilterPositioned = { coords ->
+                                onUpdateOnboardingAnchor(OnboardingAnchorKey.TAG_FILTER, coords)
+                            },
+                            onGridItemPositioned = { coords ->
+                                onUpdateOnboardingAnchor(OnboardingAnchorKey.GRID_ITEM, coords)
+                            },
+                            onInfoCardPositioned = { coords ->
+                                onUpdateOnboardingAnchor(OnboardingAnchorKey.INFO_CARD, coords)
+                            },
+                            onTagFilterMissing = {
+                                if (onboardingEnabled && onboardingStep == OnboardingStep.WAREHOUSE_TAG_FILTER) {
+                                    onSetOnboardingStep(OnboardingStep.WAREHOUSE_LAYOUT_TOGGLE)
+                                }
+                            },
+                            onOnboardingGridItemClick = {
+                                if (onboardingEnabled && onboardingStep == OnboardingStep.WAREHOUSE_GRID_ITEM) {
+                                    onSetOnboardingStep(OnboardingStep.WAREHOUSE_INFO_CARD)
+                                }
+                            },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -4057,7 +4448,7 @@ fun SidebarStyleMainLayout(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    stringResource(R.string.cancel_button),
+                                    stringResource(R.string.cancel),
                                     fontSize = 14.sp,
                                     color = ColorHelpers.getGroup4TextColor()
                                 )
@@ -4113,6 +4504,9 @@ fun HomeStatisticCards(
     onContainerClick: (() -> Unit)? = null,
     onItemClick: (() -> Unit)? = null,
     onShoppingClick: () -> Unit = {},
+    onContainerPositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
+    onItemPositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
+    onShoppingPositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
     useCircleIcon: Boolean = true,
     modifier: Modifier = Modifier
 ) {
@@ -4140,7 +4534,15 @@ fun HomeStatisticCards(
                 label = stringResource(R.string.stat_label_warehouse),
                 onClick = onContainerClick,
                 useCircleIcon = useCircleIcon,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (onContainerPositioned != null) {
+                            Modifier.onGloballyPositioned { onContainerPositioned(it) }
+                        } else {
+                            Modifier
+                        }
+                    )
             )
             
             // 分隔线
@@ -4158,7 +4560,15 @@ fun HomeStatisticCards(
                 label = stringResource(R.string.stat_label_item),
                 onClick = onItemClick,
                 useCircleIcon = useCircleIcon,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (onItemPositioned != null) {
+                            Modifier.onGloballyPositioned { onItemPositioned(it) }
+                        } else {
+                            Modifier
+                        }
+                    )
             )
 
             // 分隔线
@@ -4176,7 +4586,15 @@ fun HomeStatisticCards(
                 label = stringResource(R.string.stat_label_shopping),
                 onClick = onShoppingClick,
                 useCircleIcon = useCircleIcon,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (onShoppingPositioned != null) {
+                            Modifier.onGloballyPositioned { onShoppingPositioned(it) }
+                        } else {
+                            Modifier
+                        }
+                    )
             )
         }
     }
@@ -4440,7 +4858,7 @@ fun ShoppingListSection(
                                 contentColor = ColorHelpers.getGroup4TextColor()
                             )
                         ) {
-                            Text(stringResource(R.string.cancel_button), fontSize = 14.sp)
+                            Text(stringResource(R.string.cancel), fontSize = 14.sp)
                         }
 
                         // 确定按钮

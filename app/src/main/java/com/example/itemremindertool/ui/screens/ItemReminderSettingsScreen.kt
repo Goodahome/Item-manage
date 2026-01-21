@@ -546,7 +546,7 @@ fun ReminderEditDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel_button))
+                Text(stringResource(R.string.cancel))
             }
         }
     )

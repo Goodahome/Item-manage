@@ -23,14 +23,9 @@
     <!-- 导航 -->
     <string name="menu">Menu</string>
     <string name="nav_home">Accueil</string>
-    <string name="nav_all_items">Tous les articles</string>
     <string name="nav_item_management">Gestion des articles</string>
-    <string name="nav_category_management">Gestion des catégories</string>
     <string name="nav_shopping_basket">Panier d\'achats</string>
-    <string name="nav_warehouse_management">Gestion des conteneurs</string>
-    <string name="nav_warehouse_info">Info conteneur</string>
     <string name="nav_items">Articles</string>
-    <string name="nav_item_shelf">Étagère d\'articles</string>
     
     <!-- 设置页面 -->
     <string name="settings_title">Paramètres</string>
@@ -142,7 +137,6 @@
     <!-- 对话框 -->
     <string name="modify_app_name">Modifier le nom de l\'application</string>
     <string name="app_name_hint">Nom de l\'application</string>
-    <string name="app_name_changed">Nom de l\'application modifié ; redémarrage requis pour refléter dans le système</string>
     <string name="restart_app">Redémarrer maintenant ? Choisir « Plus tard » appliquera au prochain lancement.</string>
     
     <string name="set_cloud_server">Définir l\'URL du serveur</string>
@@ -157,17 +151,6 @@
     
     <!-- 物品相关 -->
     <string name="item_name">Nom de l\'article</string>
-    <string name="item_description">Description</string>
-    <string name="item_category">Catégorie</string>
-    <string name="item_warehouse">Conteneur</string>
-    <string name="item_price">Prix</string>
-    <string name="item_quantity">Quantité</string>
-    <string name="item_barcode">Code-barres</string>
-    <string name="item_expiry_date">Date d\'expiration</string>
-    <string name="item_tags">Étiquettes</string>
-    <string name="item_status">Statut</string>
-    <string name="item_image">Image</string>
-    <string name="item_feature_code">Code de caractéristique</string>
     <string name="add_item">Ajouter un article</string>
     <string name="add_item_hint">Sélectionner le conteneur puis ajouter l\'article</string>
     <string name="edit_item">Modifier l\'article</string>
@@ -213,7 +196,6 @@
     
     <!-- 容器 -->
     <string name="warehouse">Conteneur</string>
-    <string name="warehouses">Gestion des conteneurs</string>
     <string name="warehouse_settings">Paramètres du conteneur</string>
     <string name="add_warehouse">Ajouter un conteneur</string>
     <string name="add_warehouse_hint">Sélectionner le conteneur parent puis ajouter</string>
@@ -247,8 +229,8 @@
     <string name="delete_tag_confirm_with_usage">Voulez-vous vraiment supprimer l\'étiquette « %1$s » ? Elle est utilisée par %2$d articles.</string>
     <string name="tag_hint">Saisir étiquette (max 12 caractères)</string>
     <string name="tag_limit_exceeded">La longueur de l\'étiquette ne peut pas dépasser 12 caractères</string>
-    <string name="password_enabled_restart_message">La protection par mot de passe a été activée. L\'application doit être redémarrée pour que les modifications prennent effet. Redémarrer maintenant ?</string>
-    <string name="password_disabled_restart_message">La protection par mot de passe a été désactivée. L\'application doit être redémarrée pour que les modifications prennent effet. Redémarrer maintenant ?</string>
+    <string name="enabled_restart_message">L\'application doit être redémarrée pour que les modifications prennent effet. Redémarrer maintenant ?</string>
+    <string name="disabled_restart_message">L\'application doit être redémarrée pour que les modifications prennent effet. Redémarrer maintenant ?</string>
     <!-- Biométrique -->
     <string name="biometric_unlock_title">Déverrouiller avec la biométrie</string>
     <string name="biometric_unlock_subtitle">Veuillez utiliser votre empreinte digitale ou la reconnaissance faciale pour déverrouiller l\'application</string>
@@ -330,15 +312,11 @@
     <string name="retry">Réessayer</string>
     
     <!-- 代码中发现的额外字符串 -->
-    <string name="shopping_basket">Panier d\'achats</string>
     <string name="add_first_shopping_item">Ajouter le premier article d\'achat</string>
     <string name="item_management">Gestion des articles</string>
     <string name="add_first_item">Ajouter le premier article</string>
     <string name="no_matching_items">Aucun article correspondant trouvé</string>
-    <string name="warehouse_not_found">Conteneur non trouvé</string>
     <string name="warehouse_items_title">Articles du conteneur</string>
-    <string name="warehouse_management">Gestion des conteneurs</string>
-    <string name="add_first_warehouse">Ajouter le premier conteneur</string>
     <string name="view_items">Voir les articles</string>
     <string name="category_management">Gestion des catégories</string>
     <string name="add_first_category">Ajouter la première catégorie</string>
@@ -376,29 +354,7 @@
     <string name="used_capacity">Utilisé : %1$d / %2$d</string>
     <string name="items_unit">pièces</string>
     <!-- 容器 -->
-    <string name="item_container">Conteneur</string>
-    <string name="container">Conteneur</string>
-    <string name="containers">Gestion des conteneurs</string>
     <!-- <string name="add_container">Ajouter un conteneur</string> -->
-    <string name="edit_container">Modifier le conteneur</string>
-    <string name="delete_container">Supprimer le conteneur</string>
-    <string name="delete_container_confirm">Voulez-vous vraiment supprimer ce conteneur ? Les articles deviendront non assignés.</string>
-    <string name="container_name">Nom du conteneur</string>
-    <string name="container_description">Description du conteneur</string>
-    <string name="container_location">Emplacement</string>
-    <string name="container_items">Articles du conteneur</string>
-    <string name="no_container">Conteneur non assigné</string>
-    <string name="no_containers">Aucun conteneur</string>
-    <string name="container_saved">Conteneur enregistré</string>
-    <string name="container_deleted">Conteneur supprimé</string>
-    <string name="container_name_required">Veuillez saisir le nom du conteneur</string>
-    <string name="container_name_required_field">Nom du conteneur *</string>
-    <string name="container_not_found">Conteneur non trouvé</string>
-    <string name="container_items_title">Articles du conteneur</string>
-    <string name="container_management">Gestion des conteneurs</string>
-    <string name="add_first_container">Ajouter le premier conteneur</string>
-    <string name="no_container_option">Aucun conteneur</string>
-    <string name="container_empty_hint">Ce conteneur n\'a pas d\'articles</string>
     
     <!-- 图标切换 -->
     <string name="app_icon">Icône de l\'application</string>
@@ -444,7 +400,6 @@
     
     <!-- 容器相关 -->
     <string name="generate_qr_code_action">Générer un code QR</string>
-    <string name="add_container_action">Ajouter un conteneur</string>
     <string name="quantity_label">Quantité</string>
     <string name="warehouse_empty">Ce conteneur est vide</string>
     <string name="child_warehouse_info">Sous-conteneurs : %1$d    Articles : %2$d</string>
@@ -511,7 +466,6 @@
     
     <!-- 完成购买对话框 -->
     <string name="complete_purchase_button">Terminer l\'achat</string>
-    <string name="cancel_button">Annuler</string>
     <string name="confirm_button">Confirmer</string>
     
     <!-- 提醒设置 -->
@@ -550,6 +504,37 @@
     <string name="onboarding_next">Suivant</string>
     <string name="onboarding_skip">Passer</string>
     <string name="onboarding_get_started">Commencer</string>
+    <string name="onboarding_tap_to_continue">Touchez l’espace vide pour continuer</string>
+    <string name="onboarding_home_topbar_title">Barre du haut</string>
+    <string name="onboarding_home_topbar_desc">La barre du haut contient le menu, le changement de mise en page, l’appareil photo rapide et le scan.</string>
+    <string name="onboarding_home_search_title">Recherche</string>
+    <string name="onboarding_home_search_desc">La recherche permet de trouver rapidement des objets et des tags.</string>
+    <string name="onboarding_home_stat_container_button_title">Stats des conteneurs</string>
+    <string name="onboarding_home_stat_container_button_desc">Touchez pour afficher l’aperçu des conteneurs.</string>
+    <string name="onboarding_home_stat_container_page_title">Liste des conteneurs</string>
+    <string name="onboarding_home_stat_container_page_desc">Affiche le nombre de conteneurs et la hiérarchie.</string>
+    <string name="onboarding_home_stat_item_button_title">Stats des objets</string>
+    <string name="onboarding_home_stat_item_button_desc">Touchez pour afficher la liste des objets.</string>
+    <string name="onboarding_home_stat_item_page_title">Liste des objets</string>
+    <string name="onboarding_home_stat_item_page_desc">Affiche les objets et leur conteneur.</string>
+    <string name="onboarding_home_stat_shopping_button_title">Stats d’achat</string>
+    <string name="onboarding_home_stat_shopping_button_desc">Touchez pour afficher la liste d’achats.</string>
+    <string name="onboarding_home_stat_shopping_page_title">Liste d’achats</string>
+    <string name="onboarding_home_stat_shopping_page_desc">Affiche les achats en attente et terminés.</string>
+    <string name="onboarding_home_sidebar_add_title">Ajouter un conteneur</string>
+    <string name="onboarding_home_sidebar_add_desc">Utilisez le bouton d’ajout en bas de la barre latérale.</string>
+    <string name="onboarding_home_sidebar_sample_title">Conteneur d’exemple</string>
+    <string name="onboarding_home_sidebar_sample_desc">C’est un conteneur d’exemple : un tap pour entrer, double tap pour les détails. Touchez-le pour continuer.</string>
+    <string name="onboarding_warehouse_children_breadcrumb_title">Sous-conteneurs et fil d’Ariane</string>
+    <string name="onboarding_warehouse_children_breadcrumb_desc">La zone du haut montre les sous-conteneurs et le fil d’Ariane. Le suffixe est personnalisable dans les paramètres.</string>
+    <string name="onboarding_warehouse_tag_filter_title">Filtre par tag</string>
+    <string name="onboarding_warehouse_tag_filter_desc">Filtrez les objets par tags dans cette zone.</string>
+    <string name="onboarding_warehouse_layout_toggle_title">Changer la mise en page</string>
+    <string name="onboarding_warehouse_layout_toggle_desc">Touchez le bouton de mise en page pour basculer grille/liste.</string>
+    <string name="onboarding_warehouse_grid_item_title">Carte d’objet en grille</string>
+    <string name="onboarding_warehouse_grid_item_desc">Touchez une carte en grille pour voir les détails.</string>
+    <string name="onboarding_warehouse_info_card_title">Carte d’information</string>
+    <string name="onboarding_warehouse_info_card_desc">Cette carte montre la quantité, les tags et les actions.</string>
 
     <string name="stat_label_warehouse">Conteneurs</string>
     <string name="stat_label_item">Objets</string>
@@ -611,4 +596,38 @@
     <string name="input_use_quantity">Saisir la quantité à utiliser</string>
     <string name="detail_info">Informations détaillées</string>
     <string name="all">Tout</string>
+
+    <!-- Aide & À propos -->
+    <string name="help">Aide</string>
+    <string name="about">À propos</string>
+    <string name="help_title">Aide</string>
+    <string name="about_title">À propos</string>
+    <string name="help_intro">Ici vous trouverez un résumé des principales fonctionnalités de l\'application et des instructions d\'utilisation.</string>
+    <string name="help_section_items_title">Articles and Inventaire</string>
+    <string name="help_section_items_body">- Ajouter, modifier, supprimer des articles\n- Définir quantité, prix, date d\'expiration, etc.\n- Voir les détails des articles et effectuer des actions rapides</string>
+    <string name="help_section_warehouse_title">Conteneurs and Catégories</string>
+    <string name="help_section_warehouse_body">- Créer des conteneurs et sous-conteneurs\n- Basculer entre différents conteneurs pour voir les articles\n- Paramètres et gestion des conteneurs</string>
+    <string name="help_section_tags_title">Gestion des étiquettes</string>
+    <string name="help_section_tags_body">- Créer, modifier, supprimer des étiquettes\n- Étiqueter les articles pour faciliter le filtrage</string>
+    <string name="help_section_shopping_title">Liste d\'achats</string>
+    <string name="help_section_shopping_body">- Enregistrer les articles à acheter\n- Les articles cochés peuvent être automatiquement réintégrés à l\'inventaire</string>
+    <string name="help_section_tools_title">Outils rapides</string>
+    <string name="help_section_tools_body">- Numérisation de code-barres pour saisie ou recherche rapide\n- Reconnaissance d\'image pour aider à la saisie</string>
+    <string name="help_section_alert_title">Rappels and Notifications</string>
+    <string name="help_section_alert_body">- Configurer des rappels pour les articles\n- Interrupteur global et stratégie de rappels</string>
+    <string name="help_section_data_title">Données and Synchronisation</string>
+    <string name="help_section_data_body">- Sauvegarde et restauration des données\n- Stockage cloud et synchronisation (si activé)</string>
+    <string name="help_section_appearance_title">Apparence and Langue</string>
+    <string name="help_section_appearance_body">- Thème, palette de couleurs et icônes\n- Changement de langue et mode d\'affichage</string>
+    <string name="help_section_tips_title">Astuces and Gestes rapides</string>
+    <string name="help_section_tips_body">- Double-tapez sur l\'icône d\'un conteneur pour accéder à sa page de détails\n- Appui long sur l\'icône d\'un conteneur pour plus d\'options (modifier, supprimer, déplacer…)\n- En mode liste/grille, ajustez rapidement la quantité avec les boutons + / –\n- Rapprovisionnement en un clic depuis la liste d\'achats terminée\n- La barre de recherche permet la recherche floue sur les étiquettes et noms d\'articles – appuyez sur Entrée pour chercher\n- Le suffixe « dans » est personnalisable.</string>
+    <string name="about_developer_title">Développeur</string>
+    <string name="about_developer_name">Gooda</string>
+    <string name="about_contact_title">Contact</string>
+    <string name="support_email">2667835712@qq.com</string>
+    <string name="about_feedback_title">Retour and Support</string>
+    <string name="about_feedback_desc">Pour toute question ou suggestion, n\'hésitez pas à nous envoyer un email.</string>
+    <string name="about_feedback_button">Envoyer un email</string>
+    <string name="feedback_email_subject">HexNote – Retour</string>
+    <string name="no_email_app">Aucune application email détectée</string>
 </resources>

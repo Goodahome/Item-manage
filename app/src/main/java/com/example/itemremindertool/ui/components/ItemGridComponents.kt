@@ -28,7 +28,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,10 +41,13 @@ import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.R
 import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.utils.CurrencyUtils
 import com.example.itemremindertool.utils.ImageUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.DateFormat
+import java.time.Instant
+import java.time.ZoneId
 import java.util.*
 
 /**
@@ -226,10 +232,13 @@ fun ItemGridDetailPanel(
     onUse: (Int) -> Unit,
     onViewDetails: () -> Unit,
     onAddToShoppingCart: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var useQuantity by remember { mutableStateOf(1) }
     var quantityInputText by remember { mutableStateOf("1") }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     
     Card(
         modifier = modifier
@@ -237,7 +246,7 @@ fun ItemGridDetailPanel(
             .padding(0.dp),
         shape = RoundedCornerShape(12.dp), // 与物品卡片相同的圆角
         colors = CardDefaults.cardColors(
-            containerColor = ColorHelpers.getGroup3CardBgColor()
+            containerColor = ColorHelpers.getGroup3GridInfoCardBgColor()
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // 与物品卡片相同的立体效果
     ) {
@@ -253,23 +262,55 @@ fun ItemGridDetailPanel(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val priceText = item.price?.let { CurrencyUtils.formatPrice(context, it) }
+                val titleText = buildAnnotatedString {
+                    append(item.name)
+                    if (priceText != null) {
+                        append(" ")
+                        withStyle(
+                            SpanStyle(
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = ColorHelpers.getGroup4TextColor(0.85f)
+                            )
+                        ) {
+                            append(priceText)
+                        }
+                    }
+                }
                 Text(
-                    text = item.name,
+                    text = titleText,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = ColorHelpers.getGroup4TextColor(),
                     modifier = Modifier.weight(1f)
                 )
-                IconButton(
-                    onClick = onAddToShoppingCart,
-                    modifier = Modifier.size(28.dp)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Default.ShoppingCart,
-                        contentDescription = stringResource(R.string.add_to_shopping_cart),
-                        tint = ColorHelpers.getGroup4IconColor(),
-                        modifier = Modifier.size(18.dp)
-                    )
+                    IconButton(
+                        onClick = onAddToShoppingCart,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.ShoppingCart,
+                            contentDescription = stringResource(R.string.add_to_shopping_cart),
+                            tint = ColorHelpers.getGroup4IconColor(),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    IconButton(
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = stringResource(R.string.delete_item),
+                            tint = ColorHelpers.getGroup4IconColor(),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
             
@@ -286,22 +327,50 @@ fun ItemGridDetailPanel(
             }
             
             // 标签列表（横向滚动）
-            if (item.tags.isNotEmpty()) {
+            val isExpired = item.expiryDate?.let { date ->
+                val zone = ZoneId.systemDefault()
+                val nowZoned = Instant.now().atZone(zone)
+                val expiryEnd = Instant.ofEpochMilli(date.time)
+                    .atZone(zone)
+                    .toLocalDate()
+                    .plusDays(1)
+                    .atStartOfDay(zone)
+                    .plusMinutes(1)
+                !nowZoned.isBefore(expiryEnd)
+            } ?: false
+            val allTagsToShow = if (isExpired) {
+                item.tags + "过期"
+            } else {
+                item.tags
+            }
+            if (allTagsToShow.isNotEmpty()) {
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    items(item.tags) { tag ->
+                    items(allTagsToShow) { tag ->
+                        val isExpiredTag = tag == "过期"
+                        val tagBgColor = if (isExpiredTag) {
+                            Color(0xFFD32F2F)
+                        } else {
+                            Color.Transparent
+                        }
+                        val borderColor = ColorHelpers.getGroup4TextColor().copy(alpha = 0.6f)
+                        val displayTag = if (isExpiredTag) {
+                            stringResource(R.string.status_expired)
+                        } else {
+                            tag
+                        }
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = Color.Transparent,
-                            border = androidx.compose.foundation.BorderStroke(0.5.dp, ColorHelpers.getGroup4TextColor().copy(alpha = 0.6f))
+                            color = tagBgColor,
+                            border = androidx.compose.foundation.BorderStroke(0.5.dp, borderColor)
                         ) {
                             Text(
-                                text = tag,
+                                text = displayTag,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = ColorHelpers.getGroup4TextColor(),
+                                color = if (isExpiredTag) Color.White else ColorHelpers.getGroup4TextColor(),
                                 fontSize = 10.sp
                             )
                         }
@@ -483,6 +552,29 @@ fun ItemGridDetailPanel(
                 }
             }
         }
+    }
+    
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.delete_item)) },
+            text = { Text(stringResource(R.string.delete_item_confirm)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDelete()
+                    }
+                ) {
+                    Text(stringResource(R.string.delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 }
 

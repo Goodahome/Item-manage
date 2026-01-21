@@ -383,7 +383,7 @@ fun BackupRestoreScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showBackupWarningDialog = false }) {
-                        Text(stringResource(R.string.cancel_button))
+                        Text(stringResource(R.string.cancel))
                     }
                 }
             )
@@ -411,6 +411,12 @@ fun BackupRestoreScreen(
                                         nextcloudPassword
                                     )
                                     
+                                    if (backupsResult.isFailure) {
+                                        val errorMessage = backupsResult.exceptionOrNull()?.message ?: "未知错误"
+                                        viewModel.showError("获取云端备份失败: $errorMessage")
+                                        return@launch
+                                    }
+                                    
                                     val backups = backupsResult.getOrNull()
                                     if (backups.isNullOrEmpty()) {
                                         viewModel.showError("云端没有找到备份文件")
@@ -418,14 +424,19 @@ fun BackupRestoreScreen(
                                     }
                                     
                                     // 2. 找到最新的备份文件（通常是 item_reminder_backup_latest.zip）
-                                    val latestBackup = backups.firstOrNull { 
-                                        it.endsWith("item_reminder_backup_latest.zip")
+                                    val latestBackup = backups.firstOrNull {
+                                        it.endsWith("item_reminder_backup_latest.zip") ||
+                                            it.endsWith("item_remider_backup_latest.zip")
                                     } ?: backups.maxByOrNull { backupPath ->
                                         try {
                                             val fileName = backupPath.substringAfterLast("/")
-                                            if (fileName.startsWith("item_reminder_backup_") && fileName.endsWith(".zip")) {
+                                            if ((fileName.startsWith("item_reminder_backup_") ||
+                                                    fileName.startsWith("item_remider_backup_")) &&
+                                                fileName.endsWith(".zip")
+                                            ) {
                                                 val timestampStr = fileName
                                                     .removePrefix("item_reminder_backup_")
+                                                    .removePrefix("item_remider_backup_")
                                                     .removeSuffix(".zip")
                                                 val dateFormat = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault())
                                                 dateFormat.parse(timestampStr)?.time ?: 0L
@@ -498,7 +509,7 @@ fun BackupRestoreScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showCloudRestoreDialog = false }) {
-                        Text(stringResource(R.string.cancel_button))
+                        Text(stringResource(R.string.cancel))
                     }
                 }
             )

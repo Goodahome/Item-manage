@@ -23,14 +23,9 @@
     <!-- 导航 -->
     <string name="menu">Menu</string>
     <string name="nav_home">Home</string>
-    <string name="nav_all_items">All Items</string>
     <string name="nav_item_management">Item Management</string>
-    <string name="nav_category_management">Category Management</string>
     <string name="nav_shopping_basket">Shopping Basket</string>
-    <string name="nav_warehouse_management">Container Management</string>
-    <string name="nav_warehouse_info">Container Info</string>
     <string name="nav_items">Items</string>
-    <string name="nav_item_shelf">Item Shelf</string>
     
     <!-- 设置页面 -->
     <string name="settings_title">Settings</string>
@@ -171,17 +166,6 @@
     
     <!-- 物品相关 -->
     <string name="item_name">Item Name</string>
-    <string name="item_description">Description</string>
-    <string name="item_category">Category</string>
-    <string name="item_warehouse">Container</string>
-    <string name="item_price">Price</string>
-    <string name="item_quantity">Quantity</string>
-    <string name="item_barcode">Barcode</string>
-    <string name="item_expiry_date">Expiry Date</string>
-    <string name="item_tags">Tags</string>
-    <string name="item_status">Status</string>
-    <string name="item_image">Image</string>
-    <string name="item_feature_code">Feature Code</string>
     <string name="add_item">Add Item</string>
     <string name="add_item_hint">Select container then add item</string>
     <string name="edit_item">Edit Item</string>
@@ -227,7 +211,6 @@
     
     <!-- 容器 -->
     <string name="warehouse">Container</string>
-    <string name="warehouses">Container Management</string>
     <string name="warehouse_settings">Container Settings</string>
     <string name="add_warehouse">Add Container</string>
     <string name="add_warehouse_hint">Select parent container then add</string>
@@ -261,8 +244,8 @@
     <string name="delete_tag_confirm_with_usage">Are you sure you want to delete tag "%1$s"? It is used by %2$d items and will be removed from them.</string>
     <string name="tag_hint">Enter tag (max 12 characters)</string>
     <string name="tag_limit_exceeded">Tag length cannot exceed 12 characters</string>
-    <string name="password_enabled_restart_message">Password protection has been enabled. The app needs to be restarted for the changes to take effect. Restart now?</string>
-    <string name="password_disabled_restart_message">Password protection has been disabled. The app needs to be restarted for the changes to take effect. Restart now?</string>
+    <string name="enabled_restart_message">The app needs to be restarted for the changes to take effect. Restart now?</string>
+    <string name="disabled_restart_message">The app needs to be restarted for the changes to take effect. Restart now?</string>
 
     <!-- Date/Time Picker -->
     <string name="no_date_selected">No date selected</string>
@@ -336,15 +319,11 @@
     <string name="retry">Retry</string>
     
     <!-- 代码中发现的额外字符串 -->
-    <string name="shopping_basket">Shopping Basket</string>
     <string name="add_first_shopping_item">Add first shopping item</string>
     <string name="item_management">Item Management</string>
     <string name="add_first_item">Add first item</string>
     <string name="no_matching_items">No matching items found</string>
-    <string name="warehouse_not_found">Container not found</string>
     <string name="warehouse_items_title">Container Items</string>
-    <string name="warehouse_management">Container Management</string>
-    <string name="add_first_warehouse">Add first container</string>
     <string name="view_items">View Items</string>
     <string name="category_management">Category Management</string>
     <string name="add_first_category">Add first category</string>
@@ -382,33 +361,11 @@
     <string name="used_capacity">Used: %1$d / %2$d</string>
     <string name="items_unit">items</string>
     <!-- 容器 -->
-    <string name="item_container">Container</string>
-    <string name="container">Container</string>
     <string name="unnamed_warehouse">Unnamed Container</string>
     <string name="warehouse_items_suffix"> Items</string>
     <string name="custom_warehouse_items_suffix">Custom Container Items Suffix</string>
     <string name="custom_warehouse_items_suffix_desc">Set the suffix text displayed for the last container in the container path</string>
-    <string name="containers">Container Management</string>
     <!-- <string name="add_container">Add Container</string> -->
-    <string name="edit_container">Edit Container</string>
-    <string name="delete_container">Delete Container</string>
-    <string name="delete_container_confirm">Are you sure you want to delete this container? Items inside will become unassigned.</string>
-    <string name="container_name">Container Name</string>
-    <string name="container_description">Container Description</string>
-    <string name="container_location">Location</string>
-    <string name="container_items">Container Items</string>
-    <string name="no_container">Unassigned Container</string>
-    <string name="no_containers">No containers yet</string>
-    <string name="container_saved">Container saved</string>
-    <string name="container_deleted">Container deleted</string>
-    <string name="container_name_required">Please enter container name</string>
-    <string name="container_name_required_field">Container Name *</string>
-    <string name="container_not_found">Container not found</string>
-    <string name="container_items_title">Container Items</string>
-    <string name="container_management">Container Management</string>
-    <string name="add_first_container">Add first container</string>
-    <string name="no_container_option">No Container</string>
-    <string name="container_empty_hint">This container has no items</string>
     
     <!-- 图标切换 -->
     <string name="app_icon">App Icon</string>
@@ -454,7 +411,6 @@
     
     <!-- 容器相关 -->
     <string name="generate_qr_code_action">Generate QR Code</string>
-    <string name="add_container_action">Add Container</string>
     <string name="quantity_label">Quantity</string>
     <string name="warehouse_empty">This container is empty</string>
     <string name="child_warehouse_info">Sub-containers: %1$d    Items: %2$d</string>
@@ -521,7 +477,6 @@
     
     <!-- 完成购买对话框 -->
     <string name="complete_purchase_button">Complete Purchase</string>
-    <string name="cancel_button">Cancel</string>
     <string name="confirm_button">Confirm</string>
     
     <!-- 提醒设置 -->
@@ -583,6 +538,37 @@
     <string name="onboarding_next">Next</string>
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_get_started">Get Started</string>
+    <string name="onboarding_tap_to_continue">Tap blank area to continue</string>
+    <string name="onboarding_home_topbar_title">Top bar</string>
+    <string name="onboarding_home_topbar_desc">The top bar includes menu, layout toggle, quick camera, and scan buttons.</string>
+    <string name="onboarding_home_search_title">Search</string>
+    <string name="onboarding_home_search_desc">Use the search box to quickly find items and tags.</string>
+    <string name="onboarding_home_stat_container_button_title">Container stats</string>
+    <string name="onboarding_home_stat_container_button_desc">Tap to view the container overview.</string>
+    <string name="onboarding_home_stat_container_page_title">Container list</string>
+    <string name="onboarding_home_stat_container_page_desc">Shows container counts and hierarchy overview.</string>
+    <string name="onboarding_home_stat_item_button_title">Item stats</string>
+    <string name="onboarding_home_stat_item_button_desc">Tap to view the items list.</string>
+    <string name="onboarding_home_stat_item_page_title">Item list</string>
+    <string name="onboarding_home_stat_item_page_desc">Shows items and their container info.</string>
+    <string name="onboarding_home_stat_shopping_button_title">Shopping stats</string>
+    <string name="onboarding_home_stat_shopping_button_desc">Tap to view the shopping list.</string>
+    <string name="onboarding_home_stat_shopping_page_title">Shopping list</string>
+    <string name="onboarding_home_stat_shopping_page_desc">Shows pending and completed shopping items.</string>
+    <string name="onboarding_home_sidebar_add_title">Add container</string>
+    <string name="onboarding_home_sidebar_add_desc">Use the add button at the bottom of the sidebar.</string>
+    <string name="onboarding_home_sidebar_sample_title">Sample container</string>
+    <string name="onboarding_home_sidebar_sample_desc">This is a sample container: single tap to enter, double tap for details. Tap it to continue.</string>
+    <string name="onboarding_warehouse_children_breadcrumb_title">Child containers and breadcrumbs</string>
+    <string name="onboarding_warehouse_children_breadcrumb_desc">The top area shows child containers and breadcrumb navigation. The suffix can be customized in settings.</string>
+    <string name="onboarding_warehouse_tag_filter_title">Tag filter</string>
+    <string name="onboarding_warehouse_tag_filter_desc">Filter items by tags in this area.</string>
+    <string name="onboarding_warehouse_layout_toggle_title">Layout toggle</string>
+    <string name="onboarding_warehouse_layout_toggle_desc">Tap the layout toggle in the top bar to switch grid/list.</string>
+    <string name="onboarding_warehouse_grid_item_title">Grid item card</string>
+    <string name="onboarding_warehouse_grid_item_desc">Tap a grid item card to view details.</string>
+    <string name="onboarding_warehouse_info_card_title">Info card</string>
+    <string name="onboarding_warehouse_info_card_desc">This info card shows quantity, tags, and actions.</string>
 
     <string name="select_warehouse">Select warehouse</string>
 
@@ -618,4 +604,38 @@
     <string name="input_use_quantity">Enter quantity to use</string>
     <string name="detail_info">Details</string>
     <string name="all">All</string>
+
+    <!-- Help & About -->
+    <string name="help">Help</string>
+    <string name="about">About</string>
+    <string name="help_title">Help</string>
+    <string name="about_title">About</string>
+    <string name="help_intro">Here you can find a summary of the app\'s main features and usage instructions.</string>
+    <string name="help_section_items_title">Items Inventory</string>
+    <string name="help_section_items_body">- Add, edit, delete items\n- Set quantity, price, expiry date, etc.\n- View item details and perform quick actions</string>
+    <string name="help_section_warehouse_title">Containers Categories</string>
+    <string name="help_section_warehouse_body">- Create containers and sub-containers\n- Switch between different containers to view items\n- Container settings and management</string>
+    <string name="help_section_tags_title">Tag Management</string>
+    <string name="help_section_tags_body">- Create, edit, delete tags\n- Tag items for easier filtering</string>
+    <string name="help_section_shopping_title">Shopping List</string>
+    <string name="help_section_shopping_body">- Record items to purchase\n- Checked items can be automatically added back to inventory</string>
+    <string name="help_section_tools_title">Quick Tools</string>
+    <string name="help_section_tools_body">- Barcode scanning for quick entry or search\n- Image recognition to assist with entry</string>
+    <string name="help_section_alert_title">Reminders Notifications</string>
+    <string name="help_section_alert_body">- Set item reminders\n- Global reminder switch and strategy</string>
+    <string name="help_section_data_title">Data Sync</string>
+    <string name="help_section_data_body">- Data backup and restore\n- Cloud storage and sync (if enabled)</string>
+    <string name="help_section_appearance_title">Appearance Language</string>
+    <string name="help_section_appearance_body">- Theme, color scheme and icons\n- Language switching and display mode</string>
+    <string name="help_section_tips_title">Usage Tips Gestures</string>
+    <string name="help_section_tips_body">- Double-tap a container icon to enter its detail page\n- Long-press a container icon for more actions (edit, delete, move, etc.)\n- In list/grid mode, quickly adjust quantity using + / – buttons\n- One-tap replenish inventory from completed shopping list items\n- Search box supports fuzzy search for tags and item names — press Enter to search\n- The "in" suffix (e.g. "Items in…") can be customized.</string>
+    <string name="about_developer_title">Developer</string>
+    <string name="about_developer_name">Gooda</string>
+    <string name="about_contact_title">Contact</string>
+    <string name="support_email">2667835712@qq.com</string>
+    <string name="about_feedback_title">Feedback Support</string>
+    <string name="about_feedback_desc">If you have any questions or suggestions, feel free to send us an email.</string>
+    <string name="about_feedback_button">Email Feedback</string>
+    <string name="feedback_email_subject">HexNote Feedback</string>
+    <string name="no_email_app">No email app detected</string>
 </resources>

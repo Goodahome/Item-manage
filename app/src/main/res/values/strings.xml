@@ -23,21 +23,16 @@
     <!-- 导航 -->
     <string name="menu">菜单</string>
     <string name="nav_home">首页</string>
-    <string name="nav_all_items">所有物品</string>
     <string name="nav_item_management">物品管理</string>
-    <string name="nav_category_management">分类管理</string>
     <string name="nav_shopping_basket">购物篮</string>
-    <string name="nav_warehouse_management">容器管理</string>
-    <string name="nav_warehouse_info">容器信息</string>
     <string name="nav_items">物品</string>
-    <string name="nav_item_shelf">物品架</string>
     
     <!-- 设置页面 -->
     <string name="settings_title">设置</string>
     <string name="appearance_settings">外观设置</string>
     <string name="app_settings">应用设置</string>
 <!--    <string name="cloud_storage">云端存储</string>-->
-    <string name="alert_settings">设置提醒</string>
+    <string name="alert_settings">提醒与通知</string>
     <string name="backup_restore">备份与恢复</string>
     <string name="backup_data">备份数据</string>
     <string name="restore_data">恢复数据</string>
@@ -138,8 +133,10 @@
     <string name="confirm_password">确认密码</string>
     <string name="password_mismatch">两次输入的密码不一致</string>
     <string name="password_empty">密码不能为空</string>
-    <string name="password_enabled_restart_message">密码保护已启用，需要重启应用才能生效。是否现在重启？</string>
-    <string name="password_disabled_restart_message">密码保护已关闭，需要重启应用才能生效。是否现在重启？</string>
+
+    <!-- 重启提示 -->
+    <string name="enabled_restart_message">需要重启应用才能生效。是否现在重启？</string>
+    <string name="disabled_restart_message">需要重启应用才能生效。是否现在重启？</string>
     
     <!-- 生物识别 -->
     <string name="biometric_unlock_title">使用生物识别解锁</string>
@@ -156,8 +153,14 @@
     <!-- 对话框 -->
     <string name="modify_app_name">修改程序名称</string>
     <string name="app_name_hint">程序名称</string>
-    <string name="app_name_changed">程序名称已修改，需要重启应用才能在系统中看到新的名称</string>
+    <!-- <string name="app_name_changed">程序名称已修改，需要重启应用才能在系统中看到新的名称</string> -->
     <string name="restart_app">是否现在重启应用？选择\"稍后\"将在下次启动时自动应用。</string>
+
+    <!-- 币种符号 -->
+    <string name="currency_symbol_setting">币种符号</string>
+    <string name="currency_symbol_setting_desc">设置价格显示的币种符号（如 ¥、$、€）</string>
+    <string name="currency_symbol_hint">输入币种符号</string>
+    <string name="default_currency_symbol">¥</string>
     
     <string name="set_cloud_server">设置服务器地址</string>
     <string name="server_url_hint">服务器地址</string>
@@ -174,17 +177,6 @@
     
     <!-- 物品相关 -->
     <string name="item_name">物品名称</string>
-    <string name="item_description">描述</string>
-    <string name="item_category">分类</string>
-    <string name="item_warehouse">容器</string>
-    <string name="item_price">价格</string>
-    <string name="item_quantity">数量</string>
-    <string name="item_barcode">条形码</string>
-    <string name="item_expiry_date">过期日期</string>
-    <string name="item_tags">标签</string>
-    <string name="item_status">状态</string>
-    <string name="item_image">图片</string>
-    <string name="item_feature_code">特征码</string>
     <string name="add_item">添加物品</string>
     <string name="add_item_hint">选择容器后添加物品</string>
     <string name="edit_item">编辑物品</string>
@@ -230,7 +222,6 @@
     
     <!-- 容器 -->
     <string name="warehouse">容器</string>
-    <string name="warehouses">容器管理</string>
     <string name="warehouse_settings">容器设置</string>
     <string name="add_warehouse">添加容器</string>
     <string name="add_warehouse_hint">选择父容器后添加容器</string>
@@ -335,15 +326,11 @@
     <string name="retry">重试</string>
     
     <!-- 代码中发现的额外字符串 -->
-    <string name="shopping_basket">购物篮</string>
     <string name="add_first_shopping_item">添加第一个购物项</string>
     <string name="item_management">物品管理</string>
     <string name="add_first_item">添加第一个物品</string>
     <string name="no_matching_items">未找到匹配的物品</string>
-    <string name="warehouse_not_found">容器不存在</string>
     <string name="warehouse_items_title">容器物品</string>
-    <string name="warehouse_management">容器管理</string>
-    <string name="add_first_warehouse">添加第一个容器</string>
     <string name="view_items">查看物品</string>
     <string name="category_management">分类管理</string>
     <string name="add_first_category">添加第一个分类</string>
@@ -409,38 +396,17 @@
     <string name="expires_on">到期: %1$s</string>
     <string name="quantity_with_value">数量: %1$d</string>
     <string name="price_with_value">¥%1$.2f</string>
+    <string name="price_with_symbol">%1$s%2$.2f</string>
     <string name="warehouse_empty_hint">该容器暂无物品</string>
     <string name="capacity">容量</string>
     <string name="used_capacity">已使用: %1$d / %2$d</string>
     <string name="items_unit">件</string>
     <!-- 容器 -->
-    <string name="item_container">容器</string>
-    <string name="container">容器</string>
     <string name="unnamed_warehouse">未命名容器</string>
     <string name="warehouse_items_suffix">里的物品</string>
     <string name="custom_warehouse_items_suffix">自定义容器物品后缀</string>
     <string name="custom_warehouse_items_suffix_desc">设置容器路径中最后一个容器显示的后缀文本</string>
-    <string name="containers">容器管理</string>
     <!-- <string name="add_container">添加容器</string> -->
-    <string name="edit_container">编辑容器</string>
-    <string name="delete_container">删除容器</string>
-    <string name="delete_container_confirm">确定要删除这个容器吗？删除后该容器下的物品将变为未分配容器。</string>
-    <string name="container_name">容器名称</string>
-    <string name="container_description">容器描述</string>
-    <string name="container_location">位置</string>
-    <string name="container_items">容器物品</string>
-    <string name="no_container">未分配容器</string>
-    <string name="no_containers">暂无容器</string>
-    <string name="container_saved">容器已保存</string>
-    <string name="container_deleted">容器已删除</string>
-    <string name="container_name_required">请输入容器名称</string>
-    <string name="container_name_required_field">容器名称 *</string>
-    <string name="container_not_found">容器不存在</string>
-    <string name="container_items_title">容器物品</string>
-    <string name="container_management">容器管理</string>
-    <string name="add_first_container">添加第一个容器</string>
-    <string name="no_container_option">无容器</string>
-    <string name="container_empty_hint">该容器暂无物品</string>
     
     <!-- 图标切换 -->
     <string name="app_icon">应用图标</string>
@@ -489,7 +455,6 @@
     
     <!-- 容器相关 -->
     <string name="generate_qr_code_action">生成二维码</string>
-    <string name="add_container_action">添加容器</string>
     <string name="quantity_label">数量</string>
     <string name="warehouse_empty">此容器为空</string>
     <string name="child_warehouse_info">子容器：%1$d    物品：%2$d</string>
@@ -556,7 +521,6 @@
     
     <!-- 完成购买对话框 -->
     <string name="complete_purchase_button">完成购买</string>
-    <string name="cancel_button">取消</string>
     <string name="confirm_button">确定</string>
     
     <!-- 提醒设置 -->
@@ -618,6 +582,37 @@
     <string name="onboarding_next">下一步</string>
     <string name="onboarding_skip">跳过</string>
     <string name="onboarding_get_started">开始使用</string>
+    <string name="onboarding_tap_to_continue">点击空白处继续</string>
+    <string name="onboarding_home_topbar_title">顶部导航</string>
+    <string name="onboarding_home_topbar_desc">这里是顶部导航条，包含菜单、布局切换、快速拍照和扫码等按钮，用于全局操作。</string>
+    <string name="onboarding_home_search_title">搜索框</string>
+    <string name="onboarding_home_search_desc">搜索框可快速查找物品与标签（不用点击）。</string>
+    <string name="onboarding_home_stat_container_button_title">容器统计</string>
+    <string name="onboarding_home_stat_container_button_desc">点击这里查看所有容器的概览与列表。</string>
+    <string name="onboarding_home_stat_container_page_title">容器列表</string>
+    <string name="onboarding_home_stat_container_page_desc">这里展示容器数量与层级概览（不用点击）。</string>
+    <string name="onboarding_home_stat_item_button_title">物品统计</string>
+    <string name="onboarding_home_stat_item_button_desc">点击这里查看所有物品的列表。</string>
+    <string name="onboarding_home_stat_item_page_title">物品列表</string>
+    <string name="onboarding_home_stat_item_page_desc">这里展示物品及所属容器信息（不用点击）。</string>
+    <string name="onboarding_home_stat_shopping_button_title">待购统计</string>
+    <string name="onboarding_home_stat_shopping_button_desc">点击这里查看待购清单。</string>
+    <string name="onboarding_home_stat_shopping_page_title">待购清单</string>
+    <string name="onboarding_home_stat_shopping_page_desc">这里是待购与完成状态列表（不用点击）。</string>
+    <string name="onboarding_home_sidebar_add_title">添加容器</string>
+    <string name="onboarding_home_sidebar_add_desc">左侧列表底部是添加容器按钮，用于新建容器。</string>
+    <string name="onboarding_home_sidebar_sample_title">示例容器</string>
+    <string name="onboarding_home_sidebar_sample_desc">这是示例容器：单击进入，双击查看详情。请点击它继续。</string>
+    <string name="onboarding_warehouse_children_breadcrumb_title">子容器与面包屑</string>
+    <string name="onboarding_warehouse_children_breadcrumb_desc">上方是子容器区域与面包屑导航，面包屑末尾后缀可在设置中自定义。</string>
+    <string name="onboarding_warehouse_tag_filter_title">标签筛选</string>
+    <string name="onboarding_warehouse_tag_filter_desc">物品区域支持标签筛选，便于快速定位。</string>
+    <string name="onboarding_warehouse_layout_toggle_title">布局切换</string>
+    <string name="onboarding_warehouse_layout_toggle_desc">点击导航条上的布局切换按钮，在网格/列表模式间切换。</string>
+    <string name="onboarding_warehouse_grid_item_title">网格物品卡片</string>
+    <string name="onboarding_warehouse_grid_item_desc">点击任意网格物品卡片查看详情。</string>
+    <string name="onboarding_warehouse_info_card_title">信息卡片</string>
+    <string name="onboarding_warehouse_info_card_desc">这里是物品信息卡片，可查看数量、标签与操作。</string>
     <string name="pinch_to_zoom">双指捏合缩放图片</string>
     <string name="rotate_image">旋转图片</string>
     <string name="ad_banner_unit_id">广告横幅单元 ID</string>
@@ -647,4 +642,38 @@
     <string name="input_use_quantity">输入使用数量</string>
     <string name="detail_info">详细信息</string>
     <string name="all">全部</string>
+
+    <!-- 帮助与关于 -->
+    <string name="help">帮助</string>
+    <string name="about">关于</string>
+    <string name="help_title">帮助</string>
+    <string name="about_title">关于</string>
+    <string name="help_intro">这里汇总应用的主要功能与操作指引。</string>
+    <string name="help_section_items_title">物品与库存</string>
+    <string name="help_section_items_body">- 新增、编辑、删除物品\n- 设置数量、价格、到期日期等信息\n- 物品详情查看与快速操作</string>
+    <string name="help_section_warehouse_title">容器与分类</string>
+    <string name="help_section_warehouse_body">- 创建容器与子容器\n- 在不同容器之间切换查看物品\n- 容器设置与管理</string>
+    <string name="help_section_tags_title">标签管理</string>
+    <string name="help_section_tags_body">- 新建、编辑、删除标签\n- 为物品打标签便于筛选</string>
+    <string name="help_section_shopping_title">待购清单</string>
+    <string name="help_section_shopping_body">- 记录待购买物品\n- 勾选完成后可自动回补库存</string>
+    <string name="help_section_tools_title">快捷工具</string>
+    <string name="help_section_tools_body">- 条码扫描快速录入或查找\n- 图片识别辅助录入</string>
+    <string name="help_section_alert_title">提醒与通知</string>
+    <string name="help_section_alert_body">- 物品提醒设置\n- 全局提醒开关与策略</string>
+    <string name="help_section_data_title">数据与同步</string>
+    <string name="help_section_data_body">- 数据备份与恢复\n- 云端存储与同步（如已启用）</string>
+    <string name="help_section_appearance_title">外观与语言</string>
+    <string name="help_section_appearance_body">- 主题、配色与图标\n- 语言切换与显示模式</string>
+    <string name="help_section_tips_title">操作指引与快捷手势</string>
+    <string name="help_section_tips_body">- 双击容器图标可进入容器详情页面\n- 长按容器图标可进行更多操作（编辑、删除、移动等）\n- 列表/网格模式下可通过加减按钮快速调整数量\n- 待购清单勾选完成后可一键回补库存\n- 搜索框支持模糊搜索标签和物品名称，输入关键字后按回车键进行搜索\n- “里的物品”后缀支持自定义。</string>
+    <string name="about_developer_title">开发者</string>
+    <string name="about_developer_name">Gooda</string>
+    <string name="about_contact_title">联系方式</string>
+    <string name="support_email">2667835712@qq.com</string>
+    <string name="about_feedback_title">反馈与支持</string>
+    <string name="about_feedback_desc">如有问题或建议，欢迎通过邮件反馈。</string>
+    <string name="about_feedback_button">邮件反馈</string>
+    <string name="feedback_email_subject">盒记 反馈</string>
+    <string name="no_email_app">未检测到可用的邮件应用</string>
 </resources>

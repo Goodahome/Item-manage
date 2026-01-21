@@ -53,6 +53,7 @@ fun AppSettingsScreen(
     var showSuffixDialog by remember { mutableStateOf(false) }
     var showAdUnitIdDialog by remember { mutableStateOf(false) }
     var showClearActivityDataDialog by remember { mutableStateOf(false) }
+    var showCurrencyDialog by remember { mutableStateOf(false) }
     
     // 物品展示模式管理器
     val displayModeManager = remember { com.example.itemremindertool.config.ItemDisplayModeManager.getInstance(context) }
@@ -61,6 +62,11 @@ fun AppSettingsScreen(
     val defaultSuffix = context.getString(R.string.warehouse_items_suffix)
     var warehouseItemsSuffix by remember { 
         mutableStateOf(prefs.getString("warehouse_items_suffix", defaultSuffix) ?: defaultSuffix) 
+    }
+    
+    val defaultCurrencySymbol = context.getString(R.string.default_currency_symbol)
+    var currencySymbol by remember {
+        mutableStateOf(prefs.getString("currency_symbol", defaultCurrencySymbol) ?: defaultCurrencySymbol)
     }
     
     // 广告单元 ID
@@ -217,15 +223,12 @@ fun AppSettingsScreen(
             
             Divider()
             
-            // 物品展示模式
+            // 币种符号设置
             ListItem(
-                headlineContent = { Text(stringResource(R.string.item_display_mode)) },
-                supportingContent = { 
+                headlineContent = { Text(stringResource(R.string.currency_symbol_setting)) },
+                supportingContent = {
                     Text(
-                        text = when(displayMode) {
-                            com.example.itemremindertool.config.ItemDisplayMode.LIST -> stringResource(R.string.item_display_mode_list)
-                            com.example.itemremindertool.config.ItemDisplayMode.GRID -> stringResource(R.string.item_display_mode_grid)
-                        },
+                        text = stringResource(R.string.currency_symbol_setting_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = ColorHelpers.getGroup4TextColor(0.7f)
                     )
@@ -235,11 +238,9 @@ fun AppSettingsScreen(
                         colors = ButtonDefaults.textButtonColors(
                             contentColor = ColorHelpers.getGroup4TextColor()
                         ),
-                        onClick = {
-                            displayModeManager.toggleDisplayMode()
-                        }
+                        onClick = { showCurrencyDialog = true }
                     ) {
-                        Text(stringResource(R.string.toggle))
+                        Text(currencySymbol)
                     }
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
@@ -531,6 +532,30 @@ fun AppSettingsScreen(
         }
     }
     
+    // 币种符号对话框
+    if (showCurrencyDialog) {
+        var newSymbol by remember { mutableStateOf(currencySymbol) }
+        ModernSettingsDialog(
+            title = stringResource(R.string.currency_symbol_setting),
+            icon = Icons.Default.AttachMoney,
+            onDismiss = { showCurrencyDialog = false },
+            onConfirm = {
+                val finalSymbol = newSymbol.trim().ifBlank { defaultCurrencySymbol }
+                currencySymbol = finalSymbol
+                prefs.edit().putString("currency_symbol", finalSymbol).apply()
+                showCurrencyDialog = false
+            }
+        ) {
+            OutlinedTextField(
+                value = newSymbol,
+                onValueChange = { newSymbol = it },
+                label = { Text(stringResource(R.string.currency_symbol_hint)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+        }
+    }
+    
     // 广告单元 ID 设置对话框
     if (showAdUnitIdDialog) {
         var newAdUnitId by remember { mutableStateOf(adBannerUnitId) }
@@ -582,9 +607,9 @@ fun AppSettingsScreen(
         ) {
             Text(
                 if (isPasswordEnabled) {
-                    context.getString(R.string.password_enabled_restart_message)
+                    context.getString(R.string.enabled_restart_message)
                 } else {
-                    context.getString(R.string.password_disabled_restart_message)
+                    context.getString(R.string.disabled_restart_message)
                 }
             )
         }
@@ -601,7 +626,7 @@ fun AppSettingsScreen(
                 showClearActivityDataDialog = false
             },
             confirmText = stringResource(R.string.confirm_button),
-            dismissText = stringResource(R.string.cancel_button)
+            dismissText = stringResource(R.string.cancel)
         ) {
             Text(
                 text = stringResource(R.string.clear_activity_data_confirm),

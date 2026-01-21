@@ -23,14 +23,9 @@
     <!-- 导航 -->
     <string name="menu">Menü</string>
     <string name="nav_home">Startseite</string>
-    <string name="nav_all_items">Alle Artikel</string>
     <string name="nav_item_management">Artikelverwaltung</string>
-    <string name="nav_category_management">Kategorieverwaltung</string>
     <string name="nav_shopping_basket">Einkaufskorb</string>
-    <string name="nav_warehouse_management">Behälterverwaltung</string>
-    <string name="nav_warehouse_info">Behälterinfo</string>
     <string name="nav_items">Artikel</string>
-    <string name="nav_item_shelf">Artikelregal</string>
     
     <!-- 设置页面 -->
     <string name="settings_title">Einstellungen</string>
@@ -157,17 +152,6 @@
     
     <!-- 物品相关 -->
     <string name="item_name">Artikelname</string>
-    <string name="item_description">Beschreibung</string>
-    <string name="item_category">Kategorie</string>
-    <string name="item_warehouse">Behälter</string>
-    <string name="item_price">Preis</string>
-    <string name="item_quantity">Menge</string>
-    <string name="item_barcode">Strichcode</string>
-    <string name="item_expiry_date">Ablaufdatum</string>
-    <string name="item_tags">Tags</string>
-    <string name="item_status">Status</string>
-    <string name="item_image">Bild</string>
-    <string name="item_feature_code">Merkmalscode</string>
     <string name="add_item">Artikel hinzufügen</string>
     <string name="add_item_hint">Behälter auswählen und dann Artikel hinzufügen</string>
     <string name="edit_item">Artikel bearbeiten</string>
@@ -213,7 +197,6 @@
     
     <!-- 容器 -->
     <string name="warehouse">Behälter</string>
-    <string name="warehouses">Behälterverwaltung</string>
     <string name="warehouse_settings">Behältereinstellungen</string>
     <string name="add_warehouse">Behälter hinzufügen</string>
     <string name="add_warehouse_hint">Elternbehälter auswählen und dann hinzufügen</string>
@@ -247,8 +230,8 @@
     <string name="delete_tag_confirm_with_usage">Möchten Sie das Tag „%1$s“ wirklich löschen? Es wird von %2$d Artikeln verwendet und wird entfernt.</string>
     <string name="tag_hint">Tag eingeben (max. 12 Zeichen)</string>
     <string name="tag_limit_exceeded">Tag-Länge darf 12 Zeichen nicht überschreiten</string>
-    <string name="password_enabled_restart_message">Passwortschutz wurde aktiviert. Die App muss neu gestartet werden, damit die Änderungen wirksam werden. Jetzt neu starten?</string>
-    <string name="password_disabled_restart_message">Passwortschutz wurde deaktiviert. Die App muss neu gestartet werden, damit die Änderungen wirksam werden. Jetzt neu starten?</string>
+    <string name="enabled_restart_message">Die App muss neu gestartet werden, damit die Änderungen wirksam werden. Jetzt neu starten?</string>
+    <string name="disabled_restart_message">Die App muss neu gestartet werden, damit die Änderungen wirksam werden. Jetzt neu starten?</string>
     <!-- Biometrisch -->
     <string name="biometric_unlock_title">Mit Biometrie entsperren</string>
     <string name="biometric_unlock_subtitle">Bitte verwenden Sie Fingerabdruck oder Gesichtserkennung, um die App zu entsperren</string>
@@ -330,15 +313,11 @@
     <string name="retry">Erneut versuchen</string>
     
     <!-- 代码中发现的额外字符串 -->
-    <string name="shopping_basket">Einkaufskorb</string>
     <string name="add_first_shopping_item">Ersten Einkaufsartikel hinzufügen</string>
     <string name="item_management">Artikelverwaltung</string>
     <string name="add_first_item">Ersten Artikel hinzufügen</string>
     <string name="no_matching_items">Keine passenden Artikel gefunden</string>
-    <string name="warehouse_not_found">Behälter nicht gefunden</string>
     <string name="warehouse_items_title">Behälterartikel</string>
-    <string name="warehouse_management">Behälterverwaltung</string>
-    <string name="add_first_warehouse">Ersten Behälter hinzufügen</string>
     <string name="view_items">Artikel anzeigen</string>
     <string name="category_management">Kategorieverwaltung</string>
     <string name="add_first_category">Erste Kategorie hinzufügen</string>
@@ -376,29 +355,7 @@
     <string name="used_capacity">Genutzt: %1$d / %2$d</string>
     <string name="items_unit">Stk.</string>
     <!-- 容器 -->
-    <string name="item_container">Behälter</string>
-    <string name="container">Behälter</string>
-    <string name="containers">Behälterverwaltung</string>
     <!-- <string name="add_container">Behälter hinzufügen</string> -->
-    <string name="edit_container">Behälter bearbeiten</string>
-    <string name="delete_container">Behälter löschen</string>
-    <string name="delete_container_confirm">Möchten Sie diesen Behälter wirklich löschen? Die darin enthaltenen Artikel werden nicht zugewiesen.</string>
-    <string name="container_name">Behältername</string>
-    <string name="container_description">Behälterbeschreibung</string>
-    <string name="container_location">Ort</string>
-    <string name="container_items">Behälterartikel</string>
-    <string name="no_container">Nicht zugewiesener Behälter</string>
-    <string name="no_containers">Noch keine Behälter</string>
-    <string name="container_saved">Behälter gespeichert</string>
-    <string name="container_deleted">Behälter gelöscht</string>
-    <string name="container_name_required">Bitte Behälternamen eingeben</string>
-    <string name="container_name_required_field">Behältername *</string>
-    <string name="container_not_found">Behälter nicht gefunden</string>
-    <string name="container_items_title">Behälterartikel</string>
-    <string name="container_management">Behälterverwaltung</string>
-    <string name="add_first_container">Ersten Behälter hinzufügen</string>
-    <string name="no_container_option">Kein Behälter</string>
-    <string name="container_empty_hint">Dieser Behälter enthält keine Artikel</string>
     
     <!-- 图标切换 -->
     <string name="app_icon">App-Symbol</string>
@@ -444,7 +401,6 @@
     
     <!-- 容器相关 -->
     <string name="generate_qr_code_action">QR-Code generieren</string>
-    <string name="add_container_action">Behälter hinzufügen</string>
     <string name="quantity_label">Menge</string>
     <string name="warehouse_empty">Dieser Behälter ist leer</string>
     <string name="child_warehouse_info">Unterbehälter: %1$d    Artikel: %2$d</string>
@@ -511,7 +467,6 @@
     
     <!-- 完成购买对话框 -->
     <string name="complete_purchase_button">Kauf abschließen</string>
-    <string name="cancel_button">Abbrechen</string>
     <string name="confirm_button">Bestätigen</string>
     
     <!-- 提醒设置 -->
@@ -550,6 +505,37 @@
     <string name="onboarding_next">Weiter</string>
     <string name="onboarding_skip">Überspringen</string>
     <string name="onboarding_get_started">Loslegen</string>
+    <string name="onboarding_tap_to_continue">Leeren Bereich antippen, um fortzufahren</string>
+    <string name="onboarding_home_topbar_title">Obere Leiste</string>
+    <string name="onboarding_home_topbar_desc">Die obere Leiste enthält Menü, Layout-Wechsel, Schnellkamera und Scan.</string>
+    <string name="onboarding_home_search_title">Suche</string>
+    <string name="onboarding_home_search_desc">Mit der Suche finden Sie schnell Artikel und Tags.</string>
+    <string name="onboarding_home_stat_container_button_title">Behälter-Statistik</string>
+    <string name="onboarding_home_stat_container_button_desc">Tippen Sie, um die Behälterübersicht zu sehen.</string>
+    <string name="onboarding_home_stat_container_page_title">Behälterliste</string>
+    <string name="onboarding_home_stat_container_page_desc">Zeigt Behälteranzahl und Hierarchie.</string>
+    <string name="onboarding_home_stat_item_button_title">Artikel-Statistik</string>
+    <string name="onboarding_home_stat_item_button_desc">Tippen Sie, um die Artikelliste zu sehen.</string>
+    <string name="onboarding_home_stat_item_page_title">Artikelliste</string>
+    <string name="onboarding_home_stat_item_page_desc">Zeigt Artikel und zugehörige Behälter.</string>
+    <string name="onboarding_home_stat_shopping_button_title">Einkaufs-Statistik</string>
+    <string name="onboarding_home_stat_shopping_button_desc">Tippen Sie, um die Einkaufsliste zu sehen.</string>
+    <string name="onboarding_home_stat_shopping_page_title">Einkaufsliste</string>
+    <string name="onboarding_home_stat_shopping_page_desc">Zeigt offene und erledigte Einkäufe.</string>
+    <string name="onboarding_home_sidebar_add_title">Behälter hinzufügen</string>
+    <string name="onboarding_home_sidebar_add_desc">Verwenden Sie den Hinzufügen-Button unten in der Seitenleiste.</string>
+    <string name="onboarding_home_sidebar_sample_title">Beispielbehälter</string>
+    <string name="onboarding_home_sidebar_sample_desc">Dies ist ein Beispielbehälter: einmal tippen zum Öffnen, doppelt tippen für Details. Tippen Sie ihn an, um fortzufahren.</string>
+    <string name="onboarding_warehouse_children_breadcrumb_title">Unterbehälter und Breadcrumbs</string>
+    <string name="onboarding_warehouse_children_breadcrumb_desc">Oben sehen Sie Unterbehälter und die Breadcrumb-Navigation. Das Suffix ist in den Einstellungen anpassbar.</string>
+    <string name="onboarding_warehouse_tag_filter_title">Tag-Filter</string>
+    <string name="onboarding_warehouse_tag_filter_desc">Filtern Sie Artikel hier nach Tags.</string>
+    <string name="onboarding_warehouse_layout_toggle_title">Layout-Wechsel</string>
+    <string name="onboarding_warehouse_layout_toggle_desc">Tippen Sie auf den Layout-Wechsel in der oberen Leiste, um zwischen Gitter/Liste zu wechseln.</string>
+    <string name="onboarding_warehouse_grid_item_title">Gitter-Artikelkarte</string>
+    <string name="onboarding_warehouse_grid_item_desc">Tippen Sie auf eine Gitterkarte, um Details zu sehen.</string>
+    <string name="onboarding_warehouse_info_card_title">Info-Karte</string>
+    <string name="onboarding_warehouse_info_card_desc">Diese Karte zeigt Menge, Tags und Aktionen.</string>
 
     <string name="stat_label_warehouse">Lager</string>
     <string name="stat_label_item">Gegenstände</string>
@@ -611,4 +597,38 @@
     <string name="input_use_quantity">Verwendete Menge eingeben</string>
     <string name="detail_info">Detaillierte Informationen</string>
     <string name="all">Alle</string>
+
+    <!-- Hilfe & Über -->
+    <string name="help">Hilfe</string>
+    <string name="about">Über</string>
+    <string name="help_title">Hilfe</string>
+    <string name="about_title">Über</string>
+    <string name="help_intro">Hier finden Sie eine Übersicht der wichtigsten Funktionen und Bedienhinweise der App.</string>
+    <string name="help_section_items_title">Artikel Bestand</string>
+    <string name="help_section_items_body">- Artikel hinzufügen, bearbeiten, löschen\n- Menge, Preis, Ablaufdatum usw. festlegen\n- Artikeldetails anzeigen und Schnellaktionen ausführen</string>
+    <string name="help_section_warehouse_title">Behälter Kategorien</string>
+    <string name="help_section_warehouse_body">- Behälter und Unterbehälter erstellen\n- Zwischen verschiedenen Behältern wechseln, um Artikel anzusehen\n- Behälter-Einstellungen und -Verwaltung</string>
+    <string name="help_section_tags_title">Etiketten verwalten</string>
+    <string name="help_section_tags_body">- Etiketten erstellen, bearbeiten, löschen\n- Artikel mit Etiketten versehen zur einfacheren Filterung</string>
+    <string name="help_section_shopping_title">Einkaufsliste</string>
+    <string name="help_section_shopping_body">- Zu kaufende Artikel notieren\n- Abgehakte Artikel können automatisch dem Bestand wieder hinzugefügt werden</string>
+    <string name="help_section_tools_title">Schnellwerkzeuge</string>
+    <string name="help_section_tools_body">- Barcode-Scan für schnelles Erfassen oder Suchen\n- Bilderkennung zur Unterstützung bei der Eingabe</string>
+    <string name="help_section_alert_title">Erinnerungen Benachrichtigungen</string>
+    <string name="help_section_alert_body">- Erinnerungen für Artikel einstellen\n- Globale Erinnerungs-Ein/Aus-Schalter und Strategie</string>
+    <string name="help_section_data_title">Daten Synchronisation</string>
+    <string name="help_section_data_body">- Daten sichern und wiederherstellen\n- Cloud-Speicher und Synchronisation (falls aktiviert)</string>
+    <string name="help_section_appearance_title">Design Sprache</string>
+    <string name="help_section_appearance_body">- Theme, Farbschema und Symbole\n- Sprachwechsel und Anzeigemodus</string>
+    <string name="help_section_tips_title">Bedienhinweise Gesten</string>
+    <string name="help_section_tips_body">- Doppeltippen auf Behälter-Symbol → Detailseite öffnen\n- Langes Drücken auf Behälter-Symbol → weitere Aktionen (Bearbeiten, Löschen, Verschieben usw.)\n- In Listen-/Rasteransicht Menge mit +/- Tasten schnell ändern\n- Abgeschlossene Einkaufslisten-Einträge per Knopfdruck wieder einlagern\n- Suchfeld unterstützt unscharfe Suche nach Etiketten und Artikelnamen – Enter drücken zum Suchen\n- Der Nachsatz „in …“ ist anpassbar.</string>
+    <string name="about_developer_title">Entwickler</string>
+    <string name="about_developer_name">Gooda</string>
+    <string name="about_contact_title">Kontakt</string>
+    <string name="support_email">2667835712@qq.com</string>
+    <string name="about_feedback_title">Feedback Support</string>
+    <string name="about_feedback_desc">Bei Fragen oder Anregungen freuen wir uns über eine E-Mail.</string>
+    <string name="about_feedback_button">E-Mail Feedback</string>
+    <string name="feedback_email_subject">BoxNote Feedback</string>
+    <string name="no_email_app">Keine E-Mail-App gefunden</string>
 </resources>

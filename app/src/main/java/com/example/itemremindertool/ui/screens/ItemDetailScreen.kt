@@ -45,6 +45,7 @@ import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
+import com.example.itemremindertool.utils.CurrencyUtils
 import com.example.itemremindertool.utils.ImageUtils
 import android.graphics.BitmapFactory
 import android.content.Context
@@ -53,6 +54,8 @@ import java.text.SimpleDateFormat
 import java.text.DateFormat
 import java.util.*
 import java.util.Calendar
+import java.time.Instant
+import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -404,7 +407,7 @@ fun ItemDetailScreen(
                                 color = ColorHelpers.getGroup4TextColor(0.7f)
                             )
                             Text(
-                                text = stringResource(R.string.price_with_value, item.price),
+                                text = CurrencyUtils.formatPrice(LocalContext.current, item.price),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = ColorHelpers.getGroup4TextColor()
@@ -479,8 +482,24 @@ fun ItemDetailScreen(
                         }
                     }
                     
-                    // 标签
-                    if (item.tags.isNotEmpty()) {
+                    // 标签（含过期标签）
+                    val isExpired = item.expiryDate?.let { date ->
+                        val zone = ZoneId.systemDefault()
+                        val nowZoned = Instant.now().atZone(zone)
+                        val expiryEnd = Instant.ofEpochMilli(date.time)
+                            .atZone(zone)
+                            .toLocalDate()
+                            .plusDays(1)
+                            .atStartOfDay(zone)
+                            .plusMinutes(1)
+                        !nowZoned.isBefore(expiryEnd)
+                    } ?: false
+                    val allTagsToShow = if (isExpired) {
+                        item.tags + "过期"
+                    } else {
+                        item.tags
+                    }
+                    if (allTagsToShow.isNotEmpty()) {
                         HorizontalDivider()
                         val pageBgColor = ColorHelpers.getGroup2PageBgColor()
                         Column(
@@ -496,17 +515,33 @@ fun ItemDetailScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                item.tags.forEach { tag ->
-                                    val tagBgColor = ColorHelpers.getGroup2SettingsBtnColor()
+                                allTagsToShow.forEach { tag ->
+                                    val isExpiredTag = tag == "过期"
+                                    val tagBgColor = if (isExpiredTag) {
+                                        androidx.compose.ui.graphics.Color(0xFFD32F2F)
+                                    } else {
+                                        ColorHelpers.getGroup2SettingsBtnColor()
+                                    }
+                                    val displayTag = if (isExpiredTag) {
+                                        stringResource(R.string.status_expired)
+                                    } else {
+                                        tag
+                                    }
+                                    val borderColor = ColorHelpers.getGroup4TextColor(0.3f)
                                     Surface(
                                         shape = RoundedCornerShape(16.dp),
                                         color = tagBgColor,
-                                        modifier = Modifier.padding(vertical = 4.dp)
+                                        modifier = Modifier.padding(vertical = 4.dp),
+                                        border = BorderStroke(1.dp, borderColor)
                                     ) {
                                         Text(
-                                            text = tag,
+                                            text = displayTag,
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = ColorHelpers.getGroup4TextColorByContrast(tagBgColor),
+                                            color = if (isExpiredTag) {
+                                                androidx.compose.ui.graphics.Color.White
+                                            } else {
+                                                ColorHelpers.getGroup4TextColorByContrast(tagBgColor)
+                                            },
                                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                             maxLines = 1, // 标签内的文字不换行
                                             // overflow = TextOverflow.Ellipsis  如果文字太长，显示省略号
@@ -1141,7 +1176,7 @@ fun ModernReminderDialog(
                             ),
                             border = BorderStroke(1.5.dp, ColorHelpers.getGroup4TextColor(0.3f))
                         ) {
-                            Text(stringResource(R.string.cancel_button), fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                            Text(stringResource(R.string.cancel), fontSize = 15.sp, fontWeight = FontWeight.Medium)
                         }
                         Button(
                             onClick = {
