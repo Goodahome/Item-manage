@@ -11,8 +11,6 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
     object Dashboard : Screen("dashboard", R.string.nav_home, Icons.Outlined.Dashboard, Icons.Filled.Dashboard)
     object Items : Screen("items", R.string.nav_item_management, Icons.Outlined.Category, Icons.Filled.Category)
     object Tags : Screen("tags", R.string.nav_tag_management, Icons.Outlined.Label, Icons.Filled.Label)
-    object ShoppingList : Screen("shopping_list", R.string.nav_shopping_basket, Icons.Outlined.ShoppingCart, Icons.Filled.ShoppingCart)
-    object Warehouses : Screen("warehouses", R.string.nav_warehouse_management, Icons.Outlined.Inventory2, Icons.Filled.Inventory2)
     object Settings : Screen("settings", R.string.settings, Icons.Outlined.Settings, Icons.Filled.Settings)
 
     object ItemDetail : Screen("item_detail/{itemId}", R.string.item_detail, Icons.Default.Info, Icons.Default.Info) {
@@ -28,11 +26,6 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
         fun createRoute(itemId: Long) = "item_reminder_settings/$itemId"
     }
 
-    object AddShoppingItem : Screen("add_shopping_item", R.string.add_shopping_item, Icons.Default.Add, Icons.Default.Add)
-    object EditShoppingItem : Screen("edit_shopping_item/{itemId}", R.string.edit_shopping_item, Icons.Default.Edit, Icons.Default.Edit) {
-        fun createRoute(itemId: Long) = "edit_shopping_item/$itemId"
-    }
-
     object AddWarehouse : Screen("add_warehouse", R.string.add_warehouse, Icons.Default.Add, Icons.Default.Add)
     object AddChildWarehouse : Screen("add_warehouse/{parentId}", R.string.add_warehouse, Icons.Default.Add, Icons.Default.Add) {
         fun createRoute(parentId: Long) = "add_warehouse/$parentId"
@@ -45,7 +38,6 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
         fun createRoute(warehouseId: Long) = "warehouse_items/$warehouseId"
     }
     
-    object AllItems : Screen("all_items", R.string.nav_all_items, Icons.Default.Category, Icons.Default.Category)
     object WarehouseItemsTab : Screen("warehouse_items_tab/{warehouseId}", R.string.nav_items, Icons.Default.Category, Icons.Default.Category) {
         fun createRoute(warehouseId: Long) = "warehouse_items_tab/$warehouseId"
     }
@@ -64,10 +56,5 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
     object LanguageSettings : Screen("language_settings", R.string.language, Icons.Default.Language, Icons.Default.Language)
     object AlertSettings : Screen("alert_settings", R.string.alert_settings, Icons.Default.Notifications, Icons.Default.Notifications)
     object BackupRestore : Screen("backup_restore", R.string.backup_restore, Icons.Default.Backup, Icons.Default.Backup)
-    
-    // 筛选后的物品列表
-    object FilteredItems : Screen("filtered_items/{filterType}", R.string.nav_all_items, Icons.Default.Category, Icons.Default.Category) {
-        fun createRoute(filterType: String) = "filtered_items/$filterType"
-    }
 }
 
