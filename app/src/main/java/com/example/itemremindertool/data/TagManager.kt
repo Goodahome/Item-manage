@@ -47,6 +47,11 @@ class TagManager(context: Context) {
         }
     }
     
+    fun setAllTags(tags: Set<String>) {
+        saveTags(tags)
+        _allTags.value = tags
+    }
+    
     private fun saveTags(tags: Set<String>) {
         prefs.edit()
             .putString(TAG_KEY, tags.joinToString(","))

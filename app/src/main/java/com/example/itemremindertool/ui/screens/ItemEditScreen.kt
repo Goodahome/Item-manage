@@ -723,7 +723,8 @@ fun ItemEditScreen(
                         )
                         ExposedDropdownMenu(
                             expanded = expandedWarehouse,
-                            onDismissRequest = { expandedWarehouse = false }
+                            onDismissRequest = { expandedWarehouse = false },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.background)
                         ) {
                             warehouses.forEach { warehouse ->
                                 DropdownMenuItem(
@@ -752,9 +753,20 @@ fun ItemEditScreen(
 //                        style = MaterialTheme.typography.labelLarge
 //                    )
 
-                    // 获取所有已创建的标签
-                    val allTags by tagManager.allTags.collectAsState()
-                    val customTags = allTags.filter { it != "过期" }
+    // 获取所有已创建的标签 + 物品中已存在的标签（恢复后 TagManager 可能为空）
+    val allTags by tagManager.allTags.collectAsState()
+    val items by viewModel.items.collectAsState(initial = emptyList())
+    val itemTags = remember(items) {
+        items.flatMap { it.tags }
+            .filter { it.isNotBlank() }
+            .distinct()
+    }
+    val customTags = remember(allTags, itemTags) {
+        (allTags + itemTags)
+            .filter { it != "过期" && it.isNotBlank() }
+            .distinct()
+            .sorted()
+    }
 
                     // 自动弹出键盘和聚焦
                     LaunchedEffect(isTagInputFocused) {

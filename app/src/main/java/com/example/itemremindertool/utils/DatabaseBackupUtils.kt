@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import com.example.itemremindertool.data.TagManager
 import com.example.itemremindertool.data.database.AppDatabase
 import android.database.sqlite.SQLiteDatabase
 import kotlinx.coroutines.Dispatchers
@@ -340,6 +341,9 @@ object DatabaseBackupUtils {
             // 这样即使 Activity 重建有延迟，新的操作也能获取到新的实例
             AppDatabase.getDatabase(context)
             
+            // 恢复后同步标签到 TagManager，避免恢复后标签选择为空
+            syncTagsFromDatabase(context)
+            
             // 注意：不在这里请求 Activity 重建，改为在调用方显示成功消息后再重建
             // 这样可以避免协程作用域离开组合的问题
             
@@ -354,6 +358,22 @@ object DatabaseBackupUtils {
         } catch (e: Exception) {
             Log.e(TAG, "数据库恢复失败", e)
             Result.failure(e)
+        }
+    }
+    
+    private suspend fun syncTagsFromDatabase(context: Context) {
+        try {
+            val db = AppDatabase.getDatabase(context)
+            val items = db.itemDao().getAllItemsList()
+            val tags = items
+                .flatMap { it.tags }
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && it != "过期" }
+                .toSet()
+            TagManager(context).setAllTags(tags)
+            Log.d(TAG, "同步 TagManager 标签成功：${tags.size} 个")
+        } catch (e: Exception) {
+            Log.w(TAG, "同步 TagManager 标签失败", e)
         }
     }
     
