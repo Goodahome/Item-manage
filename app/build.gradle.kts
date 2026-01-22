@@ -145,6 +145,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-ads:24.9.0")
     // Google Play Billing Library
     implementation("com.android.billingclient:billing-ktx:7.1.1")
+    // OAuth (AppAuth) + encrypted storage
+    implementation("net.openid:appauth:0.11.1")
+    implementation("androidx.security:security-crypto:1.1.0")
     // Guava for CameraX (required for ListenableFuture)
     implementation("com.google.guava:guava:32.1.3-android")
     testImplementation(libs.junit)

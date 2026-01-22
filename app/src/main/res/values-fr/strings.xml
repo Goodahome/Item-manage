@@ -122,6 +122,28 @@
     <string name="cloud_operations">Opérations cloud</string>
     <string name="upload_backup">Télécharger la sauvegarde vers le cloud</string>
     <string name="cloud_backup_files">Fichiers de sauvegarde cloud</string>
+    <string name="cloud_backup_success">Sauvegarde cloud réussie</string>
+    <string name="cloud_backup_failed">Échec de la sauvegarde cloud</string>
+    <string name="backup_failed">Échec de la sauvegarde</string>
+    <string name="cloud_provider">Fournisseur cloud</string>
+    <string name="cloud_provider_desc">Choisissez le fournisseur pour la sauvegarde/restauration</string>
+    <string name="google_drive">Google Drive</string>
+    <string name="dropbox">Dropbox</string>
+    <string name="aliyun_drive">Aliyun Drive</string>
+    <string name="baidu_netdisk">Baidu Netdisk</string>
+    <string name="oauth_client_secret">Secret client</string>
+    <string name="oauth_client_secret_hint">Récupérez-le dans la console du fournisseur</string>
+    <string name="connect">Connecter</string>
+    <string name="disconnect">Déconnecter</string>
+    <string name="connected">Connecté</string>
+    <string name="not_connected">Non connecté</string>
+    <string name="disconnected">Déconnecté</string>
+    <string name="oauth_client_id_title">ID client %1$s</string>
+    <string name="oauth_client_id_desc">Créez un client OAuth dans la console du fournisseur</string>
+    <string name="oauth_client_id">ID client</string>
+    <string name="oauth_client_id_hint">Exemple : 1234567890-xxxx.apps.googleusercontent.com</string>
+    <string name="cloud_backup_restore">Sauvegarde/Restauration cloud (%1$s)</string>
+    <string name="cloud_not_connected">Veuillez d\'abord vous connecter dans Stockage cloud</string>
     
     <!-- 密码锁屏 -->
     <string name="enter_password">Saisir le mot de passe</string>
@@ -489,20 +511,8 @@
     <string name="reminder_type_monthly">Mensuel</string>
     <string name="reminder_type_yearly">Annuel</string>
 
-    <string name="onboarding_welcome_title">Bienvenue dans Heji</string>
-    <string name="onboarding_welcome_description">Il s’agit d’un outil simple et facile à utiliser pour gérer vos objets. Il vous aide à organiser facilement vos articles, conteneurs et rappels. Commençons !</string>
-    <string name="onboarding_home_area_title">Écran d’accueil</string>
-    <string name="onboarding_home_area_description">L’écran d’accueil affiche vos statistiques : nombre total d’articles, nombre de conteneurs et articles à acheter. À gauche se trouve la liste des conteneurs – appuyez pour voir les articles dans différents conteneurs. En haut, il y a des fonctions de recherche et de scan pour trouver et ajouter rapidement des articles.</string>
-    <string name="onboarding_add_warehouse_title">Ajouter un conteneur</string>
-    <string name="onboarding_add_warehouse_description">Appuyez sur le bouton « + » en bas de la liste des conteneurs à gauche pour ajouter un nouveau conteneur. Les conteneurs vous aident à catégoriser vos articles, par exemple « Cuisine », « Chambre », « Bureau ». Vous pouvez également créer des sous-conteneurs pour une organisation plus fine.</string>
-    <string name="onboarding_add_item_title">Ajouter un article</string>
-    <string name="onboarding_add_item_description">Appuyez sur le bouton « + » en bas à droite pour ajouter un nouvel article. Lors de l’ajout, vous pouvez définir le nom, la quantité, le prix, la date d’expiration, etc. Après avoir choisi un conteneur, l’article sera automatiquement classé dedans.</string>
-    <string name="onboarding_settings_title">Paramètres</string>
-    <string name="onboarding_settings_description">Appuyez sur le bouton de menu en haut à gauche pour ouvrir les Paramètres. Dans les Paramètres, vous pouvez :\n• Personnaliser les thèmes et les couleurs d’apparence\n• Configurer les fonctions de rappel\n• Gérer les conteneurs et les catégories\n• Sauvegarder et restaurer les données\n• Configurer la synchronisation cloud\n• Changer de langue</string>
     <string name="onboarding_complete_title">Commencer</string>
-    <string name="onboarding_complete_description">Vous connaissez maintenant les fonctionnalités de base et pouvez commencer à utiliser Heji pour gérer vos articles ! En cas de questions, consultez à tout moment les informations d’aide dans les Paramètres.</string>
-    <string name="onboarding_next">Suivant</string>
-    <string name="onboarding_skip">Passer</string>
+    <string name="onboarding_complete_description">Vous connaissez maintenant les fonctionnalités de base et pouvez commencer à utiliser Heji pour gérer vos articles ! En cas de questions, consultez à tout moment les informations d’aide dans les Paramètres. Il y a plus d’options dans les Paramètres, explorez librement.</string>
     <string name="onboarding_get_started">Commencer</string>
     <string name="onboarding_tap_to_continue">Touchez l’espace vide pour continuer</string>
     <string name="onboarding_home_topbar_title">Barre du haut</string>
@@ -630,4 +640,19 @@
     <string name="about_feedback_button">Envoyer un email</string>
     <string name="feedback_email_subject">HexNote – Retour</string>
     <string name="no_email_app">Aucune application email détectée</string>
+    <string name="premium_price_loading">Chargement du prix de l’abonnement…</string>
+    <string name="subscription_auto_renew_note">L’abonnement se renouvelle automatiquement. Gérez-le dans Google Play.</string>
+    <string name="subscription_monthly">Mensuel</string>
+    <string name="subscription_yearly">Annuel</string>
+    <string name="subscription_plan_price">%1$s : %2$s</string>
+    <string name="subscribe">S’abonner</string>
+    <string name="premium_limit_summary">Limites de la version gratuite : certaines fonctions avancées (nom/icône personnalisés, sauvegarde cloud, verrouillage, conteneurs illimités, etc.) sont indisponibles.</string>
+    <string name="premium_lifetime_activated">Version à vie activée</string>
+    <string name="lifetime_price">Prix à vie : %1$s</string>
+    <string name="buy_lifetime">Acheter à vie</string>
+    <string name="restore_purchase">Restaurer les achats</string>
+    <string name="restore_success">Achats restaurés</string>
+    <string name="restore_no_purchase">Aucun achat trouvé</string>
+    <string name="manage_subscription">Gérer l’abonnement</string>
+    <string name="manage_subscription_failed">Impossible d’ouvrir la gestion d’abonnement</string>
 </resources>

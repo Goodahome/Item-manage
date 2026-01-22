@@ -1,7 +1,9 @@
 package com.example.itemremindertool.ui.components
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,9 +32,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.changedToUp
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +45,7 @@ import com.example.itemremindertool.ui.theme.ColorHelpers
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+import androidx.compose.foundation.interaction.MutableInteractionSource
 
 enum class OnboardingStep {
     HOME_TOP_BAR,
@@ -104,6 +104,7 @@ enum class HighlightShape {
     CIRCLE
 }
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun OnboardingOverlay(
     hint: OnboardingHint,
@@ -141,30 +142,6 @@ fun OnboardingOverlay(
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                .pointerInput(hint.requiresClick, highlightRect) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            val event = awaitPointerEvent(PointerEventPass.Initial)
-                            val change = event.changes.firstOrNull() ?: continue
-                            val position = change.position
-                            val insideHighlight = highlightRect?.contains(position) == true
-                            val isTapUp = change.changedToUp()
-
-                            if (insideHighlight) {
-                                if (!hint.requiresClick && isTapUp) {
-                                    onNext()
-                                }
-                                // 允许穿透点击到目标区域
-                                continue
-                            }
-
-                            event.changes.forEach { it.consume() }
-                            if (!hint.requiresClick && isTapUp) {
-                                onNext()
-                            }
-                        }
-                    }
-                }
         ) {
             drawRect(maskColor)
 
@@ -202,6 +179,105 @@ fun OnboardingOverlay(
             }
         }
 
+        val scrimInteraction = remember { MutableInteractionSource() }
+        if (highlightRect != null) {
+            val topHeight = max(highlightRect.top, 0f)
+            val bottomHeight = max(maxHeightPx - highlightRect.bottom, 0f)
+            val leftWidth = max(highlightRect.left, 0f)
+            val rightWidth = max(maxWidthPx - highlightRect.right, 0f)
+
+            if (topHeight > 0f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(with(density) { topHeight.toDp() })
+                        .clickable(
+                            interactionSource = scrimInteraction,
+                            indication = null
+                        ) {
+                            if (!hint.requiresClick) onNext()
+                        }
+                )
+            }
+            if (bottomHeight > 0f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(with(density) { bottomHeight.toDp() })
+                        .offset(y = with(density) { highlightRect.bottom.toDp() })
+                        .clickable(
+                            interactionSource = scrimInteraction,
+                            indication = null
+                        ) {
+                            if (!hint.requiresClick) onNext()
+                        }
+                )
+            }
+            if (leftWidth > 0f) {
+                Box(
+                    modifier = Modifier
+                        .width(with(density) { leftWidth.toDp() })
+                        .height(with(density) { highlightRect.height.toDp() })
+                        .offset(
+                            x = 0.dp,
+                            y = with(density) { highlightRect.top.toDp() }
+                        )
+                        .clickable(
+                            interactionSource = scrimInteraction,
+                            indication = null
+                        ) {
+                            if (!hint.requiresClick) onNext()
+                        }
+                )
+            }
+            if (rightWidth > 0f) {
+                Box(
+                    modifier = Modifier
+                        .width(with(density) { rightWidth.toDp() })
+                        .height(with(density) { highlightRect.height.toDp() })
+                        .offset(
+                            x = with(density) { highlightRect.right.toDp() },
+                            y = with(density) { highlightRect.top.toDp() }
+                        )
+                        .clickable(
+                            interactionSource = scrimInteraction,
+                            indication = null
+                        ) {
+                            if (!hint.requiresClick) onNext()
+                        }
+                )
+            }
+
+            if (!hint.requiresClick) {
+                Box(
+                    modifier = Modifier
+                        .width(with(density) { highlightRect.width.toDp() })
+                        .height(with(density) { highlightRect.height.toDp() })
+                        .offset(
+                            x = with(density) { highlightRect.left.toDp() },
+                            y = with(density) { highlightRect.top.toDp() }
+                        )
+                        .clickable(
+                            interactionSource = scrimInteraction,
+                            indication = null
+                        ) {
+                            // 非点击引导时，阻止点击高亮区域
+                        }
+                )
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = scrimInteraction,
+                        indication = null
+                    ) {
+                        if (!hint.requiresClick) onNext()
+                    }
+            )
+        }
+
         TextButton(
             onClick = onSkip,
             modifier = Modifier
@@ -230,7 +306,7 @@ fun OnboardingOverlay(
             Icon(
                 imageVector = Icons.Default.TouchApp,
                 contentDescription = null,
-                tint = Color.White,
+                tint = Color.Black,
                 modifier = Modifier
                     .size(fingerSize)
                     .offset { fingerOffset }

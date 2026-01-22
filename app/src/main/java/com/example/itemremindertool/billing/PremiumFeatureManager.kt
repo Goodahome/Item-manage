@@ -11,9 +11,10 @@ import com.example.itemremindertool.config.FeatureFlags
 object PremiumFeatureManager {
     
     private const val PREFS_KEY_PREMIUM_FEATURES = "premium_features"
+    private const val PREFS_KEY_PREMIUM_LIFETIME = "premium_lifetime"
     private const val PREFS_KEY_TRIAL_START_TIME = "premium_trial_start_time"
     private const val PREFS_KEY_TRIAL_USED = "premium_trial_used"
-    private const val TRIAL_DURATION_MS = 3 * 24 * 60 * 60 * 1000L // 2分钟试用期（测试用）
+    private const val TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000L // 7天试用期
     
     /**
      * 检查是否已购买高级功能
@@ -21,6 +22,14 @@ object PremiumFeatureManager {
     fun isPremiumPurchased(context: Context): Boolean {
         val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
         return prefs.getBoolean(PREFS_KEY_PREMIUM_FEATURES, false)
+    }
+
+    /**
+     * 检查是否已购买永久版
+     */
+    fun isLifetimePurchased(context: Context): Boolean {
+        val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        return prefs.getBoolean(PREFS_KEY_PREMIUM_LIFETIME, false)
     }
     
     /**
@@ -53,7 +62,7 @@ object PremiumFeatureManager {
         if (!FeatureFlags.ENABLE_PURCHASE_FEATURE) {
             return true
         }
-        return isPremiumPurchased(context) || isTrialActive(context)
+        return isPremiumPurchased(context) || isLifetimePurchased(context) || isTrialActive(context)
     }
     
     /**
@@ -101,6 +110,16 @@ object PremiumFeatureManager {
         val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
         prefs.edit()
             .putBoolean(PREFS_KEY_PREMIUM_FEATURES, purchased)
+            .apply()
+    }
+
+    /**
+     * 设置永久版已购买
+     */
+    fun setLifetimePurchased(context: Context, purchased: Boolean) {
+        val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        prefs.edit()
+            .putBoolean(PREFS_KEY_PREMIUM_LIFETIME, purchased)
             .apply()
     }
 }

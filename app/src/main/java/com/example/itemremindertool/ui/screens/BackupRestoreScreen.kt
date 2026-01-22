@@ -32,7 +32,7 @@ import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.viewmodel.BackupRestoreViewModel
 import com.example.itemremindertool.utils.DatabaseBackupUtils
-import com.example.itemremindertool.utils.NextcloudBackupManager
+import com.example.itemremindertool.utils.cloud.CloudProviderRegistry
 import android.app.Activity
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,13 +55,12 @@ fun BackupRestoreScreen(
     }
     val operationState by viewModel.operationState.collectAsState()
     
-    // Nextcloud 配置（用于云端恢复）
-    val nextcloudServerUrl = remember { prefs.getString("nextcloud_server_url", "") ?: "" }
-    val nextcloudUsername = remember { prefs.getString("nextcloud_username", "") ?: "" }
-    val nextcloudPassword = remember { prefs.getString("nextcloud_password", "") ?: "" }
-    val isNextcloudConfigured = nextcloudServerUrl.isNotEmpty() && 
-                                 nextcloudUsername.isNotEmpty() && 
-                                 nextcloudPassword.isNotEmpty()
+    val selectedProviderId = remember { prefs.getString("cloud_provider_id", "nextcloud") ?: "nextcloud" }
+    val cloudProvider = remember(selectedProviderId) {
+        CloudProviderRegistry.getProvider(selectedProviderId)
+    }
+    val isCloudConfigured = cloudProvider.isConfigured(context)
+    val isCloudReady = isCloudConfigured && cloudProvider.isAuthenticated(context)
     
     // 云端恢复确认对话框状态
     var showCloudRestoreDialog by remember { mutableStateOf(false) }
@@ -254,8 +253,8 @@ fun BackupRestoreScreen(
                     }
                 }
                 
-                // 云端恢复卡片（如果已配置）
-                if (isNextcloudConfigured) {
+                // 云端备份/恢复卡片（如果已配置）
+                if (isCloudConfigured) {
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -271,30 +270,69 @@ fun BackupRestoreScreen(
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Text(
-                                    text = stringResource(R.string.cloud_restore),
+                                    text = stringResource(R.string.cloud_backup_restore, cloudProvider.displayName),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = ColorHelpers.getGroup4TextColor()
                                 )
                                 
                                 Text(
-                                    text = stringResource(R.string.cloud_restore_description),
+                                    text = if (isCloudReady) {
+                                        stringResource(R.string.cloud_restore_description)
+                                    } else {
+                                        stringResource(R.string.cloud_not_connected)
+                                    },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = ColorHelpers.getGroup4TextColor(0.7f)
                                 )
                                 
                                 Spacer(modifier = Modifier.height(8.dp))
                                 
-                                // 云端恢复按钮
                                 Button(
                                     onClick = {
                                         if (!canAccessPremiumFeatures) {
                                             showPremiumFeatureDialog = true
-                                        } else {
+                                        } else if (isCloudReady) {
+                                            scope.launch {
+                                                viewModel.showSaving()
+                                                try {
+                                                    val backupResult = DatabaseBackupUtils.backupDatabase(context)
+                                                    backupResult.fold(
+                                                        onSuccess = { file ->
+                                                            val uploadResult = cloudProvider.uploadBackup(context, file)
+                                                            uploadResult.fold(
+                                                                onSuccess = { viewModel.showSuccess(context.getString(R.string.cloud_backup_success)) },
+                                                                onFailure = { e -> viewModel.showError("${context.getString(R.string.cloud_backup_failed)}: ${e.message}") }
+                                                            )
+                                                        },
+                                                        onFailure = { e ->
+                                                            viewModel.showError("${context.getString(R.string.backup_failed)}: ${e.message}")
+                                                        }
+                                                    )
+                                                } catch (e: Exception) {
+                                                    viewModel.showError("${context.getString(R.string.cloud_backup_failed)}: ${e.message}")
+                                                }
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = isCloudReady
+                                ) {
+                                    Icon(Icons.Default.CloudUpload, null, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.upload_backup))
+                                }
+
+                                Button(
+                                    onClick = {
+                                        if (!canAccessPremiumFeatures) {
+                                            showPremiumFeatureDialog = true
+                                        } else if (isCloudReady) {
                                             showBackupWarningDialog = true
                                         }
                                     },
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = isCloudReady
                                 ) {
                                     Icon(Icons.Default.CloudDownload, null, modifier = Modifier.size(20.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
@@ -404,87 +442,47 @@ fun BackupRestoreScreen(
                             scope.launch {
                                 viewModel.showSaving()
                                 try {
-                                    // 1. 列出云端备份文件
-                                    val backupsResult = NextcloudBackupManager.listBackups(
-                                        nextcloudServerUrl,
-                                        nextcloudUsername,
-                                        nextcloudPassword
-                                    )
-                                    
+                                    val backupsResult = cloudProvider.listBackups(context)
                                     if (backupsResult.isFailure) {
                                         val errorMessage = backupsResult.exceptionOrNull()?.message ?: "未知错误"
                                         viewModel.showError("获取云端备份失败: $errorMessage")
                                         return@launch
                                     }
-                                    
-                                    val backups = backupsResult.getOrNull()
-                                    if (backups.isNullOrEmpty()) {
+                                    val backups = backupsResult.getOrNull().orEmpty()
+                                    if (backups.isEmpty()) {
                                         viewModel.showError("云端没有找到备份文件")
                                         return@launch
                                     }
-                                    
-                                    // 2. 找到最新的备份文件（通常是 item_reminder_backup_latest.zip）
                                     val latestBackup = backups.firstOrNull {
-                                        it.endsWith("item_reminder_backup_latest.zip") ||
-                                            it.endsWith("item_remider_backup_latest.zip")
-                                    } ?: backups.maxByOrNull { backupPath ->
-                                        try {
-                                            val fileName = backupPath.substringAfterLast("/")
-                                            if ((fileName.startsWith("item_reminder_backup_") ||
-                                                    fileName.startsWith("item_remider_backup_")) &&
-                                                fileName.endsWith(".zip")
-                                            ) {
-                                                val timestampStr = fileName
-                                                    .removePrefix("item_reminder_backup_")
-                                                    .removePrefix("item_remider_backup_")
-                                                    .removeSuffix(".zip")
-                                                val dateFormat = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault())
-                                                dateFormat.parse(timestampStr)?.time ?: 0L
-                                            } else {
-                                                0L
-                                            }
-                                        } catch (e: Exception) {
-                                            0L
-                                        }
+                                        it.name == "item_reminder_backup_latest.zip" ||
+                                            it.name == "item_remider_backup_latest.zip"
+                                    } ?: backups.maxByOrNull { file ->
+                                        file.modifiedTimeMillis ?: parseBackupTimestamp(file.name)
                                     }
-                                    
                                     if (latestBackup == null) {
                                         viewModel.showError("无法确定最新的备份文件")
                                         return@launch
                                     }
-                                    
-                                    // 3. 创建临时目录和文件
                                     val tempDir = File(context.cacheDir, "cloud_restore_temp")
                                     if (tempDir.exists()) {
                                         tempDir.deleteRecursively()
                                     }
                                     tempDir.mkdirs()
-                                    
-                                    val tempBackupFile = File(tempDir, latestBackup.substringAfterLast("/"))
-                                    
-                                    // 4. 下载备份文件
-                                    val downloadResult = NextcloudBackupManager.downloadBackup(
+                                    val tempBackupFile = File(tempDir, latestBackup.name)
+                                    val downloadResult = cloudProvider.downloadBackup(
                                         context,
-                                        latestBackup,
-                                        tempBackupFile,
-                                        nextcloudServerUrl,
-                                        nextcloudUsername,
-                                        nextcloudPassword
+                                        latestBackup.id,
+                                        tempBackupFile
                                     )
-                                    
                                     downloadResult.fold(
                                         onSuccess = { downloadedFile ->
-                                            // 5. 恢复数据库（完整恢复，替换所有数据）
                                             val restoreResult = DatabaseBackupUtils.restoreDatabaseFromFile(
                                                 context,
                                                 downloadedFile
                                             )
-                                            
                                             restoreResult.fold(
                                                 onSuccess = {
-                                                    // 清理临时文件
                                                     tempDir.deleteRecursively()
-                                                    // 处理恢复成功后的逻辑（立即重启应用）
                                                     handleRestoreSuccess(context, viewModel, "云端恢复成功！程序将立即重启...")
                                                 },
                                                 onFailure = { e ->
@@ -538,6 +536,26 @@ private suspend fun handleRestoreSuccess(
         viewModel.showSuccess(message)
         // 立即重启整个应用，不延迟
         restartApplication(context)
+    }
+}
+
+private fun parseBackupTimestamp(fileName: String): Long {
+    return try {
+        if ((fileName.startsWith("item_reminder_backup_") ||
+                fileName.startsWith("item_remider_backup_")) &&
+            fileName.endsWith(".zip")
+        ) {
+            val timestampStr = fileName
+                .removePrefix("item_reminder_backup_")
+                .removePrefix("item_remider_backup_")
+                .removeSuffix(".zip")
+            val dateFormat = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault())
+            dateFormat.parse(timestampStr)?.time ?: 0L
+        } else {
+            0L
+        }
+    } catch (e: Exception) {
+        0L
     }
 }
 

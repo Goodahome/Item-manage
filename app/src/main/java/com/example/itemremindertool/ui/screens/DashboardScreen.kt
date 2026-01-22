@@ -379,7 +379,10 @@ fun DashboardScreen(
                     updateOnboardingAnchor(OnboardingAnchorKey.TOP_BAR, it)
                 },
                 navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
+                    IconButton(
+                        onClick = onMenuClick,
+                        enabled = !showOnboarding
+                    ) {
                         Icon(Icons.Default.Menu, stringResource(R.string.settings))
                     }
                 },
@@ -399,6 +402,7 @@ fun DashboardScreen(
                                 setOnboardingStep(OnboardingStep.WAREHOUSE_GRID_ITEM)
                             }
                         },
+                        enabled = !showOnboarding || currentOnboardingStep == OnboardingStep.WAREHOUSE_LAYOUT_TOGGLE,
                         modifier = Modifier.onGloballyPositioned {
                             updateOnboardingAnchor(OnboardingAnchorKey.TOP_BAR_LAYOUT_TOGGLE, it)
                         }
@@ -451,7 +455,8 @@ fun DashboardScreen(
                                     isRefreshing = false
                                 }
                             }
-                        }
+                        },
+                        enabled = !showOnboarding
                     ) {
                         Icon(
                             imageVector = if (isRefreshing) Icons.Default.Sync else Icons.Default.CloudUpload,
@@ -467,7 +472,8 @@ fun DashboardScreen(
                         onClick = {
                             // 显示容器选择弹窗
                             showWarehouseSelectionForQuickAdd = true
-                        }
+                        },
+                        enabled = !showOnboarding
                     ) {
                         Icon(
                             Icons.Default.CameraAlt,
@@ -476,7 +482,10 @@ fun DashboardScreen(
                         )
                     }
                     // 首页：显示扫码按钮
-                    IconButton(onClick = onScanBarcode) {
+                    IconButton(
+                        onClick = onScanBarcode,
+                        enabled = !showOnboarding
+                    ) {
                         Icon(
                             Icons.Default.QrCodeScanner,
                             contentDescription = stringResource(R.string.barcode_scanner),
@@ -796,7 +805,7 @@ fun DashboardScreen(
                     OnboardingStep.COMPLETE -> null
                 }
 
-                val shouldShowOverlay = highlightedArea != null || currentOnboardingStep == OnboardingStep.COMPLETE
+                val shouldShowOverlay = highlightedArea != null || !onboardingHint.requiresClick
                 if (shouldShowOverlay) {
                     OnboardingOverlay(
                         hint = onboardingHint,

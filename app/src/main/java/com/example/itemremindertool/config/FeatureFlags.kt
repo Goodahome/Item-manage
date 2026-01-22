@@ -18,5 +18,5 @@ object FeatureFlags {
      * - 正常初始化 BillingManager
      * - 需要购买或试用才能使用高级功能
      */
-    const val ENABLE_PURCHASE_FEATURE = false
+    const val ENABLE_PURCHASE_FEATURE = true
 }

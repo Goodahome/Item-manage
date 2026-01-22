@@ -21,6 +21,10 @@ import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
+import com.example.itemremindertool.billing.BillingManager
+import com.example.itemremindertool.billing.PremiumFeatureManager
+import com.example.itemremindertool.config.FeatureFlags
+import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,6 +68,28 @@ fun AppearanceSettingsScreen(
         }
     }
 
+    // 高级功能访问与购买
+    var canAccessPremiumFeatures by remember {
+        mutableStateOf(PremiumFeatureManager.canAccessPremiumFeatures(context))
+    }
+    var showPremiumFeatureDialog by remember { mutableStateOf(false) }
+    val billingManager = remember {
+        if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
+            BillingManager(
+                context,
+                listOf(
+                    BillingManager.PRODUCT_REMOVE_ADS,
+                    BillingManager.PRODUCT_PREMIUM_FEATURES,
+                    BillingManager.PRODUCT_PREMIUM_LIFETIME
+                )
+            ).apply {
+                initialize()
+            }
+        } else {
+            null
+        }
+    }
+
     // 监听 SharedPreferences 变化
     DisposableEffect(Unit) {
         val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
@@ -74,6 +100,9 @@ fun AppearanceSettingsScreen(
                     selectedColorScheme = if (value == "cold_blue") "red_blue" else value
                 }
                 "sidebar_icon_circle" -> sidebarIconCircle = prefs.getBoolean("sidebar_icon_circle", false)
+                "premium_features", "premium_lifetime", "premium_trial_used", "premium_trial_start_time" -> {
+                    canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
+                }
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -166,7 +195,13 @@ fun AppearanceSettingsScreen(
                     Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.clickable { onNavigateToIcon() }
+                modifier = Modifier.clickable { 
+                    if (!canAccessPremiumFeatures) {
+                        showPremiumFeatureDialog = true
+                    } else {
+                        onNavigateToIcon()
+                    }
+                }
             )
 
             Divider()
@@ -195,6 +230,13 @@ fun AppearanceSettingsScreen(
                     .fillMaxWidth()
             )
         }
+    }
+
+    if (FeatureFlags.ENABLE_PURCHASE_FEATURE && showPremiumFeatureDialog && billingManager != null) {
+        PremiumFeatureDialog(
+            billingManager = billingManager,
+            onDismiss = { showPremiumFeatureDialog = false }
+        )
     }
 }
 

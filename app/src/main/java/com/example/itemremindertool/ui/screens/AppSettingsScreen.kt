@@ -79,7 +79,14 @@ fun AppSettingsScreen(
     val activity = context as? Activity
     val billingManager = remember {
         if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
-            BillingManager(context, listOf(BillingManager.PRODUCT_REMOVE_ADS, BillingManager.PRODUCT_PREMIUM_FEATURES)).apply {
+            BillingManager(
+                context,
+                listOf(
+                    BillingManager.PRODUCT_REMOVE_ADS,
+                    BillingManager.PRODUCT_PREMIUM_FEATURES,
+                    BillingManager.PRODUCT_PREMIUM_LIFETIME
+                )
+            ).apply {
                 initialize()
             }
         } else {
@@ -91,8 +98,8 @@ fun AppSettingsScreen(
     var showPremiumFeatureDialog by remember { mutableStateOf(false) }
     
     // 检查高级功能访问权限
-    val canAccessPremiumFeatures = remember {
-        com.example.itemremindertool.billing.PremiumFeatureManager.canAccessPremiumFeatures(context)
+    var canAccessPremiumFeatures by remember {
+        mutableStateOf(com.example.itemremindertool.billing.PremiumFeatureManager.canAccessPremiumFeatures(context))
     }
     
     // 购买状态（仅在启用购买功能时获取）
@@ -126,6 +133,9 @@ fun AppSettingsScreen(
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { prefs: SharedPreferences, key: String? ->
             if (key == "ads_removed") {
                 isAdsRemoved = prefs.getBoolean("ads_removed", false)
+            }
+            if (key == "premium_features" || key == "premium_lifetime" || key == "premium_trial_used" || key == "premium_trial_start_time") {
+                canAccessPremiumFeatures = com.example.itemremindertool.billing.PremiumFeatureManager.canAccessPremiumFeatures(context)
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)

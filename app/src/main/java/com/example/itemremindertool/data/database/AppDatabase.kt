@@ -95,6 +95,11 @@ abstract class AppDatabase : RoomDatabase() {
                     "item_reminder_database"
                 )
                     .addCallback(object : RoomDatabase.Callback() {
+                        override fun onCreate(db: SupportSQLiteDatabase) {
+                            super.onCreate(db)
+                            seedSampleData(db)
+                        }
+
                         override fun onOpen(db: SupportSQLiteDatabase) {
                             super.onOpen(db)
                             // 确保 Room 内部的 invalidation 表存在，避免 "no such table: room_table_modification_log"
@@ -238,6 +243,62 @@ abstract class AppDatabase : RoomDatabase() {
                 val currentTimeMillis = System.currentTimeMillis()
                 database.execSQL("ALTER TABLE warehouses ADD COLUMN createdAt INTEGER NOT NULL DEFAULT $currentTimeMillis")
             }
+        }
+
+        private fun seedSampleData(db: SupportSQLiteDatabase) {
+            val now = System.currentTimeMillis()
+            val dayMillis = 24 * 60 * 60 * 1000L
+
+            // 示例容器与子容器
+            db.execSQL(
+                """
+                INSERT INTO warehouses (id, name, description, location, capacity, parentId, level, imageUri, createdAt)
+                VALUES (1, '示例容器', '用于演示的示例容器', '家中', 50, NULL, 1, NULL, $now)
+                """.trimIndent()
+            )
+            db.execSQL(
+                """
+                INSERT INTO warehouses (id, name, description, location, capacity, parentId, level, imageUri, createdAt)
+                VALUES (2, '子容器', '子容器示例', '', NULL, 1, 2, NULL, $now)
+                """.trimIndent()
+            )
+
+            // 示例物品（带标签，便于展示筛选与信息卡片）
+            db.execSQL(
+                """
+                INSERT INTO items (
+                    id, name, description, categoryId, warehouseId, tags, purchaseDate, expiryDate, price, quantity,
+                    barcode, imageUri, imageUris, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt
+                ) VALUES (
+                    1, '示例物品A', '用于演示标签筛选和信息卡片', NULL, 1, '常用,食品',
+                    ${now - dayMillis * 2}, ${now + dayMillis * 5}, 12.5, 3,
+                    NULL, NULL, '', 0, NULL, 1, $now, $now
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                """
+                INSERT INTO items (
+                    id, name, description, categoryId, warehouseId, tags, purchaseDate, expiryDate, price, quantity,
+                    barcode, imageUri, imageUris, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt
+                ) VALUES (
+                    2, '示例物品B', '点击网格卡片查看详情', NULL, 1, '工具,示例',
+                    ${now - dayMillis * 3}, NULL, NULL, 1,
+                    NULL, NULL, '', 0, NULL, 1, $now, $now
+                )
+                """.trimIndent()
+            )
+
+            // 示例待购物品
+            db.execSQL(
+                """
+                INSERT INTO shopping_items (
+                    id, name, description, quantity, isCompleted, priority, createdAt, completedAt, imageUri, itemId
+                ) VALUES (
+                    1, '示例待购物品', '用于演示待购列表', 2, 0, 'MEDIUM', $now, NULL, NULL, NULL
+                )
+                """.trimIndent()
+            )
         }
     }
 }

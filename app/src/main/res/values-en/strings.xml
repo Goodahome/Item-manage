@@ -122,6 +122,28 @@
     <string name="cloud_operations">Cloud Operations</string>
     <string name="upload_backup">Upload Backup to Cloud</string>
     <string name="cloud_backup_files">Cloud Backup Files</string>
+    <string name="cloud_backup_success">Cloud backup succeeded</string>
+    <string name="cloud_backup_failed">Cloud backup failed</string>
+    <string name="backup_failed">Backup failed</string>
+    <string name="cloud_provider">Cloud Provider</string>
+    <string name="cloud_provider_desc">Choose the provider used for cloud backup/restore</string>
+    <string name="google_drive">Google Drive</string>
+    <string name="dropbox">Dropbox</string>
+    <string name="aliyun_drive">Aliyun Drive</string>
+    <string name="baidu_netdisk">Baidu Netdisk</string>
+    <string name="oauth_client_secret">Client Secret</string>
+    <string name="oauth_client_secret_hint">Get it from the provider console</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="connected">Connected</string>
+    <string name="not_connected">Not connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="oauth_client_id_title">%1$s Client ID</string>
+    <string name="oauth_client_id_desc">Create an OAuth client in the provider console and enter it here</string>
+    <string name="oauth_client_id">Client ID</string>
+    <string name="oauth_client_id_hint">Example: 1234567890-xxxx.apps.googleusercontent.com</string>
+    <string name="cloud_backup_restore">Cloud Backup/Restore (%1$s)</string>
+    <string name="cloud_not_connected">Please connect in Cloud Storage first</string>
     
     <!-- 密码锁屏 -->
     <string name="enter_password">Enter Password</string>
@@ -523,20 +545,8 @@
     <string name="time_days_ago">%1$d days ago</string>
 
     <!-- 首次使用引导 -->
-    <string name="onboarding_welcome_title">Welcome to Heji</string>
-    <string name="onboarding_welcome_description">This is a simple and easy-to-use item management tool that helps you easily manage your items, containers, and reminders. Let\'s get started!</string>
-    <string name="onboarding_home_area_title">Home Area</string>
-    <string name="onboarding_home_area_description">The home screen displays your statistics, including total items, number of containers, and items to purchase. On the left is the container list—tap to view items in different containers. At the top, there are search and scan features for quickly finding and adding items.</string>
-    <string name="onboarding_add_warehouse_title">Add Container</string>
-    <string name="onboarding_add_warehouse_description">Tap the \"+\" button at the bottom of the container list on the left to add a new container. Containers help you categorize and manage items, such as \"Kitchen\", \"Bedroom\", or \"Office\". You can also create sub-containers for more detailed organization.</string>
-    <string name="onboarding_add_item_title">Add Item</string>
-    <string name="onboarding_add_item_description">Tap the \"+\" button in the bottom right corner to add a new item. When adding an item, you can set the name, quantity, price, expiration date, and more. After selecting a container, the item will automatically be categorized into it.</string>
-    <string name="onboarding_settings_title">Settings</string>
-    <string name="onboarding_settings_description">Tap the menu button in the top left corner to open Settings. In Settings, you can:\n• Customize appearance themes and colors\n• Configure reminder functions\n• Manage containers and categories\n• Back up and restore data\n• Set up cloud sync\n• Switch languages</string>
     <string name="onboarding_complete_title">Get Started</string>
-    <string name="onboarding_complete_description">You\'ve now learned the basic features and can start using Heji to manage your items! If you have any questions, feel free to check the help information in Settings anytime.</string>
-    <string name="onboarding_next">Next</string>
-    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_complete_description">You\'ve now learned the basic features and can start using Heji to manage your items! If you have any questions, feel free to check the help information in Settings anytime. There are more options in Settings—feel free to explore.</string>
     <string name="onboarding_get_started">Get Started</string>
     <string name="onboarding_tap_to_continue">Tap blank area to continue</string>
     <string name="onboarding_home_topbar_title">Top bar</string>
@@ -638,4 +648,19 @@
     <string name="about_feedback_button">Email Feedback</string>
     <string name="feedback_email_subject">HexNote Feedback</string>
     <string name="no_email_app">No email app detected</string>
+    <string name="premium_price_loading">Loading subscription price…</string>
+    <string name="subscription_auto_renew_note">Subscription auto-renews. Manage in Google Play.</string>
+    <string name="subscription_monthly">Monthly</string>
+    <string name="subscription_yearly">Yearly</string>
+    <string name="subscription_plan_price">%1$s: %2$s</string>
+    <string name="subscribe">Subscribe</string>
+    <string name="premium_limit_summary">Free plan limits: advanced features (custom name/icon, cloud backup, password lock, unlimited containers, etc.) are unavailable.</string>
+    <string name="premium_lifetime_activated">Premium lifetime activated</string>
+    <string name="lifetime_price">Lifetime price: %1$s</string>
+    <string name="buy_lifetime">Buy Lifetime</string>
+    <string name="restore_purchase">Restore purchases</string>
+    <string name="restore_success">Purchases restored</string>
+    <string name="restore_no_purchase">No purchases found</string>
+    <string name="manage_subscription">Manage subscription</string>
+    <string name="manage_subscription_failed">Unable to open subscription management</string>
 </resources>

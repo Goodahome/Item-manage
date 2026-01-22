@@ -122,6 +122,28 @@
     <string name="cloud_operations">Cloud-Operationen</string>
     <string name="upload_backup">Sicherung in Cloud hochladen</string>
     <string name="cloud_backup_files">Cloud-Sicherungsdateien</string>
+    <string name="cloud_backup_success">Cloud-Backup erfolgreich</string>
+    <string name="cloud_backup_failed">Cloud-Backup fehlgeschlagen</string>
+    <string name="backup_failed">Backup fehlgeschlagen</string>
+    <string name="cloud_provider">Cloud-Anbieter</string>
+    <string name="cloud_provider_desc">Wählen Sie den Anbieter für Cloud-Backup/Wiederherstellung</string>
+    <string name="google_drive">Google Drive</string>
+    <string name="dropbox">Dropbox</string>
+    <string name="aliyun_drive">Aliyun Drive</string>
+    <string name="baidu_netdisk">Baidu Netdisk</string>
+    <string name="oauth_client_secret">Client Secret</string>
+    <string name="oauth_client_secret_hint">Aus der Anbieter-Konsole übernehmen</string>
+    <string name="connect">Verbinden</string>
+    <string name="disconnect">Trennen</string>
+    <string name="connected">Verbunden</string>
+    <string name="not_connected">Nicht verbunden</string>
+    <string name="disconnected">Getrennt</string>
+    <string name="oauth_client_id_title">%1$s Client-ID</string>
+    <string name="oauth_client_id_desc">OAuth-Client in der Anbieter-Konsole erstellen und hier eintragen</string>
+    <string name="oauth_client_id">Client-ID</string>
+    <string name="oauth_client_id_hint">Beispiel: 1234567890-xxxx.apps.googleusercontent.com</string>
+    <string name="cloud_backup_restore">Cloud-Backup/Wiederherstellung (%1$s)</string>
+    <string name="cloud_not_connected">Bitte zuerst in Cloud-Speicher verbinden</string>
     
     <!-- 密码锁屏 -->
     <string name="enter_password">Passwort eingeben</string>
@@ -490,20 +512,8 @@
     <string name="reminder_type_monthly">Monatlich</string>
     <string name="reminder_type_yearly">Jährlich</string>
 
-    <string name="onboarding_welcome_title">Willkommen bei Heji</string>
-    <string name="onboarding_welcome_description">Dies ist ein einfaches und benutzerfreundliches Werkzeug zur Verwaltung von Gegenständen. Es hilft Ihnen, Ihre Artikel, Behälter und Erinnerungen mühelos zu verwalten. Los geht’s!</string>
-    <string name="onboarding_home_area_title">Startbereich</string>
-    <string name="onboarding_home_area_description">Der Startbildschirm zeigt Ihre Statistiken, einschließlich der Gesamtzahl der Artikel, der Anzahl der Behälter und der zu kaufenden Artikel. Links befindet sich die Behälterliste – tippen Sie darauf, um die Artikel in verschiedenen Behältern anzuzeigen. Oben gibt es Such- und Scan-Funktionen, um Artikel schnell zu finden und hinzuzufügen.</string>
-    <string name="onboarding_add_warehouse_title">Behälter hinzufügen</string>
-    <string name="onboarding_add_warehouse_description">Tippen Sie auf die „+“-Schaltfläche unten in der Behälterliste links, um einen neuen Behälter hinzuzufügen. Behälter helfen Ihnen, Artikel zu kategorisieren, z. B. „Küche“, „Schlafzimmer“ oder „Büro“. Sie können auch Unterbehälter erstellen, um eine detailliertere Organisation zu erreichen.</string>
-    <string name="onboarding_add_item_title">Artikel hinzufügen</string>
-    <string name="onboarding_add_item_description">Tippen Sie auf die „+“-Schaltfläche rechts unten, um einen neuen Artikel hinzuzufügen. Beim Hinzufügen können Sie Name, Menge, Preis, Verfallsdatum usw. festlegen. Nach der Auswahl eines Behälters wird der Artikel automatisch diesem zugeordnet.</string>
-    <string name="onboarding_settings_title">Einstellungen</string>
-    <string name="onboarding_settings_description">Tippen Sie auf die Menü-Schaltfläche oben links, um die Einstellungen zu öffnen. Dort können Sie:\n• Design-Themen und Farben anpassen\n• Erinnerungsfunktionen einrichten\n• Behälter und Kategorien verwalten\n• Daten sichern und wiederherstellen\n• Cloud-Synchronisation konfigurieren\n• Sprache wechseln</string>
     <string name="onboarding_complete_title">Loslegen</string>
-    <string name="onboarding_complete_description">Sie kennen nun die grundlegenden Funktionen und können Heji zur Verwaltung Ihrer Artikel nutzen! Bei Fragen können Sie jederzeit die Hilfeseiten in den Einstellungen aufrufen.</string>
-    <string name="onboarding_next">Weiter</string>
-    <string name="onboarding_skip">Überspringen</string>
+    <string name="onboarding_complete_description">Sie kennen nun die grundlegenden Funktionen und können Heji zur Verwaltung Ihrer Artikel nutzen! Bei Fragen können Sie jederzeit die Hilfeseiten in den Einstellungen aufrufen. In den Einstellungen gibt es noch mehr Optionen – gern erkunden.</string>
     <string name="onboarding_get_started">Loslegen</string>
     <string name="onboarding_tap_to_continue">Leeren Bereich antippen, um fortzufahren</string>
     <string name="onboarding_home_topbar_title">Obere Leiste</string>
@@ -631,4 +641,19 @@
     <string name="about_feedback_button">E-Mail Feedback</string>
     <string name="feedback_email_subject">BoxNote Feedback</string>
     <string name="no_email_app">Keine E-Mail-App gefunden</string>
+    <string name="premium_price_loading">Abo-Preis wird geladen…</string>
+    <string name="subscription_auto_renew_note">Abo verlängert sich automatisch. Verwaltung in Google Play.</string>
+    <string name="subscription_monthly">Monatlich</string>
+    <string name="subscription_yearly">Jährlich</string>
+    <string name="subscription_plan_price">%1$s: %2$s</string>
+    <string name="subscribe">Abonnieren</string>
+    <string name="premium_limit_summary">Kostenlose Version: Erweiterte Funktionen (Name/Icon anpassen, Cloud-Backup, Passwortschutz, unbegrenzte Behälter usw.) sind gesperrt.</string>
+    <string name="premium_lifetime_activated">Lifetime aktiviert</string>
+    <string name="lifetime_price">Lifetime-Preis: %1$s</string>
+    <string name="buy_lifetime">Lifetime kaufen</string>
+    <string name="restore_purchase">Käufe wiederherstellen</string>
+    <string name="restore_success">Käufe wiederhergestellt</string>
+    <string name="restore_no_purchase">Keine Käufe gefunden</string>
+    <string name="manage_subscription">Abo verwalten</string>
+    <string name="manage_subscription_failed">Abo-Verwaltung konnte nicht geöffnet werden</string>
 </resources>

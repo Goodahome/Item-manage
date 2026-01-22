@@ -20,7 +20,7 @@ import com.example.itemremindertool.billing.BillingManager
 import com.example.itemremindertool.billing.PremiumFeatureManager
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
-import android.app.Activity
+import com.example.itemremindertool.config.FeatureFlags
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,16 +37,36 @@ fun WarehouseSettingsScreen(
     var showPremiumFeatureDialog by remember { mutableStateOf(false) }
     
     // 检查高级功能访问权限
-    val canAccessPremiumFeatures = remember {
-        PremiumFeatureManager.canAccessPremiumFeatures(context)
+    var canAccessPremiumFeatures by remember {
+        mutableStateOf(PremiumFeatureManager.canAccessPremiumFeatures(context))
     }
     
     // Billing Manager
-    val activity = context as? Activity
     val billingManager = remember {
-        BillingManager(context, listOf(BillingManager.PRODUCT_REMOVE_ADS, BillingManager.PRODUCT_PREMIUM_FEATURES)).apply {
-            initialize()
+        if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
+            BillingManager(
+                context,
+                listOf(
+                    BillingManager.PRODUCT_REMOVE_ADS,
+                    BillingManager.PRODUCT_PREMIUM_FEATURES,
+                    BillingManager.PRODUCT_PREMIUM_LIFETIME
+                )
+            ).apply {
+                initialize()
+            }
+        } else {
+            null
         }
+    }
+
+    DisposableEffect(Unit) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "premium_features" || key == "premium_lifetime" || key == "premium_trial_used" || key == "premium_trial_start_time") {
+                canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
     
     Scaffold(
@@ -98,7 +118,7 @@ fun WarehouseSettingsScreen(
     }
     
     // 高级功能对话框
-    if (showPremiumFeatureDialog) {
+    if (FeatureFlags.ENABLE_PURCHASE_FEATURE && showPremiumFeatureDialog && billingManager != null) {
         PremiumFeatureDialog(
             billingManager = billingManager,
             onDismiss = { showPremiumFeatureDialog = false }

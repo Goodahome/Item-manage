@@ -43,6 +43,7 @@ fun PremiumFeatureDialog(
     val premiumProductDetails = billingManager.getProductDetails(BillingManager.PRODUCT_PREMIUM_FEATURES)
     
     val isPremiumPurchased = PremiumFeatureManager.isPremiumPurchased(context)
+    val isLifetimePurchased = PremiumFeatureManager.isLifetimePurchased(context)
     val isTrialActive = PremiumFeatureManager.isTrialActive(context)
     val trialUsed = remember {
         context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
@@ -53,6 +54,28 @@ fun PremiumFeatureDialog(
     val remainingDays = (remainingTrialTime / (24 * 60 * 60 * 1000L)).toInt()
     val remainingHours = ((remainingTrialTime % (24 * 60 * 60 * 1000L)) / (60 * 60 * 1000L)).toInt()
     
+    val subscriptionOptions = premiumProductDetails
+        ?.subscriptionOfferDetails
+        ?.mapNotNull { offer ->
+            val phase = offer.pricingPhases.pricingPhaseList.firstOrNull()
+                ?: return@mapNotNull null
+            val period = phase.billingPeriod
+            val label = when (period) {
+                "P1M" -> stringResource(R.string.subscription_monthly)
+                "P1Y" -> stringResource(R.string.subscription_yearly)
+                else -> period
+            }
+            SubscriptionOption(
+                label = label,
+                price = phase.formattedPrice,
+                offerToken = offer.offerToken
+            )
+        }
+        ?: emptyList()
+    var selectedOfferToken by remember(subscriptionOptions) {
+        mutableStateOf(subscriptionOptions.firstOrNull()?.offerToken)
+    }
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -121,12 +144,14 @@ fun PremiumFeatureDialog(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // 功能列表
-                    PremiumFeatureItem(
-                        icon = Icons.Default.ViewColumn,
-                        title = stringResource(R.string.sidebar_style_home),
-                        description = stringResource(R.string.sidebar_style_home_desc)
+                    Text(
+                        text = stringResource(R.string.premium_limit_summary),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ColorHelpers.getGroup4TextColor(0.75f)
                     )
+
+                    // 功能列表
+                    
                     PremiumFeatureItem(
                         icon = Icons.Default.Edit,
                         title = stringResource(R.string.customize_app_name_icon),
@@ -161,7 +186,32 @@ fun PremiumFeatureDialog(
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     // 价格信息
-                    if (isPremiumPurchased) {
+                    if (isLifetimePurchased) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.premium_lifetime_activated),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    } else if (isPremiumPurchased) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.primaryContainer
@@ -215,12 +265,80 @@ fun PremiumFeatureDialog(
                             }
                         }
                     } else {
-                        val price = premiumProductDetails?.oneTimePurchaseOfferDetails?.formattedPrice
-                        if (price != null) {
+                        val selectedOption = subscriptionOptions.firstOrNull { it.offerToken == selectedOfferToken }
+                        val lifetimePrice = billingManager
+                            .getProductDetails(BillingManager.PRODUCT_PREMIUM_LIFETIME)
+                            ?.oneTimePurchaseOfferDetails
+                            ?.formattedPrice
+                        if (selectedOption != null) {
                             Text(
-                                text = stringResource(R.string.premium_price, price),
+                                text = stringResource(
+                                    R.string.subscription_plan_price,
+                                    selectedOption.label,
+                                    selectedOption.price
+                                ),
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
+                                color = ColorHelpers.getGroup4TextColor(),
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            Text(
+                                text = stringResource(R.string.subscription_auto_renew_note),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ColorHelpers.getGroup4TextColor(0.6f),
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            if (subscriptionOptions.size > 1) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    subscriptionOptions.forEach { option ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                RadioButton(
+                                                    selected = option.offerToken == selectedOfferToken,
+                                                    onClick = { selectedOfferToken = option.offerToken }
+                                                )
+                                                Text(
+                                                    text = option.label,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = ColorHelpers.getGroup4TextColor()
+                                                )
+                                            }
+                                            Text(
+                                                text = option.price,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = ColorHelpers.getGroup4TextColor()
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            Text(
+                                text = stringResource(R.string.premium_price_loading),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = ColorHelpers.getGroup4TextColor(0.7f),
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                        if (lifetimePrice != null) {
+                            Text(
+                                text = stringResource(R.string.lifetime_price, lifetimePrice),
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = ColorHelpers.getGroup4TextColor(),
                                 modifier = Modifier.fillMaxWidth(),
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -237,7 +355,7 @@ fun PremiumFeatureDialog(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (!isPremiumPurchased && !trialUsed && !isTrialActive) {
+                    if (!isPremiumPurchased && !isLifetimePurchased && !trialUsed && !isTrialActive) {
                         // 试用按钮 - 使用 TextButton，缩小文字，去掉边框
                         TextButton(
                             onClick = {
@@ -267,14 +385,15 @@ fun PremiumFeatureDialog(
                         }
                     }
                     
-                    if (!isPremiumPurchased) {
-                        // 购买按钮
+                    if (!isPremiumPurchased && !isLifetimePurchased) {
+                        // 订阅按钮
                         Button(
                             onClick = {
                                 if (isReady && activity != null) {
                                     val success = billingManager.launchPurchaseFlow(
                                         activity,
-                                        BillingManager.PRODUCT_PREMIUM_FEATURES
+                                        BillingManager.PRODUCT_PREMIUM_FEATURES,
+                                        offerToken = selectedOfferToken
                                     )
                                     if (!success) {
                                         Toast.makeText(
@@ -294,7 +413,36 @@ fun PremiumFeatureDialog(
                             enabled = isReady && activity != null,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text(stringResource(R.string.purchase))
+                            Text(stringResource(R.string.subscribe))
+                        }
+
+                        // 永久版购买按钮
+                        Button(
+                            onClick = {
+                                if (isReady && activity != null) {
+                                    val success = billingManager.launchPurchaseFlow(
+                                        activity,
+                                        BillingManager.PRODUCT_PREMIUM_LIFETIME
+                                    )
+                                    if (!success) {
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.product_not_available),
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                } else if (!isReady) {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.billing_not_ready),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            },
+                            enabled = isReady && activity != null,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(stringResource(R.string.buy_lifetime))
                         }
                     } else {
                         // 已购买，显示关闭按钮
@@ -303,6 +451,49 @@ fun PremiumFeatureDialog(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(stringResource(R.string.close))
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(
+                        onClick = {
+                            billingManager.restorePurchases { restored ->
+                                Toast.makeText(
+                                    context,
+                                    if (restored) {
+                                        context.getString(R.string.restore_success)
+                                    } else {
+                                        context.getString(R.string.restore_no_purchase)
+                                    },
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    ) {
+                        Text(stringResource(R.string.restore_purchase))
+                    }
+
+                    if (activity != null) {
+                        TextButton(
+                            onClick = {
+                                val opened = billingManager.openSubscriptionManagement(activity)
+                                if (!opened) {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.manage_subscription_failed),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        ) {
+                            Text(stringResource(R.string.manage_subscription))
                         }
                     }
                 }
@@ -343,4 +534,10 @@ private fun PremiumFeatureItem(
         }
     }
 }
+
+private data class SubscriptionOption(
+    val label: String,
+    val price: String,
+    val offerToken: String
+)
 
