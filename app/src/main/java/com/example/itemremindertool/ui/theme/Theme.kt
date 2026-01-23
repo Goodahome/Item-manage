@@ -1,6 +1,7 @@
 package com.example.itemremindertool.ui.theme
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -272,13 +273,14 @@ data class AppSettings(
 )
 
 // 配色方案枚举
-enum class ColorSchemeType(val key: String, val displayName: String) {
-    RED_BLUE("red_blue", "红蓝配色"),
-    CREAM("cream", "奶油治愈系"),
-    MINT("mint", "薄荷冷感"),
-    SPACE("space", "深空高级灰"),
-    WINE("wine", "红酒沉稳"),
-    CHRISTMAS("christmas", "节日限定·圣诞");
+enum class ColorSchemeType(val key: String, val labelRes: Int) {
+    RED_BLUE("red_blue", R.string.color_scheme_red_blue),
+    CREAM("cream", R.string.color_scheme_cream),
+    MINT("mint", R.string.color_scheme_mint),
+    SPACE("space", R.string.color_scheme_space),
+    WINE("wine", R.string.color_scheme_wine),
+    CHRISTMAS("christmas", R.string.color_scheme_christmas),
+    CUSTOM("custom", R.string.color_scheme_custom);
     
     companion object {
         fun fromKey(key: String): ColorSchemeType {
@@ -287,6 +289,97 @@ enum class ColorSchemeType(val key: String, val displayName: String) {
             }
             return values().find { it.key == key } ?: RED_BLUE
         }
+    }
+}
+
+private fun parseColorHex(value: String?): Color? {
+    if (value.isNullOrBlank()) return null
+    val normalized = value.trim().let { hex ->
+        if (hex.startsWith("#")) hex else "#$hex"
+    }
+    return runCatching {
+        val cleaned = normalized.removePrefix("#")
+        val argb = when (cleaned.length) {
+            6 -> 0xFF000000L or cleaned.toLong(16)
+            8 -> cleaned.toLong(16)
+            else -> return null
+        }
+        Color(argb.toInt())
+    }.getOrNull()
+}
+
+private fun getCustomColor(
+    prefs: SharedPreferences,
+    key: String,
+    fallback: Color
+): Color {
+    return parseColorHex(prefs.getString(key, null)) ?: fallback
+}
+
+private fun getContrastColor(background: Color): Color {
+    val luminance = 0.299 * background.red + 0.587 * background.green + 0.114 * background.blue
+    return if (luminance > 0.5f) Color.Black else Color.White
+}
+
+private fun buildCustomColorScheme(
+    prefs: SharedPreferences,
+    isDarkTheme: Boolean,
+    fallback: androidx.compose.material3.ColorScheme
+): androidx.compose.material3.ColorScheme {
+    val primary = getCustomColor(prefs, "custom_color_primary", fallback.primary)
+    val secondary = getCustomColor(prefs, "custom_color_secondary", fallback.secondary)
+    val tertiary = getCustomColor(prefs, "custom_color_tertiary", fallback.tertiary)
+    val primaryContainer = getCustomColor(prefs, "custom_color_primary_container", fallback.primaryContainer)
+    val onPrimaryContainer = getCustomColor(prefs, "custom_color_on_primary_container", getContrastColor(primaryContainer))
+    val background = getCustomColor(prefs, "custom_color_background", fallback.background)
+    val surface = getCustomColor(prefs, "custom_color_surface", fallback.surface)
+    val surfaceVariant = getCustomColor(prefs, "custom_color_surface_variant", fallback.surfaceVariant)
+
+    val onPrimary = getCustomColor(prefs, "custom_color_on_primary", getContrastColor(primary))
+    val onSecondary = getCustomColor(prefs, "custom_color_on_secondary", getContrastColor(secondary))
+    val onTertiary = getCustomColor(prefs, "custom_color_on_tertiary", getContrastColor(tertiary))
+    val onBackground = getCustomColor(prefs, "custom_color_on_background", getContrastColor(background))
+    val onSurface = getCustomColor(prefs, "custom_color_on_surface", getContrastColor(surface))
+    val onSurfaceVariant = getCustomColor(prefs, "custom_color_on_surface_variant", getContrastColor(surfaceVariant))
+
+    return if (isDarkTheme) {
+        darkColorScheme(
+            primary = primary,
+            onPrimary = onPrimary,
+            primaryContainer = primaryContainer,
+            onPrimaryContainer = onPrimaryContainer,
+            secondary = secondary,
+            onSecondary = onSecondary,
+            tertiary = tertiary,
+            onTertiary = onTertiary,
+            error = tertiary,
+            onError = onTertiary,
+            background = background,
+            onBackground = onBackground,
+            surface = surface,
+            onSurface = onSurface,
+            surfaceVariant = surfaceVariant,
+            onSurfaceVariant = onSurfaceVariant
+        )
+    } else {
+        lightColorScheme(
+            primary = primary,
+            onPrimary = onPrimary,
+            primaryContainer = primaryContainer,
+            onPrimaryContainer = onPrimaryContainer,
+            secondary = secondary,
+            onSecondary = onSecondary,
+            tertiary = tertiary,
+            onTertiary = onTertiary,
+            error = tertiary,
+            onError = onTertiary,
+            background = background,
+            onBackground = onBackground,
+            surface = surface,
+            onSurface = onSurface,
+            surfaceVariant = surfaceVariant,
+            onSurfaceVariant = onSurfaceVariant
+        )
     }
 }
 
@@ -308,6 +401,7 @@ fun ItemReminderToolTheme(
     var appName by remember { mutableStateOf(prefs.getString("app_name", defaultAppName) ?: defaultAppName) }
     var language by remember { mutableStateOf(prefs.getString("language", "zh") ?: "zh") }
     var colorSchemeSetting by remember { mutableStateOf(prefs.getString("color_scheme", "red_blue") ?: "red_blue") }
+    var customColorVersion by remember { mutableStateOf(0) }
     
     // 监听 SharedPreferences 变化
     DisposableEffect(Unit) {
@@ -317,6 +411,11 @@ fun ItemReminderToolTheme(
                 "app_name" -> appName = prefs.getString("app_name", defaultAppName) ?: defaultAppName
                 "language" -> language = prefs.getString("language", "zh") ?: "zh"
                 "color_scheme" -> colorSchemeSetting = prefs.getString("color_scheme", "red_blue") ?: "red_blue"
+                else -> {
+                    if (key?.startsWith("custom_color_") == true) {
+                        customColorVersion++
+                    }
+                }
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -334,7 +433,7 @@ fun ItemReminderToolTheme(
         else -> darkTheme // "system" 时跟随系统
     }
     
-    val appSettings = remember(themeSetting, appName, language, colorSchemeSetting) {
+    val appSettings = remember(themeSetting, appName, language, colorSchemeSetting, customColorVersion) {
         AppSettings(appName, themeSetting, language, colorSchemeSetting)
     }
     
@@ -345,7 +444,10 @@ fun ItemReminderToolTheme(
         }
         else -> {
             val schemeType = ColorSchemeType.fromKey(colorSchemeSetting)
-            if (shouldUseDarkTheme) {
+            if (schemeType == ColorSchemeType.CUSTOM) {
+                val fallbackScheme = if (shouldUseDarkTheme) RedBlueDarkScheme else RedBlueLightScheme
+                buildCustomColorScheme(prefs, shouldUseDarkTheme, fallbackScheme)
+            } else if (shouldUseDarkTheme) {
                 when (schemeType) {
                     ColorSchemeType.RED_BLUE -> RedBlueDarkScheme
                     ColorSchemeType.CREAM -> CreamDarkScheme
@@ -353,6 +455,7 @@ fun ItemReminderToolTheme(
                     ColorSchemeType.SPACE -> SpaceDarkScheme
                     ColorSchemeType.WINE -> WineDarkScheme
                     ColorSchemeType.CHRISTMAS -> ChristmasDarkScheme
+                    ColorSchemeType.CUSTOM -> RedBlueDarkScheme
                 }
             } else {
                 when (schemeType) {
@@ -362,6 +465,7 @@ fun ItemReminderToolTheme(
                     ColorSchemeType.SPACE -> SpaceLightScheme
                     ColorSchemeType.WINE -> WineLightScheme
                     ColorSchemeType.CHRISTMAS -> ChristmasLightScheme
+                    ColorSchemeType.CUSTOM -> RedBlueLightScheme
                 }
             }
         }
@@ -385,6 +489,19 @@ fun ItemReminderToolTheme(
                         it.navigationBarColor = colorScheme.background.toArgb()
                         // 设置窗口背景色为透明，避免转场时白屏
                         it.setBackgroundDrawableResource(android.R.color.transparent)
+                    }
+                    onDispose { }
+                }
+                DisposableEffect(appName, colorScheme.primary) {
+                    val activity = view.context as? Activity
+                    activity?.title = appName
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        val taskDescription = ActivityManager.TaskDescription(
+                            appName,
+                            null,
+                            colorScheme.primary.toArgb()
+                        )
+                        activity?.setTaskDescription(taskDescription)
                     }
                     onDispose { }
                 }

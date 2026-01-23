@@ -3,6 +3,7 @@ package com.example.itemremindertool.ui.screens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -10,18 +11,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
-import android.content.Context
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.UIConstants
 import androidx.compose.foundation.background
-import androidx.compose.ui.graphics.Color
 import com.example.itemremindertool.utils.IconManager
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.res.painterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,9 +31,6 @@ fun IconSelectionScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val prefs = remember {
-        context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-    }
     
     var selectedIcon by remember { mutableStateOf(IconManager.getCurrentIcon(context)) }
     var showRestartDialog by remember { mutableStateOf(false) }
@@ -59,7 +56,6 @@ fun IconSelectionScreen(
                 
                 FloatingActionButton(
                     onClick = {
-                        IconManager.switchIcon(context, selectedIcon)
                         showRestartDialog = true
                     },
                     containerColor = fabBackground,
@@ -75,6 +71,9 @@ fun IconSelectionScreen(
             }
         }
     ) { paddingValues ->
+        val iconResIds = remember { IconManager.getIconResIds() }
+        val iconNames = remember { IconManager.getIconNames(context) }
+
         Column(
             modifier = modifier
                 .fillMaxSize()
@@ -82,8 +81,23 @@ fun IconSelectionScreen(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            IconManager.getIconNames(context).forEachIndexed { index, name ->
+            iconNames.forEachIndexed { index, name ->
+                val iconResId = iconResIds.getOrNull(index) ?: R.mipmap.ic_launcher
                 ListItem(
+                    leadingContent = {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = ColorHelpers.getGroup3CardBgColor()
+                        ) {
+                            androidx.compose.foundation.Image(
+                                painter = painterResource(id = iconResId),
+                                contentDescription = name,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .padding(6.dp)
+                            )
+                        }
+                    },
                     headlineContent = { 
                         Text(
                             text = name,
@@ -104,49 +118,37 @@ fun IconSelectionScreen(
                         selectedIcon = index
                     }
                 )
-                if (index < IconManager.getIconNames(context).size - 1) {
+                if (index < iconNames.size - 1) {
                     Divider()
                 }
             }
         }
     }
-    
-    val isDarkTheme = isSystemInDarkTheme()
-    val dialogBackgroundColor = if (isDarkTheme) {
-        Color.Black.copy(alpha = 0.7f)
-    } else {
-        Color.White.copy(alpha = 0.7f)
-    }
-    
+
     // 重启提示对话框
     if (showRestartDialog) {
-        AlertDialog(
-            onDismissRequest = { showRestartDialog = false },
-            containerColor = dialogBackgroundColor,
-            title = { Text(stringResource(R.string.restart_app)) },
-            text = {
-                Text(stringResource(R.string.icon_changed))
+        ModernSettingsDialog(
+            title = stringResource(R.string.restart_app),
+            icon = Icons.Default.Refresh,
+            onDismiss = { showRestartDialog = false },
+            onDismissAction = {
+                IconManager.switchIcon(context, selectedIcon, commit = true)
+                showRestartDialog = false
+                onApply()
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        android.os.Process.killProcess(android.os.Process.myPid())
-                    }
-                ) {
-                    Text(stringResource(R.string.now))
-                }
+            onConfirm = {
+                IconManager.switchIcon(context, selectedIcon, commit = true)
+                android.os.Process.killProcess(android.os.Process.myPid())
             },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showRestartDialog = false
-                        onApply()
-                    }
-                ) {
-                    Text(stringResource(R.string.later))
-                }
-            }
-        )
+            confirmText = stringResource(R.string.now),
+            dismissText = stringResource(R.string.later)
+        ) {
+            Text(
+                text = stringResource(R.string.icon_changed),
+                style = MaterialTheme.typography.bodyMedium,
+                color = ColorHelpers.getGroup4TextColor()
+            )
+        }
     }
 }
 

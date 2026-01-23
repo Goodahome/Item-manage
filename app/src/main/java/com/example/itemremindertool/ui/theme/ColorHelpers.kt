@@ -6,6 +6,8 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.platform.LocalContext
+import android.content.Context
 
 /**
  * 颜色辅助函数
@@ -331,7 +333,9 @@ object ColorHelpers {
             else -> isSystemInDarkTheme() // "system" 时跟随系统
         }
         
-        return if (isDarkTheme) {
+        return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
+            getCustomColor("custom_color_gradient_start", if (isDarkTheme) RedBlueGradientStartDark else RedBlueGradientStart)
+        } else if (isDarkTheme) {
             when (schemeType) {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueGradientStartDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamGradientStartDark
@@ -339,6 +343,7 @@ object ColorHelpers {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceGradientStartDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.WINE -> WineGradientStartDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CHRISTMAS -> ChristmasGradientStartDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueGradientStartDark
             }
         } else {
             when (schemeType) {
@@ -348,6 +353,7 @@ object ColorHelpers {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceGradientStart
                 com.example.itemremindertool.ui.theme.ColorSchemeType.WINE -> WineGradientStart
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CHRISTMAS -> ChristmasGradientStart
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueGradientStart
             }
         }
     }
@@ -369,7 +375,9 @@ object ColorHelpers {
             else -> isSystemInDarkTheme() // "system" 时跟随系统
         }
         
-        return if (isDarkTheme) {
+        return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
+            getCustomColor("custom_color_gradient_end", if (isDarkTheme) RedBlueGradientEndDark else RedBlueGradientEnd)
+        } else if (isDarkTheme) {
             when (schemeType) {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueGradientEndDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamGradientEndDark
@@ -377,6 +385,7 @@ object ColorHelpers {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceGradientEndDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.WINE -> WineGradientEndDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CHRISTMAS -> ChristmasGradientEndDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueGradientEndDark
             }
         } else {
             when (schemeType) {
@@ -386,6 +395,7 @@ object ColorHelpers {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceGradientEnd
                 com.example.itemremindertool.ui.theme.ColorSchemeType.WINE -> WineGradientEnd
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CHRISTMAS -> ChristmasGradientEnd
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueGradientEnd
             }
         }
     }
@@ -408,7 +418,9 @@ object ColorHelpers {
             else -> isSystemInDarkTheme() // "system" 时跟随系统
         }
         
-        return if (isDarkTheme) {
+        return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
+            getCustomColor("custom_color_search_box_bg", if (isDarkTheme) RedBlueSearchBoxBgDark else RedBlueSearchBoxBg)
+        } else if (isDarkTheme) {
             when (schemeType) {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSearchBoxBgDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamSearchBoxBgDark
@@ -416,6 +428,7 @@ object ColorHelpers {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceSearchBoxBgDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.WINE -> WineSearchBoxBgDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CHRISTMAS -> ChristmasSearchBoxBgDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueSearchBoxBgDark
             }
         } else {
             when (schemeType) {
@@ -425,6 +438,7 @@ object ColorHelpers {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceSearchBoxBg
                 com.example.itemremindertool.ui.theme.ColorSchemeType.WINE -> WineSearchBoxBg
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CHRISTMAS -> ChristmasSearchBoxBg
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueSearchBoxBg
             }
         }
     }
@@ -447,7 +461,9 @@ object ColorHelpers {
             else -> isSystemInDarkTheme() // "system" 时跟随系统
         }
         
-        return if (isDarkTheme) {
+        return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
+            getCustomColor("custom_color_search_box_border", if (isDarkTheme) RedBlueSearchBoxBorderDark else RedBlueSearchBoxBorder)
+        } else if (isDarkTheme) {
             when (schemeType) {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSearchBoxBorderDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamSearchBoxBorderDark
@@ -455,6 +471,7 @@ object ColorHelpers {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceSearchBoxBorderDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.WINE -> WineSearchBoxBorderDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CHRISTMAS -> ChristmasSearchBoxBorderDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueSearchBoxBorderDark
             }
         } else {
             when (schemeType) {
@@ -464,6 +481,7 @@ object ColorHelpers {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceSearchBoxBorder
                 com.example.itemremindertool.ui.theme.ColorSchemeType.WINE -> WineSearchBoxBorder
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CHRISTMAS -> ChristmasSearchBoxBorder
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueSearchBoxBorder
             }
         }
     }
@@ -486,7 +504,9 @@ object ColorHelpers {
             else -> isSystemInDarkTheme() // "system" 时跟随系统
         }
         
-        return if (isDarkTheme) {
+        return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
+            getCustomColor("custom_color_breadcrumb_text", if (isDarkTheme) RedBlueBreadcrumbTextDark else RedBlueBreadcrumbText)
+        } else if (isDarkTheme) {
             when (schemeType) {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueBreadcrumbTextDark
                 // 其他配色方案暂时使用相同的颜色，后续可以扩展
@@ -517,7 +537,9 @@ object ColorHelpers {
             else -> isSystemInDarkTheme() // "system" 时跟随系统
         }
         
-        return if (isDarkTheme) {
+        return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
+            getCustomColor("custom_color_breadcrumb_icon", if (isDarkTheme) RedBlueBreadcrumbIconDark else RedBlueBreadcrumbIcon)
+        } else if (isDarkTheme) {
             when (schemeType) {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueBreadcrumbIconDark
                 // 其他配色方案暂时使用相同的颜色，后续可以扩展
@@ -550,7 +572,9 @@ object ColorHelpers {
             else -> isSystemInDarkTheme() // "system" 时跟随系统
         }
         
-        return if (isDarkTheme) {
+        return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
+            getCustomColor("custom_color_sub_warehouse_name", if (isDarkTheme) RedBlueSubWarehouseNameDark else RedBlueSubWarehouseName)
+        } else if (isDarkTheme) {
             when (schemeType) {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSubWarehouseNameDark
                 // 其他配色方案暂时使用相同的颜色，后续可以扩展
@@ -583,7 +607,9 @@ object ColorHelpers {
             else -> isSystemInDarkTheme() // "system" 时跟随系统
         }
         
-        return if (isDarkTheme) {
+        return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
+            getCustomColor("custom_color_surface_variant", if (isDarkTheme) RedBlueSurfaceVariantDark else RedBlueSurfaceVariant)
+        } else if (isDarkTheme) {
             when (schemeType) {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSurfaceVariantDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamSurfaceVariantDark
@@ -591,6 +617,7 @@ object ColorHelpers {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceSurfaceVariantDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.WINE -> WineSurfaceVariantDark
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CHRISTMAS -> ChristmasSurfaceVariantDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueSurfaceVariantDark
             }
         } else {
             when (schemeType) {
@@ -600,8 +627,26 @@ object ColorHelpers {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceSurfaceVariant
                 com.example.itemremindertool.ui.theme.ColorSchemeType.WINE -> WineSurfaceVariant
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CHRISTMAS -> ChristmasSurfaceVariant
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueSurfaceVariant
             }
         }
+    }
+
+    @Composable
+    private fun getCustomColor(key: String, fallback: Color): Color {
+        val context = LocalContext.current
+        val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        val raw = prefs.getString(key, null)
+        val parsed = runCatching {
+            val cleaned = raw?.trim()?.removePrefix("#") ?: return@runCatching null
+            val argb = when (cleaned.length) {
+                6 -> 0xFF000000L or cleaned.toLong(16)
+                8 -> cleaned.toLong(16)
+                else -> return@runCatching null
+            }
+            Color(argb.toInt())
+        }.getOrNull()
+        return parsed ?: fallback
     }
 }
 

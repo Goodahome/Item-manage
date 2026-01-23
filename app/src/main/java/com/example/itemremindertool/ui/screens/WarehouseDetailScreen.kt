@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -84,6 +85,9 @@ fun WarehouseDetailScreen(
             w.id to items.count { it.warehouseId == w.id }
         }
     }
+    val currentItemCount = warehouseItemCounts[warehouseId] ?: 0
+    val hasCapacityLimit = warehouse?.capacity != null
+    val isCapacityFull = hasCapacityLimit && currentItemCount >= (warehouse?.capacity ?: 0)
     
     // 顶部菜单状态
     var showTopMenu by remember { mutableStateOf(false) }
@@ -111,12 +115,12 @@ fun WarehouseDetailScreen(
                         IconButton(onClick = {
                             onNavigateToParentWarehouse(parentWarehouseId)
                         }) {
-                            Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                         }
                     } else {
                         // 没有父容器时，也显示返回按钮用于返回首页
                         IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                         }
                     }
                 },
@@ -218,13 +222,26 @@ fun WarehouseDetailScreen(
                     // 添加物品按钮（最上方）
                     FloatingActionButton(
                         onClick = {
-                            fabExpanded = false
-                            onAddItem(warehouseId)
+                            if (isCapacityFull) {
+                                android.widget.Toast.makeText(
+                                    context,
+                                    context.getString(R.string.capacity_limit_reached),
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                fabExpanded = false
+                                onAddItem(warehouseId)
+                            }
                         },
-                        containerColor = ColorHelpers.getGroup5FabColor(),
+                        containerColor = ColorHelpers.getGroup2SettingsBtnColor(),
+                        contentColor = ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor()),
                         modifier = Modifier.size(UIConstants.FAB_SIZE)
                     ) {
-                        Icon(Icons.Default.Category, stringResource(R.string.add_item))
+                        Icon(
+                            Icons.Default.Category,
+                            stringResource(R.string.add_item),
+                            tint = ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor())
+                        )
                     }
                     
                     // 添加子容器按钮
@@ -239,10 +256,15 @@ fun WarehouseDetailScreen(
                                 fabExpanded = false
                                 onAddChildWarehouse(warehouseId)
                             },
-                            containerColor = ColorHelpers.getGroup5FabColor(),
+                            containerColor = ColorHelpers.getGroup2SettingsBtnColor(),
+                            contentColor = ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor()),
                             modifier = Modifier.size(UIConstants.FAB_SIZE)
                         ) {
-                            Icon(Icons.Default.Inventory2, stringResource(R.string.add_warehouse))
+                            Icon(
+                                Icons.Default.Inventory2,
+                                stringResource(R.string.add_warehouse),
+                                tint = ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor())
+                            )
                         }
                     }
                 }
@@ -250,13 +272,15 @@ fun WarehouseDetailScreen(
                 // 主 FAB 按钮（最下方）
                 FloatingActionButton(
                     onClick = { fabExpanded = !fabExpanded },
-                    containerColor = ColorHelpers.getGroup5FabColor(),
+                    containerColor = ColorHelpers.getGroup2SettingsBtnColor(),
+                    contentColor = ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor()),
                     modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(
                         Icons.Default.Add,
                         contentDescription = if (fabExpanded) stringResource(R.string.close) else stringResource(R.string.add),
-                        modifier = Modifier.rotate(rotationAngle)
+                        modifier = Modifier.rotate(rotationAngle),
+                        tint = ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor())
                     )
                 }
             }

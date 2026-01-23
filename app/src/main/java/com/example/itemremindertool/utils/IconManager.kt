@@ -13,14 +13,18 @@ object IconManager {
     private const val PREF_KEY_ICON = "selected_app_icon"
     private const val DEFAULT_ICON = 0
     
-    // ActivityAlias 名称列表
-    private val ICON_ALIASES = arrayOf(
-        "com.example.itemremindertool.MainActivity.Icon0",  // icon0 (默认)
-        "com.example.itemremindertool.MainActivity.Icon1",  // icon1
-        "com.example.itemremindertool.MainActivity.Icon2",  // icon2
-        "com.example.itemremindertool.MainActivity.Icon3",  // icon3
-        "com.example.itemremindertool.MainActivity.Icon4"   // icon4
+    // ActivityAlias 名称后缀列表（与包名拼接）
+    private val ICON_ALIAS_SUFFIXES = arrayOf(
+        ".MainActivity.Icon0",  // icon0 (默认)
+        ".MainActivity.Icon1",  // icon1
+        ".MainActivity.Icon2",  // icon2
+        ".MainActivity.Icon3",  // icon3
+        ".MainActivity.Icon4"   // icon4
     )
+
+    private fun getAliasName(context: Context, index: Int): String {
+        return context.packageName + ICON_ALIAS_SUFFIXES[index]
+    }
     
     /**
      * 获取当前选中的图标索引
@@ -36,8 +40,8 @@ object IconManager {
      * @param iconIndex 图标索引 (0-4)
      * @return 是否切换成功
      */
-    fun switchIcon(context: Context, iconIndex: Int): Boolean {
-        if (iconIndex < 0 || iconIndex >= ICON_ALIASES.size) {
+    fun switchIcon(context: Context, iconIndex: Int, commit: Boolean = false): Boolean {
+        if (iconIndex < 0 || iconIndex >= ICON_ALIAS_SUFFIXES.size) {
             return false
         }
         
@@ -45,8 +49,8 @@ object IconManager {
         val currentIcon = getCurrentIcon(context)
         
         // 禁用所有图标
-        for (i in ICON_ALIASES.indices) {
-            val componentName = ComponentName(context, ICON_ALIASES[i])
+        for (i in ICON_ALIAS_SUFFIXES.indices) {
+            val componentName = ComponentName(context, getAliasName(context, i))
             val state = if (i == iconIndex) {
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED
             } else {
@@ -62,7 +66,11 @@ object IconManager {
         
         // 保存选中的图标索引
         val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-        prefs.edit().putInt(PREF_KEY_ICON, iconIndex).apply()
+        if (commit) {
+            prefs.edit().putInt(PREF_KEY_ICON, iconIndex).commit()
+        } else {
+            prefs.edit().putInt(PREF_KEY_ICON, iconIndex).apply()
+        }
         
         return true
     }
@@ -86,6 +94,19 @@ object IconManager {
             context.getString(R.string.icon_name_2),
             context.getString(R.string.icon_name_3),
             context.getString(R.string.icon_name_4)
+        )
+    }
+
+    /**
+     * 获取图标资源列表（用于预览）
+     */
+    fun getIconResIds(): List<Int> {
+        return listOf(
+            R.mipmap.ic_launcher,
+            R.mipmap.ic_launcher_icon1,
+            R.mipmap.ic_launcher_icon2,
+            R.mipmap.ic_launcher_icon3,
+            R.mipmap.ic_launcher_icon4
         )
     }
 }

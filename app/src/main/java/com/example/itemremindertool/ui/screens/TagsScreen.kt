@@ -1,5 +1,7 @@
 package com.example.itemremindertool.ui.screens
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.data.TagManager
 import com.example.itemremindertool.data.model.Item
@@ -24,10 +25,9 @@ import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.UIConstants
-import com.example.itemremindertool.ui.components.AutoSizeText
-import com.example.itemremindertool.ui.components.AutoSizeTextButton
 import java.time.*
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TagsScreen(
@@ -101,12 +101,19 @@ fun TagsScreen(
             Column(
                 modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
             ) {
+                val fabBackground = ColorHelpers.getGroup2SettingsBtnColor()
+                val fabIconColor = ColorHelpers.getContrastColor(fabBackground)
                 FloatingActionButton(
                     onClick = { showAddDialog = true },
-                    containerColor = ColorHelpers.getGroup5FabColor(),
+                    containerColor = fabBackground,
+                    contentColor = fabIconColor,
                     modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
-                    Icon(Icons.Default.Add, stringResource(R.string.add_tag))
+                    Icon(
+                        Icons.Default.Add,
+                        stringResource(R.string.add_tag),
+                        tint = fabIconColor
+                    )
                 }
             }
         }
@@ -173,144 +180,108 @@ fun TagsScreen(
     if (showAddDialog) {
         var newTagName by remember { mutableStateOf("") }
         
-        AlertDialog(
-            onDismissRequest = { showAddDialog = false },
-            title = { AutoSizeText(stringResource(R.string.add_tag), textAlign = TextAlign.Start) },
-            text = {
-                OutlinedTextField(
-                    value = newTagName,
-                    onValueChange = { if (it.length <= 12) newTagName = it },
-                    label = { Text(stringResource(R.string.tag_name)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
+        ModernSettingsDialog(
+            title = stringResource(R.string.add_tag),
+            icon = Icons.Default.Label,
+            onDismiss = { showAddDialog = false },
+            onConfirm = {
+                if (newTagName.isNotBlank()) {
+                    tagManager.addTag(newTagName.trim())
+                    showAddDialog = false
+                }
             },
-            confirmButton = {
-                AutoSizeTextButton(
-                    onClick = {
-                        if (newTagName.isNotBlank()) {
-                            tagManager.addTag(newTagName.trim())
-                            showAddDialog = false
-                        }
-                    },
-                    enabled = newTagName.isNotBlank(),
-                    text = stringResource(R.string.add)
-                )
-            },
-            dismissButton = {
-                AutoSizeTextButton(
-                    onClick = { showAddDialog = false },
-                    text = stringResource(R.string.cancel)
-                )
-            }
-        )
+            confirmEnabled = newTagName.isNotBlank(),
+            confirmText = stringResource(R.string.add)
+        ) {
+            OutlinedTextField(
+                value = newTagName,
+                onValueChange = { if (it.length <= 12) newTagName = it },
+                label = { Text(stringResource(R.string.tag_name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
     
     // 编辑标签对话框
     if (showEditDialog && selectedTag != null) {
-        AlertDialog(
-            onDismissRequest = { 
+        ModernSettingsDialog(
+            title = stringResource(R.string.edit_tag),
+            icon = Icons.Default.Edit,
+            onDismiss = {
                 showEditDialog = false
                 selectedTag = null
             },
-            title = { AutoSizeText(stringResource(R.string.edit_tag), textAlign = TextAlign.Start) },
-            text = {
-                OutlinedTextField(
-                    value = editTagName,
-                    onValueChange = { if (it.length <= 12) editTagName = it },
-                    label = { Text(stringResource(R.string.tag_name)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                AutoSizeTextButton(
-                    onClick = {
-                        if (editTagName.isNotBlank() && editTagName != selectedTag) {
-                            // 更新标签管理器中的标签
-                            tagManager.updateTag(selectedTag!!, editTagName.trim())
-                            
-                            // 更新所有使用该标签的物品
-                            items.forEach { item ->
-                                if (item.tags.contains(selectedTag)) {
-                                    val updatedTags = item.tags.map { 
-                                        if (it == selectedTag) editTagName.trim() else it 
-                                    }
-                                    itemViewModel.updateItem(item.copy(tags = updatedTags))
-                                }
+            onConfirm = {
+                if (editTagName.isNotBlank() && editTagName != selectedTag) {
+                    // 更新标签管理器中的标签
+                    tagManager.updateTag(selectedTag!!, editTagName.trim())
+                    
+                    // 更新所有使用该标签的物品
+                    items.forEach { item ->
+                        if (item.tags.contains(selectedTag)) {
+                            val updatedTags = item.tags.map { 
+                                if (it == selectedTag) editTagName.trim() else it 
                             }
-                            
-                            showEditDialog = false
-                            selectedTag = null
+                            itemViewModel.updateItem(item.copy(tags = updatedTags))
                         }
-                    },
-                    enabled = editTagName.isNotBlank(),
-                    text = stringResource(R.string.save)
-                )
+                    }
+                    
+                    showEditDialog = false
+                    selectedTag = null
+                }
             },
-            dismissButton = {
-                AutoSizeTextButton(
-                    onClick = { 
-                        showEditDialog = false
-                        selectedTag = null
-                    },
-                    text = stringResource(R.string.cancel)
-                )
-            }
-        )
+            confirmEnabled = editTagName.isNotBlank(),
+            confirmText = stringResource(R.string.save)
+        ) {
+            OutlinedTextField(
+                value = editTagName,
+                onValueChange = { if (it.length <= 12) editTagName = it },
+                label = { Text(stringResource(R.string.tag_name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
     
     // 删除标签确认对话框
     if (showDeleteDialog && selectedTag != null) {
         val usageCount = tagUsageCounts[selectedTag] ?: 0
         
-        AlertDialog(
-            onDismissRequest = { 
+        ModernSettingsDialog(
+            title = stringResource(R.string.delete_tag),
+            icon = Icons.Default.Delete,
+            onDismiss = {
                 showDeleteDialog = false
                 selectedTag = null
             },
-            title = { AutoSizeText(stringResource(R.string.delete_tag), textAlign = TextAlign.Start) },
-            text = { 
-                AutoSizeText(
-                    text = if (usageCount > 0) {
-                        stringResource(R.string.delete_tag_confirm_with_usage, selectedTag!!, usageCount)
-                    } else {
-                        stringResource(R.string.delete_tag_confirm, selectedTag!!)
-                    },
-                    textAlign = TextAlign.Start,
-                    maxLines = 3
-                )
+            onConfirm = {
+                // 从标签管理器中删除标签
+                tagManager.removeTag(selectedTag!!)
+                
+                // 从所有使用该标签的物品中移除该标签
+                items.forEach { item ->
+                    if (item.tags.contains(selectedTag)) {
+                        val updatedTags = item.tags.filter { it != selectedTag }
+                        itemViewModel.updateItem(item.copy(tags = updatedTags))
+                    }
+                }
+                
+                showDeleteDialog = false
+                selectedTag = null
             },
-            confirmButton = {
-                AutoSizeTextButton(
-                    onClick = {
-                        // 从标签管理器中删除标签
-                        tagManager.removeTag(selectedTag!!)
-                        
-                        // 从所有使用该标签的物品中移除该标签
-                        items.forEach { item ->
-                            if (item.tags.contains(selectedTag)) {
-                                val updatedTags = item.tags.filter { it != selectedTag }
-                                itemViewModel.updateItem(item.copy(tags = updatedTags))
-                            }
-                        }
-                        
-                        showDeleteDialog = false
-                        selectedTag = null
-                    },
-                    text = stringResource(R.string.delete)
-                )
-            },
-            dismissButton = {
-                AutoSizeTextButton(
-                    onClick = { 
-                        showDeleteDialog = false
-                        selectedTag = null
-                    },
-                    text = stringResource(R.string.cancel)
-                )
-            }
-        )
+            confirmText = stringResource(R.string.delete)
+        ) {
+            Text(
+                text = if (usageCount > 0) {
+                    stringResource(R.string.delete_tag_confirm_with_usage, selectedTag!!, usageCount)
+                } else {
+                    stringResource(R.string.delete_tag_confirm, selectedTag!!)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = ColorHelpers.getGroup4TextColor()
+            )
+        }
     }
 }
 

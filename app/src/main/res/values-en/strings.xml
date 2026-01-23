@@ -111,6 +111,7 @@
     <string name="auto_sync">Auto Sync</string>
     <string name="auto_sync_enabled">Enabled</string>
     <string name="auto_sync_disabled">Disabled</string>
+    <string name="auto_sync_not_supported">Auto sync is only supported for Nextcloud</string>
     <string name="nextcloud_settings">Nextcloud Settings</string>
     <string name="nextcloud_configured">Configured</string>
     <string name="nextcloud_not_configured">Not configured</string>
@@ -268,6 +269,49 @@
     <string name="tag_limit_exceeded">Tag length cannot exceed 12 characters</string>
     <string name="enabled_restart_message">The app needs to be restarted for the changes to take effect. Restart now?</string>
     <string name="disabled_restart_message">The app needs to be restarted for the changes to take effect. Restart now?</string>
+
+    <!-- Custom color scheme -->
+    <string name="custom_color_title">Custom Colors</string>
+    <string name="custom_color_preview_title">Home Preview</string>
+    <string name="custom_color_desc">Enter hex colors and preview the home screen</string>
+    <string name="custom_color_enable">Enable custom colors</string>
+    <string name="custom_color_enable_desc">When enabled, your colors will be used</string>
+    <string name="custom_color_save_title">Save custom scheme</string>
+    <string name="custom_color_scheme_name">Scheme name</string>
+    <string name="custom_color_scheme_save">Save</string>
+    <string name="custom_color_saved_title">Saved schemes</string>
+    <string name="custom_color_scheme_delete">Delete</string>
+    <string name="custom_color_scheme_empty">No saved schemes</string>
+    <string name="custom_color_scheme_name_required">Please enter a scheme name</string>
+    <string name="custom_color_field_primary">Container &amp; item icon background Primary</string>
+    <string name="custom_color_field_secondary">Secondary color Secondary</string>
+    <string name="custom_color_field_tertiary">Accent color Tertiary</string>
+    <string name="custom_color_field_primary_container">Container color PrimaryContainer</string>
+    <string name="custom_color_field_on_primary_container">Container text OnPrimaryContainer</string>
+    <string name="custom_color_field_background">Page background Background</string>
+    <string name="custom_color_field_surface">Item card background Surface</string>
+    <string name="custom_color_field_surface_variant">Content area background SurfaceVariant</string>
+    <string name="custom_color_field_gradient_start">Top bar gradient start</string>
+    <string name="custom_color_field_gradient_end">Top bar gradient end</string>
+    <string name="custom_color_field_search_box_bg">Search box background</string>
+    <string name="custom_color_field_search_box_border">Search box border</string>
+    <string name="custom_color_field_breadcrumb_text">Breadcrumb text</string>
+    <string name="custom_color_field_breadcrumb_icon">Breadcrumb icon</string>
+    <string name="custom_color_field_sub_warehouse_name">Sub-container name</string>
+    <string name="custom_color_hex_placeholder">#RRGGBB or #AARRGGBB</string>
+    <string name="custom_color_preview_home">Home</string>
+    <string name="custom_color_preview_search">Search items</string>
+    <string name="custom_color_preview_breadcrumb_path">Living Room / Cabinet</string>
+    <string name="custom_color_preview_container_icon">Container icon</string>
+    <string name="custom_color_preview_item_icon">Item icon</string>
+    <string name="custom_color_preview_container">Container</string>
+    <string name="custom_color_preview_secondary_button">Secondary button</string>
+    <string name="custom_color_preview_tertiary">Accent</string>
+    <string name="custom_color_preview_item">Sample item</string>
+    <string name="custom_color_preview_quantity">Qty %1$d</string>
+    <string name="custom_color_preview_price">$19.9</string>
+    <string name="custom_color_preview_sub_warehouse">Sub-container name</string>
+    <string name="custom_color_preview_action_button">Action button</string>
 
     <!-- Date/Time Picker -->
     <string name="no_date_selected">No date selected</string>
@@ -436,6 +480,7 @@
     <string name="quantity_label">Quantity</string>
     <string name="warehouse_empty">This container is empty</string>
     <string name="child_warehouse_info">Sub-containers: %1$d    Items: %2$d</string>
+    <string name="capacity_limit_reached">Capacity is full. You cannot add more items.</string>
     
     <!-- 提醒相关 -->
     <string name="expiring_soon_title">Expiring Soon</string>
@@ -663,4 +708,38 @@
     <string name="restore_no_purchase">No purchases found</string>
     <string name="manage_subscription">Manage subscription</string>
     <string name="manage_subscription_failed">Unable to open subscription management</string>
+    
+    <!-- Excel import/export -->
+    <string name="nav_excel_import_export">Import/Export</string>
+    <string name="excel_import_export_title">Import/Export</string>
+    <string name="excel_import_title">Excel Import</string>
+    <string name="excel_import_desc">Import items from Excel, including images.</string>
+    <string name="excel_import_button">Choose Excel file</string>
+    <string name="excel_export_title">Excel Export</string>
+    <string name="excel_export_desc">Export items to Excel, including images.</string>
+    <string name="excel_export_button">Export to Excel</string>
+    <string name="excel_import_export_hint_title">Format</string>
+    <string name="excel_import_export_hint_body">Headers: Name, Description, Quantity, Price, Barcode, Tags, Container (required), Expiry Date, Stock Alert (optional), Image. Images can be embedded in cells.\nNote: If an item with the same name and container exists, it will be merged.</string>
+    <string name="excel_export_success">Exported: %1$d</string>
+    <string name="excel_export_failed">Export failed: %1$s</string>
+    <string name="excel_import_success">Import completed: %1$d new, %2$d skipped, %3$d merged</string>
+    <string name="excel_import_failed">Import failed: %1$s</string>
+    <string name="excel_header_name">Name</string>
+    <string name="excel_header_description">Description</string>
+    <string name="excel_header_quantity">Quantity</string>
+    <string name="excel_header_price">Price</string>
+    <string name="excel_header_barcode">Barcode</string>
+    <string name="excel_header_tags">Tags</string>
+    <string name="excel_header_warehouse_required">Container (required)</string>
+    <string name="excel_header_warehouse">Container</string>
+    <string name="excel_header_expiry_date">Expiry Date</string>
+    <string name="excel_header_stock_alert">Stock Alert</string>
+    <string name="excel_header_image">Image</string>
+    <string name="excel_file_write_failed">Unable to write file</string>
+    <string name="excel_file_read_failed">Unable to read file</string>
+    <string name="excel_file_invalid">Invalid Excel file format</string>
+    <string name="excel_header_missing">Excel file is missing headers</string>
+    <string name="excel_export_log_failed">Excel export failed</string>
+    <string name="excel_import_log_failed">Excel import failed</string>
+    <string name="feature_extract_log">Feature extracted, featureCode: %1$s...</string>
 </resources>

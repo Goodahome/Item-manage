@@ -148,6 +148,9 @@ dependencies {
     // OAuth (AppAuth) + encrypted storage
     implementation("net.openid:appauth:0.11.1")
     implementation("androidx.security:security-crypto:1.1.0")
+    // Excel import/export (Android 兼容 POI)
+    implementation("com.github.vince688:poi-android:3.17")
+    implementation("commons-codec:commons-codec:1.15")
     // Guava for CameraX (required for ListenableFuture)
     implementation("com.google.guava:guava:32.1.3-android")
     testImplementation(libs.junit)

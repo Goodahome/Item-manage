@@ -987,33 +987,16 @@ fun WarehouseInfoScreen(
         }
     }
     
-    // 计算图片亮度（如果有图片）
-    val isImageBright = remember(warehouse.imageUri, warehouseImageBitmap) {
-        val bitmap = warehouseImageBitmap
-        if (warehouse.imageUri != null && bitmap != null) {
-            try {
-                ImageUtils.calculateImageBrightness(bitmap)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        } else {
-            null
-        }
+    val infoCardBgColor = ColorHelpers.getGroup3CardBgColor()
+    val textColor = ColorHelpers.getGroup4TextColor(infoCardBgColor)
+    val iconColor = ColorHelpers.getGroup4IconColor(infoCardBgColor)
+    val badgeBgColor = ColorHelpers.getGroup2SettingsBtnColor()
+    val badgeTextColor = ColorHelpers.getContrastColor(badgeBgColor)
+    val totalChildCount = remember(warehouse.id, allWarehouses) {
+        countAllChildWarehouses(warehouse.id, allWarehouses)
     }
-    
-    val cardBgColor = ColorHelpers.getGroup3CardBgColor()
-    // 根据图片亮度决定文字和图标颜色
-    val textColor = if (warehouseImageBitmap != null && isImageBright != null) {
-        if (isImageBright) Color.Black else Color.White
-    } else {
-        ColorHelpers.getGroup4TextColor(cardBgColor)
-    }
-    
-    val iconColor = if (warehouseImageBitmap != null && isImageBright != null) {
-        if (isImageBright) Color.Black else Color.White
-    } else {
-        ColorHelpers.getGroup4IconColor(cardBgColor)
+    val totalItemCount = remember(warehouse.id, allWarehouses, allItems, warehouseItemCounts) {
+        countAllItemsInWarehouse(warehouse.id, allWarehouses, allItems, warehouseItemCounts)
     }
     
     Column(
@@ -1024,229 +1007,249 @@ fun WarehouseInfoScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 整合的容器信息卡片
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f), // 改为正方形
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = if (warehouseImageBitmap != null) Color.Transparent else ColorHelpers.getGroup3CardBgColor()
-            )
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                // 背景图片
-                if (warehouseImageBitmap != null) {
-                    Image(
-                        bitmap = warehouseImageBitmap.asImageBitmap(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                    // 半透明遮罩，提高文字可读性
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.3f))
-                    )
-                }
-                
-            Column(
+        // 容器图片
+        if (warehouseImageBitmap != null) {
+            Card(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .size(220.dp)
+                    .align(Alignment.CenterHorizontally),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                // 容器图标和名称
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Inventory2,
+                Image(
+                    bitmap = warehouseImageBitmap.asImageBitmap(),
                     contentDescription = null,
-                            tint = iconColor,
-                        modifier = Modifier.size(48.dp)
-                )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                Text(
-                    text = warehouse.name,
-                            style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                                color = textColor
-                )
-                Text(
-                    text = stringResource(R.string.items_count, itemCount),
-                            style = MaterialTheme.typography.bodyMedium,
-                                color = textColor.copy(alpha = 0.7f)
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
             }
+        } else {
+            Card(
+                modifier = Modifier
+                    .size(220.dp)
+                    .align(Alignment.CenterHorizontally),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = infoCardBgColor)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clip(CircleShape)
+                            .background(badgeBgColor),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = firstDisplayChar(warehouse.name),
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = badgeTextColor
+                        )
+                    }
+                }
+            }
         }
-                
-                // 分隔线
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 4.dp),
-                        color = textColor.copy(alpha = 0.2f)
-                )
-        
-        // 容器描述
-        if (warehouse.description.isNotEmpty()) {
+
+        // 容器信息卡片（与物品详情一致的结构）
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = infoCardBgColor)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(badgeBgColor),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Inventory2,
+                            contentDescription = null,
+                            tint = badgeTextColor,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = warehouse.name,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor
+                        )
+                        Text(
+                            text = stringResource(R.string.items_count, itemCount),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textColor.copy(alpha = 0.7f)
+                        )
+                        Text(
+                            text = stringResource(R.string.child_warehouse_info, totalChildCount, totalItemCount),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = textColor.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+
+                if (warehouse.description.isNotEmpty()) {
                     Row(
-                modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.Top,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
                             Icons.Default.Description,
                             contentDescription = null,
-                                tint = iconColor,
+                            tint = iconColor,
                             modifier = Modifier.size(20.dp)
                         )
                         Column(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                        Text(
-                            stringResource(R.string.description),
+                            Text(
+                                stringResource(R.string.description),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                    color = textColor
-                        )
-                    Text(
-                        text = warehouse.description,
+                                color = textColor
+                            )
+                            Text(
+                                text = warehouse.description,
                                 style = MaterialTheme.typography.bodyMedium,
-                                    color = textColor
-                    )
-                }
-            }
-        }
-        
-        // 容器位置
-        if (warehouse.location.isNotEmpty()) {
-                    Row(
-                modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.LocationOn,
-                        contentDescription = null,
-                                tint = iconColor,
-                            modifier = Modifier.size(20.dp)
-                    )
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            stringResource(R.string.warehouse_location),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                    color = textColor
-                        )
-                        Text(
-                            text = warehouse.location,
-                                style = MaterialTheme.typography.bodyMedium,
-                                    color = textColor
-                        )
-                }
-            }
-        }
-        
-        // 容器容量
-        if (warehouse.capacity != null) {
-                    Row(
-                modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Storage,
-                        contentDescription = null,
-                                tint = iconColor,
-                            modifier = Modifier.size(20.dp)
-                    )
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            stringResource(R.string.capacity),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                    color = textColor
-                        )
-                        Text(
-                            text = "${warehouse.capacity}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                    color = textColor
-                        )
-                        // 显示容量使用情况
-                        LinearProgressIndicator(
-                            progress = {
-                                if (warehouse.capacity > 0) {
-                                (itemCount.toFloat() / warehouse.capacity).coerceIn(0f, 1f)
-                            } else {
-                                0f
-                                }
-                            },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    color = if (warehouseImageBitmap != null && isImageBright != null) {
-                                        if (isImageBright) Color.Black else Color.White
-                                    } else {
-                                        ColorHelpers.getGroup2SettingsBtnColor()
-                                    },
-                                    trackColor = textColor.copy(alpha = 0.2f)
-                        )
-                        Text(
-                            text = stringResource(
-                                R.string.used_capacity,
-                                itemCount,
-                                warehouse.capacity
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                                    color = textColor.copy(alpha = 0.6f)
-                        )
-                            }
+                                color = textColor
+                            )
                         }
                     }
                 }
-            }
-        }
-        
-        // 创建时间
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                Icons.Default.AccessTime,
-                contentDescription = null,
-                tint = iconColor,
-                modifier = Modifier.size(20.dp)
-            )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    stringResource(R.string.created_at),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = textColor
-                )
-                val dateFormat = remember { java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT, java.util.Locale.getDefault()) }
-                val createdAtStr = remember(warehouse.createdAt) { dateFormat.format(warehouse.createdAt) }
-                Text(
-                    text = createdAtStr,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = textColor
-                )
+
+                if (warehouse.location.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = iconColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                stringResource(R.string.warehouse_location),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = textColor
+                            )
+                            Text(
+                                text = warehouse.location,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = textColor
+                            )
+                        }
+                    }
+                }
+
+                if (warehouse.capacity != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Storage,
+                            contentDescription = null,
+                            tint = iconColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                stringResource(R.string.capacity),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = textColor
+                            )
+                            Text(
+                                text = "${warehouse.capacity}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = textColor
+                            )
+                            LinearProgressIndicator(
+                                progress = {
+                                    if (warehouse.capacity > 0) {
+                                        (itemCount.toFloat() / warehouse.capacity).coerceIn(0f, 1f)
+                                    } else {
+                                        0f
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                color = ColorHelpers.getGroup2SettingsBtnColor(),
+                                trackColor = textColor.copy(alpha = 0.2f)
+                            )
+                            Text(
+                                text = stringResource(
+                                    R.string.used_capacity,
+                                    itemCount,
+                                    warehouse.capacity
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = textColor.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                }
+
+                HorizontalDivider()
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.AccessTime,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = iconColor
+                        )
+                        Text(
+                            text = stringResource(R.string.created_at),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = textColor.copy(alpha = 0.7f)
+                        )
+                    }
+                    val dateFormat = remember { java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT, java.util.Locale.getDefault()) }
+                    val createdAtStr = remember(warehouse.createdAt) { dateFormat.format(warehouse.createdAt) }
+                    Text(
+                        text = createdAtStr,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textColor
+                    )
+                }
             }
         }
 
@@ -4037,6 +4040,9 @@ fun SidebarStyleMainLayout(
                         totalWarehouses = allContainers.size,
                         totalItems = allItems.size,
                         shoppingItemsCount = shoppingItemsCount,
+                        isContainerSelected = showContainerList,
+                        isItemSelected = showItemList,
+                        isShoppingSelected = showShoppingList,
                         useCircleIcon = useCircleIcon,
                         onContainerClick = {
                             if (onboardingEnabled && onboardingStep == OnboardingStep.HOME_STATS_CONTAINER_BUTTON) {
@@ -4510,6 +4516,9 @@ fun HomeStatisticCards(
     totalWarehouses: Int,
     totalItems: Int,
     shoppingItemsCount: Int,
+    isContainerSelected: Boolean = false,
+    isItemSelected: Boolean = false,
+    isShoppingSelected: Boolean = false,
     onContainerClick: (() -> Unit)? = null,
     onItemClick: (() -> Unit)? = null,
     onShoppingClick: () -> Unit = {},
@@ -4541,6 +4550,7 @@ fun HomeStatisticCards(
                 icon = Icons.Default.Inventory2,
                 value = totalWarehouses.toString(),
                 label = stringResource(R.string.stat_label_warehouse),
+                isSelected = isContainerSelected,
                 onClick = onContainerClick,
                 useCircleIcon = useCircleIcon,
                 modifier = Modifier
@@ -4567,6 +4577,7 @@ fun HomeStatisticCards(
                 icon = Icons.Default.Category,
                 value = totalItems.toString(),
                 label = stringResource(R.string.stat_label_item),
+                isSelected = isItemSelected,
                 onClick = onItemClick,
                 useCircleIcon = useCircleIcon,
                 modifier = Modifier
@@ -4593,6 +4604,7 @@ fun HomeStatisticCards(
                 icon = Icons.Default.ShoppingBag,
                 value = shoppingItemsCount.toString(),
                 label = stringResource(R.string.stat_label_shopping),
+                isSelected = isShoppingSelected,
                 onClick = onShoppingClick,
                 useCircleIcon = useCircleIcon,
                 modifier = Modifier
@@ -4617,6 +4629,7 @@ fun StatisticItem(
     icon: ImageVector,
     value: String,
     label: String,
+    isSelected: Boolean = false,
     onClick: (() -> Unit)? = null,
     useCircleIcon: Boolean = true,
     modifier: Modifier = Modifier
@@ -4632,57 +4645,70 @@ fun StatisticItem(
     val iconColor = ColorHelpers.getContrastColor(backgroundColor)
     val iconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
     
-    Column(
-        modifier = contentModifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        // 图标容器 - 与左侧容器图标样式一致
-        Box(
-            modifier = Modifier
-                .size(44.dp) // 与左侧容器图标大小一致
-                .shadow(
-                    elevation = 4.dp,
-                    shape = iconShape,
-                    spotColor = Color.Black.copy(alpha = 0.3f),
-                    ambientColor = Color.Black.copy(alpha = 0.15f)
+    Box(modifier = contentModifier) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            // 图标容器 - 与左侧容器图标样式一致
+            Box(
+                modifier = Modifier
+                    .size(44.dp) // 与左侧容器图标大小一致
+                    .shadow(
+                        elevation = 4.dp,
+                        shape = iconShape,
+                        spotColor = Color.Black.copy(alpha = 0.3f),
+                        ambientColor = Color.Black.copy(alpha = 0.15f)
+                    )
+                    .clip(iconShape)
+                    .background(backgroundColor), // 与左侧容器图标颜色一致
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = iconColor, // 根据背景颜色对比度自动切换
+                    modifier = Modifier.size(22.dp) // 与左侧容器图标大小一致
                 )
-                .clip(iconShape)
-                .background(backgroundColor), // 与左侧容器图标颜色一致
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = iconColor, // 根据背景颜色对比度自动切换
-                modifier = Modifier.size(22.dp) // 与左侧容器图标大小一致
-            )
+            }
+            
+            // 数值和标签（同一行，数字在前文字在后）- 防止换行
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = ColorHelpers.getGroup4TextColor(),
+                    fontSize = 18.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 11.sp,
+                    color = ColorHelpers.getGroup4TextColor(0.65f),
+                    letterSpacing = 0.3.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
-        
-        // 数值和标签（同一行，数字在前文字在后）- 防止换行
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = ColorHelpers.getGroup4TextColor(),
-                fontSize = 18.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                fontSize = 11.sp,
-                color = ColorHelpers.getGroup4TextColor(0.65f),
-                letterSpacing = 0.3.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .offset(y = 6.dp)
+                    .width(44.dp)
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(backgroundColor)
             )
         }
     }

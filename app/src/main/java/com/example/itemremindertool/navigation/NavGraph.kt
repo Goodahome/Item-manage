@@ -11,6 +11,7 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
     object Dashboard : Screen("dashboard", R.string.nav_home, Icons.Outlined.Dashboard, Icons.Filled.Dashboard)
     object Items : Screen("items", R.string.nav_item_management, Icons.Outlined.Category, Icons.Filled.Category)
     object Tags : Screen("tags", R.string.nav_tag_management, Icons.Outlined.Label, Icons.Filled.Label)
+    object ExcelImportExport : Screen("excel_import_export", R.string.nav_excel_import_export, Icons.Outlined.ImportExport, Icons.Filled.ImportExport)
     object Settings : Screen("settings", R.string.settings, Icons.Outlined.Settings, Icons.Filled.Settings)
 
     object ItemDetail : Screen("item_detail/{itemId}", R.string.item_detail, Icons.Default.Info, Icons.Default.Info) {
@@ -47,6 +48,7 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
     
     // 设置子页面
     object AppearanceSettings : Screen("appearance_settings", R.string.appearance_settings, Icons.Default.Palette, Icons.Default.Palette)
+    object CustomColorSettings : Screen("custom_color_settings", R.string.custom_color_title, Icons.Default.Palette, Icons.Default.Palette)
     object ThemeSelection : Screen("theme_selection", R.string.theme, Icons.Default.Palette, Icons.Default.Palette)
     object ColorSchemeSelection : Screen("color_scheme_selection", R.string.color_scheme, Icons.Default.Palette, Icons.Default.Palette)
     object IconSelection : Screen("icon_selection", R.string.app_icon, Icons.Default.Palette, Icons.Default.Palette)

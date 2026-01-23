@@ -33,6 +33,7 @@ fun AppearanceSettingsScreen(
     onNavigateToTheme: () -> Unit,
     onNavigateToColorScheme: () -> Unit,
     onNavigateToIcon: () -> Unit,
+    onNavigateToCustomColors: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -67,6 +68,7 @@ fun AppearanceSettingsScreen(
             prefs.edit().putString("color_scheme", "red_blue").apply()
         }
     }
+
 
     // 高级功能访问与购买
     var canAccessPremiumFeatures by remember {
@@ -166,6 +168,7 @@ fun AppearanceSettingsScreen(
                             "space" -> stringResource(R.string.color_scheme_space)
                             "wine" -> stringResource(R.string.color_scheme_wine)
                             "christmas" -> stringResource(R.string.color_scheme_christmas)
+                            "custom" -> stringResource(R.string.color_scheme_custom)
                             else -> stringResource(R.string.color_scheme_red_blue)
                         },
                         style = MaterialTheme.typography.bodySmall,
@@ -179,6 +182,24 @@ fun AppearanceSettingsScreen(
                 modifier = Modifier.clickable { onNavigateToColorScheme() }
             )
             
+            Divider()
+
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.custom_color_title)) },
+                supportingContent = {
+                    Text(
+                        text = stringResource(R.string.custom_color_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                },
+                trailingContent = {
+                    Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                modifier = Modifier.clickable { onNavigateToCustomColors() }
+            )
+
             Divider()
             
             // 应用图标设置

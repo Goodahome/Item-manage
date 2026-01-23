@@ -298,8 +298,7 @@ fun WarehouseEditScreen(
                 if (bitmap != null) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f) // 改为正方形
+                            .size(80.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(ColorHelpers.getGroup3CardBgColor())
                     ) {

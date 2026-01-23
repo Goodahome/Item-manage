@@ -20,7 +20,6 @@ import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import androidx.compose.foundation.background
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
@@ -48,6 +47,7 @@ fun AppSettingsScreen(
     var appName by remember { mutableStateOf(prefs.getString("app_name", defaultAppName) ?: defaultAppName) }
     var isPasswordEnabled by remember { mutableStateOf(prefs.getBoolean("password_enabled", false)) }
     var showPasswordDialog by remember { mutableStateOf(false) }
+    var pendingPasswordEnable by remember { mutableStateOf(false) }
     var showAppNameDialog by remember { mutableStateOf(false) }
     var showRestartDialog by remember { mutableStateOf(false) }
     var showSuffixDialog by remember { mutableStateOf(false) }
@@ -184,9 +184,10 @@ fun AppSettingsScreen(
                     )
                 },
                 trailingContent = { 
-                    TextButton(
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = ColorHelpers.getGroup4TextColor()
+                    Button(
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         ),
                         onClick = {
                             if (!canAccessPremiumFeatures) {
@@ -214,9 +215,10 @@ fun AppSettingsScreen(
                     )
                 },
                 trailingContent = { 
-                    TextButton(
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = ColorHelpers.getGroup4TextColor()
+                    Button(
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         ),
                         onClick = {
                             if (!canAccessPremiumFeatures) {
@@ -244,9 +246,10 @@ fun AppSettingsScreen(
                     )
                 },
                 trailingContent = {
-                    TextButton(
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = ColorHelpers.getGroup4TextColor()
+                    Button(
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         ),
                         onClick = { showCurrencyDialog = true }
                     ) {
@@ -389,18 +392,27 @@ fun AppSettingsScreen(
                     Switch(
                         checked = isPasswordEnabled,
                         enabled = canAccessPremiumFeatures,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary,
+                            uncheckedThumbColor = ColorHelpers.getGroup4IconColor(0.6f),
+                            uncheckedTrackColor = ColorHelpers.getGroup4IconColor(0.2f)
+                        ),
                         onCheckedChange = {
                             if (!canAccessPremiumFeatures) {
                                 showPremiumFeatureDialog = true
                                 return@Switch
                             }
-                            isPasswordEnabled = it
-                            prefs.edit().putBoolean("password_enabled", it).commit()
                             if (it) {
+                                pendingPasswordEnable = true
+                                isPasswordEnabled = true
                                 showPasswordDialog = true
                             } else {
+                                pendingPasswordEnable = false
+                                isPasswordEnabled = false
                                 // 如果禁用密码，清除密码
                                 prefs.edit().putString("app_password", "").commit()
+                                prefs.edit().putBoolean("password_enabled", false).commit()
                                 // 显示重启提醒
                                 showRestartDialog = true
                             }
@@ -424,9 +436,10 @@ fun AppSettingsScreen(
                         )
                     },
                     trailingContent = { 
-                        TextButton(
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
+                        Button(
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
                             ),
                             onClick = { showClearActivityDataDialog = true }) {
                             Text(stringResource(R.string.clear))
@@ -456,9 +469,7 @@ fun AppSettingsScreen(
             onConfirm = {
                 appName = newAppName
                 prefs.edit().putString("app_name", newAppName).apply()
-                prefs.edit().putBoolean("pending_name_change", true).apply()
                 showAppNameDialog = false
-                showRestartDialog = true
             },
             confirmEnabled = newAppName.isNotEmpty()
         ) {
@@ -481,7 +492,8 @@ fun AppSettingsScreen(
             icon = Icons.Default.Lock,
             onDismiss = { 
                 showPasswordDialog = false
-                if (!isPasswordEnabled) {
+                if (pendingPasswordEnable) {
+                    pendingPasswordEnable = false
                     isPasswordEnabled = false
                     prefs.edit().putBoolean("password_enabled", false).apply()
                 }
@@ -491,6 +503,7 @@ fun AppSettingsScreen(
                     prefs.edit().putString("app_password", newPassword).commit()
                     prefs.edit().putBoolean("password_enabled", true).commit()
                     isPasswordEnabled = true
+                    pendingPasswordEnable = false
                     showPasswordDialog = false
                     // 显示重启提醒
                     showRestartDialog = true
@@ -656,6 +669,7 @@ fun ModernSettingsDialog(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
+    onDismissAction: (() -> Unit)? = null,
     confirmEnabled: Boolean = true,
     confirmText: String = stringResource(R.string.ok),
     dismissText: String = stringResource(R.string.cancel),
@@ -674,52 +688,40 @@ fun ModernSettingsDialog(
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // 顶部标题栏 - 现代化设计
-                Box(
+                // 顶部标题栏 - 统一简洁样式
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                                )
-                            ),
-                            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-                        )
-                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                icon,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Text(
-                                text = title,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                        IconButton(onClick = onDismiss) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "关闭",
-                                tint = Color.White
-                            )
-                        }
+                        Icon(
+                            icon,
+                            contentDescription = null,
+                            tint = ColorHelpers.getGroup4IconColor(),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = ColorHelpers.getGroup4TextColor()
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = stringResource(R.string.close),
+                            tint = ColorHelpers.getGroup4IconColor()
+                        )
                     }
                 }
+                HorizontalDivider(color = ColorHelpers.getGroup4IconColor(0.15f))
                 
                 // 内容区域
                 Column(
@@ -740,7 +742,7 @@ fun ModernSettingsDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedButton(
-                        onClick = onDismiss,
+                        onClick = { onDismissAction?.invoke() ?: onDismiss() },
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(dismissText)

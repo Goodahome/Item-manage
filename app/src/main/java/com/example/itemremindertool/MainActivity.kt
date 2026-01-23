@@ -171,6 +171,8 @@ fun ItemReminderToolApp(
         when {
             currentRoute == Screen.Dashboard.route -> Screen.Dashboard
             currentRoute == Screen.Tags.route -> Screen.Tags
+            currentRoute == Screen.ExcelImportExport.route -> Screen.ExcelImportExport
+            currentRoute == Screen.CustomColorSettings.route -> Screen.CustomColorSettings
             currentRoute == Screen.Settings.route -> Screen.Settings
             currentRoute == Screen.Help.route -> Screen.Help
             currentRoute == Screen.About.route -> Screen.About
@@ -389,6 +391,29 @@ fun ItemReminderToolApp(
                             }
                         }
                     )
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Screen.ExcelImportExport.icon, null) },
+                        label = { Text(stringResource(R.string.nav_excel_import_export)) },
+                        selected = currentDestination == Screen.ExcelImportExport,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                            selectedTextColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        onClick = {
+                            navController.navigate(Screen.ExcelImportExport.route) {
+                                popUpTo(Screen.Dashboard.route) {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
                     
                     // Divider(modifier = Modifier.padding(vertical = 8.dp))
                     
@@ -563,7 +588,11 @@ fun ItemReminderToolApp(
                     onFeatureExtracted = { featureCode ->
                         // 将特征码存储到 ViewModel
                         itemViewModel.setPendingFeatureCode(featureCode)
-                        android.util.Log.d("MainActivity", "特征提取完成，featureCode: ${featureCode?.substring(0, minOf(50, featureCode?.length ?: 0)) ?: "null"}...")
+                        val preview = featureCode?.substring(0, minOf(50, featureCode.length)) ?: "null"
+                        android.util.Log.d(
+                            "MainActivity",
+                            context.getString(R.string.feature_extract_log, preview)
+                        )
                         // 跳转到添加物品页面
                         val popped = navController.popBackStack()
                         navController.navigate(Screen.AddItem.route) {
@@ -694,6 +723,14 @@ fun ItemReminderToolApp(
                 )
             }
 
+            composable(Screen.ExcelImportExport.route) {
+                ExcelImportExportScreen(
+                    itemViewModel = itemViewModel,
+                    tagManager = tagManager,
+                    onNavigateBack = { navController.popBackOrDashboard() }
+                )
+            }
+
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     onNavigateBack = { navController.popBackOrDashboard() },
@@ -724,7 +761,14 @@ fun ItemReminderToolApp(
                     onNavigateBack = { navController.popBackOrDashboard() },
                     onNavigateToTheme = { navController.navigate(Screen.ThemeSelection.route) },
                     onNavigateToColorScheme = { navController.navigate(Screen.ColorSchemeSelection.route) },
-                    onNavigateToIcon = { navController.navigate(Screen.IconSelection.route) }
+                    onNavigateToIcon = { navController.navigate(Screen.IconSelection.route) },
+                    onNavigateToCustomColors = { navController.navigate(Screen.CustomColorSettings.route) }
+                )
+            }
+
+            composable(Screen.CustomColorSettings.route) {
+                CustomColorSettingsScreen(
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
             

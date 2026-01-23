@@ -169,8 +169,8 @@ fun ItemDetailScreen(
                 if (bitmap != null) {
                     Card(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f) // 改为正方形
+                            .size(220.dp)
+                            .align(Alignment.CenterHorizontally)
                             .clickable {
                                 if (allImages.isNotEmpty()) {
                                     selectedImageIndex = primaryImageIndex
@@ -191,8 +191,8 @@ fun ItemDetailScreen(
                 // 没有图片时显示占位符
                 Card(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f), // 改为正方形
+                        .size(220.dp)
+                        .align(Alignment.CenterHorizontally),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = ColorHelpers.getGroup3CardBgColor()
@@ -864,52 +864,40 @@ fun ModernReminderDialog(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // 顶部标题栏 - 现代化设计
-                Box(
+                // 顶部标题栏 - 统一简洁样式
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(
-                            brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                                )
-                            ),
-                            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-                        )
-                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.Notifications,
-                                contentDescription = null,
-                                tint = androidx.compose.ui.graphics.Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Text(
-                                text = if (existingReminder != null) stringResource(R.string.edit_reminder) else stringResource(R.string.add_reminder),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = androidx.compose.ui.graphics.Color.White
-                            )
-                        }
-                        IconButton(onClick = onDismiss) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "关闭",
-                                tint = androidx.compose.ui.graphics.Color.White
-                            )
-                        }
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = null,
+                            tint = ColorHelpers.getGroup4IconColor(),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = if (existingReminder != null) stringResource(R.string.edit_reminder) else stringResource(R.string.add_reminder),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = ColorHelpers.getGroup4TextColor()
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = stringResource(R.string.close),
+                            tint = ColorHelpers.getGroup4IconColor()
+                        )
                     }
                 }
+                HorizontalDivider(color = ColorHelpers.getGroup4IconColor(0.15f))
                 
                 // 内容区域（可滚动）
                 Column(

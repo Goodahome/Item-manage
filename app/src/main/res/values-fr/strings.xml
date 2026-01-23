@@ -91,6 +91,7 @@
     <string name="color_scheme_space">🌌 Gris espace profond</string>
     <string name="color_scheme_wine">🍷 Vin stable</string>
     <string name="color_scheme_christmas">🎄 Édition limitée Noël</string>
+    <string name="color_scheme_custom">🎨 Personnalisé</string>
     
     <string name="language">Langue</string>
     <string name="language_zh">Chinois simplifié</string>
@@ -111,6 +112,7 @@
     <string name="auto_sync">Synchronisation automatique</string>
     <string name="auto_sync_enabled">Activé</string>
     <string name="auto_sync_disabled">Désactivé</string>
+    <string name="auto_sync_not_supported">La synchronisation automatique est uniquement prise en charge par Nextcloud</string>
     <string name="nextcloud_settings">Paramètres Nextcloud</string>
     <string name="nextcloud_configured">Configuré</string>
     <string name="nextcloud_not_configured">Non configuré</string>
@@ -239,6 +241,61 @@
     <!-- 标签 -->
     <string name="tags">Étiquettes</string>
     <string name="nav_tag_management">Gestion des étiquettes</string>
+    <string name="nav_excel_import_export">Import/Export en lot</string>
+    <string name="excel_import_export_title">Import/Export en lot</string>
+    <string name="excel_import_title">Import Excel</string>
+    <string name="excel_import_desc">Importe des articles depuis Excel, images incluses.</string>
+    <string name="excel_import_button">Choisir un fichier Excel</string>
+    <string name="excel_export_title">Export Excel</string>
+    <string name="excel_export_desc">Exporte les articles en Excel, images incluses.</string>
+    <string name="excel_export_button">Exporter en Excel</string>
+    <string name="excel_import_export_hint_title">Format</string>
+    <string name="excel_import_export_hint_body">En-tête requis : Nom, Description, Quantité, Prix, Code-barres, Étiquettes, Conteneur (obligatoire), Date d’expiration, Alerte stock (optionnel), Image. Les images peuvent être intégrées dans les cellules.</string>
+    <string name="excel_export_success">Export réussi : %1$d</string>
+    <string name="excel_export_failed">Échec de l’export : %1$s</string>
+    <string name="excel_import_success">Import terminé : %1$d ajoutés, %2$d ignorés, %3$d fusionnés</string>
+    <string name="excel_import_failed">Échec de l’import : %1$s</string>
+    <string name="custom_color_title">Couleurs personnalisées</string>
+    <string name="custom_color_preview_title">Aperçu de l’accueil</string>
+    <string name="custom_color_desc">Saisissez un code couleur avec aperçu en direct</string>
+    <string name="custom_color_enable">Activer les couleurs personnalisées</string>
+    <string name="custom_color_enable_desc">Utilise les couleurs saisies</string>
+    <string name="custom_color_save_title">Enregistrer un thème personnalisé</string>
+    <string name="custom_color_scheme_name">Nom du thème</string>
+    <string name="custom_color_scheme_save">Enregistrer</string>
+    <string name="custom_color_saved_title">Thèmes enregistrés</string>
+    <string name="custom_color_scheme_delete">Supprimer</string>
+    <string name="custom_color_scheme_empty">Aucun thème enregistré</string>
+    <string name="custom_color_scheme_name_required">Veuillez saisir un nom de thème</string>
+    <string name="custom_color_field_primary">Fond icône &amp; conteneur Primary</string>
+    <string name="custom_color_field_secondary">Couleur secondaire Secondary</string>
+    <string name="custom_color_field_tertiary">Couleur d’accent Tertiary</string>
+    <string name="custom_color_field_primary_container">Couleur du conteneur PrimaryContainer</string>
+    <string name="custom_color_field_on_primary_container">Texte du conteneur OnPrimaryContainer</string>
+    <string name="custom_color_field_background">Arrière-plan Background</string>
+    <string name="custom_color_field_surface">Arrière-plan de carte Surface</string>
+    <string name="custom_color_field_surface_variant">Arrière-plan de zone SurfaceVariant</string>
+    <string name="custom_color_field_gradient_start">Dégradé barre de navigation début</string>
+    <string name="custom_color_field_gradient_end">Dégradé barre de navigation fin</string>
+    <string name="custom_color_field_search_box_bg">Fond du champ de recherche</string>
+    <string name="custom_color_field_search_box_border">Bordure du champ de recherche</string>
+    <string name="custom_color_field_breadcrumb_text">Texte du fil d’Ariane</string>
+    <string name="custom_color_field_breadcrumb_icon">Icône du fil d’Ariane</string>
+    <string name="custom_color_field_sub_warehouse_name">Nom du sous-conteneur</string>
+    <string name="custom_color_hex_placeholder">#RRGGBB ou #AARRGGBB</string>
+    <string name="custom_color_preview_home">Accueil</string>
+    <string name="custom_color_preview_search">Rechercher des articles</string>
+    <string name="custom_color_preview_breadcrumb_path">Salon / Armoire</string>
+    <string name="custom_color_preview_container_icon">Icône conteneur</string>
+    <string name="custom_color_preview_item_icon">Icône article</string>
+    <string name="custom_color_preview_container">Conteneur</string>
+    <string name="custom_color_preview_secondary_button">Bouton secondaire</string>
+    <string name="custom_color_preview_tertiary">Accent</string>
+    <string name="custom_color_preview_item">Article exemple</string>
+    <string name="custom_color_preview_quantity">Qté %1$d</string>
+    <string name="custom_color_preview_price">19,9 €</string>
+    <string name="custom_color_preview_sub_warehouse">Nom du sous-conteneur</string>
+    <string name="custom_color_preview_action_button">Bouton d’action</string>
     <string name="tag_management">Gestion des étiquettes</string>
     <string name="default_tag">Par défaut</string>
     <string name="tag_usage_count">Nombre d\'utilisations : %1$d</string>
@@ -425,6 +482,7 @@
     <string name="quantity_label">Quantité</string>
     <string name="warehouse_empty">Ce conteneur est vide</string>
     <string name="child_warehouse_info">Sous-conteneurs : %1$d    Articles : %2$d</string>
+    <string name="capacity_limit_reached">Capacité atteinte. Impossible d’ajouter d’autres articles.</string>
     
     <!-- 提醒相关 -->
     <string name="expiring_soon_title">Expirant bientôt</string>
@@ -655,4 +713,24 @@
     <string name="restore_no_purchase">Aucun achat trouvé</string>
     <string name="manage_subscription">Gérer l’abonnement</string>
     <string name="manage_subscription_failed">Impossible d’ouvrir la gestion d’abonnement</string>
+    
+    <!-- Import/Export Excel -->
+    <string name="excel_header_name">Nom</string>
+    <string name="excel_header_description">Description</string>
+    <string name="excel_header_quantity">Quantité</string>
+    <string name="excel_header_price">Prix</string>
+    <string name="excel_header_barcode">Code-barres</string>
+    <string name="excel_header_tags">Étiquettes</string>
+    <string name="excel_header_warehouse_required">Conteneur (obligatoire)</string>
+    <string name="excel_header_warehouse">Conteneur</string>
+    <string name="excel_header_expiry_date">Date d’expiration</string>
+    <string name="excel_header_stock_alert">Alerte stock</string>
+    <string name="excel_header_image">Image</string>
+    <string name="excel_file_write_failed">Impossible d’écrire le fichier</string>
+    <string name="excel_file_read_failed">Impossible de lire le fichier</string>
+    <string name="excel_file_invalid">Format de fichier Excel invalide</string>
+    <string name="excel_header_missing">Fichier Excel sans en-têtes</string>
+    <string name="excel_export_log_failed">Échec de l’export Excel</string>
+    <string name="excel_import_log_failed">Échec de l’import Excel</string>
+    <string name="feature_extract_log">Caractéristiques extraites, featureCode : %1$s...</string>
 </resources>

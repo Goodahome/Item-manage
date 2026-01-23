@@ -253,91 +253,89 @@ fun BackupRestoreScreen(
                     }
                 }
                 
-                // 云端备份/恢复卡片（如果已配置）
-                if (isCloudConfigured) {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = ColorHelpers.getGroup3CardBgColor()
-                            )
+                // 云端备份/恢复卡片
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = ColorHelpers.getGroup3CardBgColor()
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.cloud_backup_restore, cloudProvider.displayName),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = ColorHelpers.getGroup4TextColor()
-                                )
-                                
-                                Text(
-                                    text = if (isCloudReady) {
-                                        stringResource(R.string.cloud_restore_description)
-                                    } else {
-                                        stringResource(R.string.cloud_not_connected)
-                                    },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = ColorHelpers.getGroup4TextColor(0.7f)
-                                )
-                                
-                                Spacer(modifier = Modifier.height(8.dp))
-                                
-                                Button(
-                                    onClick = {
-                                        if (!canAccessPremiumFeatures) {
-                                            showPremiumFeatureDialog = true
-                                        } else if (isCloudReady) {
-                                            scope.launch {
-                                                viewModel.showSaving()
-                                                try {
-                                                    val backupResult = DatabaseBackupUtils.backupDatabase(context)
-                                                    backupResult.fold(
-                                                        onSuccess = { file ->
-                                                            val uploadResult = cloudProvider.uploadBackup(context, file)
-                                                            uploadResult.fold(
-                                                                onSuccess = { viewModel.showSuccess(context.getString(R.string.cloud_backup_success)) },
-                                                                onFailure = { e -> viewModel.showError("${context.getString(R.string.cloud_backup_failed)}: ${e.message}") }
-                                                            )
-                                                        },
-                                                        onFailure = { e ->
-                                                            viewModel.showError("${context.getString(R.string.backup_failed)}: ${e.message}")
-                                                        }
-                                                    )
-                                                } catch (e: Exception) {
-                                                    viewModel.showError("${context.getString(R.string.cloud_backup_failed)}: ${e.message}")
-                                                }
+                            Text(
+                                text = stringResource(R.string.cloud_backup_restore, cloudProvider.displayName),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = ColorHelpers.getGroup4TextColor()
+                            )
+                            
+                            Text(
+                                text = if (isCloudReady) {
+                                    stringResource(R.string.cloud_restore_description)
+                                } else {
+                                    stringResource(R.string.cloud_not_connected)
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ColorHelpers.getGroup4TextColor(0.7f)
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Button(
+                                onClick = {
+                                    if (!canAccessPremiumFeatures) {
+                                        showPremiumFeatureDialog = true
+                                    } else if (isCloudReady) {
+                                        scope.launch {
+                                            viewModel.showSaving()
+                                            try {
+                                                val backupResult = DatabaseBackupUtils.backupDatabase(context)
+                                                backupResult.fold(
+                                                    onSuccess = { file ->
+                                                        val uploadResult = cloudProvider.uploadBackup(context, file)
+                                                        uploadResult.fold(
+                                                            onSuccess = { viewModel.showSuccess(context.getString(R.string.cloud_backup_success)) },
+                                                            onFailure = { e -> viewModel.showError("${context.getString(R.string.cloud_backup_failed)}: ${e.message}") }
+                                                        )
+                                                    },
+                                                    onFailure = { e ->
+                                                        viewModel.showError("${context.getString(R.string.backup_failed)}: ${e.message}")
+                                                    }
+                                                )
+                                            } catch (e: Exception) {
+                                                viewModel.showError("${context.getString(R.string.cloud_backup_failed)}: ${e.message}")
                                             }
                                         }
-                                    },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    enabled = isCloudReady
-                                ) {
-                                    Icon(Icons.Default.CloudUpload, null, modifier = Modifier.size(20.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(R.string.upload_backup))
-                                }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = isCloudReady
+                            ) {
+                                Icon(Icons.Default.CloudUpload, null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.upload_backup))
+                            }
 
-                                Button(
-                                    onClick = {
-                                        if (!canAccessPremiumFeatures) {
-                                            showPremiumFeatureDialog = true
-                                        } else if (isCloudReady) {
-                                            showBackupWarningDialog = true
-                                        }
-                                    },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    enabled = isCloudReady
-                                ) {
-                                    Icon(Icons.Default.CloudDownload, null, modifier = Modifier.size(20.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(R.string.restore_from_cloud))
-                                }
+                            Button(
+                                onClick = {
+                                    if (!canAccessPremiumFeatures) {
+                                        showPremiumFeatureDialog = true
+                                    } else if (isCloudReady) {
+                                        showBackupWarningDialog = true
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = isCloudReady
+                            ) {
+                                Icon(Icons.Default.CloudDownload, null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.restore_from_cloud))
                             }
                         }
                     }
@@ -399,47 +397,44 @@ fun BackupRestoreScreen(
         
         // 备份警告对话框
         if (showBackupWarningDialog) {
-            AlertDialog(
-                onDismissRequest = { showBackupWarningDialog = false },
-                title = { Text(stringResource(R.string.important_notice), fontWeight = FontWeight.Bold) },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.cloud_restore_warning))
-                        Text(stringResource(R.string.cloud_restore_suggestion))
-                        Text(stringResource(R.string.confirm_continue), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
-                    }
+            ModernSettingsDialog(
+                title = stringResource(R.string.important_notice),
+                icon = Icons.Default.Warning,
+                onDismiss = { showBackupWarningDialog = false },
+                onConfirm = {
+                    showBackupWarningDialog = false
+                    showCloudRestoreDialog = true
                 },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showBackupWarningDialog = false
-                            showCloudRestoreDialog = true
-                        }
-                    ) {
-                        Text(stringResource(R.string.continue_restore), color = MaterialTheme.colorScheme.error)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showBackupWarningDialog = false }) {
-                        Text(stringResource(R.string.cancel))
-                    }
+                confirmText = stringResource(R.string.continue_restore),
+                dismissText = stringResource(R.string.cancel)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        stringResource(R.string.cloud_restore_warning),
+                        color = ColorHelpers.getGroup4TextColor()
+                    )
+                    Text(
+                        stringResource(R.string.cloud_restore_suggestion),
+                        color = ColorHelpers.getGroup4TextColor()
+                    )
+                    Text(
+                        stringResource(R.string.confirm_continue),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
-            )
+            }
         }
         
         // 云端恢复确认对话框
         if (showCloudRestoreDialog) {
-            AlertDialog(
-                onDismissRequest = { showCloudRestoreDialog = false },
-                title = { Text(stringResource(R.string.confirm_restore)) },
-                text = {
-                    Text(stringResource(R.string.confirm_restore_message))
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showCloudRestoreDialog = false
-                            scope.launch {
+            ModernSettingsDialog(
+                title = stringResource(R.string.confirm_restore),
+                icon = Icons.Default.Restore,
+                onDismiss = { showCloudRestoreDialog = false },
+                onConfirm = {
+                    showCloudRestoreDialog = false
+                    scope.launch {
                                 viewModel.showSaving()
                                 try {
                                     val backupsResult = cloudProvider.listBackups(context)
@@ -500,17 +495,16 @@ fun BackupRestoreScreen(
                                     viewModel.showError("云端恢复失败: ${e.message}")
                                 }
                             }
-                        }
-                    ) {
-                        Text(stringResource(R.string.confirm_button), color = MaterialTheme.colorScheme.error)
-                    }
                 },
-                dismissButton = {
-                    TextButton(onClick = { showCloudRestoreDialog = false }) {
-                        Text(stringResource(R.string.cancel))
-                    }
-                }
-            )
+                confirmText = stringResource(R.string.confirm_button),
+                dismissText = stringResource(R.string.cancel)
+            ) {
+                Text(
+                    text = stringResource(R.string.confirm_restore_message),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ColorHelpers.getGroup4TextColor()
+                )
+            }
         }
         
         // 高级功能对话框

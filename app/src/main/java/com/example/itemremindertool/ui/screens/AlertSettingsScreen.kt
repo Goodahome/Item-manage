@@ -310,83 +310,74 @@ fun AlertSettingsScreen(
         var selectedHour by remember { mutableStateOf(calendar.get(Calendar.HOUR_OF_DAY)) }
         var selectedMinute by remember { mutableStateOf(calendar.get(Calendar.MINUTE)) }
         
-        AlertDialog(
-            onDismissRequest = { showTimePicker = false },
-            title = { Text(stringResource(R.string.select_notification_time)) },
-            text = {
-                Column(
+        ModernSettingsDialog(
+            title = stringResource(R.string.select_notification_time),
+            icon = Icons.Default.Schedule,
+            onDismiss = { showTimePicker = false },
+            onConfirm = {
+                notificationHour = selectedHour
+                notificationMinute = selectedMinute
+                alertSettingsManager.setNotificationHour(selectedHour)
+                alertSettingsManager.setNotificationMinute(selectedMinute)
+                // 重新调度通知以应用新的时间
+                NotificationScheduler.scheduleNotifications(context)
+                showTimePicker = false
+            },
+            confirmText = stringResource(R.string.confirm),
+            dismissText = stringResource(R.string.cancel)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 使用简单的数字输入框来选择时间
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 使用简单的数字输入框来选择时间
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = stringResource(R.string.hour),
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                            OutlinedTextField(
-                                value = selectedHour.toString(),
-                                onValueChange = { 
-                                    val value = it.toIntOrNull()?.coerceIn(0, 23) ?: selectedHour
-                                    selectedHour = value
-                                },
-                                modifier = Modifier.width(80.dp),
-                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                                )
-                            )
-                        }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = ":",
-                            style = MaterialTheme.typography.headlineMedium,
-                            modifier = Modifier.padding(horizontal = 8.dp)
+                            text = stringResource(R.string.hour),
+                            style = MaterialTheme.typography.labelMedium
                         )
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = stringResource(R.string.minute),
-                                style = MaterialTheme.typography.labelMedium
+                        OutlinedTextField(
+                            value = selectedHour.toString(),
+                            onValueChange = { 
+                                val value = it.toIntOrNull()?.coerceIn(0, 23) ?: selectedHour
+                                selectedHour = value
+                            },
+                            modifier = Modifier.width(80.dp),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
                             )
-                            OutlinedTextField(
-                                value = selectedMinute.toString(),
-                                onValueChange = { 
-                                    val value = it.toIntOrNull()?.coerceIn(0, 59) ?: selectedMinute
-                                    selectedMinute = value
-                                },
-                                modifier = Modifier.width(80.dp),
-                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                                )
+                        )
+                    }
+                    Text(
+                        text = ":",
+                        style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = stringResource(R.string.minute),
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                        OutlinedTextField(
+                            value = selectedMinute.toString(),
+                            onValueChange = { 
+                                val value = it.toIntOrNull()?.coerceIn(0, 59) ?: selectedMinute
+                                selectedMinute = value
+                            },
+                            modifier = Modifier.width(80.dp),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
                             )
-                        }
+                        )
                     }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        notificationHour = selectedHour
-                        notificationMinute = selectedMinute
-                        alertSettingsManager.setNotificationHour(selectedHour)
-                        alertSettingsManager.setNotificationMinute(selectedMinute)
-                        // 重新调度通知以应用新的时间
-                        NotificationScheduler.scheduleNotifications(context)
-                        showTimePicker = false
-                    }
-                ) {
-                    Text(stringResource(R.string.confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) {
-                    Text(stringResource(R.string.cancel))
                 }
             }
-        )
+        }
     }
 }
 

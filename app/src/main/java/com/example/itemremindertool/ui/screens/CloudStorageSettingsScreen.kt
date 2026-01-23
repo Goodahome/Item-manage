@@ -21,8 +21,6 @@ import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import androidx.compose.foundation.background
-import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.isSystemInDarkTheme
 import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 import com.example.itemremindertool.billing.BillingManager
@@ -255,6 +253,63 @@ fun CloudStorageSettingsScreen(
                         }
                     }
                     
+                    Divider()
+
+                    val selectedProvider = CloudProviderRegistry.getProvider(selectedProviderId)
+                    val isConfigComplete =
+                        nextcloudServerUrl.isNotEmpty() && nextcloudUsername.isNotEmpty() && nextcloudPassword.isNotEmpty()
+                    val isProviderReady =
+                        selectedProvider.isConfigured(context) && selectedProvider.isAuthenticated(context)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.auto_sync),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = ColorHelpers.getGroup4TextColor()
+                            )
+                            Text(
+                                text = if (autoSyncEnabled) {
+                                    stringResource(R.string.auto_sync_enabled)
+                                } else {
+                                    stringResource(R.string.auto_sync_disabled)
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ColorHelpers.getGroup4TextColor(0.7f),
+                                fontSize = 12.sp
+                            )
+                        }
+                        Switch(
+                            checked = autoSyncEnabled,
+                            enabled = canAccessPremiumFeatures && isProviderReady,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                uncheckedThumbColor = ColorHelpers.getGroup4IconColor(0.6f),
+                                uncheckedTrackColor = ColorHelpers.getGroup4IconColor(0.2f)
+                            ),
+                            onCheckedChange = {
+                                if (!canAccessPremiumFeatures) {
+                                    showPremiumFeatureDialog = true
+                                    return@Switch
+                                }
+                                autoSyncEnabled = it
+                                prefs.edit().putBoolean("auto_sync_enabled", it).apply()
+                                if (it && isProviderReady) {
+                                    com.example.itemremindertool.utils.CloudSyncScheduler.scheduleSync(context)
+                                    viewModel.showSuccess("自动同步已启用")
+                                } else {
+                                    com.example.itemremindertool.utils.CloudSyncScheduler.cancelSync(context)
+                                    viewModel.showSuccess("自动同步已禁用")
+                                }
+                            }
+                        )
+                    }
+
                     Divider()
 
                     when (selectedProviderId) {
@@ -566,9 +621,6 @@ fun CloudStorageSettingsScreen(
 
                             Divider()
 
-                            val isConfigComplete =
-                                nextcloudServerUrl.isNotEmpty() && nextcloudUsername.isNotEmpty() && nextcloudPassword.isNotEmpty()
-
                             Button(
                                 onClick = {
                                     if (!canAccessPremiumFeatures) {
@@ -602,51 +654,6 @@ fun CloudStorageSettingsScreen(
                                 Icon(Icons.Default.CloudSync, null, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(stringResource(R.string.test_connection))
-                            }
-
-                            Divider()
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = stringResource(R.string.auto_sync),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = ColorHelpers.getGroup4TextColor()
-                                    )
-                                    Text(
-                                        text = if (autoSyncEnabled) {
-                                            stringResource(R.string.auto_sync_enabled)
-                                        } else {
-                                            stringResource(R.string.auto_sync_disabled)
-                                        },
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = ColorHelpers.getGroup4TextColor(0.7f),
-                                        fontSize = 12.sp
-                                    )
-                                }
-                                Switch(
-                                    checked = autoSyncEnabled,
-                                    enabled = canAccessPremiumFeatures && isConfigComplete,
-                                    onCheckedChange = {
-                                        if (!canAccessPremiumFeatures) {
-                                            showPremiumFeatureDialog = true
-                                            return@Switch
-                                        }
-                                        autoSyncEnabled = it
-                                        prefs.edit().putBoolean("auto_sync_enabled", it).apply()
-                                        if (it && isConfigComplete) {
-                                            com.example.itemremindertool.utils.CloudSyncScheduler.scheduleSync(context)
-                                            viewModel.showSuccess("自动同步已启用")
-                                        } else {
-                                            com.example.itemremindertool.utils.CloudSyncScheduler.cancelSync(context)
-                                            viewModel.showSuccess("自动同步已禁用")
-                                        }
-                                    }
-                                )
                             }
                         }
                     }
@@ -762,70 +769,51 @@ private fun NextcloudConfigDialog(
     var newPassword by remember { mutableStateOf(password) }
     var passwordVisible by remember { mutableStateOf(false) }
     
-    val isDarkTheme = isSystemInDarkTheme()
-    val dialogBackgroundColor = if (isDarkTheme) {
-        Color.Black.copy(alpha = 0.7f)
-    } else {
-        Color.White.copy(alpha = 0.7f)
-    }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = dialogBackgroundColor,
-        title = { Text(stringResource(R.string.nextcloud_settings)) },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedTextField(
-                    value = newServerUrl,
-                    onValueChange = { newServerUrl = it },
-                    label = { Text(stringResource(R.string.nextcloud_server_url)) },
-                    placeholder = { Text("https://nextcloud.example.com") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = newUsername,
-                    onValueChange = { newUsername = it },
-                    label = { Text(stringResource(R.string.nextcloud_username)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = newPassword,
-                    onValueChange = { newPassword = it },
-                    label = { Text(stringResource(R.string.nextcloud_password)) },
-                    placeholder = { Text(stringResource(R.string.nextcloud_password_hint)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                null
-                            )
-                        }
+    ModernSettingsDialog(
+        title = stringResource(R.string.nextcloud_settings),
+        icon = Icons.Default.Cloud,
+        onDismiss = onDismiss,
+        onConfirm = { onSave(newServerUrl.trim(), newUsername.trim(), newPassword) },
+        confirmText = stringResource(R.string.save),
+        dismissText = stringResource(R.string.cancel)
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedTextField(
+                value = newServerUrl,
+                onValueChange = { newServerUrl = it },
+                label = { Text(stringResource(R.string.nextcloud_server_url)) },
+                placeholder = { Text("https://nextcloud.example.com") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = newUsername,
+                onValueChange = { newUsername = it },
+                label = { Text(stringResource(R.string.nextcloud_username)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = newPassword,
+                onValueChange = { newPassword = it },
+                label = { Text(stringResource(R.string.nextcloud_password)) },
+                placeholder = { Text(stringResource(R.string.nextcloud_password_hint)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            null
+                        )
                     }
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onSave(newServerUrl.trim(), newUsername.trim(), newPassword)
                 }
-            ) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
+            )
         }
-    )
+    }
 }
 
 @Composable
@@ -839,47 +827,41 @@ private fun OAuthClientIdDialog(
 ) {
     var newClientId by remember { mutableStateOf(clientId) }
     var newClientSecret by remember { mutableStateOf(clientSecret) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.oauth_client_id_title, providerName)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = stringResource(R.string.oauth_client_id_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = ColorHelpers.getGroup4TextColor(0.7f)
-                )
+    val isValid = newClientId.isNotBlank() && (!showClientSecret || newClientSecret.isNotBlank())
+    ModernSettingsDialog(
+        title = stringResource(R.string.oauth_client_id_title, providerName),
+        icon = Icons.Default.VpnKey,
+        onDismiss = onDismiss,
+        onConfirm = { onSave(newClientId.trim(), newClientSecret.trim()) },
+        confirmEnabled = isValid,
+        confirmText = stringResource(R.string.save),
+        dismissText = stringResource(R.string.cancel)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = stringResource(R.string.oauth_client_id_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = ColorHelpers.getGroup4TextColor(0.7f)
+            )
+            OutlinedTextField(
+                value = newClientId,
+                onValueChange = { newClientId = it },
+                label = { Text(stringResource(R.string.oauth_client_id)) },
+                placeholder = { Text(stringResource(R.string.oauth_client_id_hint)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            if (showClientSecret) {
                 OutlinedTextField(
-                    value = newClientId,
-                    onValueChange = { newClientId = it },
-                    label = { Text(stringResource(R.string.oauth_client_id)) },
-                    placeholder = { Text(stringResource(R.string.oauth_client_id_hint)) },
+                    value = newClientSecret,
+                    onValueChange = { newClientSecret = it },
+                    label = { Text(stringResource(R.string.oauth_client_secret)) },
+                    placeholder = { Text(stringResource(R.string.oauth_client_secret_hint)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-                if (showClientSecret) {
-                    OutlinedTextField(
-                        value = newClientSecret,
-                        onValueChange = { newClientSecret = it },
-                        label = { Text(stringResource(R.string.oauth_client_secret)) },
-                        placeholder = { Text(stringResource(R.string.oauth_client_secret_hint)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            val isValid = newClientId.isNotBlank() && (!showClientSecret || newClientSecret.isNotBlank())
-            TextButton(onClick = { onSave(newClientId.trim(), newClientSecret.trim()) }, enabled = isValid) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
             }
         }
-    )
+    }
 }
 

@@ -5,8 +5,8 @@ import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.itemremindertool.utils.DatabaseBackupUtils
-import com.example.itemremindertool.utils.NextcloudBackupManager
 import com.example.itemremindertool.utils.SyncStateManager
+import com.example.itemremindertool.utils.cloud.CloudProviderRegistry
 
 class CloudSyncWorker(
     context: Context,
@@ -34,12 +34,15 @@ class CloudSyncWorker(
                 Log.d(TAG, "手动同步触发，跳过自动同步开关检查")
             }
             
-            val serverUrl = prefs.getString("nextcloud_server_url", "") ?: ""
-            val username = prefs.getString("nextcloud_username", "") ?: ""
-            val password = prefs.getString("nextcloud_password", "") ?: ""
-            
-            if (serverUrl.isEmpty() || username.isEmpty() || password.isEmpty()) {
-                Log.d(TAG, "Nextcloud 配置不完整，跳过同步")
+            val providerId = prefs.getString("cloud_provider_id", "nextcloud")
+            val provider = CloudProviderRegistry.getProvider(providerId)
+            val providerName = provider.displayName
+
+            if (!provider.isConfigured(applicationContext) || !provider.isAuthenticated(applicationContext)) {
+                Log.d(TAG, "$providerName 配置不完整或未授权，跳过同步")
+                if (isManualSync) {
+                    SyncStateManager.syncError("$providerName 未配置或未授权")
+                }
                 return Result.success()
             }
             
@@ -47,7 +50,7 @@ class CloudSyncWorker(
             SyncStateManager.startSyncing()
             
             val syncType = if (isManualSync) "手动同步" else "自动同步"
-            Log.d(TAG, "========== 开始云端$syncType（仅上传本地数据）==========")
+            Log.d(TAG, "========== 开始云端$syncType（仅上传本地数据，${provider.displayName}）==========")
             
             // 检查本地是否有数据
             val localDb = com.example.itemremindertool.data.database.AppDatabase.getDatabase(applicationContext)
@@ -69,26 +72,18 @@ class CloudSyncWorker(
             
             // 1. 删除旧的云端备份文件（只保留最新的）
             // 注意：在 listBackups 中测试连接，后续操作跳过测试以优化性能
-            var connectionTested = false
             try {
-                val cloudBackupsResult = NextcloudBackupManager.listBackups(serverUrl, username, password, skipConnectionTest = false)
-                connectionTested = true // 标记已测试连接
+                val cloudBackupsResult = provider.listBackups(applicationContext)
                 val cloudBackups = cloudBackupsResult.getOrNull() ?: emptyList()
-                
+
                 if (cloudBackups.isNotEmpty()) {
                     Log.d(TAG, "发现 ${cloudBackups.size} 个旧备份文件，开始清理...")
-                    for (backupPath in cloudBackups) {
+                    for (backup in cloudBackups) {
                         try {
-                            NextcloudBackupManager.deleteBackup(
-                                backupPath,
-                                serverUrl,
-                                username,
-                                password,
-                                skipConnectionTest = true // 跳过连接测试，已在 listBackups 中测试过
-                            )
-                            Log.d(TAG, "已删除旧备份: $backupPath")
+                            provider.deleteBackup(applicationContext, backup.id)
+                            Log.d(TAG, "已删除旧备份: ${backup.name}")
                         } catch (e: Exception) {
-                            Log.w(TAG, "删除旧备份失败: $backupPath", e)
+                            Log.w(TAG, "删除旧备份失败: ${backup.name}", e)
                             // 删除失败不影响继续执行
                         }
                     }
@@ -115,16 +110,7 @@ class CloudSyncWorker(
             // 3. 上传到云端（使用固定的文件名，覆盖旧文件）
             // 如果已经在 listBackups 中测试过连接，跳过测试以优化性能
             Log.d(TAG, "开始上传备份到云端...")
-            val fixedBackupName = "item_reminder_backup_latest.zip"
-            val uploadResult = NextcloudBackupManager.uploadBackup(
-                applicationContext,
-                backupFile,
-                serverUrl,
-                username,
-                password,
-                fixedBackupName,
-                skipConnectionTest = connectionTested // 如果已测试过连接，跳过测试
-            )
+            val uploadResult = provider.uploadBackup(applicationContext, backupFile)
             
             return uploadResult.fold(
                 onSuccess = {

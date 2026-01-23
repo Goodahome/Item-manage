@@ -93,7 +93,8 @@ fun ColorSchemeSelectionScreen(
                 "mint" to R.string.color_scheme_mint,
                 "space" to R.string.color_scheme_space,
                 "wine" to R.string.color_scheme_wine,
-                "christmas" to R.string.color_scheme_christmas
+                "christmas" to R.string.color_scheme_christmas,
+                "custom" to R.string.color_scheme_custom
             )
             
             colorSchemes.forEach { (schemeKey, stringResId) ->
