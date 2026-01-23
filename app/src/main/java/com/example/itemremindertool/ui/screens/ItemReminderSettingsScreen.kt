@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -49,7 +50,7 @@ fun ItemReminderSettingsScreen(
                 title = { Text(stringResource(R.string.add_reminder_title, item.name)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -373,7 +374,10 @@ fun ReminderEditDialog(
                     }
                 }
                 
-                Divider()
+                HorizontalDivider(
+                    color = ColorHelpers.getDividerColor(),
+                    thickness = 4.dp
+                )
                 
                 // 根据类型显示不同的时间设置
                 when (selectedType) {
@@ -506,7 +510,10 @@ fun ReminderEditDialog(
                     }
                 }
                 
-                Divider()
+                HorizontalDivider(
+                    color = ColorHelpers.getDividerColor(),
+                    thickness = 4.dp
+                )
                 
                 // 提醒原因
                 OutlinedTextField(

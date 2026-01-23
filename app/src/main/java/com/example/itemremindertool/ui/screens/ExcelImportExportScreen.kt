@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material3.Button
@@ -31,10 +31,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -50,6 +53,10 @@ import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.viewmodel.ExcelImportExportViewModel
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
+import com.example.itemremindertool.ui.components.PremiumFeatureDialog
+import com.example.itemremindertool.billing.BillingManager
+import com.example.itemremindertool.billing.PremiumFeatureManager
+import com.example.itemremindertool.config.FeatureFlags
 import com.example.itemremindertool.utils.ExcelImportExportUtils
 import com.example.itemremindertool.utils.ExcelImportSummary
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +79,39 @@ fun ExcelImportExportScreen(
     val scope = rememberCoroutineScope()
     val viewModel: ExcelImportExportViewModel = viewModel()
     val operationState by viewModel.operationState.collectAsState()
+    val prefs = remember {
+        context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+    }
+    var showPremiumFeatureDialog by remember { mutableStateOf(false) }
+    var canAccessPremiumFeatures by remember {
+        mutableStateOf(PremiumFeatureManager.canAccessPremiumFeatures(context))
+    }
+    val billingManager = remember {
+        if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
+            BillingManager(
+                context,
+                listOf(
+                    BillingManager.PRODUCT_REMOVE_ADS,
+                    BillingManager.PRODUCT_PREMIUM_FEATURES,
+                    BillingManager.PRODUCT_PREMIUM_LIFETIME
+                )
+            ).apply {
+                initialize()
+            }
+        } else {
+            null
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "premium_features" || key == "premium_lifetime" || key == "premium_trial_used" || key == "premium_trial_start_time") {
+                canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/vnd.ms-excel")
@@ -123,7 +163,7 @@ fun ExcelImportExportScreen(
                     title = { Text(stringResource(R.string.excel_import_export_title)) },
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                         }
                     }
                 )
@@ -164,7 +204,13 @@ fun ExcelImportExportScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Button(
-                                onClick = { importLauncher.launch("application/vnd.ms-excel") }
+                                onClick = {
+                                    if (!canAccessPremiumFeatures) {
+                                        showPremiumFeatureDialog = true
+                                    } else {
+                                        importLauncher.launch("application/vnd.ms-excel")
+                                    }
+                                }
                             ) {
                                 Icon(Icons.Default.FileUpload, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -205,9 +251,13 @@ fun ExcelImportExportScreen(
                             Spacer(modifier = Modifier.height(4.dp))
                             Button(
                                 onClick = {
-                                    val formatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-                                    val defaultName = "ItemReminder_${formatter.format(Date())}.xls"
-                                    exportLauncher.launch(defaultName)
+                                    if (!canAccessPremiumFeatures) {
+                                        showPremiumFeatureDialog = true
+                                    } else {
+                                        val formatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+                                        val defaultName = "ItemReminder_${formatter.format(Date())}.xls"
+                                        exportLauncher.launch(defaultName)
+                                    }
                                 }
                             ) {
                                 Icon(Icons.Default.FileDownload, contentDescription = null)
@@ -255,6 +305,13 @@ fun ExcelImportExportScreen(
         BottomOperationStatusIndicator(
             operationState = operationState,
             modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+
+    if (FeatureFlags.ENABLE_PURCHASE_FEATURE && showPremiumFeatureDialog && billingManager != null) {
+        PremiumFeatureDialog(
+            billingManager = billingManager,
+            onDismiss = { showPremiumFeatureDialog = false }
         )
     }
 }

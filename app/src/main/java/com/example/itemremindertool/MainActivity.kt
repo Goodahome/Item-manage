@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.DisposableEffect
@@ -43,12 +43,14 @@ import com.example.itemremindertool.ui.screens.*
 import com.example.itemremindertool.ui.screens.SettingsScreen
 import com.example.itemremindertool.notification.NotificationScheduler
 import com.example.itemremindertool.ui.theme.ItemReminderToolTheme
+import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.viewmodel.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.itemremindertool.utils.AppConfigManager
 import com.example.itemremindertool.utils.LocaleHelper
 import com.example.itemremindertool.utils.IconManager
 import com.example.itemremindertool.utils.AppRefreshManager
+import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
@@ -187,6 +189,9 @@ fun ItemReminderToolApp(
         context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
     }
     var isPasswordEnabled by remember { mutableStateOf(prefs.getBoolean("password_enabled", false)) }
+    var canAccessPremiumFeatures by remember {
+        mutableStateOf(PremiumFeatureManager.canAccessPremiumFeatures(context))
+    }
     var isUnlocked by remember { mutableStateOf(false) }
     var shouldShowLockScreen by remember { mutableStateOf(false) }
     
@@ -196,19 +201,38 @@ fun ItemReminderToolApp(
         snapshotFlow {
             prefs.getBoolean("password_enabled", false)
         }.collect { enabled ->
-            isPasswordEnabled = enabled
+            val premiumAllowed = PremiumFeatureManager.canAccessPremiumFeatures(context)
+            canAccessPremiumFeatures = premiumAllowed
+            val effectiveEnabled = enabled && premiumAllowed
+            isPasswordEnabled = effectiveEnabled
             // 启用密码时不立即锁屏，只在应用进入后台后再锁屏
-            if (!enabled) {
+            if (!effectiveEnabled) {
                 // 如果密码被禁用，解锁
                 isUnlocked = true
                 shouldShowLockScreen = false
             }
         }
     }
+
+    DisposableEffect(Unit) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "premium_features" || key == "premium_lifetime" || key == "premium_trial_used" || key == "premium_trial_start_time") {
+                val premiumAllowed = PremiumFeatureManager.canAccessPremiumFeatures(context)
+                canAccessPremiumFeatures = premiumAllowed
+                if (!premiumAllowed && prefs.getBoolean("password_enabled", false)) {
+                    prefs.edit().putBoolean("password_enabled", false).apply()
+                    isUnlocked = true
+                    shouldShowLockScreen = false
+                }
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
     
     // 检查是否需要显示锁屏（初始状态）
     LaunchedEffect(Unit) {
-        if (isPasswordEnabled) {
+        if (isPasswordEnabled && canAccessPremiumFeatures) {
             // 应用启动时，如果密码已启用，需要验证密码
             shouldShowLockScreen = true
         } else {
@@ -367,8 +391,10 @@ fun ItemReminderToolApp(
                             modifier = Modifier.padding(start = 8.dp)
                         )
                     }
-                    Divider()
-                    
+                    HorizontalDivider(
+                        color = ColorHelpers.getDividerColor(),
+                        thickness = 4.dp
+                    )
                     NavigationDrawerItem(
                         icon = { Icon(Screen.Tags.icon, null) },
                         label = { Text(stringResource(R.string.nav_tag_management)) },

@@ -133,10 +133,10 @@ package com.example.itemremindertool.ui.theme
  * - 按钮文字
  * - 所有图标（导航、操作、状态等）
  * 
- * 映射到：MaterialTheme.colorScheme.onSurface
+ * 映射到：MaterialTheme.colorScheme.onPrimaryContainer
  * Theme.kt 中定义，例如：
- * - 浅色：Color(0xFF1A1C1E)
- * - 深色：Color(0xFFE2E2E5)
+ * - 浅色：各配色方案的 OnPrimaryContainer
+ * - 深色：各配色方案的 OnPrimaryContainer
  * 
  * 
  * 第五组：提醒卡片
@@ -215,7 +215,6 @@ package com.example.itemremindertool.ui.theme
  * // ========== 7. 您的新配色方案 ==========
  * // 浅色主题
  * val YourSchemePrimary = Color(0xFF________)  // 主色（按钮）
- * val YourSchemeSecondary = Color(0xFF________)  // 次要色
  * val YourSchemeTertiary = Color(0xFF________)  // 第三色（提醒）
  * val YourSchemePrimaryContainer = Color(0xFF________)  // 主色容器（FAB）
  * val YourSchemeOnPrimaryContainer = Color(0xFF________)  // 主色容器上的文字
@@ -225,7 +224,6 @@ package com.example.itemremindertool.ui.theme
  * 
  * // 深色主题
  * val YourSchemePrimaryDark = Color(0xFF________)
- * val YourSchemeSecondaryDark = Color(0xFF________)
  * val YourSchemeTertiaryDark = Color(0xFF________)
  * val YourSchemePrimaryContainerDark = Color(0xFF________)
  * val YourSchemeBackgroundDark = Color(0xFF________)
@@ -242,8 +240,6 @@ package com.example.itemremindertool.ui.theme
  *     onPrimary = Color.White,
  *     primaryContainer = YourSchemePrimaryContainer,
  *     onPrimaryContainer = YourSchemeOnPrimaryContainer,
- *     secondary = YourSchemeSecondary,
- *     onSecondary = Color.White,
  *     tertiary = YourSchemeTertiary,
  *     onTertiary = Color.White,
  *     error = YourSchemeTertiary,
@@ -261,8 +257,6 @@ package com.example.itemremindertool.ui.theme
  *     onPrimary = Color.Black,
  *     primaryContainer = YourSchemePrimaryContainerDark,
  *     onPrimaryContainer = Color(0xFFD8E2FF),
- *     secondary = YourSchemeSecondaryDark,
- *     onSecondary = Color.Black,
  *     tertiary = YourSchemeTertiaryDark,
  *     onTertiary = Color.White,
  *     error = YourSchemeTertiaryDark,

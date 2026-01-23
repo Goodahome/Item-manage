@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,6 +17,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.data.TagManager
@@ -22,6 +25,10 @@ import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
+import com.example.itemremindertool.billing.BillingManager
+import com.example.itemremindertool.billing.PremiumFeatureManager
+import com.example.itemremindertool.config.FeatureFlags
+import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.UIConstants
@@ -38,6 +45,10 @@ fun TagsScreen(
 ) {
     val items by itemViewModel.items.collectAsState(initial = emptyList())
     val allTags by tagManager.allTags.collectAsState()
+    val context = LocalContext.current
+    val prefs = remember {
+        context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+    }
     
     // 对话框状态
     var showAddDialog by remember { mutableStateOf(false) }
@@ -45,6 +56,37 @@ fun TagsScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedTag by remember { mutableStateOf<String?>(null) }
     var editTagName by remember { mutableStateOf("") }
+    var showPremiumFeatureDialog by remember { mutableStateOf(false) }
+    var canAccessPremiumFeatures by remember {
+        mutableStateOf(PremiumFeatureManager.canAccessPremiumFeatures(context))
+    }
+
+    val billingManager = remember {
+        if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
+            BillingManager(
+                context,
+                listOf(
+                    BillingManager.PRODUCT_REMOVE_ADS,
+                    BillingManager.PRODUCT_PREMIUM_FEATURES,
+                    BillingManager.PRODUCT_PREMIUM_LIFETIME
+                )
+            ).apply {
+                initialize()
+            }
+        } else {
+            null
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "premium_features" || key == "premium_lifetime" || key == "premium_trial_used" || key == "premium_trial_start_time") {
+                canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
     
     // 取消所有默认标签
     val defaultTags = emptyList<String>()
@@ -92,7 +134,7 @@ fun TagsScreen(
                 title = { Text(stringResource(R.string.tag_management)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -104,7 +146,13 @@ fun TagsScreen(
                 val fabBackground = ColorHelpers.getGroup2SettingsBtnColor()
                 val fabIconColor = ColorHelpers.getContrastColor(fabBackground)
                 FloatingActionButton(
-                    onClick = { showAddDialog = true },
+                    onClick = {
+                        if (!canAccessPremiumFeatures && tagManager.isTagLimitReached()) {
+                            showPremiumFeatureDialog = true
+                        } else {
+                            showAddDialog = true
+                        }
+                    },
                     containerColor = fabBackground,
                     contentColor = fabIconColor,
                     modifier = Modifier.size(UIConstants.FAB_SIZE)
@@ -131,7 +179,7 @@ fun TagsScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Icon(
-                        Icons.Default.Label,
+                        Icons.AutoMirrored.Filled.Label,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp),
                         tint = ColorHelpers.getGroup4IconColor(0.6f)
@@ -182,11 +230,17 @@ fun TagsScreen(
         
         ModernSettingsDialog(
             title = stringResource(R.string.add_tag),
-            icon = Icons.Default.Label,
+            icon = Icons.AutoMirrored.Filled.Label,
             onDismiss = { showAddDialog = false },
             onConfirm = {
-                if (newTagName.isNotBlank()) {
-                    tagManager.addTag(newTagName.trim())
+                val trimmed = newTagName.trim()
+                if (trimmed.isNotBlank()) {
+                    val isExisting = tagManager.getAllTags().contains(trimmed)
+                    if (!canAccessPremiumFeatures && tagManager.isTagLimitReached() && !isExisting) {
+                        showPremiumFeatureDialog = true
+                        return@ModernSettingsDialog
+                    }
+                    tagManager.addTag(trimmed)
                     showAddDialog = false
                 }
             },
@@ -283,6 +337,13 @@ fun TagsScreen(
             )
         }
     }
+
+    if (FeatureFlags.ENABLE_PURCHASE_FEATURE && showPremiumFeatureDialog && billingManager != null) {
+        PremiumFeatureDialog(
+            billingManager = billingManager,
+            onDismiss = { showPremiumFeatureDialog = false }
+        )
+    }
 }
 
 @Composable
@@ -316,7 +377,7 @@ fun TagCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    Icons.Default.Label,
+                    Icons.AutoMirrored.Filled.Label,
                     contentDescription = null,
                     tint = ColorHelpers.getGroup4IconColor(),
                     modifier = Modifier.size(24.dp)

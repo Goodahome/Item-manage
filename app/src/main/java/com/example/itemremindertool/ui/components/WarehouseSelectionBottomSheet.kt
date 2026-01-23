@@ -71,8 +71,9 @@ fun WarehouseSelectionBottomSheet(
                 )
             }
             
-            Divider(
-                color = ColorHelpers.getGroup4TextColor(0.2f)
+            HorizontalDivider(
+                color = ColorHelpers.getDividerColor(),
+                thickness = 4.dp
             )
             
             // 容器列表

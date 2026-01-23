@@ -28,6 +28,7 @@ import com.google.android.gms.ads.admanager.AdManagerAdView
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.example.itemremindertool.utils.AdViewManager
+import com.example.itemremindertool.billing.PremiumFeatureManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -48,9 +49,14 @@ fun AdBanner(
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
+    val canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
     
     // 如果没有提供广告单元ID，不显示广告
     if (adUnitId.isNullOrBlank()) {
+        return
+    }
+
+    if (canAccessPremiumFeatures) {
         return
     }
     
@@ -149,6 +155,9 @@ fun DynamicBannerAd(
     
     // 检查是否已购买移除广告（监听变化）
     var isAdsRemoved by remember { mutableStateOf(sharedPrefs.getBoolean("ads_removed", false)) }
+    var canAccessPremiumFeatures by remember {
+        mutableStateOf(PremiumFeatureManager.canAccessPremiumFeatures(context))
+    }
     
     // 使用 DisposableEffect 监听 SharedPreferences 变化
     var savedAdUnitId by remember { mutableStateOf<String?>(null) }
@@ -156,7 +165,6 @@ fun DynamicBannerAd(
     // 广告加载状态
     var adLoadFailed by remember { mutableStateOf(false) }
     var retryCount by remember { mutableStateOf(0) }
-    var shouldShowAd by remember { mutableStateOf(true) }
     
     DisposableEffect(Unit) {
         // 初始读取
@@ -172,11 +180,13 @@ fun DynamicBannerAd(
                     // 重置重试计数
                     retryCount = 0
                     adLoadFailed = false
-                    shouldShowAd = true
                 }
                 "ads_removed" -> {
                     isAdsRemoved = sharedPrefs.getBoolean("ads_removed", false)
                     android.util.Log.d("DynamicBannerAd", "广告移除状态已更新: $isAdsRemoved")
+                }
+                "premium_features", "premium_lifetime", "premium_trial_used", "premium_trial_start_time" -> {
+                    canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
                 }
             }
         }
@@ -188,7 +198,7 @@ fun DynamicBannerAd(
     }
     
     // 获取最终要用的广告 ID（优先用保存的，没保存就用测试 ID 或正式 ID）
-    val adUnitId = savedAdUnitId ?: (productionAdUnitId ?: testAdUnitId)
+    val adUnitId = savedAdUnitId ?: productionAdUnitId
     
     // 使用全局管理器检查广告是否已加载
     var adLoaded by remember(adUnitId) { mutableStateOf(AdViewManager.isAdLoaded(adUnitId)) }
@@ -214,9 +224,9 @@ fun DynamicBannerAd(
         )
     }
     
-    // 如果已购买移除广告，不显示广告
-    if (isAdsRemoved) {
-        android.util.Log.d("DynamicBannerAd", "已购买移除广告，不显示广告")
+    // 如果已购买移除广告或已激活高级版，不显示广告
+    if (isAdsRemoved || canAccessPremiumFeatures) {
+        android.util.Log.d("DynamicBannerAd", "已移除广告或已激活高级版，不显示广告")
         LaunchedEffect(Unit) {
             onAdLoaded(false)
         }
@@ -259,12 +269,12 @@ fun DynamicBannerAd(
                     onAdFailedToLoad = { loadAdError ->
                         adLoadFailed = true
                         // 重试逻辑
-                        if (retryCount < maxRetries && 
+                        if (retryCount < maxRetries &&
                             (loadAdError.code == 3 || loadAdError.code == 2 || loadAdError.code == 0)) {
                             retryCount++
                             scope.launch {
                                 delay(retryDelayMs)
-                                if (shouldShowAd && adView != null) {
+                                if (adView != null) {
                                     AdViewManager.loadAdIfNeeded(
                                         adView = adView,
                                         adUnitId = adUnitId,
@@ -290,6 +300,8 @@ fun DynamicBannerAd(
     
     // 使用 AndroidView 嵌入原生 AdView
     // 使用 key() 确保当 adUnitId 变化时重新创建 AndroidView（但 AdView 实例由全局管理器保持）
+    val nonNullAdView = adView ?: return
+
     key(adUnitId) {
         AndroidView(
             modifier = modifier
@@ -298,7 +310,7 @@ fun DynamicBannerAd(
                 .background(Color.White, RoundedCornerShape(12.dp)), // 给广告一点背景，避免透明问题，并添加圆角
             factory = { ctx ->
                 android.util.Log.d("DynamicBannerAd", "Factory: 使用已存在的 AdView，广告ID: $adUnitId")
-                adView!!
+                nonNullAdView
             },
             update = { view ->
                 // 不需要做任何操作，AdView 实例由全局管理器保持

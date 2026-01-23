@@ -2,6 +2,7 @@ package com.example.itemremindertool.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.itemremindertool.billing.PremiumFeatureManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -9,6 +10,11 @@ import kotlinx.coroutines.flow.asStateFlow
 class TagManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("tag_prefs", Context.MODE_PRIVATE)
     private val TAG_KEY = "all_tags"
+    private val appContext = context.applicationContext
+
+    companion object {
+        private const val FREE_TAG_LIMIT = 20
+    }
     
     private val _allTags = MutableStateFlow<Set<String>>(loadTags())
     val allTags: StateFlow<Set<String>> = _allTags.asStateFlow()
@@ -22,12 +28,31 @@ class TagManager(context: Context) {
         }
     }
     
-    fun addTag(tag: String) {
+    fun addTag(tag: String): Boolean {
+        val normalizedTag = tag.trim()
         val currentTags = _allTags.value.toMutableSet()
-        if (currentTags.add(tag)) {
+        if (normalizedTag.isEmpty()) {
+            return false
+        }
+        if (currentTags.contains(normalizedTag)) {
+            return true
+        }
+        if (!PremiumFeatureManager.canAccessPremiumFeatures(appContext) && currentTags.size >= FREE_TAG_LIMIT) {
+            return false
+        }
+        if (currentTags.add(normalizedTag)) {
             saveTags(currentTags)
             _allTags.value = currentTags
+            return true
         }
+        return false
+    }
+
+    fun isTagLimitReached(): Boolean {
+        if (PremiumFeatureManager.canAccessPremiumFeatures(appContext)) {
+            return false
+        }
+        return _allTags.value.size >= FREE_TAG_LIMIT
     }
     
     fun removeTag(tag: String) {

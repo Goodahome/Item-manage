@@ -49,6 +49,10 @@ import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.ui.components.CameraCaptureDialog
 import com.example.itemremindertool.ui.components.ImageCropDialog
 import com.example.itemremindertool.ui.components.BarcodeScannerDialog
+import com.example.itemremindertool.ui.components.PremiumFeatureDialog
+import com.example.itemremindertool.billing.BillingManager
+import com.example.itemremindertool.billing.PremiumFeatureManager
+import com.example.itemremindertool.config.FeatureFlags
 import com.example.itemremindertool.utils.ImageUtils
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
@@ -127,6 +131,39 @@ fun ItemEditScreen(
     // 获取 Context 和协程作用域
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val prefs = remember {
+        context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+    }
+    var showPremiumFeatureDialog by remember { mutableStateOf(false) }
+    var canAccessPremiumFeatures by remember {
+        mutableStateOf(PremiumFeatureManager.canAccessPremiumFeatures(context))
+    }
+    val billingManager = remember {
+        if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
+            BillingManager(
+                context,
+                listOf(
+                    BillingManager.PRODUCT_REMOVE_ADS,
+                    BillingManager.PRODUCT_PREMIUM_FEATURES,
+                    BillingManager.PRODUCT_PREMIUM_LIFETIME
+                )
+            ).apply {
+                initialize()
+            }
+        } else {
+            null
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "premium_features" || key == "premium_lifetime" || key == "premium_trial_used" || key == "premium_trial_start_time") {
+                canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
 
     // 从 ViewModel 获取待处理的特征码
     val pendingFeatureCode by viewModel.pendingFeatureCode.collectAsState()
@@ -690,6 +727,13 @@ fun ItemEditScreen(
                                         }
                                     }
                                 }
+
+        if (FeatureFlags.ENABLE_PURCHASE_FEATURE && showPremiumFeatureDialog && billingManager != null) {
+            PremiumFeatureDialog(
+                billingManager = billingManager,
+                onDismiss = { showPremiumFeatureDialog = false }
+            )
+        }
                             }
                         }
                     }
@@ -719,7 +763,7 @@ fun ItemEditScreen(
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedWarehouse) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .menuAnchor()
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
                         )
                         ExposedDropdownMenu(
                             expanded = expandedWarehouse,
@@ -947,10 +991,13 @@ fun ItemEditScreen(
                                             if (!focusState.isFocused && isTagInputFocused) {
                                                 val text = tagInputText.trim()
                                                 if (text.isNotEmpty() && text !in tags && text != "过期") {
-                                                    // 保存到全局标签列表
-                                                    tagManager.addTag(text)
-                                                    // 自动选中新添加的标签
-                                                    tags = tags + text
+                                                    val isExisting = tagManager.getAllTags().contains(text)
+                                                    if (!canAccessPremiumFeatures && tagManager.isTagLimitReached() && !isExisting) {
+                                                        showPremiumFeatureDialog = true
+                                                    } else if (tagManager.addTag(text)) {
+                                                        // 自动选中新添加的标签
+                                                        tags = tags + text
+                                                    }
                                                 }
                                                 tagInputText = ""
                                                 isTagInputFocused = false
@@ -967,10 +1014,13 @@ fun ItemEditScreen(
                                     keyboardActions = KeyboardActions(onDone = {
                                         val text = tagInputText.trim()
                                         if (text.isNotEmpty() && text !in tags && text != "过期") {
-                                            // 保存到全局标签列表
-                                            tagManager.addTag(text)
-                                            // 自动选中新添加的标签
-                                            tags = tags + text
+                                            val isExisting = tagManager.getAllTags().contains(text)
+                                            if (!canAccessPremiumFeatures && tagManager.isTagLimitReached() && !isExisting) {
+                                                showPremiumFeatureDialog = true
+                                            } else if (tagManager.addTag(text)) {
+                                                // 自动选中新添加的标签
+                                                tags = tags + text
+                                            }
                                         }
                                         tagInputText = ""
                                         isTagInputFocused = false

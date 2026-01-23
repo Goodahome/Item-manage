@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,7 +24,7 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.itemremindertool.billing.BillingManager
 import com.example.itemremindertool.config.FeatureFlags
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
@@ -160,7 +161,7 @@ fun AppSettingsScreen(
                 title = { Text(stringResource(R.string.app_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -202,7 +203,10 @@ fun AppSettingsScreen(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
             
-            Divider()
+            HorizontalDivider(
+                color = ColorHelpers.getDividerColor(),
+                thickness = 4.dp
+            )
             
             // 自定义容器物品后缀
             ListItem(
@@ -233,7 +237,10 @@ fun AppSettingsScreen(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
             
-            Divider()
+            HorizontalDivider(
+                color = ColorHelpers.getDividerColor(),
+                thickness = 4.dp
+            )
             
             // 币种符号设置
             ListItem(
@@ -259,7 +266,10 @@ fun AppSettingsScreen(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
             
-            Divider()
+            HorizontalDivider(
+                color = ColorHelpers.getDividerColor(),
+                thickness = 4.dp
+            )
             
             // 广告横幅单元 ID
 //            ListItem(
@@ -287,7 +297,10 @@ fun AppSettingsScreen(
 //                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
 //            )
             
-            Divider()
+            HorizontalDivider(
+                color = ColorHelpers.getDividerColor(),
+                thickness = 4.dp
+            )
             
             // 移除广告（仅在启用购买功能时显示）
             if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
@@ -375,7 +388,10 @@ fun AppSettingsScreen(
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
                 
-                Divider()
+                HorizontalDivider(
+                    color = ColorHelpers.getDividerColor(),
+                    thickness = 4.dp
+                )
             }
             
             // 密码保护
@@ -422,7 +438,10 @@ fun AppSettingsScreen(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
             
-            Divider()
+            HorizontalDivider(
+                color = ColorHelpers.getDividerColor(),
+                thickness = 4.dp
+            )
             
             // 清除动态数据
             if (activityEventViewModel != null) {
@@ -721,7 +740,10 @@ fun ModernSettingsDialog(
                         )
                     }
                 }
-                HorizontalDivider(color = ColorHelpers.getGroup4IconColor(0.15f))
+                HorizontalDivider(
+                    color = ColorHelpers.getDividerColor(),
+                    thickness = 4.dp
+                )
                 
                 // 内容区域
                 Column(

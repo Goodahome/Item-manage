@@ -12,7 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
@@ -29,7 +29,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.R
+import com.example.itemremindertool.billing.BillingManager
+import com.example.itemremindertool.billing.PremiumFeatureManager
+import com.example.itemremindertool.config.FeatureFlags
+import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.theme.OnSurfaceHighContrast
+import com.example.itemremindertool.ui.theme.OnSurfaceLowContrast
 import com.example.itemremindertool.ui.theme.RedBlueBackground
 import com.example.itemremindertool.ui.theme.RedBlueBreadcrumbIcon
 import com.example.itemremindertool.ui.theme.RedBlueBreadcrumbText
@@ -40,7 +46,6 @@ import com.example.itemremindertool.ui.theme.RedBluePrimaryContainer
 import com.example.itemremindertool.ui.theme.RedBlueOnPrimaryContainer
 import com.example.itemremindertool.ui.theme.RedBlueSearchBoxBg
 import com.example.itemremindertool.ui.theme.RedBlueSearchBoxBorder
-import com.example.itemremindertool.ui.theme.RedBlueSecondary
 import com.example.itemremindertool.ui.theme.RedBlueSubWarehouseName
 import com.example.itemremindertool.ui.theme.RedBlueSurface
 import com.example.itemremindertool.ui.theme.RedBlueSurfaceVariant
@@ -59,13 +64,32 @@ fun CustomColorSettingsScreen(
     val prefs = remember {
         context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
     }
+    var showPremiumFeatureDialog by remember { mutableStateOf(false) }
+    var canAccessPremiumFeatures by remember {
+        mutableStateOf(PremiumFeatureManager.canAccessPremiumFeatures(context))
+    }
+    val billingManager = remember {
+        if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
+            BillingManager(
+                context,
+                listOf(
+                    BillingManager.PRODUCT_REMOVE_ADS,
+                    BillingManager.PRODUCT_PREMIUM_FEATURES,
+                    BillingManager.PRODUCT_PREMIUM_LIFETIME
+                )
+            ).apply {
+                initialize()
+            }
+        } else {
+            null
+        }
+    }
     val rawColorScheme = prefs.getString("color_scheme", "red_blue") ?: "red_blue"
     val normalizedColorScheme = if (rawColorScheme == "cold_blue") "red_blue" else rawColorScheme
     var customEnabled by remember { mutableStateOf(normalizedColorScheme == "custom") }
 
     val customFields = listOf(
         CustomColorField("custom_color_primary", stringResource(R.string.custom_color_field_primary), RedBluePrimary),
-        CustomColorField("custom_color_secondary", stringResource(R.string.custom_color_field_secondary), RedBlueSecondary),
         CustomColorField("custom_color_tertiary", stringResource(R.string.custom_color_field_tertiary), RedBlueTertiary),
         CustomColorField("custom_color_primary_container", stringResource(R.string.custom_color_field_primary_container), RedBluePrimaryContainer),
         CustomColorField("custom_color_on_primary_container", stringResource(R.string.custom_color_field_on_primary_container), RedBlueOnPrimaryContainer),
@@ -76,6 +100,8 @@ fun CustomColorSettingsScreen(
         CustomColorField("custom_color_gradient_end", stringResource(R.string.custom_color_field_gradient_end), RedBlueGradientEnd),
         CustomColorField("custom_color_search_box_bg", stringResource(R.string.custom_color_field_search_box_bg), RedBlueSearchBoxBg),
         CustomColorField("custom_color_search_box_border", stringResource(R.string.custom_color_field_search_box_border), RedBlueSearchBoxBorder),
+        CustomColorField("custom_color_search_box_text", stringResource(R.string.custom_color_field_search_box_text), OnSurfaceHighContrast),
+        CustomColorField("custom_color_on_surface_low_contrast", stringResource(R.string.custom_color_field_on_surface_low_contrast), OnSurfaceLowContrast),
         CustomColorField("custom_color_breadcrumb_text", stringResource(R.string.custom_color_field_breadcrumb_text), RedBlueBreadcrumbText),
         CustomColorField("custom_color_breadcrumb_icon", stringResource(R.string.custom_color_field_breadcrumb_icon), RedBlueBreadcrumbIcon),
         CustomColorField("custom_color_sub_warehouse_name", stringResource(R.string.custom_color_field_sub_warehouse_name), RedBlueSubWarehouseName)
@@ -121,6 +147,9 @@ fun CustomColorSettingsScreen(
                 val value = prefs.getString("color_scheme", "red_blue") ?: "red_blue"
                 customEnabled = (if (value == "cold_blue") "red_blue" else value) == "custom"
             }
+            if (key == "premium_features" || key == "premium_lifetime" || key == "premium_trial_used" || key == "premium_trial_start_time") {
+                canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
+            }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
         onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
@@ -132,7 +161,7 @@ fun CustomColorSettingsScreen(
                 title = { Text(stringResource(R.string.custom_color_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -154,6 +183,10 @@ fun CustomColorSettingsScreen(
                     Switch(
                         checked = customEnabled,
                         onCheckedChange = { enabled ->
+                            if (!canAccessPremiumFeatures) {
+                                showPremiumFeatureDialog = true
+                                return@Switch
+                            }
                             customEnabled = enabled
                             if (enabled) {
                                 val current = prefs.getString("color_scheme", "red_blue") ?: "red_blue"
@@ -202,6 +235,10 @@ fun CustomColorSettingsScreen(
 
                 Button(
                     onClick = {
+                    if (!canAccessPremiumFeatures) {
+                        showPremiumFeatureDialog = true
+                        return@Button
+                    }
                         val name = schemeNameInput.trim()
                         if (name.isBlank()) {
                             schemeNameError = schemeNameRequiredMessage
@@ -243,6 +280,10 @@ fun CustomColorSettingsScreen(
                             RadioButton(
                                 selected = schemeName == selectedSchemeName,
                                 onClick = {
+                                    if (!canAccessPremiumFeatures) {
+                                        showPremiumFeatureDialog = true
+                                        return@RadioButton
+                                    }
                                     val scheme = savedSchemes[schemeName] ?: return@RadioButton
                                     selectedSchemeName = schemeName
                                     schemeNameInput = schemeName
@@ -278,6 +319,10 @@ fun CustomColorSettingsScreen(
                         },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.clickable {
+                            if (!canAccessPremiumFeatures) {
+                                showPremiumFeatureDialog = true
+                                return@clickable
+                            }
                             val scheme = savedSchemes[schemeName] ?: return@clickable
                             selectedSchemeName = schemeName
                             schemeNameInput = schemeName
@@ -311,6 +356,10 @@ fun CustomColorSettingsScreen(
                 OutlinedTextField(
                     value = value,
                     onValueChange = { input ->
+                        if (!canAccessPremiumFeatures) {
+                            showPremiumFeatureDialog = true
+                            return@OutlinedTextField
+                        }
                         val updated = if (input.length <= 9) input else input.take(9)
                         customFieldState[field.key] = updated
                         val normalizedInput = normalizeHex(updated)
@@ -346,7 +395,6 @@ fun CustomColorSettingsScreen(
                 surface = previewColorFrom("custom_color_surface", RedBlueSurface, customFieldState),
                 surfaceVariant = previewColorFrom("custom_color_surface_variant", RedBlueSurfaceVariant, customFieldState),
                 primary = previewColorFrom("custom_color_primary", RedBluePrimary, customFieldState),
-                secondary = previewColorFrom("custom_color_secondary", RedBlueSecondary, customFieldState),
                 tertiary = previewColorFrom("custom_color_tertiary", RedBlueTertiary, customFieldState),
                 primaryContainer = previewColorFrom("custom_color_primary_container", RedBluePrimaryContainer, customFieldState),
                 onPrimaryContainer = previewColorFrom("custom_color_on_primary_container", RedBlueOnPrimaryContainer, customFieldState),
@@ -359,6 +407,13 @@ fun CustomColorSettingsScreen(
                 subWarehouseName = previewColorFrom("custom_color_sub_warehouse_name", RedBlueSubWarehouseName, customFieldState)
             )
         }
+    }
+
+    if (FeatureFlags.ENABLE_PURCHASE_FEATURE && showPremiumFeatureDialog && billingManager != null) {
+        PremiumFeatureDialog(
+            billingManager = billingManager,
+            onDismiss = { showPremiumFeatureDialog = false }
+        )
     }
 }
 
@@ -489,7 +544,6 @@ private fun CustomHomePreview(
     surface: Color,
     surfaceVariant: Color,
     primary: Color,
-    secondary: Color,
     tertiary: Color,
     primaryContainer: Color,
     onPrimaryContainer: Color,
@@ -619,13 +673,6 @@ private fun CustomHomePreview(
                     .padding(horizontal = 10.dp, vertical = 6.dp)
             ) {
                 Text(text = stringResource(R.string.custom_color_preview_container), color = onPrimaryContainer, style = MaterialTheme.typography.bodySmall)
-            }
-            Box(
-                modifier = Modifier
-                    .background(secondary, RoundedCornerShape(8.dp))
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Text(text = stringResource(R.string.custom_color_preview_secondary_button), color = contrastText(secondary), style = MaterialTheme.typography.bodySmall)
             }
             Box(
                 modifier = Modifier

@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -168,19 +169,39 @@ fun PremiumFeatureDialog(
                         description = stringResource(R.string.password_protection_desc)
                     )
                     PremiumFeatureItem(
-                        icon = Icons.Default.CloudUpload,
+                        icon = Icons.Default.Cloud,
                         title = stringResource(R.string.cloud_storage),
                         description = stringResource(R.string.cloud_storage_desc)
-                    )
-                    PremiumFeatureItem(
-                        icon = Icons.Default.CloudDownload,
-                        title = stringResource(R.string.cloud_restore),
-                        description = stringResource(R.string.cloud_restore_desc)
                     )
                     PremiumFeatureItem(
                         icon = Icons.Default.Storage,
                         title = stringResource(R.string.unlimited_containers),
                         description = stringResource(R.string.unlimited_containers_description)
+                    )
+                    PremiumFeatureItem(
+                        icon = Icons.Default.ImportExport,
+                        title = stringResource(R.string.premium_excel_import_export),
+                        description = stringResource(R.string.premium_excel_import_export_desc)
+                    )
+                    PremiumFeatureItem(
+                        icon = Icons.Default.Palette,
+                        title = stringResource(R.string.premium_theme_custom_colors),
+                        description = stringResource(R.string.premium_theme_custom_colors_desc)
+                    )
+                    PremiumFeatureItem(
+                        icon = Icons.Default.NotificationsActive,
+                        title = stringResource(R.string.premium_advanced_reminder),
+                        description = stringResource(R.string.premium_advanced_reminder_desc)
+                    )
+                    PremiumFeatureItem(
+                        icon = Icons.AutoMirrored.Filled.Label,
+                        title = stringResource(R.string.premium_unlimited_tags),
+                        description = stringResource(R.string.premium_unlimited_tags_desc)
+                    )
+                    PremiumFeatureItem(
+                        icon = Icons.Default.Block,
+                        title = stringResource(R.string.premium_remove_ads),
+                        description = stringResource(R.string.premium_remove_ads_desc)
                     )
                     
                     Spacer(modifier = Modifier.height(8.dp))
@@ -239,7 +260,7 @@ fun PremiumFeatureDialog(
                     } else if (isTrialActive) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer
+                            color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Column(
                                 modifier = Modifier
@@ -250,7 +271,7 @@ fun PremiumFeatureDialog(
                                 Text(
                                     text = stringResource(R.string.trial_active),
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
@@ -260,7 +281,7 @@ fun PremiumFeatureDialog(
                                         stringResource(R.string.trial_remaining_hours, remainingHours)
                                     },
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
                         }

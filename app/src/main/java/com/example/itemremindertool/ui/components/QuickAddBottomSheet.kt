@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.R
+import com.example.itemremindertool.ui.theme.ColorHelpers
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,7 +42,10 @@ fun QuickAddBottomSheet(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
             
-            Divider()
+            HorizontalDivider(
+                color = ColorHelpers.getDividerColor(),
+                thickness = 4.dp
+            )
             
             // 添加物品
             QuickAddItem(

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +23,10 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import com.example.itemremindertool.notification.NotificationScheduler
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import java.util.Calendar
+import com.example.itemremindertool.ui.components.PremiumFeatureDialog
+import com.example.itemremindertool.billing.BillingManager
+import com.example.itemremindertool.billing.PremiumFeatureManager
+import com.example.itemremindertool.config.FeatureFlags
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +36,9 @@ fun AlertSettingsScreen(
 ) {
     val context = LocalContext.current
     val alertSettingsManager = remember { AlertSettingsManager(context) }
+    val prefs = remember {
+        context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+    }
     
     var expiryReminderDays by remember { mutableStateOf(alertSettingsManager.getExpiryReminderDays()) }
     var lowStockThreshold by remember { mutableStateOf(alertSettingsManager.getLowStockThreshold()) }
@@ -39,6 +47,36 @@ fun AlertSettingsScreen(
     var notificationHour by remember { mutableStateOf(alertSettingsManager.getNotificationHour()) }
     var notificationMinute by remember { mutableStateOf(alertSettingsManager.getNotificationMinute()) }
     var showTimePicker by remember { mutableStateOf(false) }
+    var showPremiumFeatureDialog by remember { mutableStateOf(false) }
+    var canAccessPremiumFeatures by remember {
+        mutableStateOf(PremiumFeatureManager.canAccessPremiumFeatures(context))
+    }
+    val billingManager = remember {
+        if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
+            BillingManager(
+                context,
+                listOf(
+                    BillingManager.PRODUCT_REMOVE_ADS,
+                    BillingManager.PRODUCT_PREMIUM_FEATURES,
+                    BillingManager.PRODUCT_PREMIUM_LIFETIME
+                )
+            ).apply {
+                initialize()
+            }
+        } else {
+            null
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "premium_features" || key == "premium_lifetime" || key == "premium_trial_used" || key == "premium_trial_start_time") {
+                canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
     
     Scaffold(
         topBar = {
@@ -46,7 +84,7 @@ fun AlertSettingsScreen(
                 title = { Text(stringResource(R.string.alert_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -220,6 +258,10 @@ fun AlertSettingsScreen(
                     Switch(
                         checked = forgetProtectionEnabled,
                         onCheckedChange = {
+                            if (!canAccessPremiumFeatures) {
+                                showPremiumFeatureDialog = true
+                                return@Switch
+                            }
                             forgetProtectionEnabled = it
                             alertSettingsManager.setForgetProtectionEnabled(it)
                         }
@@ -258,6 +300,10 @@ fun AlertSettingsScreen(
                         Switch(
                             checked = systemNotificationEnabled,
                             onCheckedChange = {
+                                if (!canAccessPremiumFeatures) {
+                                    showPremiumFeatureDialog = true
+                                    return@Switch
+                                }
                                 systemNotificationEnabled = it
                                 alertSettingsManager.setSystemNotificationEnabled(it)
                                 // 重新调度通知
@@ -268,12 +314,21 @@ fun AlertSettingsScreen(
                     
                     // 如果系统通知已启用，显示时间选择器
                     if (systemNotificationEnabled) {
-                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                        HorizontalDivider(
+                            color = ColorHelpers.getDividerColor(),
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
                         
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { showTimePicker = true },
+                                .clickable {
+                                    if (!canAccessPremiumFeatures) {
+                                        showPremiumFeatureDialog = true
+                                    } else {
+                                        showTimePicker = true
+                                    }
+                                },
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -378,6 +433,13 @@ fun AlertSettingsScreen(
                 }
             }
         }
+    }
+
+    if (FeatureFlags.ENABLE_PURCHASE_FEATURE && showPremiumFeatureDialog && billingManager != null) {
+        PremiumFeatureDialog(
+            billingManager = billingManager,
+            onDismiss = { showPremiumFeatureDialog = false }
+        )
     }
 }
 

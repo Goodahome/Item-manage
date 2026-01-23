@@ -149,12 +149,22 @@ object ColorHelpers {
         // - 亮度 <= 0.5：背景较暗，使用浅色文字（OnSurfaceHighContrast，白色）
         val useDarkText = luminance > 0.5f
         
+        // 自定义配色时，若设置了低对比文字色，优先使用该值
+        if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
+            val customOverride = getCustomColorOrNull("custom_color_on_surface_low_contrast")
+            if (customOverride != null) {
+                return customOverride
+            }
+        }
+
         // 所有配色方案都使用相同的对比度颜色（黑色和白色）
+        val customLowContrast = OnSurfaceLowContrast
+
         return if (isDarkTheme) {
             // 深色主题
             if (useDarkText) {
                 // 较亮的背景，使用深色文字（低对比度颜色，黑色）
-                OnSurfaceDarkLowContrast
+                customLowContrast
             } else {
                 // 较暗的背景，使用浅色文字（高对比度颜色，白色）
                 OnSurfaceDarkHighContrast
@@ -163,7 +173,7 @@ object ColorHelpers {
             // 浅色主题
             if (useDarkText) {
                 // 较亮的背景，使用深色文字（低对比度颜色，黑色）
-                OnSurfaceLowContrast
+                customLowContrast
             } else {
                 // 较暗的背景，使用浅色文字（高对比度颜色，白色）
                 OnSurfaceHighContrast
@@ -220,14 +230,12 @@ object ColorHelpers {
     // ==================== 第四组：文字与图标 ====================
     
     /**
-     * 主要文字颜色
-     * 根据背景色对比度自动选择对应的颜色
-     * 如果未提供背景色，使用页面背景色
+     * 主要文字颜色（程序文字色）
+     * 统一使用 MaterialTheme.colorScheme.onPrimaryContainer
      */
     @Composable
     fun getGroup4TextColor(backgroundColor: Color? = null): Color {
-        val bgColor = backgroundColor ?: getGroup2PageBgColor()
-        return getGroup4TextColorByContrast(bgColor)
+        return MaterialTheme.colorScheme.onPrimaryContainer
     }
     
     /**
@@ -235,8 +243,7 @@ object ColorHelpers {
      */
     @Composable
     fun getGroup4TextColor(alpha: Float, backgroundColor: Color? = null): Color {
-        val bgColor = backgroundColor ?: getGroup2PageBgColor()
-        return getGroup4TextColorByContrast(bgColor, alpha)
+        return MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = alpha)
     }
     
     /**
@@ -246,8 +253,7 @@ object ColorHelpers {
      */
     @Composable
     fun getGroup4IconColor(backgroundColor: Color? = null): Color {
-        val bgColor = backgroundColor ?: getGroup2PageBgColor()
-        return getGroup4IconColorByContrast(bgColor)
+        return MaterialTheme.colorScheme.onPrimaryContainer
     }
     
     /**
@@ -255,8 +261,7 @@ object ColorHelpers {
      */
     @Composable
     fun getGroup4IconColor(alpha: Float, backgroundColor: Color? = null): Color {
-        val bgColor = backgroundColor ?: getGroup2PageBgColor()
-        return getGroup4IconColorByContrast(bgColor, alpha)
+        return MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = alpha)
     }
     
     
@@ -288,7 +293,7 @@ object ColorHelpers {
      */
     @Composable
     fun getDividerColor(): Color {
-        return MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+        return MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 1f)
     }
     
     /**
@@ -441,6 +446,29 @@ object ColorHelpers {
                 com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueSearchBoxBg
             }
         }
+    }
+
+    /**
+     * 获取搜索框文字颜色（支持自定义配色）
+     */
+    @Composable
+    fun getSearchBoxTextColor(): Color {
+        val appSettings = LocalAppSettings.current
+        val schemeType = com.example.itemremindertool.ui.theme.ColorSchemeType.fromKey(appSettings.colorScheme)
+        val fallback = getGroup4TextColorByContrast(getSearchBoxBgColor())
+        return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
+            getCustomColor("custom_color_search_box_text", fallback)
+        } else {
+            fallback
+        }
+    }
+
+    /**
+     * 获取搜索框图标颜色（支持自定义配色）
+     */
+    @Composable
+    fun getSearchBoxIconColor(): Color {
+        return getSearchBoxTextColor()
     }
     
     // ==================== 搜索框边框颜色 ====================
@@ -637,7 +665,20 @@ object ColorHelpers {
         val context = LocalContext.current
         val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
         val raw = prefs.getString(key, null)
-        val parsed = runCatching {
+        val parsed = parseCustomColor(raw)
+        return parsed ?: fallback
+    }
+
+    @Composable
+    private fun getCustomColorOrNull(key: String): Color? {
+        val context = LocalContext.current
+        val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        val raw = prefs.getString(key, null)
+        return parseCustomColor(raw)
+    }
+
+    private fun parseCustomColor(raw: String?): Color? {
+        return runCatching {
             val cleaned = raw?.trim()?.removePrefix("#") ?: return@runCatching null
             val argb = when (cleaned.length) {
                 6 -> 0xFF000000L or cleaned.toLong(16)
@@ -646,7 +687,6 @@ object ColorHelpers {
             }
             Color(argb.toInt())
         }.getOrNull()
-        return parsed ?: fallback
     }
 }
 

@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +23,10 @@ import com.example.itemremindertool.ui.components.UIConstants
 import androidx.compose.foundation.background
 import com.example.itemremindertool.utils.IconManager
 import androidx.compose.ui.res.painterResource
+import com.example.itemremindertool.billing.BillingManager
+import com.example.itemremindertool.billing.PremiumFeatureManager
+import com.example.itemremindertool.config.FeatureFlags
+import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +39,39 @@ fun IconSelectionScreen(
     
     var selectedIcon by remember { mutableStateOf(IconManager.getCurrentIcon(context)) }
     var showRestartDialog by remember { mutableStateOf(false) }
+    var showPremiumFeatureDialog by remember { mutableStateOf(false) }
+    var canAccessPremiumFeatures by remember {
+        mutableStateOf(PremiumFeatureManager.canAccessPremiumFeatures(context))
+    }
+    val prefs = remember {
+        context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+    }
+    val billingManager = remember {
+        if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
+            BillingManager(
+                context,
+                listOf(
+                    BillingManager.PRODUCT_REMOVE_ADS,
+                    BillingManager.PRODUCT_PREMIUM_FEATURES,
+                    BillingManager.PRODUCT_PREMIUM_LIFETIME
+                )
+            ).apply {
+                initialize()
+            }
+        } else {
+            null
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "premium_features" || key == "premium_lifetime" || key == "premium_trial_used" || key == "premium_trial_start_time") {
+                canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
     
     Scaffold(
         topBar = {
@@ -41,7 +79,7 @@ fun IconSelectionScreen(
                 title = { Text(stringResource(R.string.app_icon)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -56,7 +94,11 @@ fun IconSelectionScreen(
                 
                 FloatingActionButton(
                     onClick = {
-                        showRestartDialog = true
+                        if (!canAccessPremiumFeatures) {
+                            showPremiumFeatureDialog = true
+                        } else {
+                            showRestartDialog = true
+                        }
                     },
                     containerColor = fabBackground,
                     contentColor = fabIconColor,
@@ -109,17 +151,28 @@ fun IconSelectionScreen(
                         RadioButton(
                             selected = selectedIcon == index,
                             onClick = {
-                                selectedIcon = index
+                                if (!canAccessPremiumFeatures) {
+                                    showPremiumFeatureDialog = true
+                                } else {
+                                    selectedIcon = index
+                                }
                             }
                         )
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
-                        selectedIcon = index
+                        if (!canAccessPremiumFeatures) {
+                            showPremiumFeatureDialog = true
+                        } else {
+                            selectedIcon = index
+                        }
                     }
                 )
                 if (index < iconNames.size - 1) {
-                    Divider()
+                    HorizontalDivider(
+                        color = ColorHelpers.getDividerColor(),
+                        thickness = 4.dp
+                    )
                 }
             }
         }
@@ -149,6 +202,13 @@ fun IconSelectionScreen(
                 color = ColorHelpers.getGroup4TextColor()
             )
         }
+
+    if (FeatureFlags.ENABLE_PURCHASE_FEATURE && showPremiumFeatureDialog && billingManager != null) {
+        PremiumFeatureDialog(
+            billingManager = billingManager,
+            onDismiss = { showPremiumFeatureDialog = false }
+        )
+    }
     }
 }
 

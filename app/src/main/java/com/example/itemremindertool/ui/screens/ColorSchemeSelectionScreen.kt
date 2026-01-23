@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,6 +21,10 @@ import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.UIConstants
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
+import com.example.itemremindertool.billing.BillingManager
+import com.example.itemremindertool.billing.PremiumFeatureManager
+import com.example.itemremindertool.config.FeatureFlags
+import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +41,36 @@ fun ColorSchemeSelectionScreen(
     val rawColorScheme = prefs.getString("color_scheme", "red_blue") ?: "red_blue"
     val normalizedColorScheme = if (rawColorScheme == "cold_blue") "red_blue" else rawColorScheme
     var selectedColorScheme by remember { mutableStateOf(normalizedColorScheme) }
+    var showPremiumFeatureDialog by remember { mutableStateOf(false) }
+    var canAccessPremiumFeatures by remember {
+        mutableStateOf(PremiumFeatureManager.canAccessPremiumFeatures(context))
+    }
+    val billingManager = remember {
+        if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
+            BillingManager(
+                context,
+                listOf(
+                    BillingManager.PRODUCT_REMOVE_ADS,
+                    BillingManager.PRODUCT_PREMIUM_FEATURES,
+                    BillingManager.PRODUCT_PREMIUM_LIFETIME
+                )
+            ).apply {
+                initialize()
+            }
+        } else {
+            null
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "premium_features" || key == "premium_lifetime" || key == "premium_trial_used" || key == "premium_trial_start_time") {
+                canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
 
     LaunchedEffect(Unit) {
         if (rawColorScheme == "cold_blue") {
@@ -49,7 +84,7 @@ fun ColorSchemeSelectionScreen(
                 title = { Text(stringResource(R.string.color_scheme)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -64,8 +99,12 @@ fun ColorSchemeSelectionScreen(
                 
                 FloatingActionButton(
                     onClick = {
-                        prefs.edit().putString("color_scheme", selectedColorScheme).apply()
-                        onApply()
+                        if (!canAccessPremiumFeatures) {
+                            showPremiumFeatureDialog = true
+                        } else {
+                            prefs.edit().putString("color_scheme", selectedColorScheme).apply()
+                            onApply()
+                        }
                     },
                     containerColor = fabBackground,
                     contentColor = fabIconColor,
@@ -110,20 +149,38 @@ fun ColorSchemeSelectionScreen(
                         RadioButton(
                             selected = selectedColorScheme == schemeKey,
                             onClick = {
-                                selectedColorScheme = schemeKey
+                                if (!canAccessPremiumFeatures) {
+                                    showPremiumFeatureDialog = true
+                                } else {
+                                    selectedColorScheme = schemeKey
+                                }
                             }
                         )
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
-                        selectedColorScheme = schemeKey
+                        if (!canAccessPremiumFeatures) {
+                            showPremiumFeatureDialog = true
+                        } else {
+                            selectedColorScheme = schemeKey
+                        }
                     }
                 )
                 if (schemeKey != colorSchemes.last().first) {
-                    Divider()
+                    HorizontalDivider(
+                        color = ColorHelpers.getDividerColor(),
+                        thickness = 4.dp
+                    )
                 }
             }
         }
+    }
+
+    if (FeatureFlags.ENABLE_PURCHASE_FEATURE && showPremiumFeatureDialog && billingManager != null) {
+        PremiumFeatureDialog(
+            billingManager = billingManager,
+            onDismiss = { showPremiumFeatureDialog = false }
+        )
     }
 }
 

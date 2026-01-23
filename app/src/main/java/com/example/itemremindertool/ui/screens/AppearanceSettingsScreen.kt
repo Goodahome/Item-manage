@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -119,7 +120,7 @@ fun AppearanceSettingsScreen(
                 title = { Text(stringResource(R.string.appearance_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -153,7 +154,10 @@ fun AppearanceSettingsScreen(
                 modifier = Modifier.clickable { onNavigateToTheme() }
             )
             
-            Divider()
+            HorizontalDivider(
+                color = ColorHelpers.getDividerColor(),
+                thickness = 4.dp
+            )
             
             // 配色主题设置（自动跟随主题模式）
             ListItem(
@@ -179,10 +183,19 @@ fun AppearanceSettingsScreen(
                     Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.clickable { onNavigateToColorScheme() }
+                modifier = Modifier.clickable {
+                    if (!canAccessPremiumFeatures) {
+                        showPremiumFeatureDialog = true
+                    } else {
+                        onNavigateToColorScheme()
+                    }
+                }
             )
             
-            Divider()
+            HorizontalDivider(
+                color = ColorHelpers.getDividerColor(),
+                thickness = 4.dp
+            )
 
             ListItem(
                 headlineContent = { Text(stringResource(R.string.custom_color_title)) },
@@ -197,10 +210,19 @@ fun AppearanceSettingsScreen(
                     Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.clickable { onNavigateToCustomColors() }
+                modifier = Modifier.clickable {
+                    if (!canAccessPremiumFeatures) {
+                        showPremiumFeatureDialog = true
+                    } else {
+                        onNavigateToCustomColors()
+                    }
+                }
             )
 
-            Divider()
+            HorizontalDivider(
+                color = ColorHelpers.getDividerColor(),
+                thickness = 4.dp
+            )
             
             // 应用图标设置
             ListItem(
@@ -225,7 +247,10 @@ fun AppearanceSettingsScreen(
                 }
             )
 
-            Divider()
+            HorizontalDivider(
+                color = ColorHelpers.getDividerColor(),
+                thickness = 4.dp
+            )
 
             // 侧边栏容器图标形状
             ListItem(

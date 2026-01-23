@@ -269,7 +269,6 @@
     <string name="custom_color_scheme_empty">Keine gespeicherten Schemata</string>
     <string name="custom_color_scheme_name_required">Bitte einen Schema-Namen eingeben</string>
     <string name="custom_color_field_primary">Container- und Symbolhintergrund Primary</string>
-    <string name="custom_color_field_secondary">Sekundärfarbe Secondary</string>
     <string name="custom_color_field_tertiary">Akzentfarbe Tertiary</string>
     <string name="custom_color_field_primary_container">Containerfarbe PrimaryContainer</string>
     <string name="custom_color_field_on_primary_container">Containertext OnPrimaryContainer</string>
@@ -290,7 +289,6 @@
     <string name="custom_color_preview_container_icon">Container-Symbol</string>
     <string name="custom_color_preview_item_icon">Artikel-Symbol</string>
     <string name="custom_color_preview_container">Container</string>
-    <string name="custom_color_preview_secondary_button">Sekundär-Button</string>
     <string name="custom_color_preview_tertiary">Akzent</string>
     <string name="custom_color_preview_item">Beispielartikel</string>
     <string name="custom_color_preview_quantity">Menge %1$d</string>

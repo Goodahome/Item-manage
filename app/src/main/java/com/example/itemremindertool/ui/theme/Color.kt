@@ -27,7 +27,6 @@ val OnSurfaceVariantDarkHighContrast = Color(0xFFFFFFFF)   // 白色文字，用
 // ========== 1. 红蓝配色（首推）==========
 // 浅色主题
 val RedBluePrimary = Color(0xFFBA3801)
-val RedBlueSecondary = Color(0xFFFFFFFF) // 在 Theme.kt 中使用：secondary
 val RedBlueTertiary = Color(0xFFFF3B30) // 在 Theme.kt 中使用：tertiary 和 error
 val RedBluePrimaryContainer = Color(0xFFFFFFFF) // 在 Theme.kt 中使用：primaryContainer
 val RedBlueOnPrimaryContainer = Color(0xFF001A41) // 在 Theme.kt 中使用：onPrimaryContainer
@@ -60,7 +59,6 @@ val RedBlueSearchBoxBorder = Color(0xFF4A69B3) // 搜索框边框颜色
 val RedBluePrimaryDark     = Color(0xFFFF8C5E)   // 明亮温暖橙，视觉焦点
 
 // 次要色（辅助按钮、chip等）
-val RedBlueSecondaryDark   = Color(0xFFFFB69A)   // 更柔和的浅橙
 
 // 错误/警告/tertiary（保留原有的红色系，但稍微柔化）
 val RedBlueTertiaryDark       = Color(0xFFFF7A70)   // 柔和珊瑚红
@@ -102,7 +100,6 @@ val RedBlueSearchBoxBorderDark   = Color(0xFFFFA270)   // 浅暖橙，微发光�
 // ========== 2. 奶油治愈系 ==========
 // 浅色主题
 val CreamPrimary = Color(0xFFFFB84D)
-val CreamSecondary = Color(0xFFFF9A6A)
 val CreamTertiary = Color(0xFFFF6B9A)
 val CreamPrimaryContainer = Color(0xFFFFE8D1)
 val CreamOnPrimaryContainer = Color(0xFF3D2100)
@@ -122,7 +119,6 @@ val CreamSearchBoxBorder = Color(0xFF000000) // 搜索框边框颜色
 
 // 深色主题
 val CreamPrimaryDark = Color(0xFFFFCC80)
-val CreamSecondaryDark = Color(0xFFFFB399)
 val CreamTertiaryDark = Color(0xFFFF8FB3)
 val CreamPrimaryContainerDark = Color(0xFF8B5A00)
 val CreamBackgroundDark = Color(0xFF1F1B16)
@@ -142,7 +138,6 @@ val CreamSearchBoxBorderDark = Color(0xFFFFFFFF) // 搜索框边框颜色
 // ========== 3. 薄荷冷感 ==========
 // 浅色主题
 val MintPrimary = Color(0xFF00C853)
-val MintSecondary = Color(0xFF00B140)
 val MintTertiary = Color(0xFF00E5FF)
 val MintPrimaryContainer = Color(0xFFB9F6CA)
 val MintOnPrimaryContainer = Color(0xFF003311)
@@ -162,7 +157,6 @@ val MintSearchBoxBorder = Color(0xFF000000) // 搜索框边框颜色
 
 // 深色主题
 val MintPrimaryDark = Color(0xFF69F0AE)
-val MintSecondaryDark = Color(0xFF4DD88A)
 val MintTertiaryDark = Color(0xFF64F5FF)
 val MintPrimaryContainerDark = Color(0xFF00842F)
 val MintBackgroundDark = Color(0xFF0A1F16)
@@ -182,7 +176,6 @@ val MintSearchBoxBorderDark = Color(0xFFFFFFFF) // 搜索框边框颜色
 // ========== 4. 深空高级灰 ==========
 // 浅色主题
 val SpacePrimary = Color(0xFF475569)
-val SpaceSecondary = Color(0xFF64748B)
 val SpaceTertiary = Color(0xFF8B5CF6)
 val SpacePrimaryContainer = Color(0xFFE2E8F0)
 val SpaceOnPrimaryContainer = Color(0xFF0F172A)
@@ -202,7 +195,6 @@ val SpaceSearchBoxBorder = Color(0xFF000000) // 搜索框边框颜色
 
 // 深色主题
 val SpacePrimaryDark = Color(0xFF94A3B8)
-val SpaceSecondaryDark = Color(0xFFCBD5E1)
 val SpaceTertiaryDark = Color(0xFFA78BFA)
 val SpacePrimaryContainerDark = Color(0xFF1E293B)
 val SpaceBackgroundDark = Color(0xFF0F172A)
@@ -222,7 +214,6 @@ val SpaceSearchBoxBorderDark = Color(0xFFFFFFFF) // 搜索框边框颜色
 // ========== 5. 红酒沉稳 ==========
 // 浅色主题
 val WinePrimary = Color(0xFF7C1C2C)
-val WineSecondary = Color(0xFF991B33)
 val WineTertiary = Color(0xFFD4A574)
 val WinePrimaryContainer = Color(0xFFFFD9DE)
 val WineOnPrimaryContainer = Color(0xFF3D0007)
@@ -242,7 +233,6 @@ val WineSearchBoxBorder = Color(0xFF000000) // 搜索框边框颜色
 
 // 深色主题
 val WinePrimaryDark = Color(0xFFFFB3BA)
-val WineSecondaryDark = Color(0xFFFF8A95)
 val WineTertiaryDark = Color(0xFFE5C4A0)
 val WinePrimaryContainerDark = Color(0xFF5C0A1A)
 val WineBackgroundDark = Color(0xFF201416)
@@ -262,7 +252,6 @@ val WineSearchBoxBorderDark = Color(0xFFFFFFFF) // 搜索框边框颜色
 // ========== 6. 节日限定·圣诞 ==========
 // 浅色主题
 val ChristmasPrimary = Color(0xFFD32F2F)
-val ChristmasSecondary = Color(0xFF388E3C)
 val ChristmasTertiary = Color(0xFFFFD700)
 val ChristmasPrimaryContainer = Color(0xFFFFDAD6)
 val ChristmasOnPrimaryContainer = Color(0xFF410002)
@@ -282,7 +271,6 @@ val ChristmasSearchBoxBorder = Color(0xFF000000) // 搜索框边框颜色
 
 // 深色主题
 val ChristmasPrimaryDark = Color(0xFFFFB4AB)
-val ChristmasSecondaryDark = Color(0xFF81C784)
 val ChristmasTertiaryDark = Color(0xFFFFEB3B)
 val ChristmasPrimaryContainerDark = Color(0xFF9A1B1B)
 val ChristmasBackgroundDark = Color(0xFF201A19)

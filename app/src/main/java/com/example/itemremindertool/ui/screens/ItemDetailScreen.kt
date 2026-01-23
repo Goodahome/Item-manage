@@ -43,10 +43,14 @@ import com.example.itemremindertool.data.model.ItemReminder
 import com.example.itemremindertool.data.model.ReminderType
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 import com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.utils.CurrencyUtils
 import com.example.itemremindertool.utils.ImageUtils
+import com.example.itemremindertool.billing.BillingManager
+import com.example.itemremindertool.billing.PremiumFeatureManager
+import com.example.itemremindertool.config.FeatureFlags
 import android.graphics.BitmapFactory
 import android.content.Context
 import android.content.ContextWrapper
@@ -118,7 +122,7 @@ fun ItemDetailScreen(
                 title = { Text(item.name) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 actions = {
@@ -307,7 +311,10 @@ fun ItemDetailScreen(
                         )
                     }
                     
-                    HorizontalDivider()
+                    HorizontalDivider(
+                        color = ColorHelpers.getDividerColor(),
+                        thickness = 4.dp
+                    )
                     
                     // 描述
                     if (item.description.isNotBlank()) {
@@ -325,7 +332,10 @@ fun ItemDetailScreen(
                                 color = ColorHelpers.getGroup4TextColor()
                             )
                         }
-                        HorizontalDivider()
+                        HorizontalDivider(
+                            color = ColorHelpers.getDividerColor(),
+                            thickness = 4.dp
+                        )
                     }
                     
                     // 数量（带快速调整按钮）
@@ -395,7 +405,10 @@ fun ItemDetailScreen(
                     
                     // 价格
                     if (item.price != null) {
-                        HorizontalDivider()
+                        HorizontalDivider(
+                            color = ColorHelpers.getDividerColor(),
+                            thickness = 4.dp
+                        )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -417,7 +430,10 @@ fun ItemDetailScreen(
                     
                     // 条码
                     if (item.barcode != null && item.barcode.isNotBlank()) {
-                        HorizontalDivider()
+                        HorizontalDivider(
+                            color = ColorHelpers.getDividerColor(),
+                            thickness = 4.dp
+                        )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -450,7 +466,10 @@ fun ItemDetailScreen(
                     
                     // 到期日期
                     if (item.expiryDate != null) {
-                        HorizontalDivider()
+                        HorizontalDivider(
+                            color = ColorHelpers.getDividerColor(),
+                            thickness = 4.dp
+                        )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -500,7 +519,10 @@ fun ItemDetailScreen(
                         item.tags
                     }
                     if (allTagsToShow.isNotEmpty()) {
-                        HorizontalDivider()
+                        HorizontalDivider(
+                            color = ColorHelpers.getDividerColor(),
+                            thickness = 4.dp
+                        )
                         val pageBgColor = ColorHelpers.getGroup2PageBgColor()
                         Column(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -553,7 +575,10 @@ fun ItemDetailScreen(
                     }
                     
                     // 创建时间
-                    HorizontalDivider()
+                    HorizontalDivider(
+                        color = ColorHelpers.getDividerColor(),
+                        thickness = 4.dp
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -622,7 +647,10 @@ fun ItemDetailScreen(
                         }
                     }
                     
-                    HorizontalDivider()
+                    HorizontalDivider(
+                        color = ColorHelpers.getDividerColor(),
+                        thickness = 4.dp
+                    )
                     
                     if (reminders.isEmpty()) {
                         // 无提醒
@@ -660,7 +688,7 @@ fun ItemDetailScreen(
     }
     
     // 提醒设置弹窗
-    if (showReminderDialog && item != null) {
+    if (showReminderDialog) {
         ModernReminderDialog(
             item = item,
             reminderViewModel = reminderViewModel,
@@ -673,13 +701,12 @@ fun ItemDetailScreen(
     
     // 图片查看弹窗
     if (showImageDialog) {
-        item?.let { currentItem ->
-            val allImages = if (currentItem.imageUris.isNotEmpty()) {
-                currentItem.imageUris
-            } else {
-                currentItem.imageUri?.let { listOf(it) } ?: emptyList()
-            }
-            val currentImagePath = allImages.getOrNull(selectedImageIndex)
+        val allImages = if (item.imageUris.isNotEmpty()) {
+            item.imageUris
+        } else {
+            item.imageUri?.let { listOf(it) } ?: emptyList()
+        }
+        val currentImagePath = allImages.getOrNull(selectedImageIndex)
             
             if (currentImagePath != null) {
                 Dialog(
@@ -705,7 +732,7 @@ fun ItemDetailScreen(
                         ) {
                             Image(
                                 bitmap = bitmap.asImageBitmap(),
-                                contentDescription = currentItem.name,
+                                contentDescription = item.name,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .fillMaxHeight()
@@ -716,8 +743,8 @@ fun ItemDetailScreen(
                     }
                 }
             }
-        }
     }
+
 }
 
 @Composable
@@ -831,7 +858,41 @@ fun ModernReminderDialog(
     onDismiss: () -> Unit,
     onSuccess: () -> Unit
 ) {
-    val activity = LocalContext.current.findActivity()
+    val context = LocalContext.current
+    val activity = context.findActivity()
+    val prefs = remember {
+        context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+    }
+    var showPremiumFeatureDialog by remember { mutableStateOf(false) }
+    var canAccessPremiumFeatures by remember {
+        mutableStateOf(PremiumFeatureManager.canAccessPremiumFeatures(context))
+    }
+    val billingManager = remember {
+        if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
+            BillingManager(
+                context,
+                listOf(
+                    BillingManager.PRODUCT_REMOVE_ADS,
+                    BillingManager.PRODUCT_PREMIUM_FEATURES,
+                    BillingManager.PRODUCT_PREMIUM_LIFETIME
+                )
+            ).apply {
+                initialize()
+            }
+        } else {
+            null
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "premium_features" || key == "premium_lifetime" || key == "premium_trial_used" || key == "premium_trial_start_time") {
+                canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
     
     var selectedType by remember { mutableStateOf(existingReminder?.reminderType ?: ReminderType.ONCE) }
     var reminderTime by remember { mutableStateOf<Date?>(existingReminder?.reminderTime) }
@@ -897,7 +958,10 @@ fun ModernReminderDialog(
                         )
                     }
                 }
-                HorizontalDivider(color = ColorHelpers.getGroup4IconColor(0.15f))
+                HorizontalDivider(
+                    color = ColorHelpers.getDividerColor(),
+                    thickness = 4.dp
+                )
                 
                 // 内容区域（可滚动）
                 Column(
@@ -977,6 +1041,10 @@ fun ModernReminderDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
+                                    if (!canAccessPremiumFeatures && selectedType != ReminderType.ONCE) {
+                                        showPremiumFeatureDialog = true
+                                        return@clickable
+                                    }
                                     when (selectedType) {
                                         ReminderType.ONCE -> {
                                             showDatePicker = false
@@ -1005,6 +1073,10 @@ fun ModernReminderDialog(
                             },
                             trailingIcon = {
                                 IconButton(onClick = {
+                                    if (!canAccessPremiumFeatures && selectedType != ReminderType.ONCE) {
+                                        showPremiumFeatureDialog = true
+                                        return@IconButton
+                                    }
                                     when (selectedType) {
                                         ReminderType.ONCE -> {
                                             showDatePicker = false
@@ -1087,7 +1159,13 @@ fun ModernReminderDialog(
                                 Surface(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .clickable { selectedType = type },
+                                        .clickable {
+                                            if (!canAccessPremiumFeatures && type != ReminderType.ONCE) {
+                                                showPremiumFeatureDialog = true
+                                            } else {
+                                                selectedType = type
+                                            }
+                                        },
                                     shape = RoundedCornerShape(10.dp),
                                     color = if (isSelected) 
                                         MaterialTheme.colorScheme.primary
@@ -1168,6 +1246,10 @@ fun ModernReminderDialog(
                         }
                         Button(
                             onClick = {
+                                if (!canAccessPremiumFeatures && selectedType != ReminderType.ONCE) {
+                                    showPremiumFeatureDialog = true
+                                    return@Button
+                                }
                                 val reminder = ItemReminder(
                                     id = existingReminder?.id ?: 0,
                                     itemId = item.id,

@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalView
 import android.content.SharedPreferences
 import android.view.WindowManager
 import com.example.itemremindertool.R
+import com.example.itemremindertool.billing.PremiumFeatureManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 
@@ -34,8 +35,6 @@ private val RedBlueLightScheme = lightColorScheme(
     onPrimary = androidx.compose.ui.graphics.Color.White,
     primaryContainer = RedBluePrimaryContainer,
     onPrimaryContainer = RedBlueOnPrimaryContainer,
-    secondary = RedBlueSecondary,
-    onSecondary = androidx.compose.ui.graphics.Color.White,
     tertiary = RedBlueTertiary,                    // 到期提醒红色
     onTertiary = androidx.compose.ui.graphics.Color.White,
     error = RedBlueTertiary,                       // 错误也用到期红
@@ -53,8 +52,6 @@ private val RedBlueDarkScheme = darkColorScheme(
     onPrimary = androidx.compose.ui.graphics.Color.Black,
     primaryContainer = RedBluePrimaryContainerDark,
     onPrimaryContainer = androidx.compose.ui.graphics.Color(0xFFD8E2FF),
-    secondary = RedBlueSecondaryDark,
-    onSecondary = androidx.compose.ui.graphics.Color.Black,
     tertiary = RedBlueTertiaryDark,
     onTertiary = androidx.compose.ui.graphics.Color.White,
     error = RedBlueTertiaryDark,
@@ -73,8 +70,6 @@ private val CreamLightScheme = lightColorScheme(
     onPrimary = androidx.compose.ui.graphics.Color.White,
     primaryContainer = CreamPrimaryContainer,
     onPrimaryContainer = CreamOnPrimaryContainer,
-    secondary = CreamSecondary,
-    onSecondary = androidx.compose.ui.graphics.Color.White,
     tertiary = CreamTertiary,                       // 草莓粉强调色
     onTertiary = androidx.compose.ui.graphics.Color.White,
     error = androidx.compose.ui.graphics.Color(0xFFFF3B30),
@@ -92,8 +87,6 @@ private val CreamDarkScheme = darkColorScheme(
     onPrimary = androidx.compose.ui.graphics.Color(0xFF3D2100),
     primaryContainer = CreamPrimaryContainerDark,
     onPrimaryContainer = CreamPrimaryContainer,
-    secondary = CreamSecondaryDark,
-    onSecondary = androidx.compose.ui.graphics.Color(0xFF3D1A00),
     tertiary = CreamTertiaryDark,
     onTertiary = androidx.compose.ui.graphics.Color.White,
     error = androidx.compose.ui.graphics.Color(0xFFFF6B6B),
@@ -112,8 +105,6 @@ private val MintLightScheme = lightColorScheme(
     onPrimary = androidx.compose.ui.graphics.Color.White,
     primaryContainer = MintPrimaryContainer,
     onPrimaryContainer = MintOnPrimaryContainer,
-    secondary = MintSecondary,
-    onSecondary = androidx.compose.ui.graphics.Color.White,
     tertiary = MintTertiary,                        // 冰蓝强调色
     onTertiary = androidx.compose.ui.graphics.Color.Black,
     error = androidx.compose.ui.graphics.Color(0xFFFF3B30),
@@ -131,8 +122,6 @@ private val MintDarkScheme = darkColorScheme(
     onPrimary = androidx.compose.ui.graphics.Color(0xFF003820),
     primaryContainer = MintPrimaryContainerDark,
     onPrimaryContainer = MintPrimaryContainer,
-    secondary = MintSecondaryDark,
-    onSecondary = androidx.compose.ui.graphics.Color(0xFF003311),
     tertiary = MintTertiaryDark,
     onTertiary = androidx.compose.ui.graphics.Color.Black,
     error = androidx.compose.ui.graphics.Color(0xFFFF6B6B),
@@ -151,8 +140,6 @@ private val SpaceLightScheme = lightColorScheme(
     onPrimary = androidx.compose.ui.graphics.Color.White,
     primaryContainer = SpacePrimaryContainer,
     onPrimaryContainer = SpaceOnPrimaryContainer,
-    secondary = SpaceSecondary,
-    onSecondary = androidx.compose.ui.graphics.Color.White,
     tertiary = SpaceTertiary,                       // 紫色光强调色
     onTertiary = androidx.compose.ui.graphics.Color.White,
     error = androidx.compose.ui.graphics.Color(0xFFFF3B30),
@@ -170,8 +157,6 @@ private val SpaceDarkScheme = darkColorScheme(
     onPrimary = androidx.compose.ui.graphics.Color(0xFF0F172A),
     primaryContainer = SpacePrimaryContainerDark,
     onPrimaryContainer = SpacePrimaryContainer,
-    secondary = SpaceSecondaryDark,
-    onSecondary = androidx.compose.ui.graphics.Color(0xFF1E293B),
     tertiary = SpaceTertiaryDark,
     onTertiary = androidx.compose.ui.graphics.Color.Black,
     error = androidx.compose.ui.graphics.Color(0xFFFF6B6B),
@@ -190,8 +175,6 @@ private val WineLightScheme = lightColorScheme(
     onPrimary = androidx.compose.ui.graphics.Color.White,
     primaryContainer = WinePrimaryContainer,
     onPrimaryContainer = WineOnPrimaryContainer,
-    secondary = WineSecondary,
-    onSecondary = androidx.compose.ui.graphics.Color.White,
     tertiary = WineTertiary,                        // 金色强调色
     onTertiary = androidx.compose.ui.graphics.Color.Black,
     error = androidx.compose.ui.graphics.Color(0xFFFF3B30),
@@ -209,8 +192,6 @@ private val WineDarkScheme = darkColorScheme(
     onPrimary = androidx.compose.ui.graphics.Color(0xFF5C0A1A),
     primaryContainer = WinePrimaryContainerDark,
     onPrimaryContainer = WinePrimaryContainer,
-    secondary = WineSecondaryDark,
-    onSecondary = androidx.compose.ui.graphics.Color(0xFF680012),
     tertiary = WineTertiaryDark,
     onTertiary = androidx.compose.ui.graphics.Color.Black,
     error = androidx.compose.ui.graphics.Color(0xFFFF6B6B),
@@ -229,8 +210,6 @@ private val ChristmasLightScheme = lightColorScheme(
     onPrimary = androidx.compose.ui.graphics.Color.White,
     primaryContainer = ChristmasPrimaryContainer,
     onPrimaryContainer = ChristmasOnPrimaryContainer,
-    secondary = ChristmasSecondary,
-    onSecondary = androidx.compose.ui.graphics.Color.White,
     tertiary = ChristmasTertiary,                   // 金色铃铛
     onTertiary = androidx.compose.ui.graphics.Color.Black,
     error = ChristmasPrimary,                       // 圣诞红
@@ -248,8 +227,6 @@ private val ChristmasDarkScheme = darkColorScheme(
     onPrimary = androidx.compose.ui.graphics.Color(0xFF690005),
     primaryContainer = ChristmasPrimaryContainerDark,
     onPrimaryContainer = ChristmasPrimaryContainer,
-    secondary = ChristmasSecondaryDark,
-    onSecondary = androidx.compose.ui.graphics.Color(0xFF003910),
     tertiary = ChristmasTertiaryDark,
     onTertiary = androidx.compose.ui.graphics.Color.Black,
     error = ChristmasPrimaryDark,
@@ -327,7 +304,6 @@ private fun buildCustomColorScheme(
     fallback: androidx.compose.material3.ColorScheme
 ): androidx.compose.material3.ColorScheme {
     val primary = getCustomColor(prefs, "custom_color_primary", fallback.primary)
-    val secondary = getCustomColor(prefs, "custom_color_secondary", fallback.secondary)
     val tertiary = getCustomColor(prefs, "custom_color_tertiary", fallback.tertiary)
     val primaryContainer = getCustomColor(prefs, "custom_color_primary_container", fallback.primaryContainer)
     val onPrimaryContainer = getCustomColor(prefs, "custom_color_on_primary_container", getContrastColor(primaryContainer))
@@ -336,11 +312,10 @@ private fun buildCustomColorScheme(
     val surfaceVariant = getCustomColor(prefs, "custom_color_surface_variant", fallback.surfaceVariant)
 
     val onPrimary = getCustomColor(prefs, "custom_color_on_primary", getContrastColor(primary))
-    val onSecondary = getCustomColor(prefs, "custom_color_on_secondary", getContrastColor(secondary))
     val onTertiary = getCustomColor(prefs, "custom_color_on_tertiary", getContrastColor(tertiary))
-    val onBackground = getCustomColor(prefs, "custom_color_on_background", getContrastColor(background))
-    val onSurface = getCustomColor(prefs, "custom_color_on_surface", getContrastColor(surface))
-    val onSurfaceVariant = getCustomColor(prefs, "custom_color_on_surface_variant", getContrastColor(surfaceVariant))
+    val onBackground = onPrimaryContainer
+    val onSurface = onPrimaryContainer
+    val onSurfaceVariant = onPrimaryContainer
 
     return if (isDarkTheme) {
         darkColorScheme(
@@ -348,8 +323,6 @@ private fun buildCustomColorScheme(
             onPrimary = onPrimary,
             primaryContainer = primaryContainer,
             onPrimaryContainer = onPrimaryContainer,
-            secondary = secondary,
-            onSecondary = onSecondary,
             tertiary = tertiary,
             onTertiary = onTertiary,
             error = tertiary,
@@ -367,8 +340,6 @@ private fun buildCustomColorScheme(
             onPrimary = onPrimary,
             primaryContainer = primaryContainer,
             onPrimaryContainer = onPrimaryContainer,
-            secondary = secondary,
-            onSecondary = onSecondary,
             tertiary = tertiary,
             onTertiary = onTertiary,
             error = tertiary,
@@ -402,6 +373,9 @@ fun ItemReminderToolTheme(
     var language by remember { mutableStateOf(prefs.getString("language", "zh") ?: "zh") }
     var colorSchemeSetting by remember { mutableStateOf(prefs.getString("color_scheme", "red_blue") ?: "red_blue") }
     var customColorVersion by remember { mutableStateOf(0) }
+    var canAccessPremiumFeatures by remember {
+        mutableStateOf(PremiumFeatureManager.canAccessPremiumFeatures(context))
+    }
     
     // 监听 SharedPreferences 变化
     DisposableEffect(Unit) {
@@ -411,6 +385,9 @@ fun ItemReminderToolTheme(
                 "app_name" -> appName = prefs.getString("app_name", defaultAppName) ?: defaultAppName
                 "language" -> language = prefs.getString("language", "zh") ?: "zh"
                 "color_scheme" -> colorSchemeSetting = prefs.getString("color_scheme", "red_blue") ?: "red_blue"
+                "premium_features", "premium_lifetime", "premium_trial_used", "premium_trial_start_time" -> {
+                    canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
+                }
                 else -> {
                     if (key?.startsWith("custom_color_") == true) {
                         customColorVersion++
@@ -427,14 +404,18 @@ fun ItemReminderToolTheme(
     }
     
     // 根据设置决定是否使用深色主题
-    val shouldUseDarkTheme = when (themeSetting) {
+    val effectiveThemeSetting = themeSetting
+    val effectiveAppName = if (canAccessPremiumFeatures) appName else defaultAppName
+    val effectiveColorSchemeSetting = if (canAccessPremiumFeatures) colorSchemeSetting else "red_blue"
+
+    val shouldUseDarkTheme = when (effectiveThemeSetting) {
         "dark" -> true
         "light" -> false
         else -> darkTheme // "system" 时跟随系统
     }
     
-    val appSettings = remember(themeSetting, appName, language, colorSchemeSetting, customColorVersion) {
-        AppSettings(appName, themeSetting, language, colorSchemeSetting)
+    val appSettings = remember(effectiveThemeSetting, effectiveAppName, language, effectiveColorSchemeSetting, customColorVersion, canAccessPremiumFeatures) {
+        AppSettings(effectiveAppName, effectiveThemeSetting, language, effectiveColorSchemeSetting)
     }
     
     // 根据配色方案选择对应的 ColorScheme
@@ -443,7 +424,7 @@ fun ItemReminderToolTheme(
             if (shouldUseDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
         else -> {
-            val schemeType = ColorSchemeType.fromKey(colorSchemeSetting)
+            val schemeType = ColorSchemeType.fromKey(effectiveColorSchemeSetting)
             if (schemeType == ColorSchemeType.CUSTOM) {
                 val fallbackScheme = if (shouldUseDarkTheme) RedBlueDarkScheme else RedBlueLightScheme
                 buildCustomColorScheme(prefs, shouldUseDarkTheme, fallbackScheme)
@@ -483,8 +464,10 @@ fun ItemReminderToolTheme(
                 DisposableEffect(colorScheme.background) {
                     val window = (view.context as? Activity)?.window
                     window?.let {
+                        @Suppress("DEPRECATION")
                         // 状态栏透明，让顶部渐变能延伸到状态栏
                         it.statusBarColor = Color.Transparent.toArgb()
+                        @Suppress("DEPRECATION")
                         // 导航栏与背景一致，避免闪白
                         it.navigationBarColor = colorScheme.background.toArgb()
                         // 设置窗口背景色为透明，避免转场时白屏
@@ -496,6 +479,7 @@ fun ItemReminderToolTheme(
                     val activity = view.context as? Activity
                     activity?.title = appName
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        @Suppress("DEPRECATION")
                         val taskDescription = ActivityManager.TaskDescription(
                             appName,
                             null,

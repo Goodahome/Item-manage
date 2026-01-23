@@ -3,6 +3,7 @@ package com.example.itemremindertool.utils
 import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
+import android.media.MediaScannerConnection
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -476,9 +477,12 @@ object DatabaseBackupUtils {
                 tempBackupFile.delete()
                 
                 // 通知媒体扫描器
-                val mediaScanIntent = android.content.Intent(android.content.Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
-                mediaScanIntent.data = Uri.fromFile(downloadFile)
-                context.sendBroadcast(mediaScanIntent)
+                MediaScannerConnection.scanFile(
+                    context,
+                    arrayOf(downloadFile.absolutePath),
+                    null,
+                    null
+                )
                 
                 Log.d(TAG, "数据库备份已保存到Downloads: ${downloadFile.absolutePath}")
                 Result.success(Uri.fromFile(downloadFile))

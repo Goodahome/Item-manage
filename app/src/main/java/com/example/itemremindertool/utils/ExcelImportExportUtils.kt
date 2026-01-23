@@ -12,6 +12,7 @@ import com.example.itemremindertool.data.model.Warehouse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.apache.poi.ss.usermodel.Cell
+import org.apache.poi.ss.usermodel.CellType
 import org.apache.poi.ss.usermodel.DateUtil
 import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.hssf.usermodel.HSSFClientAnchor
@@ -171,8 +172,7 @@ object ExcelImportExportUtils {
         try {
             val workbook = HSSFWorkbook(inputStream)
             workbook.use { wb ->
-                val sheet = wb.getSheetAt(0) as? HSSFSheet
-                    ?: return@withContext Result.failure(IllegalStateException(context.getString(R.string.excel_file_invalid)))
+                val sheet = wb.getSheetAt(0)
                 val headerRow = sheet.getRow(0)
                     ?: return@withContext Result.failure(IllegalStateException(context.getString(R.string.excel_header_missing)))
 
@@ -223,7 +223,7 @@ object ExcelImportExportUtils {
                         .map { it.trim() }
                         .filter { it.isNotBlank() }
                         .toSet()
-                    tags.forEach { tagManager.addTag(it) }
+                    val effectiveTags = tags.filter { tagManager.addTag(it) }.toSet()
 
                     val warehouseName = getCellString(
                         row.getCell(
@@ -258,7 +258,7 @@ object ExcelImportExportUtils {
                     }
 
                     if (existingItem != null) {
-                        val mergedTags = (existingItem.tags + tags).distinct()
+                        val mergedTags = (existingItem.tags + effectiveTags).distinct()
                         val mergedImageUris = if (existingItem.imageUris.isNotEmpty()) {
                             existingItem.imageUris
                         } else {
@@ -284,8 +284,8 @@ object ExcelImportExportUtils {
                         )
                         itemDao.updateItem(updatedItem)
                         merged++
-                        if (!updatedItem.barcode.isNullOrBlank()) {
-                            itemsByBarcode[updatedItem.barcode!!.trim()] = updatedItem
+                        updatedItem.barcode?.trim()?.takeIf { it.isNotBlank() }?.let { trimmed ->
+                            itemsByBarcode[trimmed] = updatedItem
                         }
                         itemsByNameWarehouse[buildNameWarehouseKey(updatedItem.name, updatedItem.warehouseId)] = updatedItem
                     } else {
@@ -294,7 +294,7 @@ object ExcelImportExportUtils {
                             description = description,
                             categoryId = null,
                             warehouseId = warehouseId,
-                            tags = tags.toList(),
+                            tags = effectiveTags.toList(),
                             purchaseDate = null,
                             expiryDate = expiryDate,
                             price = price,
@@ -310,8 +310,8 @@ object ExcelImportExportUtils {
 
                         val newId = itemDao.insertItem(item)
                         val insertedItem = item.copy(id = newId)
-                        if (!insertedItem.barcode.isNullOrBlank()) {
-                            itemsByBarcode[insertedItem.barcode!!.trim()] = insertedItem
+                        insertedItem.barcode?.trim()?.takeIf { it.isNotBlank() }?.let { trimmed ->
+                            itemsByBarcode[trimmed] = insertedItem
                         }
                         itemsByNameWarehouse[buildNameWarehouseKey(insertedItem.name, insertedItem.warehouseId)] = insertedItem
                         imported++
@@ -361,7 +361,7 @@ object ExcelImportExportUtils {
         imageColumnIndex: Int
     ): Map<Int, HSSFPictureData> {
         val pictures = mutableMapOf<Int, HSSFPictureData>()
-        val drawing = sheet.drawingPatriarch as? HSSFPatriarch ?: return pictures
+        val drawing = sheet.drawingPatriarch ?: return pictures
         drawing.children.forEach { shape ->
             val picture = shape as? HSSFPicture ?: return@forEach
             val anchor = picture.anchor as? HSSFClientAnchor ?: return@forEach
@@ -382,9 +382,9 @@ object ExcelImportExportUtils {
 
     private fun getCellString(cell: Cell?): String {
         if (cell == null) return ""
-        return when (cell.cellType) {
-            Cell.CELL_TYPE_STRING -> cell.stringCellValue ?: ""
-            Cell.CELL_TYPE_NUMERIC -> {
+        return when (cell.cellTypeEnum) {
+            CellType.STRING -> cell.stringCellValue ?: ""
+            CellType.NUMERIC -> {
                 if (DateUtil.isCellDateFormatted(cell)) {
                     DATE_FORMAT.format(cell.dateCellValue)
                 } else {
@@ -392,11 +392,11 @@ object ExcelImportExportUtils {
                     if (value % 1.0 == 0.0) value.toLong().toString() else value.toString()
                 }
             }
-            Cell.CELL_TYPE_BOOLEAN -> cell.booleanCellValue.toString()
-            Cell.CELL_TYPE_FORMULA -> {
-                when (cell.cachedFormulaResultType) {
-                    Cell.CELL_TYPE_STRING -> cell.stringCellValue ?: ""
-                    Cell.CELL_TYPE_NUMERIC -> {
+            CellType.BOOLEAN -> cell.booleanCellValue.toString()
+            CellType.FORMULA -> {
+                when (cell.cachedFormulaResultTypeEnum) {
+                    CellType.STRING -> cell.stringCellValue ?: ""
+                    CellType.NUMERIC -> {
                         if (DateUtil.isCellDateFormatted(cell)) {
                             DATE_FORMAT.format(cell.dateCellValue)
                         } else {
@@ -404,7 +404,7 @@ object ExcelImportExportUtils {
                             if (value % 1.0 == 0.0) value.toLong().toString() else value.toString()
                         }
                     }
-                    Cell.CELL_TYPE_BOOLEAN -> cell.booleanCellValue.toString()
+                    CellType.BOOLEAN -> cell.booleanCellValue.toString()
                     else -> ""
                 }
             }
@@ -414,42 +414,42 @@ object ExcelImportExportUtils {
 
     private fun getCellInt(cell: Cell?, defaultValue: Int): Int {
         if (cell == null) return defaultValue
-        return when (cell.cellType) {
-            Cell.CELL_TYPE_NUMERIC -> cell.numericCellValue.toInt()
-            Cell.CELL_TYPE_STRING -> cell.stringCellValue.toIntOrNull() ?: defaultValue
-            Cell.CELL_TYPE_FORMULA -> cell.numericCellValue.toInt()
+        return when (cell.cellTypeEnum) {
+            CellType.NUMERIC -> cell.numericCellValue.toInt()
+            CellType.STRING -> cell.stringCellValue.toIntOrNull() ?: defaultValue
+            CellType.FORMULA -> cell.numericCellValue.toInt()
             else -> defaultValue
         }
     }
 
     private fun getCellDouble(cell: Cell?): Double? {
         if (cell == null) return null
-        return when (cell.cellType) {
-            Cell.CELL_TYPE_NUMERIC -> cell.numericCellValue
-            Cell.CELL_TYPE_STRING -> cell.stringCellValue.toDoubleOrNull()
-            Cell.CELL_TYPE_FORMULA -> cell.numericCellValue
+        return when (cell.cellTypeEnum) {
+            CellType.NUMERIC -> cell.numericCellValue
+            CellType.STRING -> cell.stringCellValue.toDoubleOrNull()
+            CellType.FORMULA -> cell.numericCellValue
             else -> null
         }
     }
 
     private fun getCellDate(cell: Cell?): Date? {
         if (cell == null) return null
-        return when (cell.cellType) {
-            Cell.CELL_TYPE_NUMERIC -> if (DateUtil.isCellDateFormatted(cell)) cell.dateCellValue else null
-            Cell.CELL_TYPE_STRING -> cell.stringCellValue?.let { text ->
+        return when (cell.cellTypeEnum) {
+            CellType.NUMERIC -> if (DateUtil.isCellDateFormatted(cell)) cell.dateCellValue else null
+            CellType.STRING -> cell.stringCellValue?.let { text ->
                 runCatching { DATE_FORMAT.parse(text) }.getOrNull()
             }
-            Cell.CELL_TYPE_FORMULA -> if (DateUtil.isCellDateFormatted(cell)) cell.dateCellValue else null
+            CellType.FORMULA -> if (DateUtil.isCellDateFormatted(cell)) cell.dateCellValue else null
             else -> null
         }
     }
 
     private fun parseBooleanCell(cell: Cell?, yesValues: Set<String>): Boolean {
         if (cell == null) return false
-        return when (cell.cellType) {
-            Cell.CELL_TYPE_BOOLEAN -> cell.booleanCellValue
-            Cell.CELL_TYPE_NUMERIC -> cell.numericCellValue != 0.0
-            Cell.CELL_TYPE_STRING -> {
+        return when (cell.cellTypeEnum) {
+            CellType.BOOLEAN -> cell.booleanCellValue
+            CellType.NUMERIC -> cell.numericCellValue != 0.0
+            CellType.STRING -> {
                 val text = cell.stringCellValue.trim()
                 if (text.isBlank()) {
                     false
@@ -461,7 +461,7 @@ object ExcelImportExportUtils {
                         lowered == "yes"
                 }
             }
-            Cell.CELL_TYPE_FORMULA -> cell.booleanCellValue
+            CellType.FORMULA -> cell.booleanCellValue
             else -> false
         }
     }

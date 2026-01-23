@@ -284,7 +284,6 @@
     <string name="custom_color_scheme_empty">No saved schemes</string>
     <string name="custom_color_scheme_name_required">Please enter a scheme name</string>
     <string name="custom_color_field_primary">Container &amp; item icon background Primary</string>
-    <string name="custom_color_field_secondary">Secondary color Secondary</string>
     <string name="custom_color_field_tertiary">Accent color Tertiary</string>
     <string name="custom_color_field_primary_container">Container color PrimaryContainer</string>
     <string name="custom_color_field_on_primary_container">Container text OnPrimaryContainer</string>
@@ -305,7 +304,6 @@
     <string name="custom_color_preview_container_icon">Container icon</string>
     <string name="custom_color_preview_item_icon">Item icon</string>
     <string name="custom_color_preview_container">Container</string>
-    <string name="custom_color_preview_secondary_button">Secondary button</string>
     <string name="custom_color_preview_tertiary">Accent</string>
     <string name="custom_color_preview_item">Sample item</string>
     <string name="custom_color_preview_quantity">Qty %1$d</string>

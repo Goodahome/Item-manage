@@ -103,6 +103,7 @@ import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
 import com.example.itemremindertool.utils.ImageUtils
 import com.example.itemremindertool.utils.SyncStateManager
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
+import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.config.FeatureFlags
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -1219,7 +1220,7 @@ fun WarehouseInfoScreen(
                     }
                 }
 
-                HorizontalDivider()
+                HorizontalDivider(color = ColorHelpers.getDividerColor())
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1308,8 +1309,9 @@ fun SearchBoxSection(
     val searchBoxBgColor = ColorHelpers.getSearchBoxBgColor()
     val searchBoxBorderColor = ColorHelpers.getSearchBoxBorderColor()
     
-    // 根据搜索框背景色和对比度判断，返回对应的文字/图标颜色
-    val contrastColor = ColorHelpers.getGroup4TextColorByContrast(searchBoxBgColor)
+    // 搜索框文字/图标颜色（支持自定义配色）
+    val searchBoxTextColor = ColorHelpers.getSearchBoxTextColor()
+    val searchBoxIconColor = ColorHelpers.getSearchBoxIconColor()
     
     // 搜索框外层完全透明
     Box(
@@ -1349,14 +1351,14 @@ fun SearchBoxSection(
                     stringResource(R.string.search_all_items),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = contrastColor.copy(alpha = 1f) // 使用对比色，60% 透明度
+                    color = searchBoxTextColor.copy(alpha = 1f)
                 ) 
             },
             leadingIcon = { 
                 Icon(
                     Icons.Default.Search, 
                     null,
-                    tint = contrastColor.copy(alpha = 1f) // 使用对比色，70% 透明度
+                    tint = searchBoxIconColor.copy(alpha = 1f)
                 ) 
             },
             trailingIcon = {
@@ -1365,7 +1367,7 @@ fun SearchBoxSection(
                         Icon(
                             Icons.Default.Close, 
                             null, 
-                            tint = contrastColor.copy(alpha = 1f) // 使用对比色，70% 透明度
+                            tint = searchBoxIconColor.copy(alpha = 1f)
                         )
                     }
                 }
@@ -1374,17 +1376,17 @@ fun SearchBoxSection(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = searchBoxBgColor, // 使用单独设置的搜索框背景色
                 unfocusedContainerColor = searchBoxBgColor, // 使用单独设置的搜索框背景色
-                focusedTextColor = contrastColor, // 使用对比色（白色或黑色）
-                unfocusedTextColor = contrastColor, // 使用对比色（白色或黑色）
+                focusedTextColor = searchBoxTextColor,
+                unfocusedTextColor = searchBoxTextColor,
                 // 将 OutlinedTextField 的默认边框设为透明，因为我们使用 modifier.border() 来绘制边框
                 focusedBorderColor = Color.Transparent,
                 unfocusedBorderColor = Color.Transparent,
-                focusedPlaceholderColor = contrastColor.copy(alpha = 0.6f), // 使用对比色，60% 透明度
-                unfocusedPlaceholderColor = contrastColor.copy(alpha = 0.6f), // 使用对比色，60% 透明度
-                focusedLeadingIconColor = contrastColor.copy(alpha = 0.7f), // 使用对比色，70% 透明度
-                unfocusedLeadingIconColor = contrastColor.copy(alpha = 0.6f), // 使用对比色，60% 透明度
-                focusedTrailingIconColor = contrastColor.copy(alpha = 0.7f), // 使用对比色，70% 透明度
-                unfocusedTrailingIconColor = contrastColor.copy(alpha = 0.6f) // 使用对比色，60% 透明度
+                focusedPlaceholderColor = searchBoxTextColor.copy(alpha = 0.6f),
+                unfocusedPlaceholderColor = searchBoxTextColor.copy(alpha = 0.6f),
+                focusedLeadingIconColor = searchBoxIconColor.copy(alpha = 0.7f),
+                unfocusedLeadingIconColor = searchBoxIconColor.copy(alpha = 0.6f),
+                focusedTrailingIconColor = searchBoxIconColor.copy(alpha = 0.7f),
+                unfocusedTrailingIconColor = searchBoxIconColor.copy(alpha = 0.6f)
             ),
             singleLine = true
         )
@@ -1504,7 +1506,7 @@ fun WarehouseInfoBottomSheet(
                 }
 
                 HorizontalDivider(
-                    color = breadcrumbTextColor.copy(alpha = 0.2f)
+                    color = ColorHelpers.getDividerColor()
                 )
 
                 // 容器描述
@@ -1587,7 +1589,7 @@ fun WarehouseInfoBottomSheet(
 
                 // 统计信息
                 HorizontalDivider(
-                    color = breadcrumbTextColor.copy(alpha = 0.2f)
+                    color = ColorHelpers.getDividerColor()
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1629,7 +1631,7 @@ fun WarehouseInfoBottomSheet(
 
                 // 创建时间（右对齐）
                 HorizontalDivider(
-                    color = breadcrumbTextColor.copy(alpha = 0.2f)
+                    color = ColorHelpers.getDividerColor()
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -2518,15 +2520,21 @@ fun SubWarehouseRow(
                             context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
                         }
                         val customSuffix = remember {
-                            prefs.getString("warehouse_items_suffix", context.getString(R.string.warehouse_items_suffix)) 
+                            prefs.getString("warehouse_items_suffix", context.getString(R.string.warehouse_items_suffix))
                                 ?: context.getString(R.string.warehouse_items_suffix)
+                        }
+                        val defaultSuffix = context.getString(R.string.warehouse_items_suffix)
+                        val effectiveSuffix = if (PremiumFeatureManager.canAccessPremiumFeatures(context)) {
+                            customSuffix
+                        } else {
+                            defaultSuffix
                         }
                         val unnamedText = remember {
                             prefs.getString("unnamed_warehouse", context.getString(R.string.unnamed_warehouse))
                                 ?: context.getString(R.string.unnamed_warehouse)
                         }
                         val displayText = if (isLast) {
-                            "${warehouse.name.ifEmpty { unnamedText }}$customSuffix"
+                            "${warehouse.name.ifEmpty { unnamedText }}$effectiveSuffix"
                         } else {
                             warehouse.name.ifEmpty { unnamedText }
                         }
@@ -2575,8 +2583,8 @@ fun SubWarehouseRow(
                 val breadcrumbIconColor = ColorHelpers.getGroup4IconColorByContrast(cardBgColor)
                 HorizontalDivider(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    color = breadcrumbIconColor.copy(alpha = 0.2f),
-                    thickness = 1.dp
+                    color = ColorHelpers.getDividerColor(),
+                    thickness = 4.dp
                 )
             }
             
@@ -3126,8 +3134,8 @@ fun ItemListRow(
                         // 分隔线
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            color = ColorHelpers.getGroup4TextColor().copy(alpha = 0.1f),
-                            thickness = 0.5.dp
+                            color = ColorHelpers.getDividerColor(),
+                            thickness = 4.dp
                         )
                         
                         // 删除（红色）
@@ -3618,8 +3626,8 @@ fun ItemListSection(
                                 // 分割线
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
-                                    color = ColorHelpers.getGroup4IconColor(0.2f),
-                                    thickness = 1.dp
+                                    color = ColorHelpers.getDividerColor(),
+                                    thickness = 4.dp
                                 )
                             }
                             
@@ -4569,7 +4577,7 @@ fun HomeStatisticCards(
                 modifier = Modifier
                     .height(40.dp)
                     .width(1.dp),
-                color = ColorHelpers.getGroup4TextColor(0.15f)
+                color = ColorHelpers.getDividerColor()
             )
             
             // 物品数量 - 与左侧容器图标样式一致
@@ -4596,7 +4604,7 @@ fun HomeStatisticCards(
                 modifier = Modifier
                     .height(40.dp)
                     .width(1.dp),
-                color = ColorHelpers.getGroup4TextColor(0.15f)
+                color = ColorHelpers.getDividerColor()
             )
 
             // 待购物品 - 与左侧容器图标样式一致（可点击）

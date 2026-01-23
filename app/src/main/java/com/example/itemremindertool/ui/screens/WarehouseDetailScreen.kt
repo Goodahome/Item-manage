@@ -30,6 +30,7 @@ import com.example.itemremindertool.ui.components.WarehouseQRCodeDialog
 import com.example.itemremindertool.ui.components.UIConstants
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -248,7 +249,8 @@ fun WarehouseDetailScreen(
                     val path = warehouseItemsState.warehousePath
                     val currentDepth = if (path.isNotEmpty()) path.size else 1
                     val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
-                    val unlimitedContainers = prefs.getBoolean("unlimited_containers", false)
+                    val canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
+                    val unlimitedContainers = prefs.getBoolean("unlimited_containers", false) && canAccessPremiumFeatures
                     
                     if (unlimitedContainers || currentDepth < 5) {
                         FloatingActionButton(

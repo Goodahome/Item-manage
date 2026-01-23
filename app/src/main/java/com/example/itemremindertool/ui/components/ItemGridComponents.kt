@@ -647,13 +647,13 @@ fun ItemDetailPanel(
                     items(item.tags) { tag ->
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer
+                            color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
                                 text = tag,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
                     }
@@ -681,7 +681,10 @@ fun ItemDetailPanel(
                 }
             }
             
-            HorizontalDivider(color = ColorHelpers.getGroup4IconColor(0.2f))
+            HorizontalDivider(
+                color = ColorHelpers.getDividerColor(),
+                thickness = 4.dp
+            )
             
             // 当前数量显示
             Row(

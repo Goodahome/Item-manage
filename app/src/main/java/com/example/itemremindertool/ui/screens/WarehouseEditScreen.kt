@@ -31,6 +31,7 @@ import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.CameraCaptureDialog
 import com.example.itemremindertool.ui.components.ImageCropDialog
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.utils.ImageUtils
 import com.example.itemremindertool.R
 import androidx.compose.foundation.clickable
@@ -207,7 +208,8 @@ fun WarehouseEditScreen(
                         onClick = {
                             scope.launch {
                                 val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
-                                val unlimitedContainers = prefs.getBoolean("unlimited_containers", false)
+                                val canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
+                                val unlimitedContainers = prefs.getBoolean("unlimited_containers", false) && canAccessPremiumFeatures
                                 
                                 val level = if (selectedParentId != null) {
                                     viewModel.calculateLevel(selectedParentId)
