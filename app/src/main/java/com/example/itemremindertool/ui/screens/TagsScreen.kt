@@ -32,6 +32,7 @@ import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.UIConstants
+import com.example.itemremindertool.ui.components.AppFloatingActionButton
 import java.time.*
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -143,9 +144,8 @@ fun TagsScreen(
             Column(
                 modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
             ) {
-                val fabBackground = ColorHelpers.getGroup2SettingsBtnColor()
-                val fabIconColor = ColorHelpers.getContrastColor(fabBackground)
-                FloatingActionButton(
+                val fabBackground = ColorHelpers.getGroup5FabColor()
+                AppFloatingActionButton(
                     onClick = {
                         if (!canAccessPremiumFeatures && tagManager.isTagLimitReached()) {
                             showPremiumFeatureDialog = true
@@ -153,14 +153,12 @@ fun TagsScreen(
                             showAddDialog = true
                         }
                     },
-                    containerColor = fabBackground,
-                    contentColor = fabIconColor,
+                    backgroundColor = fabBackground,
                     modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(
                         Icons.Default.Add,
-                        stringResource(R.string.add_tag),
-                        tint = fabIconColor
+                        stringResource(R.string.add_tag)
                     )
                 }
             }

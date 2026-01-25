@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.R
 import com.example.itemremindertool.data.model.Warehouse
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.ui.components.AppDivider
 
 /**
  * 容器选择底部弹窗（样式与提醒设置弹窗一致）
@@ -71,9 +72,9 @@ fun WarehouseSelectionBottomSheet(
                 )
             }
             
-            HorizontalDivider(
+            AppDivider(
                 color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
+                thickness = 2.dp
             )
             
             // 容器列表

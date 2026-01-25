@@ -16,6 +16,7 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.AppDivider
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 
@@ -69,9 +70,9 @@ fun SettingsScreen(
                     .padding(vertical = 8.dp)
             )
                     
-                    HorizontalDivider(
+                    AppDivider(
                         color = ColorHelpers.getDividerColor(),
-                        thickness = 4.dp
+                        thickness = 2.dp
                     )
                     
                     // 语言设置
@@ -92,9 +93,9 @@ fun SettingsScreen(
                     .padding(vertical = 8.dp)
             )
             
-            HorizontalDivider(
+            AppDivider(
                 color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
+                thickness = 2.dp
             )
             
             // 容器设置
@@ -115,9 +116,9 @@ fun SettingsScreen(
                     .padding(vertical = 8.dp)
             )
             
-            HorizontalDivider(
+            AppDivider(
                 color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
+                thickness = 2.dp
             )
             
             // 提醒设置
@@ -138,9 +139,9 @@ fun SettingsScreen(
                     .padding(vertical = 8.dp)
             )
             
-            HorizontalDivider(
+            AppDivider(
                 color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
+                thickness = 2.dp
             )
             
             // 应用设置
@@ -161,9 +162,9 @@ fun SettingsScreen(
                     .padding(vertical = 8.dp)
             )
                     
-                    HorizontalDivider(
+                    AppDivider(
                         color = ColorHelpers.getDividerColor(),
-                        thickness = 4.dp
+                        thickness = 2.dp
                     )
                     
             // 云端存储设置
@@ -184,9 +185,9 @@ fun SettingsScreen(
                     .padding(vertical = 8.dp)
             )
             
-            HorizontalDivider(
+            AppDivider(
                 color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
+                thickness = 2.dp
             )
             
             // 数据备份和恢复

@@ -80,7 +80,8 @@ fun PremiumFeatureDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
-                .fillMaxWidth(0.92f),
+                .fillMaxWidth(0.92f)
+                .fillMaxHeight(0.9f),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = ColorHelpers.getGroup3CardBgColor()
@@ -88,7 +89,7 @@ fun PremiumFeatureDialog(
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxSize()
             ) {
                 // 顶部标题栏 - 现代化设计
                 Box(
@@ -140,6 +141,7 @@ fun PremiumFeatureDialog(
                 // 内容区域
                 Column(
                     modifier = Modifier
+                        .weight(1f)
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 16.dp)
                         .verticalScroll(rememberScrollState()),

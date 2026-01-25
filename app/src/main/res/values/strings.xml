@@ -86,6 +86,8 @@
     <string name="sidebar_icon_shape">侧边栏风格容器图标形状</string>
     <string name="sidebar_icon_circle">圆形</string>
     <string name="sidebar_icon_round_rect">圆角方形</string>
+    <string name="sidebar_icon_outline">容器图标镂空</string>
+    <string name="sidebar_icon_outline_desc">使用镂空边框显示容器图标</string>
     <string name="color_scheme_cream">🍊 奶油治愈系</string>
     <string name="color_scheme_mint">🌿 薄荷冷感</string>
     <string name="color_scheme_space">🌌 深空高级灰</string>
@@ -102,8 +104,8 @@
     <string name="language_it">Italiano</string>
     <string name="language_pt">Português</string>
     
-    <string name="app_name_label">程序名称</string>
-    <string name="app_name_changed">应用名称已更改；需要重启后系统才会显示</string>
+    <!-- <string name="app_name_label">程序名称</string> -->
+<!--    <string name="app_name_changed">应用名称已更改；需要重启后系统才会显示</string>-->
 <!--    <string name="password_protection">密码保护</string>-->
     <string name="password_enabled">已启用</string>
     <string name="password_disabled">未启用</string>
@@ -299,7 +301,7 @@
     <string name="excel_header_missing">Excel 文件缺少表头</string>
     <string name="excel_export_log_failed">导出 Excel 失败</string>
     <string name="excel_import_log_failed">导入 Excel 失败</string>
-    <string name="feature_extract_log">特征提取完成，featureCode: %1$s...</string>
+    <string name="feature_extract_log">特征提取完成，featureCode: %1$s…</string>
     <string name="custom_color_title">自定义配色</string>
     <string name="custom_color_preview_title">首页预览</string>
     <string name="custom_color_desc">输入色号并实时预览首页样式</string>
@@ -314,7 +316,7 @@
     <string name="custom_color_scheme_name_required">请输入配色名称</string>
     <string name="custom_color_field_primary">容器与物品图标背景色</string>
     <string name="custom_color_field_tertiary">强调色</string>
-    <string name="custom_color_field_primary_container">容器色</string>
+    <string name="custom_color_field_primary_container">悬浮按钮色</string>
     <string name="custom_color_field_on_primary_container">程序文字色</string>
     <string name="custom_color_field_background">底层页面背景</string>
     <string name="custom_color_field_surface">网格物品信息背景</string>
@@ -324,18 +326,17 @@
     <string name="custom_color_field_search_box_bg">搜索框背景</string>
     <string name="custom_color_field_search_box_border">搜索框边框</string>
     <string name="custom_color_field_search_box_text">搜索框文字/图标</string>
-    <string name="custom_color_field_on_surface_low_contrast">首页文字</string>
-    <string name="custom_color_field_breadcrumb_text">面包屑文字</string>
-    <string name="custom_color_field_breadcrumb_icon">面包屑图标</string>
+    <string name="custom_color_field_on_surface_low_contrast">导航条文字色</string>
     <string name="custom_color_field_sub_warehouse_name">子容器名称</string>
-    <string name="custom_color_hex_placeholder">#RRGGBB 或 #AARRGGBB</string>
+    <string name="custom_color_hex_placeholder">#RRGGBB 或 #FFRRGGBB</string>
+    <string name="custom_color_hex_invalid">请输入 #RRGGBB 或 #FFRRGGBB（不支持透明色）</string>
     <string name="custom_color_preview_home">首页</string>
     <string name="custom_color_preview_search">搜索物品</string>
     <string name="custom_color_preview_breadcrumb_path">客厅 / 柜子</string>
     <string name="custom_color_preview_container_icon">容器图标</string>
     <string name="custom_color_preview_item_icon">物品图标</string>
-    <string name="custom_color_preview_container">容器</string>
-    <string name="custom_color_preview_tertiary">强调</string>
+    <string name="custom_color_preview_container">悬浮按钮</string>
+    <string name="custom_color_preview_tertiary">删除</string>
     <string name="custom_color_preview_item">示例物品</string>
     <string name="custom_color_preview_quantity">数量 %1$d</string>
     <string name="custom_color_preview_price">￥19.9</string>
@@ -469,7 +470,7 @@
     <string name="premium_feature_locked">此功能需要高级版本</string>
     <string name="premium_feature_locked_desc">此功能需要订阅高级版或使用7天免费试用。</string>
     <string name="premium_limit_summary">免费版限制：高级版功能（自定义名称/图标、容器后缀、密码保护、云端备份恢复、无限容器、Excel 导入导出、主题/自定义配色、高级提醒、无限标签、去广告）不可用。</string>
-    <string name="try_free">免费试用7天</string>
+    <string name="try_free">免费试用 7 天</string>
     <string name="trial_active">试用中</string>
     <string name="trial_remaining_days">剩余 %1$d 天</string>
     <string name="trial_remaining_hours">剩余 %1$d 小时</string>
@@ -540,7 +541,7 @@
     <string name="icon_changed">图标已切换，可能需要重启应用才能看到效果</string>
     
     <!-- 移动物品 -->
-    <string name="move_to_container">移动到其他容器</string>
+    <string name="move_to_container">移动物品</string>
     <string name="select_target_container">选择目标容器</string>
     
     <!-- 首页新功能 -->

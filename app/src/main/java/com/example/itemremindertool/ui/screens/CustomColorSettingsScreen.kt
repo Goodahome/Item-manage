@@ -37,8 +37,6 @@ import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.theme.OnSurfaceHighContrast
 import com.example.itemremindertool.ui.theme.OnSurfaceLowContrast
 import com.example.itemremindertool.ui.theme.RedBlueBackground
-import com.example.itemremindertool.ui.theme.RedBlueBreadcrumbIcon
-import com.example.itemremindertool.ui.theme.RedBlueBreadcrumbText
 import com.example.itemremindertool.ui.theme.RedBlueGradientEnd
 import com.example.itemremindertool.ui.theme.RedBlueGradientStart
 import com.example.itemremindertool.ui.theme.RedBluePrimary
@@ -46,7 +44,6 @@ import com.example.itemremindertool.ui.theme.RedBluePrimaryContainer
 import com.example.itemremindertool.ui.theme.RedBlueOnPrimaryContainer
 import com.example.itemremindertool.ui.theme.RedBlueSearchBoxBg
 import com.example.itemremindertool.ui.theme.RedBlueSearchBoxBorder
-import com.example.itemremindertool.ui.theme.RedBlueSubWarehouseName
 import com.example.itemremindertool.ui.theme.RedBlueSurface
 import com.example.itemremindertool.ui.theme.RedBlueSurfaceVariant
 import com.example.itemremindertool.ui.theme.RedBlueTertiary
@@ -101,10 +98,7 @@ fun CustomColorSettingsScreen(
         CustomColorField("custom_color_search_box_bg", stringResource(R.string.custom_color_field_search_box_bg), RedBlueSearchBoxBg),
         CustomColorField("custom_color_search_box_border", stringResource(R.string.custom_color_field_search_box_border), RedBlueSearchBoxBorder),
         CustomColorField("custom_color_search_box_text", stringResource(R.string.custom_color_field_search_box_text), OnSurfaceHighContrast),
-        CustomColorField("custom_color_on_surface_low_contrast", stringResource(R.string.custom_color_field_on_surface_low_contrast), OnSurfaceLowContrast),
-        CustomColorField("custom_color_breadcrumb_text", stringResource(R.string.custom_color_field_breadcrumb_text), RedBlueBreadcrumbText),
-        CustomColorField("custom_color_breadcrumb_icon", stringResource(R.string.custom_color_field_breadcrumb_icon), RedBlueBreadcrumbIcon),
-        CustomColorField("custom_color_sub_warehouse_name", stringResource(R.string.custom_color_field_sub_warehouse_name), RedBlueSubWarehouseName)
+        CustomColorField("custom_color_on_surface_low_contrast", stringResource(R.string.custom_color_field_on_surface_low_contrast), OnSurfaceLowContrast)
     )
 
     val customFieldState = remember {
@@ -136,7 +130,8 @@ fun CustomColorSettingsScreen(
                 customFields = customFields,
                 fieldState = customFieldState,
                 schemeName = currentScheme,
-                scheme = loadedSchemes.getValue(currentScheme)
+                scheme = loadedSchemes.getValue(currentScheme),
+                setAsActive = false
             )
         }
     }
@@ -254,7 +249,8 @@ fun CustomColorSettingsScreen(
                             customFields = customFields,
                             fieldState = customFieldState,
                             schemeName = name,
-                            scheme = scheme
+                            scheme = scheme,
+                            setAsActive = customEnabled
                         )
                     }
                 ) {
@@ -293,7 +289,8 @@ fun CustomColorSettingsScreen(
                                         customFields = customFields,
                                         fieldState = customFieldState,
                                         schemeName = schemeName,
-                                        scheme = scheme
+                                        scheme = scheme,
+                                        setAsActive = customEnabled
                                     )
                                 }
                             )
@@ -332,7 +329,8 @@ fun CustomColorSettingsScreen(
                                 customFields = customFields,
                                 fieldState = customFieldState,
                                 schemeName = schemeName,
-                                scheme = scheme
+                                scheme = scheme,
+                                setAsActive = customEnabled
                             )
                         }
                     )
@@ -360,7 +358,8 @@ fun CustomColorSettingsScreen(
                             showPremiumFeatureDialog = true
                             return@OutlinedTextField
                         }
-                        val updated = if (input.length <= 9) input else input.take(9)
+                        val sanitized = sanitizeHexInput(input)
+                        val updated = enforceOpaqueAlpha(sanitized)
                         customFieldState[field.key] = updated
                         val normalizedInput = normalizeHex(updated)
                         if (normalizedInput.isEmpty()) {
@@ -372,6 +371,11 @@ fun CustomColorSettingsScreen(
                     label = { Text(field.label) },
                     placeholder = { Text(stringResource(R.string.custom_color_hex_placeholder)) },
                     isError = !isValid,
+                    supportingText = {
+                        if (!isValid) {
+                            Text(stringResource(R.string.custom_color_hex_invalid))
+                        }
+                    },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
                     trailingIcon = {
@@ -402,9 +406,9 @@ fun CustomColorSettingsScreen(
                 gradientEnd = previewColorFrom("custom_color_gradient_end", RedBlueGradientEnd, customFieldState),
                 searchBoxBg = previewColorFrom("custom_color_search_box_bg", RedBlueSearchBoxBg, customFieldState),
                 searchBoxBorder = previewColorFrom("custom_color_search_box_border", RedBlueSearchBoxBorder, customFieldState),
-                breadcrumbText = previewColorFrom("custom_color_breadcrumb_text", RedBlueBreadcrumbText, customFieldState),
-                breadcrumbIcon = previewColorFrom("custom_color_breadcrumb_icon", RedBlueBreadcrumbIcon, customFieldState),
-                subWarehouseName = previewColorFrom("custom_color_sub_warehouse_name", RedBlueSubWarehouseName, customFieldState)
+                breadcrumbText = previewColorFrom("custom_color_on_primary_container", RedBlueOnPrimaryContainer, customFieldState),
+                breadcrumbIcon = previewColorFrom("custom_color_on_primary_container", RedBlueOnPrimaryContainer, customFieldState),
+                subWarehouseName = previewColorFrom("custom_color_on_primary_container", RedBlueOnPrimaryContainer, customFieldState)
             )
         }
     }
@@ -420,7 +424,34 @@ fun CustomColorSettingsScreen(
 private fun isValidHex(input: String): Boolean {
     val text = input.trim().removePrefix("#")
     val lengthOk = text.length == 6 || text.length == 8
-    return lengthOk && text.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }
+    if (!lengthOk || !text.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }) {
+        return false
+    }
+    if (text.length == 8 && !text.startsWith("FF", ignoreCase = true)) {
+        return false
+    }
+    return true
+}
+
+private fun sanitizeHexInput(input: String): String {
+    val trimmed = input.trim()
+    val hasPrefix = trimmed.startsWith("#")
+    val cleaned = trimmed.filter { it.isDigit() || it.lowercaseChar() in 'a'..'f' }
+    val limited = cleaned.take(8).uppercase()
+    if (limited.isEmpty()) {
+        return if (hasPrefix) "#" else ""
+    }
+    return if (hasPrefix) "#$limited" else limited
+}
+
+private fun enforceOpaqueAlpha(input: String): String {
+    val trimmed = input.trim()
+    val hasPrefix = trimmed.startsWith("#")
+    val cleaned = trimmed.removePrefix("#").uppercase()
+    if (cleaned.length != 8) return input
+    if (cleaned.startsWith("FF")) return input
+    val fixed = "FF" + cleaned.substring(2)
+    return if (hasPrefix) "#$fixed" else fixed
 }
 
 private fun normalizeHex(input: String): String {
@@ -477,11 +508,14 @@ private fun applyCustomScheme(
     customFields: List<CustomColorField>,
     fieldState: MutableMap<String, String>,
     schemeName: String,
-    scheme: Map<String, String>
+    scheme: Map<String, String>,
+    setAsActive: Boolean
 ) {
-    val currentScheme = prefs.getString("color_scheme", "red_blue") ?: "red_blue"
-    if (currentScheme != "custom") {
-        prefs.edit().putString("color_scheme_prev", currentScheme).apply()
+    if (setAsActive) {
+        val currentScheme = prefs.getString("color_scheme", "red_blue") ?: "red_blue"
+        if (currentScheme != "custom") {
+            prefs.edit().putString("color_scheme_prev", currentScheme).apply()
+        }
     }
     customFields.forEach { field ->
         val defaultHex = String.format("#%08X", field.defaultColor.toArgb())
@@ -494,7 +528,9 @@ private fun applyCustomScheme(
         }
     }
     prefs.edit().putString("custom_color_selected", schemeName).apply()
-    prefs.edit().putString("color_scheme", "custom").apply()
+    if (setAsActive) {
+        prefs.edit().putString("color_scheme", "custom").apply()
+    }
 }
 
 private fun readCustomColorSchemes(prefs: SharedPreferences): Map<String, Map<String, String>> {
@@ -709,12 +745,12 @@ private fun CustomHomePreview(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(32.dp)
-                .background(surface, RoundedCornerShape(8.dp)),
+                .background(primary, RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = stringResource(R.string.custom_color_preview_action_button),
-                color = contrastText(surface),
+                color = contrastText(primary),
                 style = MaterialTheme.typography.bodySmall
             )
         }

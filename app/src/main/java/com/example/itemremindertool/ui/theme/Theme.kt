@@ -293,6 +293,10 @@ private fun getCustomColor(
     return parseColorHex(prefs.getString(key, null)) ?: fallback
 }
 
+private fun makeOpaque(color: Color): Color {
+    return if (color.alpha >= 1f) color else color.copy(alpha = 1f)
+}
+
 private fun getContrastColor(background: Color): Color {
     val luminance = 0.299 * background.red + 0.587 * background.green + 0.114 * background.blue
     return if (luminance > 0.5f) Color.Black else Color.White
@@ -303,16 +307,16 @@ private fun buildCustomColorScheme(
     isDarkTheme: Boolean,
     fallback: androidx.compose.material3.ColorScheme
 ): androidx.compose.material3.ColorScheme {
-    val primary = getCustomColor(prefs, "custom_color_primary", fallback.primary)
-    val tertiary = getCustomColor(prefs, "custom_color_tertiary", fallback.tertiary)
-    val primaryContainer = getCustomColor(prefs, "custom_color_primary_container", fallback.primaryContainer)
-    val onPrimaryContainer = getCustomColor(prefs, "custom_color_on_primary_container", getContrastColor(primaryContainer))
-    val background = getCustomColor(prefs, "custom_color_background", fallback.background)
-    val surface = getCustomColor(prefs, "custom_color_surface", fallback.surface)
-    val surfaceVariant = getCustomColor(prefs, "custom_color_surface_variant", fallback.surfaceVariant)
+    val primary = makeOpaque(getCustomColor(prefs, "custom_color_primary", fallback.primary))
+    val tertiary = makeOpaque(getCustomColor(prefs, "custom_color_tertiary", fallback.tertiary))
+    val primaryContainer = makeOpaque(getCustomColor(prefs, "custom_color_primary_container", fallback.primaryContainer))
+    val onPrimaryContainer = makeOpaque(getCustomColor(prefs, "custom_color_on_primary_container", getContrastColor(primaryContainer)))
+    val background = makeOpaque(getCustomColor(prefs, "custom_color_background", fallback.background))
+    val surface = makeOpaque(getCustomColor(prefs, "custom_color_surface", fallback.surface))
+    val surfaceVariant = makeOpaque(getCustomColor(prefs, "custom_color_surface_variant", fallback.surfaceVariant))
 
-    val onPrimary = getCustomColor(prefs, "custom_color_on_primary", getContrastColor(primary))
-    val onTertiary = getCustomColor(prefs, "custom_color_on_tertiary", getContrastColor(tertiary))
+    val onPrimary = makeOpaque(getCustomColor(prefs, "custom_color_on_primary", getContrastColor(primary)))
+    val onTertiary = makeOpaque(getCustomColor(prefs, "custom_color_on_tertiary", getContrastColor(tertiary)))
     val onBackground = onPrimaryContainer
     val onSurface = onPrimaryContainer
     val onSurfaceVariant = onPrimaryContainer
@@ -483,7 +487,7 @@ fun ItemReminderToolTheme(
                         val taskDescription = ActivityManager.TaskDescription(
                             appName,
                             null,
-                            colorScheme.primary.toArgb()
+                            makeOpaque(colorScheme.primary).toArgb()
                         )
                         activity?.setTaskDescription(taskDescription)
                     }

@@ -88,6 +88,9 @@ import com.example.itemremindertool.ui.components.OnboardingOverlay
 import com.example.itemremindertool.ui.components.OnboardingStep
 import com.example.itemremindertool.ui.components.DynamicBannerAd
 import com.example.itemremindertool.ui.components.DraggableFab
+import com.example.itemremindertool.ui.components.AppFloatingActionButton
+import com.example.itemremindertool.ui.components.AppDivider
+import com.example.itemremindertool.ui.components.AppDialogLayout
 import com.example.itemremindertool.ui.components.WarehouseSelectionBottomSheet
 import com.example.itemremindertool.ui.components.CameraCaptureDialog
 import com.example.itemremindertool.ui.components.ImageCropDialog
@@ -222,10 +225,14 @@ fun DashboardScreen(
     
     // 侧边栏图标圆形设置
     var sidebarIconCircle by remember { mutableStateOf(prefs.getBoolean("sidebar_icon_circle", false)) }
+    var sidebarIconOutline by remember { mutableStateOf(prefs.getBoolean("sidebar_icon_outline", false)) }
     DisposableEffect(Unit) {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (key == "sidebar_icon_circle") {
                 sidebarIconCircle = prefs.getBoolean("sidebar_icon_circle", false)
+            }
+            if (key == "sidebar_icon_outline") {
+                sidebarIconOutline = prefs.getBoolean("sidebar_icon_outline", false)
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -462,7 +469,7 @@ fun DashboardScreen(
                         Icon(
                             imageVector = if (isRefreshing) Icons.Default.Sync else Icons.Default.CloudUpload,
                             contentDescription = stringResource(R.string.cloud_storage),
-                            tint = ColorHelpers.getGroup4IconColorByContrast(topBarBgColor),
+                            tint = ColorHelpers.getTopBarTextColor(topBarBgColor),
                             modifier = Modifier
                                 .size(20.dp)
                                 .rotate(syncRotation)
@@ -479,7 +486,7 @@ fun DashboardScreen(
                         Icon(
                             Icons.Default.CameraAlt,
                             contentDescription = stringResource(R.string.quick_add_item),
-                            tint = ColorHelpers.getGroup4IconColorByContrast(topBarBgColor)
+                            tint = ColorHelpers.getTopBarTextColor(topBarBgColor)
                         )
                     }
                     // 首页：显示扫码按钮
@@ -490,7 +497,7 @@ fun DashboardScreen(
                         Icon(
                             Icons.Default.QrCodeScanner,
                             contentDescription = stringResource(R.string.barcode_scanner),
-                            tint = ColorHelpers.getGroup4IconColorByContrast(topBarBgColor)
+                            tint = ColorHelpers.getTopBarTextColor(topBarBgColor)
                         )
                     }
                 }
@@ -575,6 +582,7 @@ fun DashboardScreen(
                 },
                 onAddAlert = onAddAlert,
                 useCircleIcon = sidebarIconCircle,
+                useOutlineIcon = sidebarIconOutline,
                 onboardingEnabled = showOnboarding,
                 onboardingStep = currentOnboardingStep,
                 onAdvanceOnboarding = { advanceOnboarding() },
@@ -588,7 +596,7 @@ fun DashboardScreen(
             val isShoppingListVisible = remember(selectedWarehouseId) {
                 selectedWarehouseId == null
             }
-            val fabBackground = ColorHelpers.getGroup2SettingsBtnColor()
+            val fabBackground = ColorHelpers.getGroup5FabColor()
             val fabIconColor = ColorHelpers.getGroup4IconColorByContrast(fabBackground)
             val sidebarOccupiedWidth = 66.dp + 6.dp + 4.dp
             val fabBoundsPadding = PaddingValues(
@@ -603,7 +611,7 @@ fun DashboardScreen(
                     .zIndex(2f),
                 boundsPadding = fabBoundsPadding
             ) { fabModifier ->
-                FloatingActionButton(
+                AppFloatingActionButton(
                     onClick = {
                         // 直接添加物品
                         // 如果当前在购物列表页面，设置标记以便 ItemEditScreen 知道需要添加到购物篮
@@ -614,14 +622,12 @@ fun DashboardScreen(
                         // 如果当前选中了容器，则带入容器ID
                         onAddItem(selectedWarehouseId)
                     },
-                    containerColor = fabBackground,
-                    contentColor = fabIconColor,
+                    backgroundColor = fabBackground,
                     modifier = fabModifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(
                         Icons.Default.Add,
-                        contentDescription = stringResource(R.string.add_item),
-                        tint = fabIconColor
+                        contentDescription = stringResource(R.string.add_item)
                     )
                 }
             }
@@ -1220,7 +1226,10 @@ fun WarehouseInfoScreen(
                     }
                 }
 
-                HorizontalDivider(color = ColorHelpers.getDividerColor())
+                AppDivider(
+                    color = ColorHelpers.getDividerColor(),
+                    thickness = 2.dp
+                )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1339,7 +1348,7 @@ fun SearchBoxSection(
                     color = if (isFocused) {
                         searchBoxBorderColor // 聚焦时使用完整颜色
                     } else {
-                        searchBoxBorderColor.copy(alpha = 0.7f) // 未聚焦时稍微透明
+                        searchBoxBorderColor.copy(alpha = 1f) // 未聚焦时稍微透明
                     },
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -1447,8 +1456,8 @@ fun WarehouseInfoBottomSheet(
 
     // 使用 Surface Variant 作为背景色
     val surfaceVariantColor = ColorHelpers.getSurfaceVariantColor()
-    // 使用对比度判断的颜色作为内容颜色（与首页物品动态一致）
-    val breadcrumbTextColor = ColorHelpers.getGroup4TextColorByContrast(surfaceVariantColor)
+    // 使用程序文字色作为内容颜色
+    val breadcrumbTextColor = ColorHelpers.getGroup4TextColor()
     
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -1505,8 +1514,9 @@ fun WarehouseInfoBottomSheet(
                     }
                 }
 
-                HorizontalDivider(
-                    color = ColorHelpers.getDividerColor()
+                AppDivider(
+                    color = ColorHelpers.getDividerColor(),
+                    thickness = 2.dp
                 )
 
                 // 容器描述
@@ -1588,7 +1598,7 @@ fun WarehouseInfoBottomSheet(
                 }
 
                 // 统计信息
-                HorizontalDivider(
+                AppDivider(
                     color = ColorHelpers.getDividerColor()
                 )
                 Row(
@@ -1630,7 +1640,7 @@ fun WarehouseInfoBottomSheet(
                 }
 
                 // 创建时间（右对齐）
-                HorizontalDivider(
+                AppDivider(
                     color = ColorHelpers.getDividerColor()
                 )
                 Row(
@@ -1692,6 +1702,7 @@ fun WarehouseIconItem(
     onGenerateQRCode: ((Warehouse) -> Unit)? = null, // 新增：生成二维码回调
     warehouseViewModel: WarehouseViewModel? = null, // 用于获取删除统计信息
     useCircleIcon: Boolean = true,
+    useOutlineIcon: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -1755,10 +1766,11 @@ fun WarehouseIconItem(
                 }
             }
             
+            val baseColor = ColorHelpers.getGroup2SettingsBtnColor()
             val backgroundColor = if (warehouseImageBitmap != null) {
                 Color.Transparent
             } else {
-                ColorHelpers.getGroup2SettingsBtnColor()
+                baseColor
             }
             
             // 获取背景色用于计算对比度
@@ -1774,7 +1786,11 @@ fun WarehouseIconItem(
             }
             
             // 根据背景色和对比度判断，返回对应的文字颜色
-            val textColor = ColorHelpers.getGroup4TextColorByContrast(bgColorForContrast)
+            val textColor = if (useOutlineIcon && warehouseImageBitmap == null) {
+                baseColor
+            } else {
+                ColorHelpers.getGroup4TextColorByContrast(bgColorForContrast)
+            }
             
             // 优化的点击检测：立即响应单击，延迟检测双击
             val scope = rememberCoroutineScope()
@@ -1786,15 +1802,23 @@ fun WarehouseIconItem(
                 Box(
                     modifier = Modifier
                         .size(44.dp) // 略增尺寸
-                        .shadow(
-                            elevation = 4.dp,
-                            shape = iconShapeForShadow,
-                            spotColor = Color.Black.copy(alpha = 0.3f),
-                            ambientColor = Color.Black.copy(alpha = 0.15f)
+                        .then(
+                            if (useOutlineIcon) {
+                                Modifier
+                            } else {
+                                Modifier.shadow(
+                                    elevation = 4.dp,
+                                    shape = iconShapeForShadow,
+                                    spotColor = Color.Black.copy(alpha = 0.3f),
+                                    ambientColor = Color.Black.copy(alpha = 0.15f)
+                                )
+                            }
                         )
                         .clip(iconShapeForShadow)
                         .then(
-                            if (warehouseImageBitmap != null) {
+                            if (useOutlineIcon) {
+                                Modifier.border(2.dp, baseColor, iconShapeForShadow)
+                            } else if (warehouseImageBitmap != null) {
                                 Modifier
                             } else {
                                 Modifier.background(backgroundColor) // 与右侧容器按钮一致
@@ -1866,7 +1890,7 @@ fun WarehouseIconItem(
                         .zIndex(2f),
                     shape = RoundedCornerShape(6.dp),
                     containerColor = ColorHelpers.getGroup3CardBgColor(),
-                    tonalElevation = 8.dp
+                    tonalElevation = 0.dp
                     ) {
                         // 编辑
                         val menuBgColor = ColorHelpers.getGroup2PageBgColor()
@@ -1973,99 +1997,45 @@ fun WarehouseIconItem(
         
         // 删除确认对话框（简化版，只显示风险提示）
         if (showDeleteConfirmDialog) {
-            androidx.compose.ui.window.Dialog(onDismissRequest = { showDeleteConfirmDialog = false }) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth(0.75f)
-                        .wrapContentHeight(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = ColorHelpers.getGroup3CardBgColor()
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+            AppDialogLayout(
+                title = stringResource(R.string.confirm_delete),
+                icon = Icons.Default.Delete,
+                onDismiss = { showDeleteConfirmDialog = false },
+                footer = {
+                    OutlinedButton(
+                        onClick = { showDeleteConfirmDialog = false },
+                        modifier = Modifier.weight(1f)
                     ) {
-                        // 警告图标
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = null,
-                            modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // 标题
-                        Text(
-                            text = stringResource(R.string.confirm_delete),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = ColorHelpers.getGroup4TextColor()
-                        )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // 容器名称
-                        Text(
-                            text = "\"${warehouse.name}\"",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = ColorHelpers.getGroup4TextColor()
-                        )
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // 风险提示（简化版）
-                        Text(
-                            text = stringResource(R.string.delete_warehouse_warning),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = ColorHelpers.getGroup4TextColor(0.8f),
-                            lineHeight = 18.sp,
-                            textAlign = TextAlign.Center
-                        )
-                        
-                        Spacer(modifier = Modifier.height(20.dp))
-                        
-                        // 按钮行
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            // 取消按钮
-                            TextButton(
-                                onClick = { showDeleteConfirmDialog = false },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    "取消",
-                                    fontSize = 14.sp,
-                                    color = ColorHelpers.getGroup4TextColor()
-                                )
-                            }
-                            
-                            // 确认删除按钮
-                            Button(
-                                onClick = {
-                                    showDeleteConfirmDialog = false
+                        Text(stringResource(R.string.cancel))
+                    }
+                    Button(
+                        onClick = {
+                            showDeleteConfirmDialog = false
                             onDeleteWarehouse(warehouse)
                         },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error
-                                )
-                            ) {
-                                Text(
-                                    "删除",
-                                    fontSize = 14.sp,
-                                    color = androidx.compose.material3.MaterialTheme.colorScheme.onError
-                                )
-                            }
-                        }
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError
+                        )
+                    ) {
+                        Text(stringResource(R.string.delete))
                     }
                 }
+            ) {
+                Text(
+                    text = "\"${warehouse.name}\"",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = ColorHelpers.getGroup4TextColor()
+                )
+                Text(
+                    text = stringResource(R.string.delete_warehouse_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ColorHelpers.getGroup4TextColor(0.8f),
+                    lineHeight = 18.sp,
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }
@@ -2088,6 +2058,7 @@ fun WarehouseSidebarColumn(
     onGenerateQRCode: ((Warehouse) -> Unit)? = null, // 新增：生成二维码回调
     warehouseViewModel: WarehouseViewModel? = null, // 用于获取删除统计信息
     useCircleIcon: Boolean = true,
+    useOutlineIcon: Boolean = false,
     onFirstWarehousePositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
     onAddButtonPositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -2139,18 +2110,34 @@ fun WarehouseSidebarColumn(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                        val iconColor = ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
+                        val iconColor = if (useOutlineIcon) {
+                            backgroundColor
+                        } else {
+                            ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
+                        }
                         Box(
                             modifier = Modifier
                                 .size(44.dp) // 略增尺寸，提升点击面积
-                                .shadow(
-                                    elevation = 4.dp,
-                                    shape = iconShape,
-                                    spotColor = Color.Black.copy(alpha = 0.3f),
-                                    ambientColor = Color.Black.copy(alpha = 0.15f)
+                                .then(
+                                    if (useOutlineIcon) {
+                                        Modifier
+                                    } else {
+                                        Modifier.shadow(
+                                            elevation = 4.dp,
+                                            shape = iconShape,
+                                            spotColor = Color.Black.copy(alpha = 0.3f),
+                                            ambientColor = Color.Black.copy(alpha = 0.15f)
+                                        )
+                                    }
                                 )
                                 .clip(iconShape)
-                                .background(backgroundColor) // 与右侧容器按钮一致
+                                .then(
+                                    if (useOutlineIcon) {
+                                        Modifier.border(2.dp, backgroundColor, iconShape)
+                                    } else {
+                                        Modifier.background(backgroundColor) // 与右侧容器按钮一致
+                                    }
+                                )
                                 .clickable(onClick = onHomeClick),
                             contentAlignment = Alignment.Center
                         ) {
@@ -2164,13 +2151,14 @@ fun WarehouseSidebarColumn(
                     }
                 }
 
-            // 分隔线
-            val sidebarCardBgColor = ColorHelpers.getGroup3CardBgColor()
+
+            // 分隔线（两端半圆）
             Box(
                 modifier = Modifier
-                    .width(32.dp) // 减小：40dp → 32dp
-                    .height(1.5.dp) // 减小：2dp → 1.5dp
-                    .background(ColorHelpers.getGroup4IconColorByContrast(sidebarCardBgColor, 0.3f))
+                    .width(32.dp)
+                    .height(2.dp)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(ColorHelpers.getDividerColor())
             )
 
             // 容器列表（可滚动）- 支持嵌套滚动以允许下拉刷新
@@ -2201,6 +2189,7 @@ fun WarehouseSidebarColumn(
                         onGenerateQRCode = onGenerateQRCode,
                         warehouseViewModel = warehouseViewModel,
                         useCircleIcon = useCircleIcon,
+                        useOutlineIcon = useOutlineIcon,
                         modifier = if (index == 0 && onFirstWarehousePositioned != null) {
                             Modifier.onGloballyPositioned { onFirstWarehousePositioned(it) }
                         } else {
@@ -2212,19 +2201,35 @@ fun WarehouseSidebarColumn(
                 // 添加按钮（跟随在容器图标后面）
                 item {
                     val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                    val iconColor = ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
+                    val iconColor = if (useOutlineIcon) {
+                        backgroundColor
+                    } else {
+                        ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
+                    }
                     val addButtonIconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
                     Box(
                         modifier = Modifier
                             .size(44.dp) // 与容器图标同步增大
-                            .shadow(
-                                elevation = 4.dp,
-                                shape = addButtonIconShape,
-                                spotColor = Color.Black.copy(alpha = 0.3f),
-                                ambientColor = Color.Black.copy(alpha = 0.15f)
+                            .then(
+                                if (useOutlineIcon) {
+                                    Modifier
+                                } else {
+                                    Modifier.shadow(
+                                        elevation = 4.dp,
+                                        shape = addButtonIconShape,
+                                        spotColor = Color.Black.copy(alpha = 0.3f),
+                                        ambientColor = Color.Black.copy(alpha = 0.15f)
+                                    )
+                                }
                             )
                             .clip(addButtonIconShape)
-                            .background(backgroundColor) // 与容器图标颜色一致
+                            .then(
+                                if (useOutlineIcon) {
+                                    Modifier.border(2.dp, backgroundColor, addButtonIconShape)
+                                } else {
+                                    Modifier.background(backgroundColor) // 与容器图标颜色一致
+                                }
+                            )
                             .clickable(onClick = onAddWarehouse)
                             .then(
                                 if (onAddButtonPositioned != null) {
@@ -2262,6 +2267,7 @@ fun SubWarehouseIcon(
     onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
     onGenerateQRCode: ((Warehouse) -> Unit)? = null, // 新增：生成二维码回调
     useCircleIcon: Boolean = true,
+    useOutlineIcon: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     // 子容器图片加载与亮度判断
@@ -2343,14 +2349,26 @@ fun SubWarehouseIcon(
             }
             
             // 根据背景色和对比度判断，返回对应的文字颜色
-            val textColor = ColorHelpers.getGroup4TextColorByContrast(bgColorForContrast)
+            val textColor = if (useOutlineIcon && warehouseImageBitmap == null) {
+                backgroundColor
+            } else {
+                ColorHelpers.getGroup4TextColorByContrast(bgColorForContrast)
+            }
             val bitmap = warehouseImageBitmap
             val iconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
             Box(
                 modifier = Modifier
                     .size(40.dp) // 与添加按钮大小一致
                     .clip(iconShape)
-                    .background(if (bitmap == null) backgroundColor else Color.Transparent),
+                    .then(
+                        if (useOutlineIcon) {
+                            Modifier.border(2.dp, backgroundColor, iconShape)
+                        } else if (bitmap == null) {
+                            Modifier.background(backgroundColor)
+                        } else {
+                            Modifier
+                        }
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 if (bitmap != null) {
@@ -2378,13 +2396,12 @@ fun SubWarehouseIcon(
                 }
             }
             
-            // 子容器名称（使用对比度判断的颜色，与首页物品动态一致）
-            val cardBgColor = ColorHelpers.getGroup3CardBgColor()
+            // 子容器名称（使用程序文字色）
             Text(
                 text = warehouse.name,
                 style = MaterialTheme.typography.labelSmall,
                 fontSize = 9.sp, // 减小字体：11.sp → 9.sp
-                color = ColorHelpers.getGroup4TextColorByContrast(cardBgColor),
+                color = ColorHelpers.getGroup4TextColor(),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
@@ -2479,6 +2496,7 @@ fun SubWarehouseRow(
     onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
     onGenerateQRCode: ((Warehouse) -> Unit)? = null, // 新增：生成二维码回调
     useCircleIcon: Boolean = true, // 新增：是否使用圆形图标
+    useOutlineIcon: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -2539,10 +2557,9 @@ fun SubWarehouseRow(
                             warehouse.name.ifEmpty { unnamedText }
                         }
                         
-                        // 使用对比度判断的颜色（与首页物品动态一致）
-                        val cardBgColor = ColorHelpers.getGroup3CardBgColor()
-                        val breadcrumbTextColor = ColorHelpers.getGroup4TextColorByContrast(cardBgColor)
-                        val breadcrumbIconColor = ColorHelpers.getGroup4IconColorByContrast(cardBgColor)
+                        // 使用程序文字色
+                        val breadcrumbTextColor = ColorHelpers.getGroup4TextColor()
+                        val breadcrumbIconColor = ColorHelpers.getGroup4IconColor()
                         
                         Text(
                             text = displayText,
@@ -2578,13 +2595,12 @@ fun SubWarehouseRow(
                     }
                 }
                 
-                // 横线分隔符（使用对比度判断的颜色）
-                val cardBgColor = ColorHelpers.getGroup3CardBgColor()
-                val breadcrumbIconColor = ColorHelpers.getGroup4IconColorByContrast(cardBgColor)
-                HorizontalDivider(
+                // 横线分隔符（使用程序文字色）
+                val breadcrumbIconColor = ColorHelpers.getGroup4IconColor()
+                AppDivider(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     color = ColorHelpers.getDividerColor(),
-                    thickness = 4.dp
+                    thickness = 2.dp
                 )
             }
             
@@ -2604,7 +2620,8 @@ fun SubWarehouseRow(
                         onDeleteWarehouse = onDeleteWarehouse,
                         onViewInfo = onViewInfo,
                         onGenerateQRCode = onGenerateQRCode,
-                        useCircleIcon = useCircleIcon
+                        useCircleIcon = useCircleIcon,
+                        useOutlineIcon = useOutlineIcon
                     )
                 }
                 
@@ -2618,13 +2635,23 @@ fun SubWarehouseRow(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                        val iconColor = ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
+                        val iconColor = if (useOutlineIcon) {
+                            backgroundColor
+                        } else {
+                            ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
+                        }
                         val iconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
                         Box(
                             modifier = Modifier
                                 .size(40.dp) // 与子容器大小一致
                                 .clip(iconShape)
-                                .background(backgroundColor), // 与子容器颜色一致
+                                .then(
+                                    if (useOutlineIcon) {
+                                        Modifier.border(2.dp, backgroundColor, iconShape)
+                                    } else {
+                                        Modifier.background(backgroundColor) // 与子容器颜色一致
+                                    }
+                                ),
                             contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -2666,12 +2693,15 @@ fun ItemListRow(
     item: Item,
     onClick: () -> Unit,
     onEditItem: (Long) -> Unit = {},
+    onMoveToContainer: (Item) -> Unit = {},
+    showMoveAction: Boolean = false,
     onAddToShoppingCart: (Item) -> Unit = {},
     onDeleteItem: (Item) -> Unit = {},
     onAddAlert: (Item) -> Unit = {},
     onQuantityChange: ((Item, Int) -> Unit)? = null, // 数量变化回调
     warehouseName: String? = null, // 容器名称（可选）
     useCircleIcon: Boolean = false, // 侧边栏风格图标形状设置
+    useOutlineIcon: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     // 菜单展开状态
@@ -2726,13 +2756,23 @@ fun ItemListRow(
         ) {
             // 左侧主图/占位 - 支持侧边栏风格图标形状
             val itemBackgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-            val itemTextColor = ColorHelpers.getContrastColor(itemBackgroundColor)
+            val itemTextColor = if (useOutlineIcon && avatarBitmap == null) {
+                itemBackgroundColor
+            } else {
+                ColorHelpers.getContrastColor(itemBackgroundColor)
+            }
             val itemIconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
             Box(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(itemIconShape)
-                    .background(itemBackgroundColor),
+                    .then(
+                        if (useOutlineIcon) {
+                            Modifier.border(2.dp, itemBackgroundColor, itemIconShape)
+                        } else {
+                            Modifier.background(itemBackgroundColor)
+                        }
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 if (avatarBitmap != null) {
@@ -2829,9 +2869,10 @@ fun ItemListRow(
                         !nowZoned.isBefore(expiryEnd)
                     } ?: false
                 }
-                val allTagsToShow = remember(item.tags, isExpired) {
+                val expiredTagLabel = stringResource(R.string.status_expired)
+                val allTagsToShow = remember(item.tags, isExpired, expiredTagLabel) {
                     if (isExpired) {
-                        item.tags + "过期"
+                        item.tags + expiredTagLabel
                     } else {
                         item.tags
                     }
@@ -2847,16 +2888,17 @@ fun ItemListRow(
                             val tag = allTagsToShow[index]
                             // 根据标签类型和索引分配不同浅颜色背景
                             val bgColor = when {
-                                tag == "过期" -> Color(0xFFF3E5F5) // 浅紫
+                                tag == expiredTagLabel -> Color(0xFFF3E5F5) // 浅紫
                                 else -> {
                                     // 自定义标签使用循环颜色（柔和的浅色）
                                     TAG_COLORS[index % TAG_COLORS.size]
                                 }
                             }
                             
-                            val displayTag = when (tag) {
-                                "过期" -> stringResource(R.string.status_expired)
-                                else -> tag
+                            val displayTag = if (tag == expiredTagLabel) {
+                                expiredTagLabel
+                            } else {
+                                tag
                             }
                             
                             // 更紧凑的自定义标签视图，缩小文字与边框间距
@@ -3042,7 +3084,7 @@ fun ItemListRow(
                         modifier = Modifier.width(180.dp),
                         shape = RoundedCornerShape(6.dp),
                         containerColor = ColorHelpers.getGroup3CardBgColor(),
-                        tonalElevation = 8.dp
+                        tonalElevation = 0.dp
                     ) {
                         // 编辑
                         DropdownMenuItem(
@@ -3101,6 +3143,36 @@ fun ItemListRow(
                                 leadingIconColor = ColorHelpers.getGroup4IconColor()
                             )
                         )
+
+                        if (showMoveAction) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(R.string.move_to_container),
+                                        fontSize = 14.sp,
+                                        color = ColorHelpers.getGroup4TextColor(),
+                                        maxLines = 2
+                                    )
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    onMoveToContainer(item)
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.DriveFileMove,
+                                        null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = ColorHelpers.getGroup4IconColor()
+                                    )
+                                },
+                                modifier = Modifier.heightIn(min = 36.dp),
+                                colors = MenuDefaults.itemColors(
+                                    textColor = ColorHelpers.getGroup4TextColor(),
+                                    leadingIconColor = ColorHelpers.getGroup4IconColor()
+                                )
+                            )
+                        }
                         
                         // 提醒设置
                         DropdownMenuItem(
@@ -3132,10 +3204,10 @@ fun ItemListRow(
                         )
                         
                         // 分隔线
-                        HorizontalDivider(
+                        AppDivider(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             color = ColorHelpers.getDividerColor(),
-                            thickness = 4.dp
+                            thickness = 2.dp
                         )
                         
                         // 删除（红色）
@@ -3187,6 +3259,9 @@ fun TagFilterBar(
     if (allTags.isEmpty()) {
         return
     }
+
+    val outlineEnabled = ColorHelpers.isOutlineEnabled()
+    val expiredTagLabel = stringResource(R.string.status_expired)
     
     LazyRow(
         modifier = modifier
@@ -3199,47 +3274,77 @@ fun TagFilterBar(
             val isSelected = selectedTags.contains(tag)
             
             // 获取标签的背景色
-            val tagBgColor = if (isSelected) {
+            val tagBaseColor = if (isSelected) {
                 MaterialTheme.colorScheme.primary
             } else {
                 ColorHelpers.getGroup3CardBgColor()
             }
-            
+            val tagBgColor = if (outlineEnabled && isSelected) Color.Transparent else tagBaseColor
+
             // 根据背景色和对比度判断，返回对应的文字颜色
-            val contrastColor = ColorHelpers.getGroup4TextColorByContrast(tagBgColor)
+            val contrastColor = when {
+                outlineEnabled && isSelected -> tagBaseColor
+                !isSelected -> ColorHelpers.getGroup4TextColor()
+                else -> ColorHelpers.getGroup4TextColorByContrast(tagBgColor)
+            }
             
-            // 使用Card包装FilterChip以添加阴影效果
-            Card(
-                modifier = Modifier
-                    .height(28.dp)
-                    .clickable { onTagSelected(tag) },
-                shape = RoundedCornerShape(8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = tagBgColor
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                FilterChip(
-                    selected = isSelected,
-                    onClick = { onTagSelected(tag) },
-                    label = {
+            val displayTag = if (tag == expiredTagLabel) {
+                expiredTagLabel
+            } else {
+                tag
+            }
+
+            if (outlineEnabled && isSelected) {
+                Surface(
+                    modifier = Modifier
+                        .height(28.dp)
+                        .clickable { onTagSelected(tag) },
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.Transparent,
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp,
+                    border = BorderStroke(2.dp, tagBaseColor)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
-                            text = tag,
+                            text = displayTag,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 11.sp,
+                            color = contrastColor
+                        )
+                    }
+                }
+            } else {
+                // 使用Card包装FilterChip以添加阴影效果
+                Card(
+                    modifier = Modifier
+                        .height(28.dp)
+                        .clickable { onTagSelected(tag) },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = tagBgColor
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = displayTag,
                             style = MaterialTheme.typography.labelSmall,
                             fontSize = 11.sp,
                             color = contrastColor // 使用对比色（白色或黑色）
                         )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
-                        containerColor = androidx.compose.ui.graphics.Color.Transparent,
-                        selectedLabelColor = contrastColor, // 使用对比色
-                        labelColor = contrastColor // 使用对比色
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    border = null, // 移除边框，因为Card已经提供了背景和阴影
-                    // contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp) // 减少垂直padding
-                )
+                    }
+                }
             }
         }
     }
@@ -3260,6 +3365,8 @@ fun ItemListSection(
     onAddAlert: (Item) -> Unit = {},
     allWarehouses: List<Warehouse>? = null, // 所有容器列表（用于显示容器名称）
     useCircleIcon: Boolean = false, // 侧边栏风格图标形状设置
+    useOutlineIcon: Boolean = false,
+    warehouseViewModel: WarehouseViewModel? = null,
     onTagFilterPositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
     onGridItemPositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
     onInfoCardPositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
@@ -3269,6 +3376,7 @@ fun ItemListSection(
 ) {
     val context = LocalContext.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val expiredTagLabel = stringResource(R.string.status_expired)
     
     // 预先构建容器ID到容器名称的映射，避免在列表项中重复查找
     val warehouseNameMap by remember(allWarehouses) {
@@ -3286,6 +3394,10 @@ fun ItemListSection(
     
     // 选中的物品（仅网格模式使用）- 使用 rememberSaveable 保存配置变更
     var selectedItemId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var itemToMove by remember { mutableStateOf<Item?>(null) }
+    var showMoveDialog by remember { mutableStateOf(false) }
+    val canMoveItems = warehouseViewModel != null
+
     val selectedItem by remember(items, selectedItemId) {
         derivedStateOf {
             selectedItemId?.let { id -> items.find { it.id == id } }
@@ -3326,9 +3438,26 @@ fun ItemListSection(
     }
     
     // 获取所有唯一标签（使用 derivedStateOf 优化性能）
-    val allTags by remember(items) {
+    val allTags by remember(items, expiredTagLabel) {
         derivedStateOf {
-            items.flatMap { it.tags }.distinct().sorted()
+            val expiredItemExists = items.any { item ->
+                item.expiryDate?.let { date ->
+                    val zone = ZoneId.systemDefault()
+                    val nowZoned = Instant.now().atZone(zone)
+                    val expiryEnd = Instant.ofEpochMilli(date.time)
+                        .atZone(zone)
+                        .toLocalDate()
+                        .plusDays(1)
+                        .atStartOfDay(zone)
+                        .plusMinutes(1)
+                    !nowZoned.isBefore(expiryEnd)
+                } ?: false
+            }
+            val tags = items.flatMap { it.tags }.distinct().toMutableList()
+            if (expiredItemExists && !tags.contains(expiredTagLabel)) {
+                tags.add(expiredTagLabel)
+            }
+            tags.sorted()
         }
     }
 
@@ -3339,15 +3468,32 @@ fun ItemListSection(
     }
     
     // 根据选中的标签过滤物品（使用 derivedStateOf 优化性能）
-    val filteredItems by remember(items, selectedTags) {
+    val filteredItems by remember(items, selectedTags, expiredTagLabel) {
         derivedStateOf {
             if (selectedTags.isEmpty()) {
                 items
             } else {
                 // 将 selectedTags 转换为 Set 以提高查找性能
                 val selectedTagsSet = selectedTags.toSet()
+                val includeExpired = selectedTagsSet.contains(expiredTagLabel)
                 items.filter { item ->
-                    item.tags.any { tag -> selectedTagsSet.contains(tag) }
+                    val hasTagMatch = item.tags.any { tag -> selectedTagsSet.contains(tag) }
+                    if (!includeExpired) {
+                        hasTagMatch
+                    } else {
+                        val isExpired = item.expiryDate?.let { date ->
+                            val zone = ZoneId.systemDefault()
+                            val nowZoned = Instant.now().atZone(zone)
+                            val expiryEnd = Instant.ofEpochMilli(date.time)
+                                .atZone(zone)
+                                .toLocalDate()
+                                .plusDays(1)
+                                .atStartOfDay(zone)
+                                .plusMinutes(1)
+                            !nowZoned.isBefore(expiryEnd)
+                        } ?: false
+                        hasTagMatch || isExpired
+                    }
                 }
             }
         }
@@ -3472,6 +3618,12 @@ fun ItemListSection(
                             onEditItem = onEditItem,
                             warehouseName = warehouseName, // 传递容器名称
                             useCircleIcon = useCircleIcon, // 传递侧边栏风格图标形状设置
+                            useOutlineIcon = useOutlineIcon,
+                            showMoveAction = canMoveItems,
+                            onMoveToContainer = { movingItem ->
+                                itemToMove = movingItem
+                                showMoveDialog = true
+                            },
                             onAddToShoppingCart = { item ->
                                 shoppingItemViewModel?.let { vm ->
                                     val shoppingItem = com.example.itemremindertool.data.model.ShoppingItem(
@@ -3624,10 +3776,10 @@ fun ItemListSection(
                                 )
                                 
                                 // 分割线
-                                HorizontalDivider(
+                                AppDivider(
                                     modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
                                     color = ColorHelpers.getDividerColor(),
-                                    thickness = 4.dp
+                                    thickness = 2.dp
                                 )
                             }
                             
@@ -3704,6 +3856,14 @@ fun ItemListSection(
                                                     vm.insertShoppingItem(shoppingItem)
                                                 }
                                             },
+                                            onMoveToContainer = if (canMoveItems) {
+                                                {
+                                                    itemToMove = item
+                                                    showMoveDialog = true
+                                                }
+                                            } else {
+                                                null
+                                            },
                                             onDelete = {
                                                 if (onDeleteItem != {}) {
                                                     onDeleteItem(item)
@@ -3727,6 +3887,7 @@ fun ItemListSection(
                                     com.example.itemremindertool.ui.components.ItemGridCard(
                                         item = item,
                                         isSelected = selectedItemId == item.id,
+                                        useOutlineIcon = useOutlineIcon,
                                         onClick = {
                                             val willSelect = selectedItemId != item.id
                                             selectedItemId = if (willSelect) {
@@ -3752,6 +3913,27 @@ fun ItemListSection(
                 }
             }
         }
+    }
+
+    if (showMoveDialog && itemToMove != null && warehouseViewModel != null) {
+        MoveItemDialog(
+            itemName = itemToMove!!.name,
+            currentWarehouseId = itemToMove!!.warehouseId,
+            warehouseViewModel = warehouseViewModel,
+            onDismiss = {
+                showMoveDialog = false
+                itemToMove = null
+            },
+            onConfirm = { targetWarehouseId ->
+                val updatedItem = itemToMove!!.copy(
+                    warehouseId = targetWarehouseId,
+                    updatedAt = Date()
+                )
+                itemViewModel?.updateItem(updatedItem)
+                showMoveDialog = false
+                itemToMove = null
+            }
+        )
     }
 }
 }
@@ -3794,6 +3976,7 @@ fun SidebarStyleMainLayout(
     onAddAlert: (Item) -> Unit = {},
     onNavigateToWarehouseItemsTab: (Long) -> Unit = {}, // 导航到容器详情页面
     useCircleIcon: Boolean = true, // 新增：是否使用圆形图标
+    useOutlineIcon: Boolean = false, // 新增：是否使用镂空图标
     onboardingEnabled: Boolean = false,
     onboardingStep: OnboardingStep = OnboardingStep.COMPLETE,
     onAdvanceOnboarding: () -> Unit = {},
@@ -3920,6 +4103,7 @@ fun SidebarStyleMainLayout(
                 onGenerateQRCode = onGenerateQRCode,
                 warehouseViewModel = warehouseViewModel,
                 useCircleIcon = useCircleIcon,
+                useOutlineIcon = useOutlineIcon,
                 onFirstWarehousePositioned = { coords ->
                     onUpdateOnboardingAnchor(OnboardingAnchorKey.SIDEBAR_SAMPLE, coords)
                 },
@@ -4006,6 +4190,8 @@ fun SidebarStyleMainLayout(
                                 onDeleteItem = onDeleteItem,
                                 onAddAlert = onAddAlert,
                                 useCircleIcon = useCircleIcon,
+                                useOutlineIcon = useOutlineIcon,
+                                warehouseViewModel = warehouseViewModel,
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -4052,6 +4238,7 @@ fun SidebarStyleMainLayout(
                         isItemSelected = showItemList,
                         isShoppingSelected = showShoppingList,
                         useCircleIcon = useCircleIcon,
+                        useOutlineIcon = useOutlineIcon,
                         onContainerClick = {
                             if (onboardingEnabled && onboardingStep == OnboardingStep.HOME_STATS_CONTAINER_BUTTON) {
                                 showContainerList = true
@@ -4212,6 +4399,8 @@ fun SidebarStyleMainLayout(
                                     onAddAlert = onAddAlert,
                                     allWarehouses = allContainers, // 传递所有容器信息用于显示容器名称
                                     useCircleIcon = useCircleIcon,
+                                    useOutlineIcon = useOutlineIcon,
+                                    warehouseViewModel = warehouseViewModel,
                                     modifier = Modifier.fillMaxSize()
                                 )
                             }
@@ -4293,6 +4482,9 @@ fun SidebarStyleMainLayout(
                                     alertSettingsManager = alertSettingsManager,
                                     onDeleteItem = onDeleteItem,
                                     onAddAlert = onAddAlert,
+                                    useCircleIcon = useCircleIcon,
+                                    useOutlineIcon = useOutlineIcon,
+                                    warehouseViewModel = warehouseViewModel,
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -4341,6 +4533,7 @@ fun SidebarStyleMainLayout(
                                 onViewInfo = onViewWarehouseInfo,
                                 onGenerateQRCode = onGenerateQRCode,
                                 useCircleIcon = useCircleIcon,
+                                useOutlineIcon = useOutlineIcon,
                                 modifier = Modifier.onGloballyPositioned {
                                     onUpdateOnboardingAnchor(OnboardingAnchorKey.SUBWAREHOUSE_ROW, it)
                                 }
@@ -4358,6 +4551,8 @@ fun SidebarStyleMainLayout(
                             onDeleteItem = onDeleteItem,
                             onAddAlert = onAddAlert,
                             useCircleIcon = useCircleIcon,
+                            useOutlineIcon = useOutlineIcon,
+                            warehouseViewModel = warehouseViewModel,
                             onTagFilterPositioned = { coords ->
                                 onUpdateOnboardingAnchor(OnboardingAnchorKey.TAG_FILTER, coords)
                             },
@@ -4392,122 +4587,65 @@ fun SidebarStyleMainLayout(
             }
             val parentName = parentWarehouse?.name ?: "父容器"
             
-            androidx.compose.ui.window.Dialog(onDismissRequest = { 
-                showDeleteDialog = false
-                warehouseToDelete = null
-                isSubWarehouseDelete = false
-            }) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth(0.75f)
-                        .wrapContentHeight(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = ColorHelpers.getGroup3CardBgColor()
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+            AppDialogLayout(
+                title = stringResource(R.string.confirm_delete),
+                icon = Icons.Default.Delete,
+                onDismiss = { 
+                    showDeleteDialog = false
+                    warehouseToDelete = null
+                    isSubWarehouseDelete = false
+                },
+                footer = {
+                    OutlinedButton(
+                        onClick = { 
+                            showDeleteDialog = false
+                            warehouseToDelete = null
+                            isSubWarehouseDelete = false
+                        },
+                        modifier = Modifier.weight(1f)
                     ) {
-                        // 警告图标
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = null,
-                            modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // 标题
-                        Text(
-                            text = stringResource(R.string.confirm_delete),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = ColorHelpers.getGroup4TextColor()
-                        )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // 容器名称
-                        Text(
-                            text = "\"${warehouseToDelete!!.name}\"",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = ColorHelpers.getGroup4TextColor()
-                        )
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // 风险提示
-                        Text(
-                            text = if (itemCount > 0) {
-                                "删除后，其中的 $itemCount 个物品将移动到 $parentName"
+                        Text(stringResource(R.string.cancel))
+                    }
+                    Button(
+                        onClick = {
+                            val warehouse = warehouseToDelete!!
+                            showDeleteDialog = false
+                            warehouseToDelete = null
+                            val isSubDelete = isSubWarehouseDelete
+                            isSubWarehouseDelete = false
+                            if (isSubDelete && warehouse.parentId != null) {
+                                warehouseViewModel?.deleteSubWarehouse(warehouse)
                             } else {
-                                stringResource(R.string.delete_warehouse_warning)
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = ColorHelpers.getGroup4TextColor(0.8f),
-                            lineHeight = 18.sp,
-                            textAlign = TextAlign.Center
+                                onDeleteWarehouse(warehouse)
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError
                         )
-                        
-                        Spacer(modifier = Modifier.height(20.dp))
-                        
-                        // 按钮行
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            // 取消按钮
-                            TextButton(
-                                onClick = { 
-                                    showDeleteDialog = false
-                                    warehouseToDelete = null
-                                    isSubWarehouseDelete = false
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    stringResource(R.string.cancel),
-                                    fontSize = 14.sp,
-                                    color = ColorHelpers.getGroup4TextColor()
-                                )
-                            }
-                            
-                            // 确认删除按钮
-                            Button(
-                                onClick = {
-                                    val warehouse = warehouseToDelete!!
-                                    showDeleteDialog = false
-                                    warehouseToDelete = null
-                                    val isSubDelete = isSubWarehouseDelete
-                                    isSubWarehouseDelete = false
-                                    // 根据是否是子容器删除选择不同的删除方法
-                                    if (isSubDelete && warehouse.parentId != null) {
-                                        // 子容器删除：将物品移动到父容器
-                                        warehouseViewModel?.deleteSubWarehouse(warehouse)
-                                    } else {
-                                        // 父容器删除：使用普通删除方法
-                                        onDeleteWarehouse(warehouse)
-                                    }
-                                },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error
-                                )
-                            ) {
-                                Text(
-                                    stringResource(R.string.delete),
-                                    fontSize = 14.sp,
-                                    color = androidx.compose.material3.MaterialTheme.colorScheme.onError
-                                )
-                            }
-                        }
+                    ) {
+                        Text(stringResource(R.string.delete))
                     }
                 }
+            ) {
+                Text(
+                    text = "\"${warehouseToDelete!!.name}\"",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = ColorHelpers.getGroup4TextColor()
+                )
+                Text(
+                    text = if (itemCount > 0) {
+                        "删除后，其中的 $itemCount 个物品将移动到 $parentName"
+                    } else {
+                        stringResource(R.string.delete_warehouse_warning)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ColorHelpers.getGroup4TextColor(0.8f),
+                    lineHeight = 18.sp,
+                    textAlign = TextAlign.Center
+                )
             }
         }
         
@@ -4534,6 +4672,7 @@ fun HomeStatisticCards(
     onItemPositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
     onShoppingPositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
     useCircleIcon: Boolean = true,
+    useOutlineIcon: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -4561,6 +4700,7 @@ fun HomeStatisticCards(
                 isSelected = isContainerSelected,
                 onClick = onContainerClick,
                 useCircleIcon = useCircleIcon,
+                useOutlineIcon = useOutlineIcon,
                 modifier = Modifier
                     .weight(1f)
                     .then(
@@ -4573,11 +4713,12 @@ fun HomeStatisticCards(
             )
             
             // 分隔线
-            androidx.compose.material3.HorizontalDivider(
+            Box(
                 modifier = Modifier
                     .height(40.dp)
-                    .width(1.dp),
-                color = ColorHelpers.getDividerColor()
+                    .width(1.dp)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(ColorHelpers.getDividerColor())
             )
             
             // 物品数量 - 与左侧容器图标样式一致
@@ -4588,6 +4729,7 @@ fun HomeStatisticCards(
                 isSelected = isItemSelected,
                 onClick = onItemClick,
                 useCircleIcon = useCircleIcon,
+                useOutlineIcon = useOutlineIcon,
                 modifier = Modifier
                     .weight(1f)
                     .then(
@@ -4600,11 +4742,12 @@ fun HomeStatisticCards(
             )
 
             // 分隔线
-            androidx.compose.material3.HorizontalDivider(
+            Box(
                 modifier = Modifier
                     .height(40.dp)
-                    .width(1.dp),
-                color = ColorHelpers.getDividerColor()
+                    .width(1.dp)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(ColorHelpers.getDividerColor())
             )
 
             // 待购物品 - 与左侧容器图标样式一致（可点击）
@@ -4615,6 +4758,7 @@ fun HomeStatisticCards(
                 isSelected = isShoppingSelected,
                 onClick = onShoppingClick,
                 useCircleIcon = useCircleIcon,
+                useOutlineIcon = useOutlineIcon,
                 modifier = Modifier
                     .weight(1f)
                     .then(
@@ -4640,6 +4784,7 @@ fun StatisticItem(
     isSelected: Boolean = false,
     onClick: (() -> Unit)? = null,
     useCircleIcon: Boolean = true,
+    useOutlineIcon: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val contentModifier = if (onClick != null) {
@@ -4649,8 +4794,13 @@ fun StatisticItem(
     }
     
     // 使用与左侧容器图标一致的主题色
+    val outlineEnabled = useOutlineIcon
     val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-    val iconColor = ColorHelpers.getContrastColor(backgroundColor)
+    val iconColor = if (outlineEnabled) {
+        backgroundColor
+    } else {
+        ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
+    }
     val iconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
     
     Box(modifier = contentModifier) {
@@ -4662,14 +4812,26 @@ fun StatisticItem(
             Box(
                 modifier = Modifier
                     .size(44.dp) // 与左侧容器图标大小一致
-                    .shadow(
-                        elevation = 4.dp,
-                        shape = iconShape,
-                        spotColor = Color.Black.copy(alpha = 0.3f),
-                        ambientColor = Color.Black.copy(alpha = 0.15f)
+                    .then(
+                        if (outlineEnabled) {
+                            Modifier
+                        } else {
+                            Modifier.shadow(
+                                elevation = 4.dp,
+                                shape = iconShape,
+                                spotColor = Color.Black.copy(alpha = 0.3f),
+                                ambientColor = Color.Black.copy(alpha = 0.15f)
+                            )
+                        }
                     )
                     .clip(iconShape)
-                    .background(backgroundColor), // 与左侧容器图标颜色一致
+                    .then(
+                        if (outlineEnabled) {
+                            Modifier.border(2.dp, backgroundColor, iconShape)
+                        } else {
+                            Modifier.background(backgroundColor) // 与左侧容器图标颜色一致
+                        }
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -4739,6 +4901,10 @@ fun ShoppingListSection(
     }
 
     var showCompletePurchaseDialog by remember { mutableStateOf(false) }
+    val outlineEnabled = ColorHelpers.isOutlineEnabled()
+    val actionBgColor = ColorHelpers.getGroup2SettingsBtnColor()
+    val actionIconColor = if (outlineEnabled) actionBgColor else ColorHelpers.getGroup4IconColorByContrast(actionBgColor)
+    val actionTextColor = if (outlineEnabled) actionBgColor else ColorHelpers.getGroup4TextColorByContrast(actionBgColor)
 
     Column(
         modifier = modifier
@@ -4746,38 +4912,71 @@ fun ShoppingListSection(
             .padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 12.dp)
     ) {
         // 标题栏
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            contentAlignment = Alignment.Center
         ) {
             // 完成购买按钮（只在有已勾选的物品时显示）
             if (completedItems.isNotEmpty()) {
-                Button(
-                    onClick = { showCompletePurchaseDialog = true },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                    modifier = Modifier.height(36.dp)
-                ) {
-                    Icon(
-                        Icons.Default.ShoppingCart,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = stringResource(R.string.complete_purchase),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                if (outlineEnabled) {
+                    OutlinedButton(
+                        onClick = { showCompletePurchaseDialog = true },
+                        border = BorderStroke(2.dp, actionBgColor),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = actionTextColor,
+                            disabledContentColor = actionTextColor.copy(alpha = 0.5f)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier.height(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.ShoppingCart,
+                            contentDescription = null,
+                            tint = actionIconColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(R.string.complete_purchase),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                } else {
+                    Button(
+                        onClick = { showCompletePurchaseDialog = true },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = actionBgColor,
+                            contentColor = actionTextColor,
+                            disabledContainerColor = actionBgColor.copy(alpha = 0.5f),
+                            disabledContentColor = actionTextColor.copy(alpha = 0.5f)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier.height(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.ShoppingCart,
+                            contentDescription = null,
+                            tint = actionIconColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(R.string.complete_purchase),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }

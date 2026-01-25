@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.R
 import com.example.itemremindertool.data.model.Warehouse
 import com.example.itemremindertool.utils.QRCodeUtils
+import com.example.itemremindertool.ui.theme.ColorHelpers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -93,67 +95,64 @@ fun WarehouseQRCodeDialog(
         }
     }
     
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = stringResource(R.string.warehouse_qr_code),
-                style = MaterialTheme.typography.titleLarge
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+    AppDialogLayout(
+        title = stringResource(R.string.warehouse_qr_code),
+        icon = Icons.Default.QrCode2,
+        onDismiss = onDismiss,
+        footer = {
+            OutlinedButton(
+                onClick = { saveQRCodeToGallery() },
+                enabled = !isSaving && qrCodeBitmap != null,
+                modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = warehouse.name,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                
-                if (qrCodeBitmap != null) {
-                    Image(
-                        bitmap = qrCodeBitmap.asImageBitmap(),
-                        contentDescription = stringResource(R.string.qr_code),
-                        modifier = Modifier.size(300.dp)
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
                     )
-                } else {
-                    Text(
-                        text = stringResource(R.string.qr_code_generation_failed),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                 }
-                
+                Text(stringResource(R.string.save_to_album))
+            }
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.close))
+            }
+        }
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = warehouse.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = ColorHelpers.getGroup4TextColor()
+            )
+
+            if (qrCodeBitmap != null) {
+                Image(
+                    bitmap = qrCodeBitmap.asImageBitmap(),
+                    contentDescription = stringResource(R.string.qr_code),
+                    modifier = Modifier.size(300.dp)
+                )
+            } else {
                 Text(
-                    text = stringResource(R.string.qr_code_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    text = stringResource(R.string.qr_code_generation_failed),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
                 )
             }
-        },
-        confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(
-                    onClick = { saveQRCodeToGallery() },
-                    enabled = !isSaving && qrCodeBitmap != null
-                ) {
-                    if (isSaving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text(stringResource(R.string.save_to_album))
-                }
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.close))
-                }
-            }
-        },
-        shape = RoundedCornerShape(16.dp)
-    )
+
+            Text(
+                text = stringResource(R.string.qr_code_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = ColorHelpers.getGroup4TextColor(0.6f)
+            )
+        }
+    }
 }
 

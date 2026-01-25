@@ -24,6 +24,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.example.itemremindertool.ui.components.AppDialogLayout
+import com.example.itemremindertool.ui.theme.ColorHelpers
 
 /**
  * 图片识别搜索对话框
@@ -49,66 +51,58 @@ fun ItemSearchByImageDialog(
         }
     }
     
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+    AppDialogLayout(
+        title = stringResource(R.string.search_by_image),
+        icon = Icons.Default.CameraAlt,
+        onDismiss = onDismiss,
+        footer = {
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
             ) {
+                Text(stringResource(R.string.close))
+            }
+        }
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            if (isProcessing) {
+                CircularProgressIndicator()
                 Text(
-                    stringResource(R.string.search_by_image),
-                    style = MaterialTheme.typography.titleLarge
+                    stringResource(R.string.recognizing_image),
+                    color = ColorHelpers.getGroup4TextColor()
                 )
-                
-                if (isProcessing) {
-                    CircularProgressIndicator()
-                    Text(stringResource(R.string.recognizing_image))
-                } else if (searchResults.isNotEmpty()) {
-                    Text(
-                        stringResource(R.string.found_similar_items, searchResults.size),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(400.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(searchResults) { item ->
-                            ItemCard(
-                                item = item,
-                                onEdit = {
-                                    onItemFound(item)
-                                    onDismiss()
-                                },
-                                onDelete = { /* 搜索模式下不提供删除功能 */ }
-                            )
-                        }
-                    }
-                } else {
-                    Button(
-                        onClick = { showCameraDialog = true }
-                    ) {
-                        Icon(Icons.Default.CameraAlt, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.take_photo_search))
+            } else if (searchResults.isNotEmpty()) {
+                Text(
+                    stringResource(R.string.found_similar_items, searchResults.size),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ColorHelpers.getGroup4TextColor()
+                )
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(400.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(searchResults) { item ->
+                        ItemCard(
+                            item = item,
+                            onEdit = {
+                                onItemFound(item)
+                                onDismiss()
+                            },
+                            onDelete = { /* 搜索模式下不提供删除功能 */ }
+                        )
                     }
                 }
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.close))
-                    }
+            } else {
+                Button(onClick = { showCameraDialog = true }) {
+                    Icon(Icons.Default.CameraAlt, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.take_photo_search))
                 }
             }
         }

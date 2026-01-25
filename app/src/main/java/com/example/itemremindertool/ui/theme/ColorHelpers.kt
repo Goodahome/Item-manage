@@ -28,6 +28,16 @@ import android.content.Context
  * 第五组（提醒）→ error；（FAB）→ primaryContainer
  */
 object ColorHelpers {
+
+    /**
+     * 是否启用镂空图标样式
+     */
+    @Composable
+    fun isOutlineEnabled(): Boolean {
+        val context = LocalContext.current
+        val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        return prefs.getBoolean("sidebar_icon_outline", false)
+    }
     
     // ==================== 第一组：导航与菜单 ====================
     
@@ -149,14 +159,6 @@ object ColorHelpers {
         // - 亮度 <= 0.5：背景较暗，使用浅色文字（OnSurfaceHighContrast，白色）
         val useDarkText = luminance > 0.5f
         
-        // 自定义配色时，若设置了低对比文字色，优先使用该值
-        if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
-            val customOverride = getCustomColorOrNull("custom_color_on_surface_low_contrast")
-            if (customOverride != null) {
-                return customOverride
-            }
-        }
-
         // 所有配色方案都使用相同的对比度颜色（黑色和白色）
         val customLowContrast = OnSurfaceLowContrast
 
@@ -203,6 +205,21 @@ object ColorHelpers {
     @Composable
     fun getGroup4IconColorByContrast(backgroundColor: Color, alpha: Float): Color {
         return getGroup4IconColorByContrast(backgroundColor).copy(alpha = alpha)
+    }
+
+    /**
+     * 获取导航条文字/图标颜色（支持自定义配色）
+     */
+    @Composable
+    fun getTopBarTextColor(backgroundColor: Color): Color {
+        val appSettings = LocalAppSettings.current
+        val schemeType = com.example.itemremindertool.ui.theme.ColorSchemeType.fromKey(appSettings.colorScheme)
+        val fallback = getGroup4TextColorByContrast(backgroundColor)
+        return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
+            getCustomColor("custom_color_on_surface_low_contrast", fallback)
+        } else {
+            fallback
+        }
     }
     
     
@@ -293,7 +310,7 @@ object ColorHelpers {
      */
     @Composable
     fun getDividerColor(): Color {
-        return MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 1f)
+        return MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f)
     }
     
     /**
@@ -455,11 +472,35 @@ object ColorHelpers {
     fun getSearchBoxTextColor(): Color {
         val appSettings = LocalAppSettings.current
         val schemeType = com.example.itemremindertool.ui.theme.ColorSchemeType.fromKey(appSettings.colorScheme)
-        val fallback = getGroup4TextColorByContrast(getSearchBoxBgColor())
+        // 根据应用主题设置判断是否使用深色模式（与 Theme.kt 逻辑一致）
+        val isDarkTheme = when (appSettings.theme) {
+            "dark" -> true
+            "light" -> false
+            else -> isSystemInDarkTheme() // "system" 时跟随系统
+        }
         return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
+            val fallback = if (isDarkTheme) RedBlueSearchBoxTextDark else RedBlueSearchBoxText
             getCustomColor("custom_color_search_box_text", fallback)
+        } else if (isDarkTheme) {
+            when (schemeType) {
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSearchBoxTextDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamSearchBoxTextDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.MINT -> MintSearchBoxTextDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceSearchBoxTextDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.WINE -> WineSearchBoxTextDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CHRISTMAS -> ChristmasSearchBoxTextDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueSearchBoxTextDark
+            }
         } else {
-            fallback
+            when (schemeType) {
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSearchBoxText
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamSearchBoxText
+                com.example.itemremindertool.ui.theme.ColorSchemeType.MINT -> MintSearchBoxText
+                com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceSearchBoxText
+                com.example.itemremindertool.ui.theme.ColorSchemeType.WINE -> WineSearchBoxText
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CHRISTMAS -> ChristmasSearchBoxText
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueSearchBoxText
+            }
         }
     }
 
@@ -522,31 +563,7 @@ object ColorHelpers {
      */
     @Composable
     fun getBreadcrumbTextColor(): Color {
-        val appSettings = LocalAppSettings.current
-        val schemeType = com.example.itemremindertool.ui.theme.ColorSchemeType.fromKey(appSettings.colorScheme)
-        
-        // 根据应用主题设置判断是否使用深色模式（与 Theme.kt 逻辑一致）
-        val isDarkTheme = when (appSettings.theme) {
-            "dark" -> true
-            "light" -> false
-            else -> isSystemInDarkTheme() // "system" 时跟随系统
-        }
-        
-        return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
-            getCustomColor("custom_color_breadcrumb_text", if (isDarkTheme) RedBlueBreadcrumbTextDark else RedBlueBreadcrumbText)
-        } else if (isDarkTheme) {
-            when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueBreadcrumbTextDark
-                // 其他配色方案暂时使用相同的颜色，后续可以扩展
-                else -> RedBlueBreadcrumbTextDark
-            }
-        } else {
-            when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueBreadcrumbText
-                // 其他配色方案暂时使用相同的颜色，后续可以扩展
-                else -> RedBlueBreadcrumbText
-            }
-        }
+        return getGroup4TextColor()
     }
     
     /**
@@ -555,31 +572,7 @@ object ColorHelpers {
      */
     @Composable
     fun getBreadcrumbIconColor(): Color {
-        val appSettings = LocalAppSettings.current
-        val schemeType = com.example.itemremindertool.ui.theme.ColorSchemeType.fromKey(appSettings.colorScheme)
-        
-        // 根据应用主题设置判断是否使用深色模式（与 Theme.kt 逻辑一致）
-        val isDarkTheme = when (appSettings.theme) {
-            "dark" -> true
-            "light" -> false
-            else -> isSystemInDarkTheme() // "system" 时跟随系统
-        }
-        
-        return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
-            getCustomColor("custom_color_breadcrumb_icon", if (isDarkTheme) RedBlueBreadcrumbIconDark else RedBlueBreadcrumbIcon)
-        } else if (isDarkTheme) {
-            when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueBreadcrumbIconDark
-                // 其他配色方案暂时使用相同的颜色，后续可以扩展
-                else -> RedBlueBreadcrumbIconDark
-            }
-        } else {
-            when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueBreadcrumbIcon
-                // 其他配色方案暂时使用相同的颜色，后续可以扩展
-                else -> RedBlueBreadcrumbIcon
-            }
-        }
+        return getGroup4IconColor()
     }
     
     // ==================== 子容器名称颜色 ====================
@@ -590,31 +583,7 @@ object ColorHelpers {
      */
     @Composable
     fun getSubWarehouseNameColor(): Color {
-        val appSettings = LocalAppSettings.current
-        val schemeType = com.example.itemremindertool.ui.theme.ColorSchemeType.fromKey(appSettings.colorScheme)
-        
-        // 根据应用主题设置判断是否使用深色模式（与 Theme.kt 逻辑一致）
-        val isDarkTheme = when (appSettings.theme) {
-            "dark" -> true
-            "light" -> false
-            else -> isSystemInDarkTheme() // "system" 时跟随系统
-        }
-        
-        return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
-            getCustomColor("custom_color_sub_warehouse_name", if (isDarkTheme) RedBlueSubWarehouseNameDark else RedBlueSubWarehouseName)
-        } else if (isDarkTheme) {
-            when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSubWarehouseNameDark
-                // 其他配色方案暂时使用相同的颜色，后续可以扩展
-                else -> RedBlueSubWarehouseNameDark
-            }
-        } else {
-            when (schemeType) {
-                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueSubWarehouseName
-                // 其他配色方案暂时使用相同的颜色，后续可以扩展
-                else -> RedBlueSubWarehouseName
-            }
-        }
+        return getGroup4TextColor()
     }
     
     // ==================== Surface Variant 背景颜色 ====================

@@ -554,56 +554,102 @@ fun ItemEditScreen(
             }
             // 设置拍照和相册的按钮样式
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                val outlineEnabled = ColorHelpers.isOutlineEnabled()
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Button(
-                                onClick = { showCameraDialog = true },
-                                modifier = Modifier
-                                    .weight(1f),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = ColorHelpers.getGroup2SettingsBtnColor()
-                                )
-                            ) {
-                                val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                                val iconColor = ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
-                                val textColor = ColorHelpers.getGroup4TextColorByContrast(backgroundColor)
-                                Icon(
-                                    Icons.Default.CameraAlt,
-                                    contentDescription = null,
-                                    tint = iconColor
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                // Text(stringResource(R.string.take_photo), color = textColor)
-                            }
-                            Button(
-                                onClick = {
-                                    // 设置ActivityResult处理标记，防止密码锁屏
-                                    prefs.edit { putBoolean("is_processing_activity_result", true) }
-                                    multipleImagePickerLauncher.launch(
-                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
+                            val iconColor = if (outlineEnabled) backgroundColor else ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
+                            if (outlineEnabled) {
+                                OutlinedButton(
+                                    onClick = { showCameraDialog = true },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(2.dp, backgroundColor),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = backgroundColor,
+                                        disabledContentColor = backgroundColor.copy(alpha = 0.5f)
                                     )
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = ColorHelpers.getGroup2SettingsBtnColor()
-                                )
-                            ) {
-                                val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                                val iconColor = ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
-                                val textColor = ColorHelpers.getGroup4TextColorByContrast(backgroundColor)
-                                Icon(
-                                    Icons.Default.PhotoLibrary,
-                                    contentDescription = null,
-                                    tint = iconColor
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                // Text(stringResource(R.string.select_multiple), color = textColor)
+                                ) {
+                                    Icon(
+                                        Icons.Default.CameraAlt,
+                                        contentDescription = null,
+                                        tint = iconColor
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    // Text(stringResource(R.string.take_photo), color = backgroundColor)
+                                }
+                            } else {
+                                Button(
+                                    onClick = { showCameraDialog = true },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = backgroundColor
+                                    )
+                                ) {
+                                    Icon(
+                                        Icons.Default.CameraAlt,
+                                        contentDescription = null,
+                                        tint = iconColor
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    // Text(stringResource(R.string.take_photo), color = ColorHelpers.getGroup4TextColorByContrast(backgroundColor))
+                                }
+                            }
+                            val galleryBackground = ColorHelpers.getGroup2SettingsBtnColor()
+                            val galleryIconColor = if (outlineEnabled) galleryBackground else ColorHelpers.getGroup4IconColorByContrast(galleryBackground)
+                            if (outlineEnabled) {
+                                OutlinedButton(
+                                    onClick = {
+                                        // 设置ActivityResult处理标记，防止密码锁屏
+                                        prefs.edit { putBoolean("is_processing_activity_result", true) }
+                                        multipleImagePickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(2.dp, galleryBackground),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = galleryBackground,
+                                        disabledContentColor = galleryBackground.copy(alpha = 0.5f)
+                                    )
+                                ) {
+                                    Icon(
+                                        Icons.Default.PhotoLibrary,
+                                        contentDescription = null,
+                                        tint = galleryIconColor
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    // Text(stringResource(R.string.select_multiple), color = galleryBackground)
+                                }
+                            } else {
+                                Button(
+                                    onClick = {
+                                        // 设置ActivityResult处理标记，防止密码锁屏
+                                        prefs.edit { putBoolean("is_processing_activity_result", true) }
+                                        multipleImagePickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = galleryBackground
+                                    )
+                                ) {
+                                    Icon(
+                                        Icons.Default.PhotoLibrary,
+                                        contentDescription = null,
+                                        tint = galleryIconColor
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    // Text(stringResource(R.string.select_multiple), color = ColorHelpers.getGroup4TextColorByContrast(galleryBackground))
+                                }
                             }
                         }
 

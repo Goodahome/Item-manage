@@ -30,6 +30,9 @@ import com.example.itemremindertool.utils.ImageUtils
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.AppFloatingActionButton
+import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.ui.components.AppDialogLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -284,75 +287,62 @@ fun CameraRecognitionDialog(
         }
     }
     
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp)
+    AppDialogLayout(
+        title = stringResource(R.string.take_photo_recognize_item),
+        icon = Icons.Default.CameraAlt,
+        onDismiss = onDismiss
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.take_photo_recognize_item),
-                    style = MaterialTheme.typography.titleLarge
-                )
+            if (!hasPermission) {
+                Text(stringResource(R.string.camera_permission_required))
+            } else {
+                // 相机预览
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(400.dp)
+                        .background(Color.Black)
+                ) {
+                    AndroidView(
+                        factory = { previewView },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
                 
-                if (!hasPermission) {
-                    Text(stringResource(R.string.camera_permission_required))
-                } else {
-                    // 相机预览
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(400.dp)
-                            .background(Color.Black)
-                    ) {
-                        AndroidView(
-                            factory = { previewView },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                    
-                    // 拍照按钮
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        IconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.Close, stringResource(R.string.cancel))
-                        }
-                        
-                        FloatingActionButton(
-                            onClick = {
-                                imageFile = ImageUtils.createImageFile(context)
-                                val outputFileOptions = ImageCapture.OutputFileOptions.Builder(
-                                    imageFile!!
-                                ).build()
-                                
-                                imageCapture.takePicture(
-                                    outputFileOptions,
-                                    Executors.newSingleThreadExecutor(),
-                                    object : ImageCapture.OnImageSavedCallback {
-                                        override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                                            val imagePath = imageFile?.absolutePath
-                                            onImageCaptured(imagePath)
-                                        }
-                                        
-                                        override fun onError(exception: ImageCaptureException) {
-                                            onImageCaptured(null)
-                                        }
+                // 拍照按钮
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    AppFloatingActionButton(
+                        onClick = {
+                            imageFile = ImageUtils.createImageFile(context)
+                            val outputFileOptions = ImageCapture.OutputFileOptions.Builder(
+                                imageFile!!
+                            ).build()
+                            
+                            imageCapture.takePicture(
+                                outputFileOptions,
+                                Executors.newSingleThreadExecutor(),
+                                object : ImageCapture.OnImageSavedCallback {
+                                    override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                                        val imagePath = imageFile?.absolutePath
+                                        onImageCaptured(imagePath)
                                     }
-                                )
-                            }
-                        ) {
-                            Icon(Icons.Default.CameraAlt, stringResource(R.string.take_photo))
-                        }
+                                    
+                                    override fun onError(exception: ImageCaptureException) {
+                                        onImageCaptured(null)
+                                    }
+                                }
+                            )
+                        },
+                        backgroundColor = ColorHelpers.getGroup5FabColor()
+                    ) {
+                        Icon(Icons.Default.CameraAlt, stringResource(R.string.take_photo))
                     }
                 }
             }

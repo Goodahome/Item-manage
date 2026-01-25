@@ -46,6 +46,7 @@ import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.DraggableFab
 import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
 import com.example.itemremindertool.ui.components.UIConstants
+import com.example.itemremindertool.ui.components.AppFloatingActionButton
 import androidx.compose.foundation.background
 import java.text.SimpleDateFormat
 import java.text.DateFormat
@@ -138,9 +139,9 @@ fun ItemsScreen(
                 modifier = Modifier.fillMaxSize(),
                 boundsPadding = fabBoundsPadding
             ) { fabModifier ->
-                FloatingActionButton(
+                AppFloatingActionButton(
                     onClick = onAddItem,
-                    containerColor = ColorHelpers.getGroup5FabColor(),
+                    backgroundColor = ColorHelpers.getGroup5FabColor(),
                     modifier = fabModifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(Icons.Default.Add, stringResource(R.string.add_item))
@@ -358,6 +359,7 @@ fun ItemCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             // 统一显示所有标签（标签 + 自定义标签），使用不同浅颜色背景高亮，单行横向滚动
+            val expiredTagLabel = stringResource(R.string.status_expired)
             // 到期日结束后（次日00:01起）才算过期
             val isExpired = item.expiryDate?.let { date ->
                 val zone = ZoneId.systemDefault()
@@ -371,7 +373,7 @@ fun ItemCard(
                 !nowZoned.isBefore(expiryEnd)
             } ?: false
             val allTagsToShow = if (isExpired) {
-                item.tags + "过期"
+                item.tags + expiredTagLabel
             } else {
                 item.tags
             }
@@ -386,7 +388,7 @@ fun ItemCard(
                         val tag = allTagsToShow[index]
                         // 根据标签类型和索引分配不同浅颜色背景（文字统一为黑色）
                         val bgColor = when {
-                            tag == "过期" -> Color(0xFFF3E5F5) // 浅紫
+                            tag == expiredTagLabel -> Color(0xFFF3E5F5) // 浅紫
                             else -> {
                                 // 自定义标签使用循环颜色（柔和的浅色）
                                 val colors = listOf(
@@ -402,9 +404,10 @@ fun ItemCard(
                             }
                         }
                         
-                        val displayTag = when (tag) {
-                            "过期" -> stringResource(R.string.status_expired)
-                            else -> tag
+                        val displayTag = if (tag == expiredTagLabel) {
+                            expiredTagLabel
+                        } else {
+                            tag
                         }
                         // 使用 AssistChip 确保背景色正确显示
                         AssistChip(

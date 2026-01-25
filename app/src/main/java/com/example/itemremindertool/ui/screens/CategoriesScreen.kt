@@ -21,6 +21,7 @@ import com.example.itemremindertool.data.model.Category
 import com.example.itemremindertool.ui.viewmodel.CategoryViewModel
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.UIConstants
+import com.example.itemremindertool.ui.components.AppFloatingActionButton
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
@@ -56,9 +57,9 @@ fun CategoriesScreen(
             Column(
                 modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
             ) {
-                FloatingActionButton(
+                AppFloatingActionButton(
                     onClick = onAddCategory,
-                    containerColor = ColorHelpers.getGroup5FabColor(),
+                    backgroundColor = ColorHelpers.getGroup5FabColor(),
                     modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(Icons.Default.Add, stringResource(R.string.add_category))

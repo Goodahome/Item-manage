@@ -31,6 +31,7 @@
     <string name="settings_title">Paramètres</string>
     <string name="appearance_settings">Paramètres d\'apparence</string>
     <string name="app_settings">Paramètres de l\'application</string>
+    <string name="password_protection_desc">Ajouter une protection par mot de passe à l\\\'application pour protéger votre vie privée</string>
     <string name="cloud_storage">Stockage cloud</string>
     <string name="alert_settings">Paramètres de rappels</string>
     <string name="backup_restore">Sauvegarde Restauration</string>
@@ -86,6 +87,8 @@
     <string name="sidebar_icon_shape">Forme des icônes de la barre latérale</string>
     <string name="sidebar_icon_circle">Cercle</string>
     <string name="sidebar_icon_round_rect">Carré arrondi</string>
+    <string name="sidebar_icon_outline">Icône de conteneur creuse</string>
+    <string name="sidebar_icon_outline_desc">Afficher les icônes en contour</string>
     <string name="color_scheme_cream">🍊 Crème guérissante</string>
     <string name="color_scheme_mint">🌿 Menthe fraîche</string>
     <string name="color_scheme_space">🌌 Gris espace profond</string>
@@ -102,7 +105,8 @@
     <string name="language_it">Italiano</string>
     <string name="language_pt">Português</string>
     
-    <string name="app_name_label">Nom de l\'application</string>
+    <!-- <string name="app_name_label">Nom de l\'application</string> -->
+    <string name="customize_app_name_icon_desc">Personnalisez le nom et l\\\'icône de votre application</string>
     <string name="password_protection">Protection par mot de passe</string>
     <string name="password_enabled">Activé</string>
     <string name="password_disabled">Désactivé</string>
@@ -184,6 +188,10 @@
     <string name="add_to_shopping_cart">Ajouter au panier</string>
     <string name="add_reminder">Ajouter un rappel</string>
     <string name="item_reminder_settings">Définir le rappel</string>
+    <string name="currency_symbol_setting">Symbole de devise</string>
+    <string name="currency_symbol_setting_desc">Définir le symbole de devise pour l\'affichage des prix (ex. : ¥, $, €)</string>
+    <string name="currency_symbol_hint">Saisir le symbole de devise</string>
+    <string name="default_currency_symbol">¥</string>
     
     <!-- 物品状态 -->
     <string name="status_normal">Normal</string>
@@ -269,7 +277,7 @@
     <string name="custom_color_scheme_name_required">Veuillez saisir un nom de thème</string>
     <string name="custom_color_field_primary">Fond icône &amp; conteneur Primary</string>
     <string name="custom_color_field_tertiary">Couleur d’accent Tertiary</string>
-    <string name="custom_color_field_primary_container">Couleur du conteneur PrimaryContainer</string>
+    <string name="custom_color_field_primary_container">Couleur du bouton d’action flottant</string>
     <string name="custom_color_field_on_primary_container">Texte du conteneur OnPrimaryContainer</string>
     <string name="custom_color_field_background">Arrière-plan Background</string>
     <string name="custom_color_field_surface">Arrière-plan de carte Surface</string>
@@ -278,17 +286,17 @@
     <string name="custom_color_field_gradient_end">Dégradé barre de navigation fin</string>
     <string name="custom_color_field_search_box_bg">Fond du champ de recherche</string>
     <string name="custom_color_field_search_box_border">Bordure du champ de recherche</string>
-    <string name="custom_color_field_breadcrumb_text">Texte du fil d’Ariane</string>
-    <string name="custom_color_field_breadcrumb_icon">Icône du fil d’Ariane</string>
+    <string name="custom_color_field_on_surface_low_contrast">Texte de la barre supérieure</string>
     <string name="custom_color_field_sub_warehouse_name">Nom du sous-conteneur</string>
-    <string name="custom_color_hex_placeholder">#RRGGBB ou #AARRGGBB</string>
+    <string name="custom_color_hex_placeholder">#RRGGBB ou #FFRRGGBB</string>
+    <string name="custom_color_hex_invalid">Saisissez #RRGGBB ou #FFRRGGBB (pas de transparence)</string>
     <string name="custom_color_preview_home">Accueil</string>
     <string name="custom_color_preview_search">Rechercher des articles</string>
     <string name="custom_color_preview_breadcrumb_path">Salon / Armoire</string>
     <string name="custom_color_preview_container_icon">Icône conteneur</string>
     <string name="custom_color_preview_item_icon">Icône article</string>
-    <string name="custom_color_preview_container">Conteneur</string>
-    <string name="custom_color_preview_tertiary">Accent</string>
+    <string name="custom_color_preview_container">Bouton d’action flottant</string>
+    <string name="custom_color_preview_tertiary">Supprimer</string>
     <string name="custom_color_preview_item">Article exemple</string>
     <string name="custom_color_preview_quantity">Qté %1$d</string>
     <string name="custom_color_preview_price">19,9 €</string>
@@ -408,7 +416,9 @@
     <string name="barcode">Code-barres</string>
     <string name="feature_code">Code de caractéristique de l\'article</string>
     <string name="expiry_date">Date d\'expiration</string>
+    <string name="created_at">Créé le</string>
     <string name="recognizing_image">Reconnaissance de l\'image...</string>
+    <string name="premium_remove_ads_desc">Profitez d\\\'une expérience sans publicité</string>
     <string name="take_photo_search">Recherche par photo</string>
     <string name="close">Fermer</string>
     <string name="take_photo_recognize_button">Reconnaissance par photo</string>
@@ -426,6 +436,7 @@
     <string name="expires_on">Expire : %1$s</string>
     <string name="quantity_with_value">Quantité : %1$d</string>
     <string name="price_with_value">¥%1$.2f</string>
+    <string name="price_with_symbol">%1$s%2$.2f</string>
     <string name="warehouse_empty_hint">Ce conteneur n\'a pas d\'articles</string>
     <string name="capacity">Capacité</string>
     <string name="used_capacity">Utilisé : %1$d / %2$d</string>
@@ -510,6 +521,7 @@
     <!-- 备份恢复 -->
     <string name="offline_backup">Sauvegarde hors ligne</string>
     <string name="backup_file_location">\"Le fichier de sauvegarde sera enregistré dans le dossier Downloads ; le trouver dans le gestionnaire de fichiers\"</string>
+    <string name="cloud_storage_desc">Sauvegarde &amp; restauration cloud pour des données plus sécurisées</string>
     <string name="cloud_restore">Restauration cloud</string>
     <string name="cloud_restore_description">Télécharger et restaurer la sauvegarde synchronisée du cloud (remplace toutes les données – sauvegarder hors ligne d\'abord)</string>
     <string name="restore_data_action">Restaurer les données</string>
@@ -569,6 +581,7 @@
 
     <string name="onboarding_complete_title">Commencer</string>
     <string name="onboarding_complete_description">Vous connaissez maintenant les fonctionnalités de base et pouvez commencer à utiliser Heji pour gérer vos articles ! En cas de questions, consultez à tout moment les informations d’aide dans les Paramètres. Il y a plus d’options dans les Paramètres, explorez librement.</string>
+    <string name="onboarding_skip">Passer</string>
     <string name="onboarding_get_started">Commencer</string>
     <string name="onboarding_tap_to_continue">Touchez l’espace vide pour continuer</string>
     <string name="onboarding_home_topbar_title">Barre du haut</string>
@@ -696,13 +709,17 @@
     <string name="about_feedback_button">Envoyer un email</string>
     <string name="feedback_email_subject">HexNote – Retour</string>
     <string name="no_email_app">Aucune application email détectée</string>
+    <string name="premium_price">Prix de l\\\'abonnement : %1$s</string>
     <string name="premium_price_loading">Chargement du prix de l’abonnement…</string>
     <string name="subscription_auto_renew_note">L’abonnement se renouvelle automatiquement. Gérez-le dans Google Play.</string>
     <string name="subscription_monthly">Mensuel</string>
     <string name="subscription_yearly">Annuel</string>
     <string name="subscription_plan_price">%1$s : %2$s</string>
+    <string name="trial_already_used">Essai déjà utilisé. Veuillez acheter la version Premium pour continuer.</string>
     <string name="subscribe">S’abonner</string>
+    <string name="premium_feature_locked_desc">Cette fonctionnalité nécessite un abonnement Premium ou l\\\'essai gratuit de 7 jours.</string>
     <string name="premium_limit_summary">Limites de la version gratuite : certaines fonctions avancées (nom/icône personnalisés, sauvegarde cloud, verrouillage, conteneurs illimités, etc.) sont indisponibles.</string>
+    <string name="premium_activated">Fonctionnalités Premium activées</string>
     <string name="premium_lifetime_activated">Version à vie activée</string>
     <string name="lifetime_price">Prix à vie : %1$s</string>
     <string name="buy_lifetime">Acheter à vie</string>
@@ -731,4 +748,30 @@
     <string name="excel_export_log_failed">Échec de l’export Excel</string>
     <string name="excel_import_log_failed">Échec de l’import Excel</string>
     <string name="feature_extract_log">Caractéristiques extraites, featureCode : %1$s...</string>
+    <string name="custom_color_field_search_box_text">Suchfeld-Text / IconTexte / icône de la barre de recherche</string>
+    <string name="cloud_restore_desc">Restaurer les données de sauvegarde depuis le cloud</string>
+    <string name="premium_excel_import_export">Import &amp; Export Excel</string>
+    <string name="premium_excel_import_export_desc">Import &amp; export en masse des données d\\\'articles pour plus d\\\'efficacité</string>
+    <string name="premium_theme_custom_colors">Changement de thème &amp; Couleurs personnalisées</string>
+    <string name="premium_theme_custom_colors_desc">Déverrouillez plusieurs thèmes et schémas de couleurs personnalisés</string>
+    <string name="premium_advanced_reminder">Stratégies de rappel avancées</string>
+    <string name="premium_advanced_reminder_desc">Prend en charge les rappels récurrents et les règles de notification avancées</string>
+    <string name="premium_unlimited_tags">Étiquettes illimitées</string>
+    <string name="premium_unlimited_tags_desc">Aucune limite sur le nombre d\\\'étiquettes</string>
+    <string name="premium_remove_ads">Supprimer les publicités</string>
+    <string name="remove_ads">Supprimer les publicités</string>
+    <string name="remove_ads_desc">Supprimez définitivement toutes les publicités après achat pour une expérience sans interruption. Prix : %1$s</string>
+    <string name="remove_ads_desc_no_price">Supprimez définitivement toutes les publicités après achat pour une expérience sans interruption.</string>
+    <string name="ads_removed_desc">Vous avez acheté la suppression des publicités. Toutes les pubs sont maintenant définitivement désactivées.</string>
+    <string name="purchase">Acheter</string>
+    <string name="product_not_available">Produit temporairement indisponible. Veuillez vérifier que les produits in-app sont configurés dans Google Play Console.</string>
+    <string name="billing_not_ready">Service de facturation non prêt. Veuillez réessayer plus tard.</string>
+    <string name="premium_features">Fonctionnalités Premium</string>
+    <string name="premium_feature_locked">Cette fonctionnalité nécessite Premium</string>
+    <string name="try_free">Essai gratuit 7 jours</string>
+    <string name="trial_active">Essai en cours</string>
+    <string name="trial_remaining_days">Encore %1$d jours</string>
+    <string name="trial_remaining_hours">Encore %1$d heures</string>
+    <string name="trial_started">Essai commencé ! Profitez de 7 jours de fonctionnalités Premium !</string>
+    <string name="customize_app_name_icon">Personnaliser le nom &amp; l\\\'icône de l\\\'application</string>
 </resources>

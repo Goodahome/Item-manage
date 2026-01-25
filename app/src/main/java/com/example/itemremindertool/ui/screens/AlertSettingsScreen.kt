@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.isSystemInDarkTheme
 import com.example.itemremindertool.notification.NotificationScheduler
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.AppDivider
 import java.util.Calendar
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 import com.example.itemremindertool.billing.BillingManager
@@ -314,7 +315,7 @@ fun AlertSettingsScreen(
                     
                     // 如果系统通知已启用，显示时间选择器
                     if (systemNotificationEnabled) {
-                        HorizontalDivider(
+                        AppDivider(
                             color = ColorHelpers.getDividerColor(),
                             modifier = Modifier.padding(vertical = 8.dp)
                         )

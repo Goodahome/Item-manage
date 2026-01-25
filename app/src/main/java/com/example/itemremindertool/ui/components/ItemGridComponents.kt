@@ -1,8 +1,11 @@
 package com.example.itemremindertool.ui.components
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -13,6 +16,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -25,7 +29,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
@@ -41,6 +47,8 @@ import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.R
 import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.ui.components.AppDivider
+import com.example.itemremindertool.ui.components.AppDialogLayout
 import com.example.itemremindertool.utils.CurrencyUtils
 import com.example.itemremindertool.utils.ImageUtils
 import kotlinx.coroutines.Dispatchers
@@ -57,6 +65,7 @@ import java.util.*
 fun ItemGridCard(
     item: Item,
     isSelected: Boolean = false,
+    useOutlineIcon: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -92,77 +101,96 @@ fun ItemGridCard(
         }
     }
     
-    // 根据图片亮度决定文字颜色
-    val textColor = if (backgroundBitmap != null) {
-        if (isImageBright) Color.Black else Color.White
-    } else {
-        ColorHelpers.getGroup4TextColor()
-    }
-    
     // 使用与左侧容器图标一致的主题色
     val cardBackgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
     
-    // 根据背景色和对比度判断，返回对应的边框颜色
-    val selectedBorderColor = if (backgroundBitmap != null) {
-        // 如果有背景图片，根据图片亮度创建一个代表背景的颜色来计算对比度
-        // 亮图片使用浅色背景，暗图片使用深色背景
-        val imageBgColor = if (isImageBright) {
-            Color.White // 亮图片，使用白色作为代表背景色
-        } else {
-            Color.Black // 暗图片，使用黑色作为代表背景色
-        }
-        ColorHelpers.getGroup4TextColorByContrast(imageBgColor)
+    // 根据图片亮度决定文字颜色
+    val isOutlineActive = useOutlineIcon && backgroundBitmap == null
+    val textColor = if (backgroundBitmap != null) {
+        if (isImageBright) Color.Black else Color.White
     } else {
-        // 无图片时，根据卡片背景色计算对比色
-        ColorHelpers.getGroup4TextColorByContrast(cardBackgroundColor)
+        if (isOutlineActive) {
+            cardBackgroundColor
+        } else {
+            ColorHelpers.getGroup4TextColor()
+        }
     }
     
+    // 根据背景色和对比度判断，返回对应的边框颜色
+    val selectedBorderColor = cardBackgroundColor
+    
+    val cardShape = if (isSelected) RoundedCornerShape(0.dp) else RoundedCornerShape(12.dp)
     Card(
         modifier = modifier
             .aspectRatio(1f) // 保持正方形
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
+        shape = cardShape,
         colors = CardDefaults.cardColors(
-            containerColor = if (backgroundBitmap != null) {
+            containerColor = if (backgroundBitmap != null || isOutlineActive || isSelected) {
                 Color.Transparent
             } else {
                 cardBackgroundColor
             }
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 6.dp, // 选中和未选中时使用相同的 elevation
-            pressedElevation = 8.dp,
-            hoveredElevation = 7.dp,
-            focusedElevation = 7.dp
-        ),
-        border = if (isSelected) {
-            androidx.compose.foundation.BorderStroke(4.dp, selectedBorderColor) // 使用对比色边框
+        elevation = if (isOutlineActive || isSelected) {
+            CardDefaults.cardElevation(
+                defaultElevation = 0.dp,
+                pressedElevation = 0.dp,
+                hoveredElevation = 0.dp,
+                focusedElevation = 0.dp
+            )
         } else {
-            null
-        }
+            CardDefaults.cardElevation(
+                defaultElevation = 6.dp, // 选中和未选中时使用相同的 elevation
+                pressedElevation = 8.dp,
+                hoveredElevation = 7.dp,
+                focusedElevation = 7.dp
+            )
+        },
+        border = null
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // 背景图片（使用缩略图）
-            backgroundBitmap?.let { bitmap ->
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+            val contentPadding = if (isSelected) 6.dp else 0.dp
+            val contentShape = RoundedCornerShape(12.dp)
+            val contentModifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+                .clip(contentShape)
+            val contentShadowModifier = if (isSelected && !isOutlineActive) {
+                contentModifier.shadow(
+                    elevation = 6.dp,
+                    shape = contentShape,
+                    clip = false
                 )
-                // 添加半透明遮罩确保文字可读
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            if (isImageBright) {
-                                Color.White.copy(alpha = 0.18f)
-                            } else {
-                                Color.Black.copy(alpha = 0f)
-                            }
-                        )
-                )
+            } else {
+                contentModifier
             }
+
+            Box(modifier = contentShadowModifier) {
+                if (backgroundBitmap == null && isSelected && !isOutlineActive) {
+                    Box(modifier = Modifier.matchParentSize().background(cardBackgroundColor))
+                }
+
+                // 背景图片（使用缩略图）
+                backgroundBitmap?.let { bitmap ->
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.matchParentSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    // 添加半透明遮罩确保文字可读
+                    Box(
+                        modifier = Modifier.matchParentSize()
+                            .background(
+                                if (isImageBright) {
+                                    Color.White.copy(alpha = 0.18f)
+                                } else {
+                                    Color.Black.copy(alpha = 0f)
+                                }
+                            )
+                    )
+                }
             
             // 根据是否有图片决定文字颜色
             val displayTextColor = if (backgroundBitmap != null) {
@@ -175,45 +203,132 @@ fun ItemGridCard(
                 ColorHelpers.getGroup4TextColorByContrast(imageBgColor)
             } else {
                 // 无图片时使用与背景色对比的颜色
-                ColorHelpers.getGroup4TextColorByContrast(cardBackgroundColor)
+                if (isOutlineActive) {
+                    cardBackgroundColor
+                } else {
+                    ColorHelpers.getGroup4TextColorByContrast(cardBackgroundColor)
+                }
             }
-            
-            // 物品名称 - 有图片时不显示，无图片时居中显示
-            if (backgroundBitmap == null) {
-                Text(
-                    text = item.name,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .fillMaxWidth()
-                        .padding(horizontal = 6.dp),
-                    color = displayTextColor,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 14.sp
-                )
-            }
-            
-            // 数量（右下角）- 纯数字显示，下移到真正的底部
-            if (item.quantity > 0) {
-                Text(
-                    text = "${item.quantity}",
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 4.dp, bottom = 3.dp),
-                    color = displayTextColor,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        shadow = androidx.compose.ui.graphics.Shadow(
-                            color = if (displayTextColor == Color.White) Color.Black else Color.White,
-                            offset = androidx.compose.ui.geometry.Offset(1f, 1f),
-                            blurRadius = 2f
+
+                // 物品名称 - 有图片时不显示，无图片时居中显示
+                if (backgroundBitmap == null) {
+                    Text(
+                        text = item.name,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(horizontal = 6.dp),
+                        color = displayTextColor,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 14.sp
+                    )
+                }
+
+                // 数量（右下角）- 纯数字显示，下移到真正的底部
+                if (item.quantity > 0) {
+                    Text(
+                        text = "${item.quantity}",
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 4.dp, bottom = 3.dp),
+                        color = displayTextColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            shadow = androidx.compose.ui.graphics.Shadow(
+                                color = if (displayTextColor == Color.White) Color.Black else Color.White,
+                                offset = androidx.compose.ui.geometry.Offset(1f, 1f),
+                                blurRadius = 2f
+                            )
                         )
                     )
+                }
+            }
+
+            if (isOutlineActive) {
+                Box(
+                    modifier = if (isSelected) {
+                        contentModifier.border(2.dp, cardBackgroundColor, RoundedCornerShape(12.dp))
+                    } else {
+                        Modifier
+                            .fillMaxSize()
+                            .border(2.dp, cardBackgroundColor, RoundedCornerShape(12.dp))
+                    }
                 )
+            }
+
+            if (isSelected) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val strokeWidth = 3.dp.toPx()
+                    val cornerLength = 14.dp.toPx()
+                    val inset = 3.dp.toPx()
+                    val maxX = size.width - inset
+                    val maxY = size.height - inset
+
+                    // 左上角
+                    drawLine(
+                        color = selectedBorderColor,
+                        start = Offset(inset, inset),
+                        end = Offset(inset + cornerLength, inset),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color = selectedBorderColor,
+                        start = Offset(inset, inset),
+                        end = Offset(inset, inset + cornerLength),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round
+                    )
+                    // 右上角
+                    drawLine(
+                        color = selectedBorderColor,
+                        start = Offset(maxX - cornerLength, inset),
+                        end = Offset(maxX, inset),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color = selectedBorderColor,
+                        start = Offset(maxX, inset),
+                        end = Offset(maxX, inset + cornerLength),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round
+                    )
+                    // 左下角
+                    drawLine(
+                        color = selectedBorderColor,
+                        start = Offset(inset, maxY - cornerLength),
+                        end = Offset(inset, maxY),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color = selectedBorderColor,
+                        start = Offset(inset, maxY),
+                        end = Offset(inset + cornerLength, maxY),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round
+                    )
+                    // 右下角
+                    drawLine(
+                        color = selectedBorderColor,
+                        start = Offset(maxX - cornerLength, maxY),
+                        end = Offset(maxX, maxY),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color = selectedBorderColor,
+                        start = Offset(maxX, maxY - cornerLength),
+                        end = Offset(maxX, maxY),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round
+                    )
+                }
             }
             
             // 选中时只显示边框，不显示背景遮罩
@@ -224,6 +339,7 @@ fun ItemGridCard(
 /**
  * 网格内嵌详细信息面板（与物品卡片同层级，紧凑版）
  */
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ItemGridDetailPanel(
@@ -232,6 +348,7 @@ fun ItemGridDetailPanel(
     onUse: (Int) -> Unit,
     onViewDetails: () -> Unit,
     onAddToShoppingCart: () -> Unit,
+    onMoveToContainer: (() -> Unit)? = null,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -299,6 +416,19 @@ fun ItemGridDetailPanel(
                             tint = ColorHelpers.getGroup4IconColor(),
                             modifier = Modifier.size(18.dp)
                         )
+                    }
+                    if (onMoveToContainer != null) {
+                        IconButton(
+                            onClick = onMoveToContainer,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.DriveFileMove,
+                                contentDescription = stringResource(R.string.move_to_container),
+                                tint = ColorHelpers.getGroup4IconColor(),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                     IconButton(
                         onClick = { showDeleteDialog = true },
@@ -496,85 +626,143 @@ fun ItemGridDetailPanel(
             }
             
             // 按钮行
+            val outlineEnabled = ColorHelpers.isOutlineEnabled()
             val buttonBgColor = ColorHelpers.getGroup2SettingsBtnColor()
-            val buttonTextColor = ColorHelpers.getGroup4TextColorByContrast(buttonBgColor)
-            val buttonIconColor = ColorHelpers.getGroup4IconColorByContrast(buttonBgColor)
+            val buttonTextColor = if (outlineEnabled) buttonBgColor else ColorHelpers.getGroup4TextColorByContrast(buttonBgColor)
+            val buttonIconColor = if (outlineEnabled) buttonBgColor else ColorHelpers.getGroup4IconColorByContrast(buttonBgColor)
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 // 详情按钮（改为和使用按钮一致的样式）
-                Button(
-                    onClick = onViewDetails,
-                    modifier = Modifier.weight(1f).height(36.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = buttonBgColor,
-                        contentColor = buttonTextColor,
-                        disabledContainerColor = buttonBgColor.copy(alpha = 0.5f),
-                        disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
-                    ),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Info,
-                        contentDescription = null,
-                        tint = buttonIconColor,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(stringResource(R.string.details), fontSize = 11.sp, color = buttonTextColor)
+                if (outlineEnabled) {
+                    OutlinedButton(
+                        onClick = onViewDetails,
+                        modifier = Modifier.weight(1f).height(36.dp),
+                        border = BorderStroke(2.dp, buttonBgColor),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = buttonTextColor,
+                            disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            tint = buttonIconColor,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(stringResource(R.string.details), fontSize = 11.sp, color = buttonTextColor)
+                    }
+                } else {
+                    Button(
+                        onClick = onViewDetails,
+                        modifier = Modifier.weight(1f).height(36.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonBgColor,
+                            contentColor = buttonTextColor,
+                            disabledContainerColor = buttonBgColor.copy(alpha = 0.5f),
+                            disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            tint = buttonIconColor,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(stringResource(R.string.details), fontSize = 11.sp, color = buttonTextColor)
+                    }
                 }
                 
                 // 使用按钮
-                Button(
-                    onClick = { 
-                        onUse(useQuantity)
-                    },
-                    modifier = Modifier.weight(1f).height(36.dp),
-                    enabled = item.quantity > 0,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = buttonBgColor,
-                        contentColor = buttonTextColor,
-                        disabledContainerColor = buttonBgColor.copy(alpha = 0.5f),
-                        disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
-                    ),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                ) {
-                    Icon(
-                        Icons.Default.RemoveCircle,
-                        contentDescription = null,
-                        tint = buttonIconColor,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(stringResource(R.string.use_item), fontSize = 11.sp, color = buttonTextColor)
+                if (outlineEnabled) {
+                    OutlinedButton(
+                        onClick = { onUse(useQuantity) },
+                        modifier = Modifier.weight(1f).height(36.dp),
+                        enabled = item.quantity > 0,
+                        border = BorderStroke(2.dp, buttonBgColor),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = buttonTextColor,
+                            disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.RemoveCircle,
+                            contentDescription = null,
+                            tint = buttonIconColor,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(stringResource(R.string.use_item), fontSize = 11.sp, color = buttonTextColor)
+                    }
+                } else {
+                    Button(
+                        onClick = { 
+                            onUse(useQuantity)
+                        },
+                        modifier = Modifier.weight(1f).height(36.dp),
+                        enabled = item.quantity > 0,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonBgColor,
+                            contentColor = buttonTextColor,
+                            disabledContainerColor = buttonBgColor.copy(alpha = 0.5f),
+                            disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.RemoveCircle,
+                            contentDescription = null,
+                            tint = buttonIconColor,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(stringResource(R.string.use_item), fontSize = 11.sp, color = buttonTextColor)
+                    }
                 }
             }
         }
     }
     
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(R.string.delete_item)) },
-            text = { Text(stringResource(R.string.delete_item_confirm)) },
-            confirmButton = {
-                TextButton(
+        AppDialogLayout(
+            title = stringResource(R.string.delete_item),
+            icon = Icons.Default.Delete,
+            onDismiss = { showDeleteDialog = false },
+            footer = {
+                OutlinedButton(
+                    onClick = { showDeleteDialog = false },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+                Button(
                     onClick = {
                         showDeleteDialog = false
                         onDelete()
-                    }
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
                 ) {
                     Text(stringResource(R.string.delete))
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
             }
-        )
+        ) {
+            Text(
+                text = stringResource(R.string.delete_item_confirm),
+                style = MaterialTheme.typography.bodyMedium,
+                color = ColorHelpers.getGroup4TextColor()
+            )
+        }
     }
 }
 
@@ -681,9 +869,9 @@ fun ItemDetailPanel(
                 }
             }
             
-            HorizontalDivider(
+            AppDivider(
                 color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
+                thickness = 2.dp
             )
             
             // 当前数量显示

@@ -39,6 +39,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import com.example.itemremindertool.utils.ImageUtils
 import com.example.itemremindertool.R
+import com.example.itemremindertool.ui.theme.ColorHelpers
 import androidx.compose.ui.res.stringResource
 import java.io.File
 import java.util.concurrent.Executors

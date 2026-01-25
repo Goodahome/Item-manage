@@ -23,6 +23,9 @@ import com.example.itemremindertool.data.model.ReminderType
 import com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.UIConstants
+import com.example.itemremindertool.ui.components.AppFloatingActionButton
+import com.example.itemremindertool.ui.components.AppDivider
+import com.example.itemremindertool.ui.components.AppDialogLayout
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.loper7.date_time_picker.dialog.CardDatePickerDialog
 import com.loper7.date_time_picker.DateTimeConfig
@@ -58,19 +61,16 @@ fun ItemReminderSettingsScreen(
         floatingActionButton = {
             Column(modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)) {
                 // 使用与侧边栏风格首页一致的悬浮按钮样式
-                val fabBackground = ColorHelpers.getGroup2SettingsBtnColor()
-                val fabIconColor = ColorHelpers.getContrastColor(fabBackground)
+                val fabBackground = ColorHelpers.getGroup5FabColor()
                 
-                FloatingActionButton(
+                AppFloatingActionButton(
                     onClick = { showAddReminderDialog = true },
-                    containerColor = fabBackground,
-                    contentColor = fabIconColor,
+                    backgroundColor = fabBackground,
                     modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(
                         Icons.Default.Add,
-                        stringResource(R.string.add_reminder),
-                        tint = fabIconColor
+                        stringResource(R.string.add_reminder)
                     )
                 }
             }
@@ -339,195 +339,21 @@ fun ReminderEditDialog(
     var datePickerKey by remember { mutableStateOf(0) }
     var timePickerKey by remember { mutableStateOf(0) }
     
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (existingReminder != null) stringResource(R.string.edit_reminder) else stringResource(R.string.add_reminder)) },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 500.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+    AppDialogLayout(
+        title = if (existingReminder != null) stringResource(R.string.edit_reminder) else stringResource(R.string.add_reminder),
+        icon = Icons.Default.Notifications,
+        onDismiss = onDismiss,
+        contentModifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 500.dp),
+        footer = {
+            OutlinedButton(
+                onClick = onDismiss,
+                modifier = Modifier.weight(1f)
             ) {
-                // 提醒类型选择
-                Text(stringResource(R.string.reminder_type), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    ReminderType.values().forEach { type ->
-                        FilterChip(
-                            selected = selectedType == type,
-                            onClick = { selectedType = type },
-                            label = {
-                                Text(
-                                    when (type) {
-                                        ReminderType.ONCE -> stringResource(R.string.reminder_type_once)
-                                        ReminderType.DAILY -> stringResource(R.string.reminder_type_daily)
-                                        ReminderType.MONTHLY -> stringResource(R.string.reminder_type_monthly)
-                                        ReminderType.YEARLY -> stringResource(R.string.reminder_type_yearly)
-                                    }
-                                )
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-                
-                HorizontalDivider(
-                    color = ColorHelpers.getDividerColor(),
-                    thickness = 4.dp
-                )
-                
-                // 根据类型显示不同的时间设置
-                when (selectedType) {
-                    ReminderType.ONCE -> {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // 日期选择
-                            OutlinedTextField(
-                                value = reminderTime?.let { dateFormat.format(it) } ?: "",
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text(stringResource(R.string.date_label)) },
-                                modifier = Modifier.weight(1f),
-                                trailingIcon = {
-                                    IconButton(onClick = { showDatePicker = true }) {
-                                        Icon(Icons.Default.CalendarToday, null)
-                                    }
-                                }
-                            )
-                            // 时间选择
-                            OutlinedTextField(
-                                value = reminderTime?.let { timeFormat.format(it) } ?: "",
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text(stringResource(R.string.time_label)) },
-                                modifier = Modifier.weight(1f),
-                                trailingIcon = {
-                                    IconButton(onClick = {
-                                        if (selectedDateMillis == null) {
-                                            // 如果还没选择日期，先选择日期
-                                            showDatePicker = true
-                                        } else {
-                                            currentEditingTimeField = "once"
-                                            showTimePickerDialog = true
-                                        }
-                                    }) {
-                                        Icon(Icons.Default.Schedule, null)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                    ReminderType.DAILY -> {
-                        OutlinedTextField(
-                            value = dailyTime,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text(stringResource(R.string.daily_reminder_time)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = {
-                                IconButton(onClick = {
-                                    currentEditingTimeField = "daily"
-                                    showTimePickerDialog = true
-                                }) {
-                                    Icon(Icons.Default.Schedule, null)
-                                }
-                            }
-                        )
-                    }
-                    ReminderType.MONTHLY -> {
-                        OutlinedTextField(
-                            value = monthlyDay.toString(),
-                            onValueChange = { 
-                                it.toIntOrNull()?.let { day ->
-                                    monthlyDay = day.coerceIn(1, 31)
-                                }
-                            },
-                            label = { Text(stringResource(R.string.monthly_date_hint)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = monthlyTime,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text(stringResource(R.string.reminder_time_hint)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = {
-                                IconButton(onClick = {
-                                    currentEditingTimeField = "monthly"
-                                    showTimePickerDialog = true
-                                }) {
-                                    Icon(Icons.Default.Schedule, null)
-                                }
-                            }
-                        )
-                    }
-                    ReminderType.YEARLY -> {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = yearlyMonth.toString(),
-                                onValueChange = {
-                                    it.toIntOrNull()?.let { month ->
-                                        yearlyMonth = month.coerceIn(1, 12)
-                                    }
-                                },
-                                label = { Text(stringResource(R.string.month_hint)) },
-                                modifier = Modifier.weight(1f)
-                            )
-                            OutlinedTextField(
-                                value = yearlyDay.toString(),
-                                onValueChange = {
-                                    it.toIntOrNull()?.let { day ->
-                                        yearlyDay = day.coerceIn(1, 31)
-                                    }
-                                },
-                                label = { Text(stringResource(R.string.day_hint)) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                        OutlinedTextField(
-                            value = yearlyTime,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text(stringResource(R.string.reminder_time_hint)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = {
-                                IconButton(onClick = {
-                                    currentEditingTimeField = "yearly"
-                                    showTimePickerDialog = true
-                                }) {
-                                    Icon(Icons.Default.Schedule, null)
-                                }
-                            }
-                        )
-                    }
-                }
-                
-                HorizontalDivider(
-                    color = ColorHelpers.getDividerColor(),
-                    thickness = 4.dp
-                )
-                
-                // 提醒原因
-                OutlinedTextField(
-                    value = reason,
-                    onValueChange = { reason = it },
-                    label = { Text(stringResource(R.string.reminder_reason_placeholder)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 2,
-                    maxLines = 3
-                )
+                Text(stringResource(R.string.cancel))
             }
-        },
-        confirmButton = {
-            TextButton(
+            Button(
                 onClick = {
                     val newReminder = ItemReminder(
                         id = existingReminder?.id ?: 0,
@@ -546,17 +372,188 @@ fun ReminderEditDialog(
                         updatedAt = Date()
                     )
                     onConfirm(newReminder)
-                }
+                },
+                modifier = Modifier.weight(1f)
             ) {
                 Text(stringResource(R.string.confirm_button))
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
+        }
+    ) {
+        // 提醒类型选择
+        Text(stringResource(R.string.reminder_type), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ReminderType.values().forEach { type ->
+                FilterChip(
+                    selected = selectedType == type,
+                    onClick = { selectedType = type },
+                    label = {
+                        Text(
+                            when (type) {
+                                ReminderType.ONCE -> stringResource(R.string.reminder_type_once)
+                                ReminderType.DAILY -> stringResource(R.string.reminder_type_daily)
+                                ReminderType.MONTHLY -> stringResource(R.string.reminder_type_monthly)
+                                ReminderType.YEARLY -> stringResource(R.string.reminder_type_yearly)
+                            }
+                        )
+                    },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
-    )
+
+        AppDivider(
+            color = ColorHelpers.getDividerColor(),
+            thickness = 2.dp
+        )
+
+        // 根据类型显示不同的时间设置
+        when (selectedType) {
+            ReminderType.ONCE -> {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // 日期选择
+                    OutlinedTextField(
+                        value = reminderTime?.let { dateFormat.format(it) } ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(R.string.date_label)) },
+                        modifier = Modifier.weight(1f),
+                        trailingIcon = {
+                            IconButton(onClick = { showDatePicker = true }) {
+                                Icon(Icons.Default.CalendarToday, null)
+                            }
+                        }
+                    )
+                    // 时间选择
+                    OutlinedTextField(
+                        value = reminderTime?.let { timeFormat.format(it) } ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(R.string.time_label)) },
+                        modifier = Modifier.weight(1f),
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                if (selectedDateMillis == null) {
+                                    showDatePicker = true
+                                } else {
+                                    currentEditingTimeField = "once"
+                                    showTimePickerDialog = true
+                                }
+                            }) {
+                                Icon(Icons.Default.Schedule, null)
+                            }
+                        }
+                    )
+                }
+            }
+            ReminderType.DAILY -> {
+                OutlinedTextField(
+                    value = dailyTime,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text(stringResource(R.string.daily_reminder_time)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        IconButton(onClick = {
+                            currentEditingTimeField = "daily"
+                            showTimePickerDialog = true
+                        }) {
+                            Icon(Icons.Default.Schedule, null)
+                        }
+                    }
+                )
+            }
+            ReminderType.MONTHLY -> {
+                OutlinedTextField(
+                    value = monthlyDay.toString(),
+                    onValueChange = {
+                        it.toIntOrNull()?.let { day ->
+                            monthlyDay = day.coerceIn(1, 31)
+                        }
+                    },
+                    label = { Text(stringResource(R.string.monthly_date_hint)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = monthlyTime,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text(stringResource(R.string.reminder_time_hint)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        IconButton(onClick = {
+                            currentEditingTimeField = "monthly"
+                            showTimePickerDialog = true
+                        }) {
+                            Icon(Icons.Default.Schedule, null)
+                        }
+                    }
+                )
+            }
+            ReminderType.YEARLY -> {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = yearlyMonth.toString(),
+                        onValueChange = {
+                            it.toIntOrNull()?.let { month ->
+                                yearlyMonth = month.coerceIn(1, 12)
+                            }
+                        },
+                        label = { Text(stringResource(R.string.month_hint)) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = yearlyDay.toString(),
+                        onValueChange = {
+                            it.toIntOrNull()?.let { day ->
+                                yearlyDay = day.coerceIn(1, 31)
+                            }
+                        },
+                        label = { Text(stringResource(R.string.day_hint)) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                OutlinedTextField(
+                    value = yearlyTime,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text(stringResource(R.string.reminder_time_hint)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        IconButton(onClick = {
+                            currentEditingTimeField = "yearly"
+                            showTimePickerDialog = true
+                        }) {
+                            Icon(Icons.Default.Schedule, null)
+                        }
+                    }
+                )
+            }
+        }
+
+        AppDivider(
+            color = ColorHelpers.getDividerColor(),
+            thickness = 2.dp
+        )
+
+        // 提醒原因
+        OutlinedTextField(
+            value = reason,
+            onValueChange = { reason = it },
+            label = { Text(stringResource(R.string.reminder_reason_placeholder)) },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 2,
+            maxLines = 3
+        )
+    }
     
     // 日期选择器（一次性提醒）- 使用 CardDatePickerDialog
     val selectDateTitle = stringResource(R.string.select_date)

@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.itemremindertool.billing.BillingManager
 import com.example.itemremindertool.config.FeatureFlags
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
+import com.example.itemremindertool.ui.components.AppDivider
 import android.app.Activity
 import android.content.SharedPreferences
 import androidx.compose.foundation.clickable
@@ -176,7 +177,7 @@ fun AppSettingsScreen(
         ) {
             // 程序名称
             ListItem(
-                headlineContent = { Text(stringResource(R.string.app_name_label)) },
+                headlineContent = { Text(stringResource(R.string.app_name_hint)) },
                 supportingContent = { 
                     Text(
                         text = appName,
@@ -203,9 +204,9 @@ fun AppSettingsScreen(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
             
-            HorizontalDivider(
+            AppDivider(
                 color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
+                thickness = 2.dp
             )
             
             // 自定义容器物品后缀
@@ -237,9 +238,9 @@ fun AppSettingsScreen(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
             
-            HorizontalDivider(
+            AppDivider(
                 color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
+                thickness = 2.dp
             )
             
             // 币种符号设置
@@ -266,9 +267,9 @@ fun AppSettingsScreen(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
             
-            HorizontalDivider(
+            AppDivider(
                 color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
+                thickness = 2.dp
             )
             
             // 广告横幅单元 ID
@@ -296,11 +297,7 @@ fun AppSettingsScreen(
 //                },
 //                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
 //            )
-            
-            HorizontalDivider(
-                color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
-            )
+        
             
             // 移除广告（仅在启用购买功能时显示）
             if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
@@ -388,9 +385,9 @@ fun AppSettingsScreen(
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
                 
-                HorizontalDivider(
+                AppDivider(
                     color = ColorHelpers.getDividerColor(),
-                    thickness = 4.dp
+                    thickness = 2.dp
                 )
             }
             
@@ -438,9 +435,9 @@ fun AppSettingsScreen(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
             
-            HorizontalDivider(
+            AppDivider(
                 color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
+                thickness = 2.dp
             )
             
             // 清除动态数据
@@ -707,10 +704,13 @@ fun ModernSettingsDialog(
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // 顶部标题栏 - 统一简洁样式
+                // 顶部标题栏 - 使用主题色背景
+                val headerColor = MaterialTheme.colorScheme.primary
+                val headerContentColor = MaterialTheme.colorScheme.onPrimary
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(headerColor)
                         .padding(horizontal = 20.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -722,28 +722,25 @@ fun ModernSettingsDialog(
                         Icon(
                             icon,
                             contentDescription = null,
-                            tint = ColorHelpers.getGroup4IconColor(),
+                            tint = headerContentColor,
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
                             text = title,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = ColorHelpers.getGroup4TextColor()
+                            color = headerContentColor
                         )
                     }
                     IconButton(onClick = onDismiss) {
                         Icon(
                             Icons.Default.Close,
                             contentDescription = stringResource(R.string.close),
-                            tint = ColorHelpers.getGroup4IconColor()
+                            tint = headerContentColor
                         )
                     }
                 }
-                HorizontalDivider(
-                    color = ColorHelpers.getDividerColor(),
-                    thickness = 4.dp
-                )
+                AppDivider(color = Color.Transparent, thickness = 0.dp)
                 
                 // 内容区域
                 Column(

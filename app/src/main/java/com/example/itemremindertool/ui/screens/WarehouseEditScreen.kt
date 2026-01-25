@@ -1,6 +1,7 @@
 package com.example.itemremindertool.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -343,45 +344,92 @@ fun WarehouseEditScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(
-                    onClick = { showCameraDialog = true },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = ColorHelpers.getGroup2SettingsBtnColor()
-                    )
-                ) {
-                    val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                    val iconColor = ColorHelpers.getContrastColor(backgroundColor)
-                    val textColor = ColorHelpers.getContrastColor(backgroundColor)
-                    Icon(
-                        Icons.Default.CameraAlt,
-                        contentDescription = null,
-                        tint = iconColor
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    // Text(stringResource(R.string.take_photo), color = textColor)
+                val outlineEnabled = ColorHelpers.isOutlineEnabled()
+                val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
+                val iconColor = if (outlineEnabled) backgroundColor else ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
+                if (outlineEnabled) {
+                    OutlinedButton(
+                        onClick = { showCameraDialog = true },
+                        modifier = Modifier.weight(1f),
+                        border = BorderStroke(2.dp, backgroundColor),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = backgroundColor,
+                            disabledContentColor = backgroundColor.copy(alpha = 0.5f)
+                        )
+                    ) {
+                        Icon(
+                            Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            tint = iconColor
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        // Text(stringResource(R.string.take_photo), color = backgroundColor)
+                    }
+                } else {
+                    Button(
+                        onClick = { showCameraDialog = true },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = backgroundColor
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            tint = iconColor
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        // Text(stringResource(R.string.take_photo), color = ColorHelpers.getContrastColor(backgroundColor))
+                    }
                 }
-                Button(
-                    onClick = {
-                        // 设置ActivityResult处理标记，防止密码锁屏
-                        prefs.edit().putBoolean("is_processing_activity_result", true).apply()
-                        imagePickerLauncher.launch("image/*")
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = ColorHelpers.getGroup2SettingsBtnColor()
-                    )
-                ) {
-                    val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                    val iconColor = ColorHelpers.getContrastColor(backgroundColor)
-                    val textColor = ColorHelpers.getContrastColor(backgroundColor)
-                    Icon(
-                        Icons.Default.PhotoLibrary,
-                        contentDescription = null,
-                        tint = iconColor
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    // Text(stringResource(R.string.select_image), color = textColor)
+                val galleryBackground = ColorHelpers.getGroup2SettingsBtnColor()
+                val galleryIconColor = if (outlineEnabled) galleryBackground else ColorHelpers.getGroup4IconColorByContrast(galleryBackground)
+                if (outlineEnabled) {
+                    OutlinedButton(
+                        onClick = {
+                            // 设置ActivityResult处理标记，防止密码锁屏
+                            prefs.edit().putBoolean("is_processing_activity_result", true).apply()
+                            imagePickerLauncher.launch("image/*")
+                        },
+                        modifier = Modifier.weight(1f),
+                        border = BorderStroke(2.dp, galleryBackground),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = galleryBackground,
+                            disabledContentColor = galleryBackground.copy(alpha = 0.5f)
+                        )
+                    ) {
+                        Icon(
+                            Icons.Default.PhotoLibrary,
+                            contentDescription = null,
+                            tint = galleryIconColor
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        // Text(stringResource(R.string.select_image), color = galleryBackground)
+                    }
+                } else {
+                    Button(
+                        onClick = {
+                            // 设置ActivityResult处理标记，防止密码锁屏
+                            prefs.edit().putBoolean("is_processing_activity_result", true).apply()
+                            imagePickerLauncher.launch("image/*")
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = galleryBackground
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.PhotoLibrary,
+                            contentDescription = null,
+                            tint = galleryIconColor
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        // Text(stringResource(R.string.select_image), color = ColorHelpers.getContrastColor(galleryBackground))
+                    }
                 }
             }
 

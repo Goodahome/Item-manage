@@ -19,6 +19,8 @@ import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.UIConstants
+import com.example.itemremindertool.ui.components.AppFloatingActionButton
+import com.example.itemremindertool.ui.components.AppDivider
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import com.example.itemremindertool.billing.BillingManager
@@ -94,10 +96,9 @@ fun ColorSchemeSelectionScreen(
                 modifier = Modifier.padding(bottom = UIConstants.FAB_BOTTOM_PADDING)
             ) {
                 // 使用与侧边栏风格首页一致的悬浮按钮样式
-                val fabBackground = ColorHelpers.getGroup2SettingsBtnColor()
-                val fabIconColor = ColorHelpers.getContrastColor(fabBackground)
+                val fabBackground = ColorHelpers.getGroup5FabColor()
                 
-                FloatingActionButton(
+                AppFloatingActionButton(
                     onClick = {
                         if (!canAccessPremiumFeatures) {
                             showPremiumFeatureDialog = true
@@ -106,14 +107,12 @@ fun ColorSchemeSelectionScreen(
                             onApply()
                         }
                     },
-                    containerColor = fabBackground,
-                    contentColor = fabIconColor,
+                    backgroundColor = fabBackground,
                     modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(
                         Icons.Default.Check,
-                        stringResource(R.string.apply),
-                        tint = fabIconColor
+                        stringResource(R.string.apply)
                     )
                 }
             }
@@ -167,9 +166,9 @@ fun ColorSchemeSelectionScreen(
                     }
                 )
                 if (schemeKey != colorSchemes.last().first) {
-                    HorizontalDivider(
+                    AppDivider(
                         color = ColorHelpers.getDividerColor(),
-                        thickness = 4.dp
+                        thickness = 2.dp
                     )
                 }
             }

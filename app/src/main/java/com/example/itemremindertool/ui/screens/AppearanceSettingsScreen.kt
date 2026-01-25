@@ -20,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.utils.IconManager
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.AppDivider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import com.example.itemremindertool.billing.BillingManager
@@ -62,6 +63,9 @@ fun AppearanceSettingsScreen(
             }
         )
     }
+    var sidebarIconOutline by remember {
+        mutableStateOf(prefs.getBoolean("sidebar_icon_outline", false))
+    }
     
     // 迁移旧的 "cold_blue" key 到 "red_blue"
     LaunchedEffect(Unit) {
@@ -103,6 +107,7 @@ fun AppearanceSettingsScreen(
                     selectedColorScheme = if (value == "cold_blue") "red_blue" else value
                 }
                 "sidebar_icon_circle" -> sidebarIconCircle = prefs.getBoolean("sidebar_icon_circle", false)
+                "sidebar_icon_outline" -> sidebarIconOutline = prefs.getBoolean("sidebar_icon_outline", false)
                 "premium_features", "premium_lifetime", "premium_trial_used", "premium_trial_start_time" -> {
                     canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
                 }
@@ -154,9 +159,9 @@ fun AppearanceSettingsScreen(
                 modifier = Modifier.clickable { onNavigateToTheme() }
             )
             
-            HorizontalDivider(
+            AppDivider(
                 color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
+                thickness = 2.dp
             )
             
             // 配色主题设置（自动跟随主题模式）
@@ -192,9 +197,9 @@ fun AppearanceSettingsScreen(
                 }
             )
             
-            HorizontalDivider(
+            AppDivider(
                 color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
+                thickness = 2.dp
             )
 
             ListItem(
@@ -219,9 +224,9 @@ fun AppearanceSettingsScreen(
                 }
             )
 
-            HorizontalDivider(
+            AppDivider(
                 color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
+                thickness = 2.dp
             )
             
             // 应用图标设置
@@ -247,9 +252,9 @@ fun AppearanceSettingsScreen(
                 }
             )
 
-            HorizontalDivider(
+            AppDivider(
                 color = ColorHelpers.getDividerColor(),
-                thickness = 4.dp
+                thickness = 2.dp
             )
 
             // 侧边栏容器图标形状
@@ -268,6 +273,35 @@ fun AppearanceSettingsScreen(
                         onCheckedChange = { checked ->
                             sidebarIconCircle = checked
                             prefs.edit().putBoolean("sidebar_icon_circle", checked).apply()
+                        }
+                    )
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                modifier = Modifier
+                    .fillMaxWidth()
+            )
+
+            AppDivider(
+                color = ColorHelpers.getDividerColor(),
+                thickness = 2.dp
+            )
+
+            // 容器图标镂空开关
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.sidebar_icon_outline)) },
+                supportingContent = {
+                    Text(
+                        text = stringResource(R.string.sidebar_icon_outline_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = sidebarIconOutline,
+                        onCheckedChange = { checked ->
+                            sidebarIconOutline = checked
+                            prefs.edit().putBoolean("sidebar_icon_outline", checked).apply()
                         }
                     )
                 },

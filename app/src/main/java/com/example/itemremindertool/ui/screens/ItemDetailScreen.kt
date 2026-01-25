@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +45,7 @@ import com.example.itemremindertool.data.model.ReminderType
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
+import com.example.itemremindertool.ui.components.AppDivider
 import com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.utils.CurrencyUtils
@@ -84,6 +86,7 @@ fun ItemDetailScreen(
     
     // 提醒设置弹窗状态
     var showReminderDialog by remember { mutableStateOf(false) }
+    var editingReminder by remember { mutableStateOf<ItemReminder?>(null) }
     
     // 图片查看弹窗状态
     var showImageDialog by remember { mutableStateOf(false) }
@@ -311,9 +314,9 @@ fun ItemDetailScreen(
                         )
                     }
                     
-                    HorizontalDivider(
+                    AppDivider(
                         color = ColorHelpers.getDividerColor(),
-                        thickness = 4.dp
+                        thickness = 2.dp
                     )
                     
                     // 描述
@@ -332,9 +335,9 @@ fun ItemDetailScreen(
                                 color = ColorHelpers.getGroup4TextColor()
                             )
                         }
-                        HorizontalDivider(
+                        AppDivider(
                             color = ColorHelpers.getDividerColor(),
-                            thickness = 4.dp
+                            thickness = 2.dp
                         )
                     }
                     
@@ -405,9 +408,9 @@ fun ItemDetailScreen(
                     
                     // 价格
                     if (item.price != null) {
-                        HorizontalDivider(
+                        AppDivider(
                             color = ColorHelpers.getDividerColor(),
-                            thickness = 4.dp
+                            thickness = 2.dp
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -430,9 +433,9 @@ fun ItemDetailScreen(
                     
                     // 条码
                     if (item.barcode != null && item.barcode.isNotBlank()) {
-                        HorizontalDivider(
+                        AppDivider(
                             color = ColorHelpers.getDividerColor(),
-                            thickness = 4.dp
+                            thickness = 2.dp
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -466,9 +469,9 @@ fun ItemDetailScreen(
                     
                     // 到期日期
                     if (item.expiryDate != null) {
-                        HorizontalDivider(
+                        AppDivider(
                             color = ColorHelpers.getDividerColor(),
-                            thickness = 4.dp
+                            thickness = 2.dp
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -519,9 +522,10 @@ fun ItemDetailScreen(
                         item.tags
                     }
                     if (allTagsToShow.isNotEmpty()) {
-                        HorizontalDivider(
+                        val outlineEnabled = ColorHelpers.isOutlineEnabled()
+                        AppDivider(
                             color = ColorHelpers.getDividerColor(),
-                            thickness = 4.dp
+                            thickness = 2.dp
                         )
                         val pageBgColor = ColorHelpers.getGroup2PageBgColor()
                         Column(
@@ -549,20 +553,25 @@ fun ItemDetailScreen(
                                     } else {
                                         tag
                                     }
-                                    val borderColor = ColorHelpers.getGroup4TextColor(0.3f)
+                                    val borderColor = if (outlineEnabled) {
+                                        tagBgColor
+                                    } else {
+                                        ColorHelpers.getGroup4TextColor(0.3f)
+                                    }
+                                    val borderWidth = if (outlineEnabled) 2.dp else 1.dp
                                     Surface(
                                         shape = RoundedCornerShape(16.dp),
-                                        color = tagBgColor,
+                                        color = if (outlineEnabled) Color.Transparent else tagBgColor,
                                         modifier = Modifier.padding(vertical = 4.dp),
-                                        border = BorderStroke(1.dp, borderColor)
+                                        border = BorderStroke(borderWidth, borderColor)
                                     ) {
                                         Text(
                                             text = displayTag,
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = if (isExpiredTag) {
-                                                androidx.compose.ui.graphics.Color.White
-                                            } else {
-                                                ColorHelpers.getGroup4TextColorByContrast(tagBgColor)
+                                            color = when {
+                                                outlineEnabled -> tagBgColor
+                                                isExpiredTag -> androidx.compose.ui.graphics.Color.White
+                                                else -> ColorHelpers.getGroup4TextColorByContrast(tagBgColor)
                                             },
                                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                             maxLines = 1, // 标签内的文字不换行
@@ -575,9 +584,9 @@ fun ItemDetailScreen(
                     }
                     
                     // 创建时间
-                    HorizontalDivider(
+                    AppDivider(
                         color = ColorHelpers.getDividerColor(),
-                        thickness = 4.dp
+                        thickness = 2.dp
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -647,9 +656,9 @@ fun ItemDetailScreen(
                         }
                     }
                     
-                    HorizontalDivider(
+                    AppDivider(
                         color = ColorHelpers.getDividerColor(),
-                        thickness = 4.dp
+                        thickness = 2.dp
                     )
                     
                     if (reminders.isEmpty()) {
@@ -678,7 +687,15 @@ fun ItemDetailScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             reminders.forEach { reminder ->
-                                ReminderItemCard(reminder = reminder)
+                                ReminderItemCard(
+                                    reminder = reminder,
+                                    onToggleEnabled = {
+                                        reminderViewModel.updateReminder(
+                                            reminder.copy(isEnabled = !reminder.isEnabled, updatedAt = Date())
+                                        )
+                                    },
+                                    onEdit = { editingReminder = reminder }
+                                )
                             }
                         }
                     }
@@ -687,7 +704,7 @@ fun ItemDetailScreen(
         }
     }
     
-    // 提醒设置弹窗
+    // 提醒设置弹窗（新增）
     if (showReminderDialog) {
         ModernReminderDialog(
             item = item,
@@ -696,6 +713,17 @@ fun ItemDetailScreen(
             onSuccess = {
                 showReminderDialog = false
             }
+        )
+    }
+
+    // 提醒设置弹窗（编辑）
+    if (editingReminder != null) {
+        ModernReminderDialog(
+            item = item,
+            reminderViewModel = reminderViewModel,
+            existingReminder = editingReminder,
+            onDismiss = { editingReminder = null },
+            onSuccess = { editingReminder = null }
         )
     }
     
@@ -750,6 +778,8 @@ fun ItemDetailScreen(
 @Composable
 fun ReminderItemCard(
     reminder: ItemReminder,
+    onToggleEnabled: () -> Unit,
+    onEdit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dateFormat = remember { 
@@ -757,7 +787,9 @@ fun ReminderItemCard(
     }
     
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onEdit() },
         shape = RoundedCornerShape(8.dp),
         color = ColorHelpers.getGroup2PageBgColor(),
         border = BorderStroke(1.dp, ColorHelpers.getGroup4IconColor(0.2f))
@@ -802,24 +834,33 @@ fun ReminderItemCard(
                     )
                 }
                 
-                // 启用状态
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (reminder.isEnabled) {
-                        ColorHelpers.getGroup2SettingsBtnColor()
-                    } else {
-                        ColorHelpers.getGroup4IconColor(0.1f)
-                    }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = if (reminder.isEnabled) stringResource(R.string.reminder_enabled) else stringResource(R.string.reminder_disabled),
-                        style = MaterialTheme.typography.labelSmall,
+                    // 启用状态
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
                         color = if (reminder.isEnabled) {
-                            ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor())
+                            ColorHelpers.getGroup2SettingsBtnColor()
                         } else {
-                            ColorHelpers.getGroup4TextColor(0.6f)
-                        },
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            ColorHelpers.getGroup4IconColor(0.1f)
+                        }
+                    ) {
+                        Text(
+                            text = if (reminder.isEnabled) stringResource(R.string.reminder_enabled) else stringResource(R.string.reminder_disabled),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (reminder.isEnabled) {
+                                ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor())
+                            } else {
+                                ColorHelpers.getGroup4TextColor(0.6f)
+                            },
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                    Switch(
+                        checked = reminder.isEnabled,
+                        onCheckedChange = { onToggleEnabled() }
                     )
                 }
             }
@@ -925,10 +966,13 @@ fun ModernReminderDialog(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // 顶部标题栏 - 统一简洁样式
+                // 顶部标题栏 - 使用主题色背景
+                val headerColor = MaterialTheme.colorScheme.primary
+                val headerContentColor = MaterialTheme.colorScheme.onPrimary
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(headerColor)
                         .padding(horizontal = 20.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -940,28 +984,25 @@ fun ModernReminderDialog(
                         Icon(
                             Icons.Default.Notifications,
                             contentDescription = null,
-                            tint = ColorHelpers.getGroup4IconColor(),
+                            tint = headerContentColor,
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
                             text = if (existingReminder != null) stringResource(R.string.edit_reminder) else stringResource(R.string.add_reminder),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = ColorHelpers.getGroup4TextColor()
+                            color = headerContentColor
                         )
                     }
                     IconButton(onClick = onDismiss) {
                         Icon(
                             Icons.Default.Close,
                             contentDescription = stringResource(R.string.close),
-                            tint = ColorHelpers.getGroup4IconColor()
+                            tint = headerContentColor
                         )
                     }
                 }
-                HorizontalDivider(
-                    color = ColorHelpers.getDividerColor(),
-                    thickness = 4.dp
-                )
+                AppDivider(color = Color.Transparent, thickness = 0.dp)
                 
                 // 内容区域（可滚动）
                 Column(
@@ -1219,80 +1260,74 @@ fun ModernReminderDialog(
                     }
                 }
                 
-                // 底部按钮区域 - 固定在底部
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = ColorHelpers.getGroup3CardBgColor(),
-                    tonalElevation = 4.dp
+                // 底部按钮区域 - 透明背景
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Row(
+                    OutlinedButton(
+                        onClick = onDismiss,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = ColorHelpers.getGroup4TextColor()
+                        ),
+                        border = BorderStroke(1.5.dp, ColorHelpers.getGroup4TextColor(0.3f))
                     ) {
-                        OutlinedButton(
-                            onClick = onDismiss,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = ColorHelpers.getGroup4TextColor()
-                            ),
-                            border = BorderStroke(1.5.dp, ColorHelpers.getGroup4TextColor(0.3f))
-                        ) {
-                            Text(stringResource(R.string.cancel), fontSize = 15.sp, fontWeight = FontWeight.Medium)
-                        }
-                        Button(
-                            onClick = {
-                                if (!canAccessPremiumFeatures && selectedType != ReminderType.ONCE) {
-                                    showPremiumFeatureDialog = true
-                                    return@Button
-                                }
-                                val reminder = ItemReminder(
-                                    id = existingReminder?.id ?: 0,
-                                    itemId = item.id,
-                                    reminderType = selectedType,
-                                    reminderTime = if (selectedType == ReminderType.ONCE) reminderTime else null,
-                                    dailyTime = if (selectedType == ReminderType.DAILY) dailyTime else null,
-                                    monthlyDay = if (selectedType == ReminderType.MONTHLY) monthlyDay else null,
-                                    monthlyTime = if (selectedType == ReminderType.MONTHLY) monthlyTime else null,
-                                    yearlyMonth = if (selectedType == ReminderType.YEARLY) yearlyMonth else null,
-                                    yearlyDay = if (selectedType == ReminderType.YEARLY) yearlyDay else null,
-                                    yearlyTime = if (selectedType == ReminderType.YEARLY) yearlyTime else null,
-                                    reason = reason,
-                                    isEnabled = existingReminder?.isEnabled ?: true,
-                                    createdAt = existingReminder?.createdAt ?: Date(),
-                                    updatedAt = Date()
-                                )
-                                if (existingReminder != null) {
-                                    reminderViewModel.updateReminder(reminder)
-                                } else {
-                                    reminderViewModel.insertReminder(reminder)
-                                }
-                                onSuccess()
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            ),
-                            elevation = ButtonDefaults.buttonElevation(
-                                defaultElevation = 2.dp,
-                                pressedElevation = 4.dp
+                        Text(stringResource(R.string.cancel), fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                    }
+                    Button(
+                        onClick = {
+                            if (!canAccessPremiumFeatures && selectedType != ReminderType.ONCE) {
+                                showPremiumFeatureDialog = true
+                                return@Button
+                            }
+                            val reminder = ItemReminder(
+                                id = existingReminder?.id ?: 0,
+                                itemId = item.id,
+                                reminderType = selectedType,
+                                reminderTime = if (selectedType == ReminderType.ONCE) reminderTime else null,
+                                dailyTime = if (selectedType == ReminderType.DAILY) dailyTime else null,
+                                monthlyDay = if (selectedType == ReminderType.MONTHLY) monthlyDay else null,
+                                monthlyTime = if (selectedType == ReminderType.MONTHLY) monthlyTime else null,
+                                yearlyMonth = if (selectedType == ReminderType.YEARLY) yearlyMonth else null,
+                                yearlyDay = if (selectedType == ReminderType.YEARLY) yearlyDay else null,
+                                yearlyTime = if (selectedType == ReminderType.YEARLY) yearlyTime else null,
+                                reason = reason,
+                                isEnabled = existingReminder?.isEnabled ?: true,
+                                createdAt = existingReminder?.createdAt ?: Date(),
+                                updatedAt = Date()
                             )
-                        ) {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.confirm_button), fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                        }
+                            if (existingReminder != null) {
+                                reminderViewModel.updateReminder(reminder)
+                            } else {
+                                reminderViewModel.insertReminder(reminder)
+                            }
+                            onSuccess()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 2.dp,
+                            pressedElevation = 4.dp
+                        )
+                    ) {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.confirm_button), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

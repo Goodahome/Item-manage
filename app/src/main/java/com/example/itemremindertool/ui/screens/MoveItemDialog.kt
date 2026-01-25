@@ -15,6 +15,8 @@ import com.example.itemremindertool.data.model.Warehouse
 import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
+import com.example.itemremindertool.ui.components.AppDialogLayout
+import com.example.itemremindertool.ui.theme.ColorHelpers
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,34 +30,87 @@ fun MoveItemDialog(
     val warehouses by warehouseViewModel.warehouses.collectAsState(initial = emptyList())
     var selectedWarehouseId by remember { mutableStateOf<Long?>(null) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = stringResource(R.string.move_to_container),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+    AppDialogLayout(
+        title = stringResource(R.string.move_to_container),
+        icon = Icons.Default.DriveFileMove,
+        onDismiss = onDismiss,
+        contentModifier = Modifier.heightIn(max = 420.dp),
+        footer = {
+            OutlinedButton(
+                onClick = onDismiss,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.cancel))
+            }
+            Button(
+                onClick = {
+                    onConfirm(selectedWarehouseId)
+                    onDismiss()
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.confirm))
+            }
+        }
+    ) {
+        Text(
+            text = stringResource(R.string.select_target_container),
+            style = MaterialTheme.typography.bodyMedium,
+            color = ColorHelpers.getGroup4TextColor(),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        // 无容器选项
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { selectedWarehouseId = null },
+            colors = CardDefaults.cardColors(
+                containerColor = if (selectedWarehouseId == null) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surface
+                }
             )
-        },
-        text = {
-            Column(
+        ) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 400.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.select_target_container),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                Icon(
+                    Icons.Default.Block,
+                    contentDescription = null,
+                    tint = if (selectedWarehouseId == null) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
                 )
-                
-                // 无容器选项
+                Text(
+                    text = stringResource(R.string.no_warehouse_option),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (selectedWarehouseId == null) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+            }
+        }
+
+        // 容器列表
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(warehouses.filter { it.id != currentWarehouseId }, key = { it.id }) { warehouse ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = { selectedWarehouseId = null },
+                    onClick = { selectedWarehouseId = warehouse.id },
                     colors = CardDefaults.cardColors(
-                        containerColor = if (selectedWarehouseId == null) {
+                        containerColor = if (selectedWarehouseId == warehouse.id) {
                             MaterialTheme.colorScheme.primaryContainer
                         } else {
                             MaterialTheme.colorScheme.surface
@@ -70,103 +125,41 @@ fun MoveItemDialog(
                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                     ) {
                         Icon(
-                            Icons.Default.Block,
+                            Icons.Default.Inventory2,
                             contentDescription = null,
-                            tint = if (selectedWarehouseId == null) {
+                            tint = if (selectedWarehouseId == warehouse.id) {
                                 MaterialTheme.colorScheme.onPrimaryContainer
                             } else {
                                 MaterialTheme.colorScheme.onSurface
                             }
                         )
-                        Text(
-                            text = stringResource(R.string.no_warehouse_option),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (selectedWarehouseId == null) {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            }
-                        )
-                    }
-                }
-                
-                // 容器列表
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(warehouses.filter { it.id != currentWarehouseId }, key = { it.id }) { warehouse ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = { selectedWarehouseId = warehouse.id },
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (selectedWarehouseId == warehouse.id) {
-                                    MaterialTheme.colorScheme.primaryContainer
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = warehouse.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                                color = if (selectedWarehouseId == warehouse.id) {
+                                    MaterialTheme.colorScheme.onPrimaryContainer
                                 } else {
-                                    MaterialTheme.colorScheme.surface
+                                    MaterialTheme.colorScheme.onSurface
                                 }
                             )
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.Inventory2,
-                                    contentDescription = null,
-                                    tint = if (selectedWarehouseId == warehouse.id) {
-                                        MaterialTheme.colorScheme.onPrimaryContainer
+                            if (warehouse.description.isNotEmpty()) {
+                                Text(
+                                    text = warehouse.description,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (selectedWarehouseId == warehouse.id) {
+                                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                                     } else {
-                                        MaterialTheme.colorScheme.onSurface
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                     }
                                 )
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = warehouse.name,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Medium,
-                                        color = if (selectedWarehouseId == warehouse.id) {
-                                            MaterialTheme.colorScheme.onPrimaryContainer
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurface
-                                        }
-                                    )
-                                    if (warehouse.description.isNotEmpty()) {
-                                        Text(
-                                            text = warehouse.description,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = if (selectedWarehouseId == warehouse.id) {
-                                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                            }
-                                        )
-                                    }
-                                }
                             }
                         }
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onConfirm(selectedWarehouseId)
-                    onDismiss()
-                }
-            ) {
-                Text(stringResource(R.string.confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
         }
-    )
+    }
 }
 

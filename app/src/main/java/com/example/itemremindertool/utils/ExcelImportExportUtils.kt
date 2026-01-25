@@ -1,6 +1,7 @@
 package com.example.itemremindertool.utils
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
@@ -70,6 +71,112 @@ object ExcelImportExportUtils {
             stockAlert = context.getString(R.string.excel_header_stock_alert),
             image = context.getString(R.string.excel_header_image)
         )
+    }
+
+    private fun getHeaderLabelsForLocale(context: Context, locale: Locale): ExcelHeaderLabels {
+        val config = Configuration(context.resources.configuration)
+        config.setLocale(locale)
+        val localizedContext = context.createConfigurationContext(config)
+        return getHeaderLabels(localizedContext)
+    }
+
+    private fun normalizeHeader(value: String): String {
+        return value.trim().lowercase(Locale.ROOT)
+    }
+
+    private data class ExcelHeaderAliases(
+        val name: Set<String>,
+        val description: Set<String>,
+        val quantity: Set<String>,
+        val price: Set<String>,
+        val barcode: Set<String>,
+        val tags: Set<String>,
+        val warehouseRequired: Set<String>,
+        val warehouse: Set<String>,
+        val expiryDate: Set<String>,
+        val stockAlert: Set<String>,
+        val image: Set<String>
+    )
+
+    private fun getHeaderAliases(context: Context): ExcelHeaderAliases {
+        val locales = listOf(
+            Locale.SIMPLIFIED_CHINESE,
+            Locale.ENGLISH,
+            Locale.GERMAN,
+            Locale.FRENCH,
+            Locale.getDefault()
+        ).distinctBy { it.toLanguageTag() }
+
+        val name = mutableSetOf<String>()
+        val description = mutableSetOf<String>()
+        val quantity = mutableSetOf<String>()
+        val price = mutableSetOf<String>()
+        val barcode = mutableSetOf<String>()
+        val tags = mutableSetOf<String>()
+        val warehouseRequired = mutableSetOf<String>()
+        val warehouse = mutableSetOf<String>()
+        val expiryDate = mutableSetOf<String>()
+        val stockAlert = mutableSetOf<String>()
+        val image = mutableSetOf<String>()
+
+        locales.forEach { locale ->
+            val labels = getHeaderLabelsForLocale(context, locale)
+            name.add(normalizeHeader(labels.name))
+            description.add(normalizeHeader(labels.description))
+            quantity.add(normalizeHeader(labels.quantity))
+            price.add(normalizeHeader(labels.price))
+            barcode.add(normalizeHeader(labels.barcode))
+            tags.add(normalizeHeader(labels.tags))
+            warehouseRequired.add(normalizeHeader(labels.warehouseRequired))
+            warehouse.add(normalizeHeader(labels.warehouse))
+            expiryDate.add(normalizeHeader(labels.expiryDate))
+            stockAlert.add(normalizeHeader(labels.stockAlert))
+            image.add(normalizeHeader(labels.image))
+        }
+
+        return ExcelHeaderAliases(
+            name = name,
+            description = description,
+            quantity = quantity,
+            price = price,
+            barcode = barcode,
+            tags = tags,
+            warehouseRequired = warehouseRequired,
+            warehouse = warehouse,
+            expiryDate = expiryDate,
+            stockAlert = stockAlert,
+            image = image
+        )
+    }
+
+    private fun resolveHeaderIndex(
+        headerIndexMap: Map<String, Int>,
+        aliases: Set<String>,
+        fallback: Int
+    ): Int {
+        aliases.forEach { alias ->
+            headerIndexMap[alias]?.let { return it }
+        }
+        return fallback
+    }
+
+    private fun getYesAliases(context: Context): Set<String> {
+        val locales = listOf(
+            Locale.SIMPLIFIED_CHINESE,
+            Locale.ENGLISH,
+            Locale.GERMAN,
+            Locale.FRENCH,
+            Locale.getDefault()
+        ).distinctBy { it.toLanguageTag() }
+
+        val result = mutableSetOf<String>()
+        locales.forEach { locale ->
+            val config = Configuration(context.resources.configuration)
+            config.setLocale(locale)
+            val localizedContext = context.createConfigurationContext(config)
+            result.add(localizedContext.getString(R.string.yes).trim())
+        }
+        return result
     }
 
     private fun buildHeaders(labels: ExcelHeaderLabels): List<String> {
@@ -176,14 +283,24 @@ object ExcelImportExportUtils {
                 val headerRow = sheet.getRow(0)
                     ?: return@withContext Result.failure(IllegalStateException(context.getString(R.string.excel_header_missing)))
 
-                val labels = getHeaderLabels(context)
-
                 val headerIndexMap = mutableMapOf<String, Int>()
                 for (cell in headerRow) {
-                    headerIndexMap[getCellString(cell)] = cell.columnIndex
+                    headerIndexMap[normalizeHeader(getCellString(cell))] = cell.columnIndex
                 }
 
-                val imageColumn = headerIndexMap[labels.image] ?: IMAGE_COLUMN_INDEX
+                val headerAliases = getHeaderAliases(context)
+
+                val nameIndex = resolveHeaderIndex(headerIndexMap, headerAliases.name, 0)
+                val descriptionIndex = resolveHeaderIndex(headerIndexMap, headerAliases.description, 1)
+                val quantityIndex = resolveHeaderIndex(headerIndexMap, headerAliases.quantity, 2)
+                val priceIndex = resolveHeaderIndex(headerIndexMap, headerAliases.price, 3)
+                val barcodeIndex = resolveHeaderIndex(headerIndexMap, headerAliases.barcode, 4)
+                val tagsIndex = resolveHeaderIndex(headerIndexMap, headerAliases.tags, 5)
+                val warehouseRequiredIndex = resolveHeaderIndex(headerIndexMap, headerAliases.warehouseRequired, -1)
+                val warehouseIndex = resolveHeaderIndex(headerIndexMap, headerAliases.warehouse, -1)
+                val expiryDateIndex = resolveHeaderIndex(headerIndexMap, headerAliases.expiryDate, 7)
+                val stockAlertIndex = resolveHeaderIndex(headerIndexMap, headerAliases.stockAlert, 8)
+                val imageColumn = resolveHeaderIndex(headerIndexMap, headerAliases.image, IMAGE_COLUMN_INDEX)
                 val picturesByRow = extractPicturesByRow(sheet, imageColumn)
 
                 val database = AppDatabase.getDatabase(context)
@@ -208,17 +325,17 @@ object ExcelImportExportUtils {
 
                 for (rowIndex in 1..sheet.lastRowNum) {
                     val row = sheet.getRow(rowIndex) ?: continue
-                    val name = getCellString(row.getCell(headerIndexMap[labels.name] ?: 0)).trim()
+                    val name = getCellString(row.getCell(nameIndex)).trim()
                     if (name.isBlank()) {
                         skipped++
                         continue
                     }
 
-                    val description = getCellString(row.getCell(headerIndexMap[labels.description] ?: 1))
-                    val quantity = getCellInt(row.getCell(headerIndexMap[labels.quantity] ?: 2), 1)
-                    val price = getCellDouble(row.getCell(headerIndexMap[labels.price] ?: 3))
-                    val barcode = getCellString(row.getCell(headerIndexMap[labels.barcode] ?: 4)).ifBlank { null }
-                    val tagsText = getCellString(row.getCell(headerIndexMap[labels.tags] ?: 5))
+                    val description = getCellString(row.getCell(descriptionIndex))
+                    val quantity = getCellInt(row.getCell(quantityIndex), 1)
+                    val price = getCellDouble(row.getCell(priceIndex))
+                    val barcode = getCellString(row.getCell(barcodeIndex)).ifBlank { null }
+                    val tagsText = getCellString(row.getCell(tagsIndex))
                     val tags = tagsText.split(",")
                         .map { it.trim() }
                         .filter { it.isNotBlank() }
@@ -227,9 +344,13 @@ object ExcelImportExportUtils {
 
                     val warehouseName = getCellString(
                         row.getCell(
-                            headerIndexMap[labels.warehouseRequired]
-                                ?: headerIndexMap[labels.warehouse]
-                                ?: 6
+                            if (warehouseRequiredIndex >= 0) {
+                                warehouseRequiredIndex
+                            } else if (warehouseIndex >= 0) {
+                                warehouseIndex
+                            } else {
+                                6
+                            }
                         )
                     ).trim()
                     if (warehouseName.isBlank()) {
@@ -241,10 +362,10 @@ object ExcelImportExportUtils {
                             existingWarehouses[warehouseName] = Warehouse(id = newId, name = warehouseName)
                         }
 
-                    val expiryDate = getCellDate(row.getCell(headerIndexMap[labels.expiryDate] ?: 7))
-                    val yesValues = setOf(context.getString(R.string.yes))
+                    val expiryDate = getCellDate(row.getCell(expiryDateIndex))
+                    val yesValues = getYesAliases(context)
                     val enableStockAlert = parseBooleanCell(
-                        row.getCell(headerIndexMap[labels.stockAlert] ?: 8),
+                        row.getCell(stockAlertIndex),
                         yesValues
                     )
 

@@ -44,6 +44,7 @@ import com.example.itemremindertool.ui.screens.SettingsScreen
 import com.example.itemremindertool.notification.NotificationScheduler
 import com.example.itemremindertool.ui.theme.ItemReminderToolTheme
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.ui.components.AppDivider
 import com.example.itemremindertool.ui.viewmodel.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.itemremindertool.utils.AppConfigManager
@@ -391,9 +392,9 @@ fun ItemReminderToolApp(
                             modifier = Modifier.padding(start = 8.dp)
                         )
                     }
-                    HorizontalDivider(
+                    AppDivider(
                         color = ColorHelpers.getDividerColor(),
-                        thickness = 4.dp
+                        thickness = 2.dp
                     )
                     NavigationDrawerItem(
                         icon = { Icon(Screen.Tags.icon, null) },

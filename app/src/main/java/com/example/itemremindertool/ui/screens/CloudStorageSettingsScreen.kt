@@ -21,6 +21,7 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.AppDivider
 import androidx.compose.foundation.background
 import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
@@ -254,9 +255,9 @@ fun CloudStorageSettingsScreen(
                         }
                     }
                     
-                    HorizontalDivider(
+                    AppDivider(
                         color = ColorHelpers.getDividerColor(),
-                        thickness = 4.dp
+                        thickness = 2.dp
                     )
 
                     val selectedProvider = CloudProviderRegistry.getProvider(selectedProviderId)
@@ -314,9 +315,9 @@ fun CloudStorageSettingsScreen(
                         )
                     }
 
-                    HorizontalDivider(
+                    AppDivider(
                         color = ColorHelpers.getDividerColor(),
-                        thickness = 4.dp
+                        thickness = 2.dp
                     )
 
                     when (selectedProviderId) {
@@ -626,9 +627,9 @@ fun CloudStorageSettingsScreen(
                                 }
                             }
 
-                            HorizontalDivider(
+                            AppDivider(
                                 color = ColorHelpers.getDividerColor(),
-                                thickness = 4.dp
+                                thickness = 2.dp
                             )
 
                             Button(

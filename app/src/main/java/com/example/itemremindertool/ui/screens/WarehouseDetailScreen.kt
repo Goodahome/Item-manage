@@ -29,6 +29,8 @@ import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
 import com.example.itemremindertool.ui.components.WarehouseQRCodeDialog
 import com.example.itemremindertool.ui.components.UIConstants
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.AppFloatingActionButton
+import com.example.itemremindertool.ui.components.AppDialogLayout
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.R
@@ -221,7 +223,7 @@ fun WarehouseDetailScreen(
             ) {
                 if (fabExpanded) {
                     // 添加物品按钮（最上方）
-                    FloatingActionButton(
+                    AppFloatingActionButton(
                         onClick = {
                             if (isCapacityFull) {
                                 android.widget.Toast.makeText(
@@ -234,14 +236,12 @@ fun WarehouseDetailScreen(
                                 onAddItem(warehouseId)
                             }
                         },
-                        containerColor = ColorHelpers.getGroup2SettingsBtnColor(),
-                        contentColor = ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor()),
+                        backgroundColor = ColorHelpers.getGroup5FabColor(),
                         modifier = Modifier.size(UIConstants.FAB_SIZE)
                     ) {
                         Icon(
                             Icons.Default.Category,
-                            stringResource(R.string.add_item),
-                            tint = ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor())
+                            stringResource(R.string.add_item)
                         )
                     }
                     
@@ -253,36 +253,32 @@ fun WarehouseDetailScreen(
                     val unlimitedContainers = prefs.getBoolean("unlimited_containers", false) && canAccessPremiumFeatures
                     
                     if (unlimitedContainers || currentDepth < 5) {
-                        FloatingActionButton(
+                        AppFloatingActionButton(
                             onClick = {
                                 fabExpanded = false
                                 onAddChildWarehouse(warehouseId)
                             },
-                            containerColor = ColorHelpers.getGroup2SettingsBtnColor(),
-                            contentColor = ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor()),
+                            backgroundColor = ColorHelpers.getGroup5FabColor(),
                             modifier = Modifier.size(UIConstants.FAB_SIZE)
                         ) {
                             Icon(
                                 Icons.Default.Inventory2,
-                                stringResource(R.string.add_warehouse),
-                                tint = ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor())
+                                stringResource(R.string.add_warehouse)
                             )
                         }
                     }
                 }
                 
                 // 主 FAB 按钮（最下方）
-                FloatingActionButton(
+                AppFloatingActionButton(
                     onClick = { fabExpanded = !fabExpanded },
-                    containerColor = ColorHelpers.getGroup2SettingsBtnColor(),
-                    contentColor = ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor()),
+                    backgroundColor = ColorHelpers.getGroup5FabColor(),
                     modifier = Modifier.size(UIConstants.FAB_SIZE)
                 ) {
                     Icon(
                         Icons.Default.Add,
                         contentDescription = if (fabExpanded) stringResource(R.string.close) else stringResource(R.string.add),
-                        modifier = Modifier.rotate(rotationAngle),
-                        tint = ColorHelpers.getContrastColor(ColorHelpers.getGroup2SettingsBtnColor())
+                        modifier = Modifier.rotate(rotationAngle)
                     )
                 }
             }
@@ -314,28 +310,38 @@ fun WarehouseDetailScreen(
     
     // 删除确认对话框
     if (showDeleteDialog && warehouse != null) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(R.string.delete_warehouse_title)) },
-            text = { 
-                Text(stringResource(R.string.delete_warehouse_confirm, warehouse.name))
-            },
-            confirmButton = {
-                TextButton(
+        AppDialogLayout(
+            title = stringResource(R.string.delete_warehouse_title),
+            icon = Icons.Default.Delete,
+            onDismiss = { showDeleteDialog = false },
+            footer = {
+                OutlinedButton(
+                    onClick = { showDeleteDialog = false },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+                Button(
                     onClick = {
                         showDeleteDialog = false
                         onDeleteWarehouse(warehouse)
-                    }
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
                 ) {
                     Text(stringResource(R.string.delete))
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
             }
-        )
+        ) {
+            Text(
+                text = stringResource(R.string.delete_warehouse_confirm, warehouse.name),
+                style = MaterialTheme.typography.bodyMedium,
+                color = ColorHelpers.getGroup4TextColor()
+            )
+        }
     }
 }
 

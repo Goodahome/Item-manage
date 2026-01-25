@@ -57,7 +57,7 @@ fun GradientTopAppBar(
     }
     
     // 根据背景颜色和对比度判断，返回对应的文字/图标颜色
-    val contrastColor = ColorHelpers.getGroup4TextColorByContrast(gradientStartColor)
+    val contrastColor = ColorHelpers.getTopBarTextColor(gradientStartColor)
     
     Box(
         modifier = modifier

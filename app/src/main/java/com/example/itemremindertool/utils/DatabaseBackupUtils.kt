@@ -11,6 +11,7 @@ import android.util.Log
 import com.example.itemremindertool.data.TagManager
 import com.example.itemremindertool.data.database.AppDatabase
 import android.database.sqlite.SQLiteDatabase
+import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.*
@@ -21,6 +22,7 @@ object DatabaseBackupUtils {
     private const val TAG = "DatabaseBackupUtils"
     private const val DATABASE_NAME = "item_reminder_database"
     private const val BACKUP_DIR = "ItemReminderBackups"
+    private const val PREFS_BACKUP_PATH = "prefs/custom_colors.json"
     
     /**
      * 获取数据库文件的路径
@@ -97,9 +99,17 @@ object DatabaseBackupUtils {
             val backupFileName = "item_reminder_backup_$timestamp.zip"
             val backupFile = File(backupDir, backupFileName)
             
-            // 将数据库文件和图片文件压缩为 zip（数据库连接保持打开状态）
+            // 将数据库文件、图片文件和自定义配色配置压缩为 zip
             // WAL 模式允许在数据库打开时安全地复制文件
-            ZipUtils.zipFilesWithImages(databaseFiles, imageFiles, backupFile, context)
+            val prefsBackupFile = File(context.cacheDir, "custom_colors_prefs.json")
+            writeCustomColorPrefs(context, prefsBackupFile)
+            val extraEntries = if (prefsBackupFile.exists()) {
+                mapOf(prefsBackupFile to PREFS_BACKUP_PATH)
+            } else {
+                emptyMap()
+            }
+            ZipUtils.zipFilesWithImages(databaseFiles, imageFiles, backupFile, context, extraEntries)
+            prefsBackupFile.delete()
             
             Log.d(TAG, "数据库和图片备份成功: ${backupFile.absolutePath}, 大小: ${backupFile.length()} bytes (数据库连接保持打开，不影响其他操作)")
             Result.success(backupFile)
@@ -318,6 +328,8 @@ object DatabaseBackupUtils {
             
             // 恢复图片文件
             restoreImageFiles(context, tempDir)
+            // 恢复自定义配色配置
+            restoreCustomColorPrefs(context, tempDir)
             
             // 确保 Room 的内部表存在（room_table_modification_log），避免 InvalidationTracker 崩溃
             try {
@@ -375,6 +387,47 @@ object DatabaseBackupUtils {
             Log.d(TAG, "同步 TagManager 标签成功：${tags.size} 个")
         } catch (e: Exception) {
             Log.w(TAG, "同步 TagManager 标签失败", e)
+        }
+    }
+
+    private fun writeCustomColorPrefs(context: Context, outputFile: File) {
+        try {
+            val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+            val keysToSync = prefs.all.keys.filter { key ->
+                key.startsWith("custom_color_") ||
+                    key == "color_scheme" ||
+                    key == "color_scheme_prev" ||
+                    key == "custom_color_selected" ||
+                    key == "custom_color_schemes"
+            }
+            val json = JSONObject()
+            keysToSync.forEach { key ->
+                val value = prefs.all[key]?.toString() ?: return@forEach
+                json.put(key, value)
+            }
+            outputFile.parentFile?.mkdirs()
+            outputFile.writeText(json.toString())
+        } catch (e: Exception) {
+            Log.w(TAG, "写入自定义配色配置失败，继续备份", e)
+        }
+    }
+
+    private fun restoreCustomColorPrefs(context: Context, tempDir: File) {
+        try {
+            val prefsFile = File(tempDir, PREFS_BACKUP_PATH)
+            if (!prefsFile.exists()) return
+            val json = JSONObject(prefsFile.readText())
+            val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+            val editor = prefs.edit()
+            val keys = json.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                editor.putString(key, json.optString(key, ""))
+            }
+            editor.apply()
+            Log.d(TAG, "恢复自定义配色配置成功")
+        } catch (e: Exception) {
+            Log.w(TAG, "恢复自定义配色配置失败", e)
         }
     }
     
@@ -560,7 +613,8 @@ object ZipUtils {
         databaseFiles: List<File>,
         imageFiles: List<File>,
         zipFile: File,
-        context: Context
+        context: Context,
+        extraEntries: Map<File, String> = emptyMap()
     ) {
         FileOutputStream(zipFile).use { fos ->
             java.util.zip.ZipOutputStream(BufferedOutputStream(fos)).use { zos ->
@@ -601,6 +655,22 @@ object ZipUtils {
                             }
                         } catch (e: Exception) {
                             android.util.Log.e("ZipUtils", "压缩图片文件失败: ${file.absolutePath}", e)
+                        }
+                    }
+                }
+
+                // 压缩额外配置文件（使用指定路径）
+                extraEntries.forEach { (file, entryPath) ->
+                    if (file.exists()) {
+                        try {
+                            FileInputStream(file).use { fis ->
+                                val entry = java.util.zip.ZipEntry(entryPath)
+                                zos.putNextEntry(entry)
+                                fis.copyTo(zos)
+                                zos.closeEntry()
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("ZipUtils", "压缩配置文件失败: ${file.absolutePath}", e)
                         }
                     }
                 }
