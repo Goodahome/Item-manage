@@ -207,10 +207,10 @@ fun ReminderCard(
                     )
                     Text(
                         text = when (reminder.reminderType) {
-                            ReminderType.ONCE -> "一次性提醒"
-                            ReminderType.DAILY -> "每日提醒"
-                            ReminderType.MONTHLY -> "每月提醒"
-                            ReminderType.YEARLY -> "每年提醒"
+                            ReminderType.ONCE -> stringResource(R.string.reminder_type_once_display)
+                            ReminderType.DAILY -> stringResource(R.string.reminder_type_daily_display)
+                            ReminderType.MONTHLY -> stringResource(R.string.reminder_type_monthly_display)
+                            ReminderType.YEARLY -> stringResource(R.string.reminder_type_yearly_display)
                         },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
@@ -250,7 +250,7 @@ fun ReminderCard(
                 IconButton(onClick = onEdit) {
                     Icon(
                         Icons.Default.Edit,
-                        "编辑",
+                        stringResource(R.string.edit),
                         tint = ColorHelpers.getGroup4IconColor()
                     )
                 }
@@ -259,7 +259,7 @@ fun ReminderCard(
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Default.Delete,
-                        "删除",
+                        stringResource(R.string.delete),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }

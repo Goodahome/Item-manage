@@ -249,6 +249,7 @@
     <!-- 标签 -->
     <string name="tags">Étiquettes</string>
     <string name="nav_tag_management">Gestion des étiquettes</string>
+    <string name="nav_reminder_list">Liste des rappels</string>
     <string name="nav_excel_import_export">Import/Export en lot</string>
     <string name="excel_import_export_title">Import/Export en lot</string>
     <string name="excel_import_title">Import Excel</string>
@@ -517,6 +518,10 @@
     <string name="reminder_content">Contenu du rappel</string>
     <string name="reminder_time">Heure de rappel</string>
     <string name="reminder_type">Type de rappel</string>
+    <string name="reminder_notification_channel_name">Rappel d’objets</string>
+    <string name="reminder_notification_channel_description">Notifications de rappel d’objets</string>
+    <string name="reminder_notification_title">Rappel d’objets : %1$s</string>
+    <string name="unknown_item">Objet inconnu</string>
     
     <!-- 备份恢复 -->
     <string name="offline_backup">Sauvegarde hors ligne</string>
@@ -544,6 +549,32 @@
     <!-- 时间线描述 -->
     <string name="item_expiring_description">%1$s expirera dans %2$d jours</string>
     <string name="item_low_stock_description">%1$s stock actuel : %2$d</string>
+    <string name="item_used_quantity_description">%1$s × %2$d</string>
+    <string name="item_current_stock_description">%1$s stock actuel : %2$d</string>
+    <string name="item_days_until_expiry_description">%1$s expirera dans %2$d jours</string>
+    
+    <!-- 云端同步消息 -->
+    <string name="sync_success">Synchronisation cloud réussie</string>
+    <string name="sync_error">Échec de la synchronisation cloud : %1$s</string>
+    <string name="sync_exception">Exception de synchronisation : %1$s</string>
+    <string name="sync_provider_not_configured">%1$s non configuré ou non autorisé</string>
+    <string name="sync_no_local_data">Aucune donnée locale, synchronisation ignorée</string>
+    <string name="sync_provider_error">%1$s</string>
+    
+    <!-- 操作消息 -->
+    <string name="operation_save_success">Enregistré avec succès</string>
+    <string name="operation_save_failed">Échec de l\'enregistrement : %1$s</string>
+    <string name="operation_update_success">Mis à jour avec succès</string>
+    <string name="operation_update_failed">Échec de la mise à jour : %1$s</string>
+    <string name="operation_use_success">Utilisé avec succès</string>
+    <string name="operation_use_failed">Échec de l\'utilisation : %1$s</string>
+    <string name="operation_delete_success">Supprimé avec succès</string>
+    <string name="operation_delete_failed">Échec de la suppression : %1$s</string>
+    <string name="operation_add_shopping_success">Ajouté à la liste de courses</string>
+    <string name="operation_add_shopping_failed">Échec de l\'ajout : %1$s</string>
+    <string name="operation_mark_complete">Marqué comme terminé</string>
+    <string name="operation_mark_incomplete">Marqué comme non terminé</string>
+    <string name="operation_failed">Échec de l\'opération : %1$s</string>
     
     <!-- 备份恢复对话框 -->
     <string name="backup_to_downloads">Sauvegarder dans Downloads</string>
@@ -640,6 +671,10 @@
 
     <!-- Affichage du type de rappel (version simplifiée) -->
     <string name="reminder_type_once_simple">Rappel unique</string>
+    <string name="reminder_type_once_short">Unique</string>
+    <string name="reminder_type_daily_short">Quotidien</string>
+    <string name="reminder_type_monthly_short">Mensuel</string>
+    <string name="reminder_type_yearly_short">Annuel</string>
 
     <!-- Affichage du temps -->
     <string name="time_just_now">À l\'instant</string>
@@ -774,4 +809,17 @@
     <string name="trial_remaining_hours">Encore %1$d heures</string>
     <string name="trial_started">Essai commencé ! Profitez de 7 jours de fonctionnalités Premium !</string>
     <string name="customize_app_name_icon">Personnaliser le nom &amp; l\\\'icône de l\\\'application</string>
+    <string name="reminder_list_title">Liste des rappels</string>
+    <string name="no_reminders">Aucun rappel</string>
+    <string name="no_enabled_reminders">Aucun rappel activé</string>
+    <string name="no_disabled_reminders">Aucun rappel désactivé</string>
+    <string name="filter_all_reminders">Tous</string>
+    <string name="filter_enabled_reminders">Activés</string>
+    <string name="filter_disabled_reminders">Désactivés</string>
+    <string name="disabled_label">Désactivé</string>
+    <string name="confirm_delete_reminder">Supprimer le rappel</string>
+    <string name="confirm_delete_reminder_message">Voulez-vous vraiment supprimer ce rappel ?</string>
+    <string name="no_time_set">Aucune heure définie</string>
+    <string name="monthly_reminder_format">Le %1$d de chaque mois à %2$s</string>
+    <string name="yearly_reminder_format">%1$d/%2$d à %3$s</string>
 </resources>

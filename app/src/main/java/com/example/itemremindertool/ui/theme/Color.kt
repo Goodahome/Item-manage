@@ -30,12 +30,12 @@ val RedBluePrimary = Color(0xFFBA3801)  // 主色调
 val RedBlueTertiary = Color(0xFFFF3B30) // 强调色
 val RedBluePrimaryContainer = Color(0xFFBA3801) // 悬浮按钮色
 val RedBlueOnPrimaryContainer = Color(0xFF001A41) // 程序文字色
-val RedBlueBackground = Color(0xFFFFFFFF)
-val RedBlueSurface = Color(0xFFFFFFFF) // 在 Theme.kt 中使用：surface
-val RedBlueSurfaceVariant = Color(0xFFFFFFFF)
+val RedBlueBackground = Color(0xFFFFFFFF)  // 底层背景色
+val RedBlueSurface = Color(0xFFFFFFFF) // 信息卡片背景色
+val RedBlueSurfaceVariant = Color(0xFFFFFFFF)  // 内容区域背景色
 
-// 子容器名称颜色（浅色主题）
-val RedBlueSubWarehouseName = Color(0xFF6B4F0A) // 子容器名称颜色
+// 顶部导航条颜色（浅色主题）
+val RedBlueTopBar = Color(0xFFFFFFFF) // 顶部导航条文字/图标颜色
 
 // 顶部渐变颜色（浅色主题）
 val RedBlueGradientStart = Color(0xFFBA3801) // 渐变开始颜色（左侧）
@@ -76,12 +76,8 @@ val RedBlueSurfaceDark           = Color(0xFF1E150F)   // 比背景略亮一点�
 // Surface Variant（次级区分，如列表分隔、输入框底色）
 val RedBlueSurfaceVariantDark    = Color(0xFF32251C)   // 更明显的暖棕灰
 
-// 面包屑导航文字/图标颜色（深色主题）
-val RedBlueBreadcrumbTextDark = Color(0xFFFFD8A3) // 面包屑文字颜色
-val RedBlueBreadcrumbIconDark = Color(0xFFFFD8A3) // 面包屑图标颜色
-
-// 子容器名称颜色（深色主题）
-val RedBlueSubWarehouseNameDark = Color(0xFFFFE5B8) // 子容器名称颜色
+// 顶部导航条颜色（深色主题）
+val RedBlueTopBarDark = Color(0xFFFFD8C2) // 顶部导航条文字/图标颜色
 
 // 顶部渐变（建议从亮到暗，保持温暖过渡）
 val RedBlueGradientStartDark     = Color(0xFF2A1A10)   // 与 Primary 一致
@@ -108,6 +104,9 @@ val CreamBackground = Color(0xFFFFFBF8)
 val CreamSurface = Color(0xFFFFFFFF)
 val CreamSurfaceVariant = Color(0xFFFFF0E0)
 
+// 顶部导航条颜色（浅色主题）
+val CreamTopBar = Color(0xFFFFFFFF) // 顶部导航条文字/图标颜色
+
 // 顶部渐变颜色（浅色主题）
 val CreamGradientStart = Color(0xFFFFB84D) // 渐变开始颜色（左侧）
 val CreamGradientEnd = Color(0xFFFFF0E0) // 渐变结束颜色（右侧），如果与开始颜色相同则无渐变
@@ -125,19 +124,23 @@ val CreamSearchBoxText = Color(0xFF000000) // 搜索框文字颜色
 val CreamPrimaryDark = Color(0xFFFFCC80)
 val CreamTertiaryDark = Color(0xFFFF8FB3)
 val CreamPrimaryContainerDark = Color(0xFF8B5A00)
+val CreamOnPrimaryContainerDark = Color(0xFFFFE5B8)
 val CreamBackgroundDark = Color(0xFF1F1B16)
 val CreamSurfaceDark = Color(0xFF2D2520)
 val CreamSurfaceVariantDark = Color(0xFF3D3530)
 
+// 顶部导航条颜色（深色主题）
+val CreamTopBarDark = Color(0xFFFFE5B8) // 顶部导航条文字/图标颜色
+
 // 顶部渐变颜色（深色主题）
-val CreamGradientStartDark = Color(0xFFFFCC80) // 渐变开始颜色（左侧）
-val CreamGradientEndDark = Color(0xFF2D2520) // 渐变结束颜色（右侧），如果与开始颜色相同则无渐变
+val CreamGradientStartDark = Color(0xFF3D3530) // 渐变开始颜色（左侧）
+val CreamGradientEndDark = Color(0xFF3D3530) // 渐变结束颜色（右侧），如果与开始颜色相同则无渐变
 
 // 搜索框背景颜色（深色主题）
 val CreamSearchBoxBgDark = Color(0xFF2D2520) // 搜索框背景色
 
 // 搜索框边框颜色（深色主题）
-val CreamSearchBoxBorderDark = Color(0xFFFFFFFF) // 搜索框边框颜色
+val CreamSearchBoxBorderDark = Color(0xFFFFCC80) // 搜索框边框颜色
 
 // 搜索框文字颜色（深色主题）
 val CreamSearchBoxTextDark = Color(0xFFFFFFFF) // 搜索框文字颜色
@@ -151,6 +154,9 @@ val MintOnPrimaryContainer = Color(0xFF003311)
 val MintBackground = Color(0xFFF1FFFA)
 val MintSurface = Color(0xFFFFFFFF)
 val MintSurfaceVariant = Color(0xFFD4F5E9)
+
+// 顶部导航条颜色（浅色主题）
+val MintTopBar = Color(0xFFFFFFFF) // 顶部导航条文字/图标颜色
 
 // 顶部渐变颜色（浅色主题）
 val MintGradientStart = Color(0xFF00C853) // 渐变开始颜色（左侧）
@@ -169,19 +175,23 @@ val MintSearchBoxText = Color(0xFF000000) // 搜索框文字颜色
 val MintPrimaryDark = Color(0xFF69F0AE)
 val MintTertiaryDark = Color(0xFF64F5FF)
 val MintPrimaryContainerDark = Color(0xFF00842F)
+val MintOnPrimaryContainerDark = Color(0xFFB8FFD8)
 val MintBackgroundDark = Color(0xFF0A1F16)
 val MintSurfaceDark = Color(0xFF1A2F26)
 val MintSurfaceVariantDark = Color(0xFF253F36)
 
+// 顶部导航条颜色（深色主题）
+val MintTopBarDark = Color(0xFFB8FFD8) // 顶部导航条文字/图标颜色
+
 // 顶部渐变颜色（深色主题）
-val MintGradientStartDark = Color(0xFF69F0AE) // 渐变开始颜色（左侧）
-val MintGradientEndDark = Color(0xFF1A2F26) // 渐变结束颜色（右侧），如果与开始颜色相同则无渐变
+val MintGradientStartDark = Color(0xFF253F36) // 渐变开始颜色（左侧）
+val MintGradientEndDark = Color(0xFF253F36) // 渐变结束颜色（右侧），如果与开始颜色相同则无渐变
 
 // 搜索框背景颜色（深色主题）
 val MintSearchBoxBgDark = Color(0xFF1A2F26) // 搜索框背景色
 
 // 搜索框边框颜色（深色主题）
-val MintSearchBoxBorderDark = Color(0xFFFFFFFF) // 搜索框边框颜色
+val MintSearchBoxBorderDark = Color(0xFF69F0AE) // 搜索框边框颜色
 
 // 搜索框文字颜色（深色主题）
 val MintSearchBoxTextDark = Color(0xFFFFFFFF) // 搜索框文字颜色
@@ -195,6 +205,9 @@ val SpaceOnPrimaryContainer = Color(0xFF0F172A)
 val SpaceBackground = Color(0xFFF8FAFC)
 val SpaceSurface = Color(0xFFFFFFFF)
 val SpaceSurfaceVariant = Color(0xFFF1F5F9)
+
+// 顶部导航条颜色（浅色主题）
+val SpaceTopBar = Color(0xFFFFFFFF) // 顶部导航条文字/图标颜色
 
 // 顶部渐变颜色（浅色主题）
 val SpaceGradientStart = Color(0xFF475569) // 渐变开始颜色（左侧）
@@ -213,19 +226,23 @@ val SpaceSearchBoxText = Color(0xFF000000) // 搜索框文字颜色
 val SpacePrimaryDark = Color(0xFF94A3B8)
 val SpaceTertiaryDark = Color(0xFFA78BFA)
 val SpacePrimaryContainerDark = Color(0xFF1E293B)
+val SpaceOnPrimaryContainerDark = Color(0xFFCBD5E1)
 val SpaceBackgroundDark = Color(0xFF0F172A)
 val SpaceSurfaceDark = Color(0xFF1E293B)
 val SpaceSurfaceVariantDark = Color(0xFF334155)
 
+// 顶部导航条颜色（深色主题）
+val SpaceTopBarDark = Color(0xFFCBD5E1) // 顶部导航条文字/图标颜色
+
 // 顶部渐变颜色（深色主题）
-val SpaceGradientStartDark = Color(0xFF94A3B8) // 渐变开始颜色（左侧）
-val SpaceGradientEndDark = Color(0xFF1E293B) // 渐变结束颜色（右侧），如果与开始颜色相同则无渐变
+val SpaceGradientStartDark = Color(0xFF334155) // 渐变开始颜色（左侧）
+val SpaceGradientEndDark = Color(0xFF334155) // 渐变结束颜色（右侧），如果与开始颜色相同则无渐变
 
 // 搜索框背景颜色（深色主题）
 val SpaceSearchBoxBgDark = Color(0xFF1E293B) // 搜索框背景色
 
 // 搜索框边框颜色（深色主题）
-val SpaceSearchBoxBorderDark = Color(0xFFFFFFFF) // 搜索框边框颜色
+val SpaceSearchBoxBorderDark = Color(0xFF94A3B8) // 搜索框边框颜色
 
 // 搜索框文字颜色（深色主题）
 val SpaceSearchBoxTextDark = Color(0xFFFFFFFF) // 搜索框文字颜色
@@ -239,6 +256,9 @@ val WineOnPrimaryContainer = Color(0xFF3D0007)
 val WineBackground = Color(0xFFFFFBF8)
 val WineSurface = Color(0xFFFFFFFF)
 val WineSurfaceVariant = Color(0xFFFFF3F0)
+
+// 顶部导航条颜色（浅色主题）
+val WineTopBar = Color(0xFFFFFFFF) // 顶部导航条文字/图标颜色
 
 // 顶部渐变颜色（浅色主题）
 val WineGradientStart = Color(0xFF7C1C2C) // 渐变开始颜色（左侧）
@@ -257,19 +277,23 @@ val WineSearchBoxText = Color(0xFF000000) // 搜索框文字颜色
 val WinePrimaryDark = Color(0xFFFFB3BA)
 val WineTertiaryDark = Color(0xFFE5C4A0)
 val WinePrimaryContainerDark = Color(0xFF5C0A1A)
+val WineOnPrimaryContainerDark = Color(0xFFFFDADE)
 val WineBackgroundDark = Color(0xFF201416)
 val WineSurfaceDark = Color(0xFF2D1F21)
 val WineSurfaceVariantDark = Color(0xFF3D2A2C)
 
+// 顶部导航条颜色（深色主题）
+val WineTopBarDark = Color(0xFFFFDADE) // 顶部导航条文字/图标颜色
+
 // 顶部渐变颜色（深色主题）
-val WineGradientStartDark = Color(0xFFFFB3BA) // 渐变开始颜色（左侧）
-val WineGradientEndDark = Color(0xFF2D1F21) // 渐变结束颜色（右侧），如果与开始颜色相同则无渐变
+val WineGradientStartDark = Color(0xFF3D2A2C) // 渐变开始颜色（左侧）
+val WineGradientEndDark = Color(0xFF3D2A2C) // 渐变结束颜色（右侧），如果与开始颜色相同则无渐变
 
 // 搜索框背景颜色（深色主题）
 val WineSearchBoxBgDark = Color(0xFF2D1F21) // 搜索框背景色
 
 // 搜索框边框颜色（深色主题）
-val WineSearchBoxBorderDark = Color(0xFFFFFFFF) // 搜索框边框颜色
+val WineSearchBoxBorderDark = Color(0xFFFFB3BA) // 搜索框边框颜色
 
 // 搜索框文字颜色（深色主题）
 val WineSearchBoxTextDark = Color(0xFFFFFFFF) // 搜索框文字颜色
@@ -283,6 +307,9 @@ val ChristmasOnPrimaryContainer = Color(0xFF410002)
 val ChristmasBackground = Color(0xFFFFFBF8)
 val ChristmasSurface = Color(0xFFFFFFFF)
 val ChristmasSurfaceVariant = Color(0xFFFFF5F3)
+
+// 顶部导航条颜色（浅色主题）
+val ChristmasTopBar = Color(0xFFFFFFFF) // 顶部导航条文字/图标颜色
 
 // 顶部渐变颜色（浅色主题）
 val ChristmasGradientStart = Color(0xFFD32F2F) // 渐变开始颜色（左侧）
@@ -301,19 +328,23 @@ val ChristmasSearchBoxText = Color(0xFF000000) // 搜索框文字颜色
 val ChristmasPrimaryDark = Color(0xFFFFB4AB)
 val ChristmasTertiaryDark = Color(0xFFFFEB3B)
 val ChristmasPrimaryContainerDark = Color(0xFF9A1B1B)
+val ChristmasOnPrimaryContainerDark = Color(0xFFFFDAD6)
 val ChristmasBackgroundDark = Color(0xFF201A19)
 val ChristmasSurfaceDark = Color(0xFF2D2524)
 val ChristmasSurfaceVariantDark = Color(0xFF3D3230)
 
+// 顶部导航条颜色（深色主题）
+val ChristmasTopBarDark = Color(0xFFFFDAD6) // 顶部导航条文字/图标颜色
+
 // 顶部渐变颜色（深色主题）
-val ChristmasGradientStartDark = Color(0xFFFFB4AB) // 渐变开始颜色（左侧）
-val ChristmasGradientEndDark = Color(0xFF2D2524) // 渐变结束颜色（右侧），如果与开始颜色相同则无渐变
+val ChristmasGradientStartDark = Color(0xFF3D3230) // 渐变开始颜色（左侧）
+val ChristmasGradientEndDark = Color(0xFF3D3230) // 渐变结束颜色（右侧），如果与开始颜色相同则无渐变
 
 // 搜索框背景颜色（深色主题）
 val ChristmasSearchBoxBgDark = Color(0xFF2D2524) // 搜索框背景色
 
 // 搜索框边框颜色（深色主题）
-val ChristmasSearchBoxBorderDark = Color(0xFFFFFFFF) // 搜索框边框颜色
+val ChristmasSearchBoxBorderDark = Color(0xFFFFB4AB) // 搜索框边框颜色
 
 // 搜索框文字颜色（深色主题）
 val ChristmasSearchBoxTextDark = Color(0xFFFFFFFF) // 搜索框文字颜色

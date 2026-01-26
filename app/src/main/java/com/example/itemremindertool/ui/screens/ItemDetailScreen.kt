@@ -13,12 +13,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -35,9 +41,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.DialogProperties
-import com.loper7.date_time_picker.dialog.CardDatePickerDialog
-import com.loper7.date_time_picker.DateTimeConfig
-import android.app.Activity
+import android.text.format.DateFormat as AndroidDateFormat
 import com.example.itemremindertool.R
 import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.data.model.ItemReminder
@@ -62,6 +66,13 @@ import java.util.*
 import java.util.Calendar
 import java.time.Instant
 import java.time.ZoneId
+
+private fun firstDisplayChar(text: String): String {
+    if (text.isBlank()) return "?"
+    val codePoint = text.codePointAt(0)
+    val count = Character.charCount(codePoint)
+    return text.substring(0, count)
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -211,6 +222,8 @@ fun ItemDetailScreen(
                     ) {
                         val itemBackgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
                         val itemTextColor = ColorHelpers.getContrastColor(itemBackgroundColor)
+                        val displayChar = firstDisplayChar(item.name)
+                        val displayText = if (displayChar.length == 1) displayChar.uppercase() else displayChar
                         Box(
                             modifier = Modifier
                                 .size(80.dp)
@@ -219,7 +232,7 @@ fun ItemDetailScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = item.name.firstOrNull()?.uppercase() ?: "?",
+                                text = displayText,
                                 style = MaterialTheme.typography.displaySmall,
                                 fontWeight = FontWeight.Bold,
                                 color = itemTextColor
@@ -900,7 +913,6 @@ fun ModernReminderDialog(
     onSuccess: () -> Unit
 ) {
     val context = LocalContext.current
-    val activity = context.findActivity()
     val prefs = remember {
         context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
     }
@@ -1120,27 +1132,24 @@ fun ModernReminderDialog(
                                     }
                                     when (selectedType) {
                                         ReminderType.ONCE -> {
-                                            showDatePicker = false
-                                            datePickerKey++
+                                            currentEditingTimeField = "once"
                                             showDatePicker = true
+                                            datePickerKey++
                                         }
                                         ReminderType.DAILY -> {
                                             currentEditingTimeField = "daily"
-                                            showTimePickerDialog = false
-                                            timePickerKey++
                                             showTimePickerDialog = true
+                                            timePickerKey++
                                         }
                                         ReminderType.MONTHLY -> {
                                             currentEditingTimeField = "monthly"
-                                            showTimePickerDialog = false
-                                            timePickerKey++
-                                            showTimePickerDialog = true
+                                            showDatePicker = true
+                                            datePickerKey++
                                         }
                                         ReminderType.YEARLY -> {
                                             currentEditingTimeField = "yearly"
-                                            showTimePickerDialog = false
-                                            timePickerKey++
-                                            showTimePickerDialog = true
+                                            showDatePicker = true
+                                            datePickerKey++
                                         }
                                     }
                                 }) {
@@ -1188,12 +1197,12 @@ fun ModernReminderDialog(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            val options = listOf(
-                                ReminderType.ONCE to "单次",
-                                ReminderType.DAILY to "每日",
-                                ReminderType.MONTHLY to "每月",
-                                ReminderType.YEARLY to "每年"
-                            )
+                        val options = listOf(
+                            ReminderType.ONCE to stringResource(R.string.reminder_type_once_short),
+                            ReminderType.DAILY to stringResource(R.string.reminder_type_daily_short),
+                            ReminderType.MONTHLY to stringResource(R.string.reminder_type_monthly_short),
+                            ReminderType.YEARLY to stringResource(R.string.reminder_type_yearly_short)
+                        )
                             
                             options.forEach { (type, label) ->
                                 val isSelected = selectedType == type
@@ -1280,6 +1289,13 @@ fun ModernReminderDialog(
                     ) {
                         Text(stringResource(R.string.cancel), fontSize = 15.sp, fontWeight = FontWeight.Medium)
                     }
+                    val confirmText = stringResource(R.string.confirm_button)
+                    val confirmFontSize = when {
+                        confirmText.length >= 8 -> 11.sp
+                        confirmText.length >= 6 -> 12.sp
+                        confirmText.length >= 5 -> 13.sp
+                        else -> 15.sp
+                    }
                     Button(
                         onClick = {
                             if (!canAccessPremiumFeatures && selectedType != ReminderType.ONCE) {
@@ -1321,164 +1337,185 @@ fun ModernReminderDialog(
                             pressedElevation = 4.dp
                         )
                     ) {
-                        Icon(
-                            Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                        Text(
+                            text = confirmText,
+                            fontSize = confirmFontSize,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.confirm_button), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
     }
     
-    // 日期时间选择器 - 使用 DateTimePicker 库（一次性提醒）
-    val selectDateTimeTitle = stringResource(R.string.select_date_time)
-    LaunchedEffect(showDatePicker, datePickerKey) {
+    val is24HourFormat = remember { AndroidDateFormat.is24HourFormat(context) }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selectedDateMillis ?: reminderTime?.time
+    )
+
+    LaunchedEffect(showDatePicker, currentEditingTimeField, datePickerKey) {
         if (showDatePicker) {
-            val currentActivity = activity
-            if (currentActivity != null && !currentActivity.isFinishing) {
-                val defaultTime = reminderTime?.time ?: selectedDateMillis ?: System.currentTimeMillis()
-                try {
-                    val dialog = CardDatePickerDialog.builder(currentActivity)
-                        .setTitle(selectDateTimeTitle)
-                        .setDefaultTime(defaultTime)
-                        .setDisplayType(
-                            DateTimeConfig.YEAR,
-                            DateTimeConfig.MONTH,
-                            DateTimeConfig.DAY,
-                            DateTimeConfig.HOUR,
-                            DateTimeConfig.MIN
-                        )
-                        .setOnChoose { millisecond ->
-                            selectedDateMillis = millisecond
-                            reminderTime = Date(millisecond)
-                            showDatePicker = false
-                            datePickerKey++
-                        }
-                        .setOnCancel {
-                            showDatePicker = false
-                            datePickerKey++
-                        }
-                        .build()
-                    dialog.show()
-                } catch (e: Exception) {
-                    android.util.Log.e("ModernReminderDialog", "Failed to show date picker", e)
-                    showDatePicker = false
-                    datePickerKey++
-                }
-            } else {
-                showDatePicker = false
-                datePickerKey++
-            }
+            val initialMillis = when (currentEditingTimeField) {
+                "once" -> selectedDateMillis ?: reminderTime?.time
+                "monthly", "yearly" -> System.currentTimeMillis()
+                else -> selectedDateMillis
+            } ?: System.currentTimeMillis()
+            datePickerState.selectedDateMillis = initialMillis
         }
     }
-    
-    // 时间/循环选择器 - 使用 DateTimePicker 库
-    val selectTimeTitle = stringResource(R.string.select_time)
-    LaunchedEffect(showTimePickerDialog, currentEditingTimeField, timePickerKey) {
-        if (showTimePickerDialog && currentEditingTimeField != null) {
-            val currentActivity = activity
-            if (currentActivity != null && !currentActivity.isFinishing) {
-                val cal = Calendar.getInstance()
-                // 计算初始时间（毫秒），并确定显示类型
-                val (initialTimeMillis, displayType) = when (currentEditingTimeField) {
-                "once" -> {
-                    val t = reminderTime?.time ?: System.currentTimeMillis()
-                    t to arrayOf(DateTimeConfig.HOUR, DateTimeConfig.MIN)
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = {
+                showDatePicker = false
+                currentEditingTimeField = null
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val pickedMillis = datePickerState.selectedDateMillis
+                    if (pickedMillis != null) {
+                        val calendar = Calendar.getInstance()
+                        calendar.timeInMillis = pickedMillis
+                        when (currentEditingTimeField) {
+                            "once" -> {
+                                selectedDateMillis = pickedMillis
+                            }
+                            "monthly" -> {
+                                monthlyDay = calendar.get(Calendar.DAY_OF_MONTH)
+                            }
+                            "yearly" -> {
+                                yearlyMonth = calendar.get(Calendar.MONTH) + 1
+                                yearlyDay = calendar.get(Calendar.DAY_OF_MONTH)
+                            }
+                        }
+                    }
+                    showDatePicker = false
+                    if (currentEditingTimeField in listOf("once", "monthly", "yearly")) {
+                        showTimePickerDialog = true
+                        timePickerKey++
+                    } else {
+                        currentEditingTimeField = null
+                    }
+                }) {
+                    Text(stringResource(R.string.confirm_button))
                 }
-                "daily" -> {
-                    val parts = dailyTime.split(":")
-                    cal.set(Calendar.HOUR_OF_DAY, parts.getOrNull(0)?.toIntOrNull() ?: 9)
-                    cal.set(Calendar.MINUTE, parts.getOrNull(1)?.toIntOrNull() ?: 0)
-                    cal.set(Calendar.SECOND, 0)
-                    cal.set(Calendar.MILLISECOND, 0)
-                    cal.timeInMillis to arrayOf(DateTimeConfig.HOUR, DateTimeConfig.MIN)
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showDatePicker = false
+                    currentEditingTimeField = null
+                }) {
+                    Text(stringResource(R.string.cancel))
                 }
-                "monthly" -> {
-                    val parts = monthlyTime.split(":")
-                    cal.set(Calendar.DAY_OF_MONTH, monthlyDay.coerceIn(1, 31))
-                    cal.set(Calendar.HOUR_OF_DAY, parts.getOrNull(0)?.toIntOrNull() ?: 9)
-                    cal.set(Calendar.MINUTE, parts.getOrNull(1)?.toIntOrNull() ?: 0)
-                    cal.set(Calendar.SECOND, 0)
-                    cal.set(Calendar.MILLISECOND, 0)
-                    cal.timeInMillis to arrayOf(DateTimeConfig.DAY, DateTimeConfig.HOUR, DateTimeConfig.MIN)
-                }
-                "yearly" -> {
-                    val parts = yearlyTime.split(":")
-                    cal.set(Calendar.MONTH, (yearlyMonth - 1).coerceIn(0, 11))
-                    cal.set(Calendar.DAY_OF_MONTH, yearlyDay.coerceIn(1, 31))
-                    cal.set(Calendar.HOUR_OF_DAY, parts.getOrNull(0)?.toIntOrNull() ?: 9)
-                    cal.set(Calendar.MINUTE, parts.getOrNull(1)?.toIntOrNull() ?: 0)
-                    cal.set(Calendar.SECOND, 0)
-                    cal.set(Calendar.MILLISECOND, 0)
-                    cal.timeInMillis to arrayOf(DateTimeConfig.MONTH, DateTimeConfig.DAY, DateTimeConfig.HOUR, DateTimeConfig.MIN)
-                }
-                else -> System.currentTimeMillis() to arrayOf(DateTimeConfig.HOUR, DateTimeConfig.MIN)
             }
-            
-            // 时间/循环选择器 - 使用 CardDatePickerDialog
-            try {
-                val dialog = CardDatePickerDialog.builder(activity)
-                    .setTitle(selectTimeTitle)
-                    .setDefaultTime(initialTimeMillis)
-                    .setDisplayType(*displayType.toIntArray())
-                    .setOnChoose { millisecond: Long ->
-                    val calendar = Calendar.getInstance()
-                    calendar.timeInMillis = millisecond
-                    val hour = calendar.get(Calendar.HOUR_OF_DAY)
-                    val minute = calendar.get(Calendar.MINUTE)
-                    
+        ) {
+            DatePicker(
+                state = datePickerState,
+                showModeToggle = false,
+                modifier = Modifier
+                    .graphicsLayer(scaleX = 0.9f, scaleY = 0.9f)
+            )
+        }
+    }
+
+    val (initialHour, initialMinute) = remember(
+        currentEditingTimeField,
+        timePickerKey,
+        reminderTime,
+        dailyTime,
+        monthlyTime,
+        yearlyTime
+    ) {
+        when (currentEditingTimeField) {
+            "once" -> {
+                val cal = Calendar.getInstance()
+                cal.timeInMillis = reminderTime?.time ?: System.currentTimeMillis()
+                cal.get(Calendar.HOUR_OF_DAY) to cal.get(Calendar.MINUTE)
+            }
+            "daily" -> {
+                val parts = dailyTime.split(":")
+                (parts.getOrNull(0)?.toIntOrNull() ?: 9) to
+                    (parts.getOrNull(1)?.toIntOrNull() ?: 0)
+            }
+            "monthly" -> {
+                val parts = monthlyTime.split(":")
+                (parts.getOrNull(0)?.toIntOrNull() ?: 9) to
+                    (parts.getOrNull(1)?.toIntOrNull() ?: 0)
+            }
+            "yearly" -> {
+                val parts = yearlyTime.split(":")
+                (parts.getOrNull(0)?.toIntOrNull() ?: 9) to
+                    (parts.getOrNull(1)?.toIntOrNull() ?: 0)
+            }
+            else -> 9 to 0
+        }
+    }
+
+    val timePickerState = rememberTimePickerState(
+        initialHour = initialHour,
+        initialMinute = initialMinute,
+        is24Hour = is24HourFormat
+    )
+
+    if (showTimePickerDialog && currentEditingTimeField != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showTimePickerDialog = false
+                currentEditingTimeField = null
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val hour = timePickerState.hour
+                    val minute = timePickerState.minute
                     when (currentEditingTimeField) {
                         "once" -> {
-                            selectedDateMillis?.let { dateMillis ->
-                                val dateCal = Calendar.getInstance()
-                                dateCal.timeInMillis = dateMillis
-                                dateCal.set(Calendar.HOUR_OF_DAY, hour)
-                                dateCal.set(Calendar.MINUTE, minute)
-                                dateCal.set(Calendar.SECOND, 0)
-                                dateCal.set(Calendar.MILLISECOND, 0)
-                                reminderTime = Date(dateCal.timeInMillis)
-                            }
+                            val dateMillis = selectedDateMillis ?: System.currentTimeMillis()
+                            val dateCal = Calendar.getInstance()
+                            dateCal.timeInMillis = dateMillis
+                            dateCal.set(Calendar.HOUR_OF_DAY, hour)
+                            dateCal.set(Calendar.MINUTE, minute)
+                            dateCal.set(Calendar.SECOND, 0)
+                            dateCal.set(Calendar.MILLISECOND, 0)
+                            reminderTime = Date(dateCal.timeInMillis)
+                            selectedDateMillis = dateCal.timeInMillis
                         }
                         "daily" -> {
                             dailyTime = String.format("%02d:%02d:00", hour, minute)
                         }
                         "monthly" -> {
-                            val day = calendar.get(Calendar.DAY_OF_MONTH)
-                            monthlyDay = day
                             monthlyTime = String.format("%02d:%02d:00", hour, minute)
                         }
                         "yearly" -> {
-                            val month = calendar.get(Calendar.MONTH) + 1
-                            val day = calendar.get(Calendar.DAY_OF_MONTH)
-                            yearlyMonth = month
-                            yearlyDay = day
                             yearlyTime = String.format("%02d:%02d:00", hour, minute)
                         }
                     }
                     showTimePickerDialog = false
                     timePickerKey++
                     currentEditingTimeField = null
+                }) {
+                    Text(stringResource(R.string.confirm_button))
                 }
-                .setOnCancel {
+            },
+            dismissButton = {
+                TextButton(onClick = {
                     showTimePickerDialog = false
                     timePickerKey++
                     currentEditingTimeField = null
+                }) {
+                    Text(stringResource(R.string.cancel))
                 }
-                .build()
-                    dialog.show()
-                } catch (e: Exception) {
-                    android.util.Log.e("ModernReminderDialog", "Failed to show time picker", e)
-                    showTimePickerDialog = false
-                    currentEditingTimeField = null
+            },
+            text = {
+                Box(
+                    modifier = Modifier
+                        .graphicsLayer(scaleX = 0.9f, scaleY = 0.9f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    TimePicker(state = timePickerState)
                 }
-            } else {
-                showTimePickerDialog = false
-                currentEditingTimeField = null
             }
-        }
+        )
     }
 }

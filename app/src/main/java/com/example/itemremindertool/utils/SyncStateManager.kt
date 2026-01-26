@@ -10,6 +10,7 @@ import kotlinx.coroutines.delay
 import com.example.itemremindertool.ui.viewmodel.OperationState
 import android.os.Handler
 import android.os.Looper
+import android.content.Context
 
 /**
  * 全局同步状态管理器
@@ -20,6 +21,16 @@ object SyncStateManager {
     val syncState: StateFlow<OperationState> = _syncState.asStateFlow()
     
     private val handler = Handler(Looper.getMainLooper())
+    
+    // 保存 context 引用用于字符串资源获取
+    private var appContext: Context? = null
+    
+    /**
+     * 初始化，传入 Application Context
+     */
+    fun init(context: Context) {
+        appContext = context.applicationContext
+    }
     
     /**
      * 设置同步状态
@@ -45,7 +56,9 @@ object SyncStateManager {
     /**
      * 同步成功
      */
-    fun syncSuccess(message: String = "云端同步成功") {
+    fun syncSuccess(context: Context? = appContext) {
+        val message = context?.getString(com.example.itemremindertool.R.string.sync_success) 
+            ?: "云端同步成功"
         setSyncState(OperationState.Success(message))
         // 2秒后自动重置
         handler.postDelayed({
@@ -56,8 +69,13 @@ object SyncStateManager {
     /**
      * 同步失败
      */
-    fun syncError(message: String) {
-        setSyncState(OperationState.Error(message))
+    fun syncError(message: String, context: Context? = appContext) {
+        val errorMsg = if (context != null && message.isNotEmpty()) {
+            context.getString(com.example.itemremindertool.R.string.sync_provider_error, message)
+        } else {
+            message
+        }
+        setSyncState(OperationState.Error(errorMsg))
         // 2秒后自动重置
         handler.postDelayed({
             _syncState.value = OperationState.Idle

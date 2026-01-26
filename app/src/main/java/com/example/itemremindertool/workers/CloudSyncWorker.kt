@@ -41,7 +41,11 @@ class CloudSyncWorker(
             if (!provider.isConfigured(applicationContext) || !provider.isAuthenticated(applicationContext)) {
                 Log.d(TAG, "$providerName 配置不完整或未授权，跳过同步")
                 if (isManualSync) {
-                    SyncStateManager.syncError("$providerName 未配置或未授权")
+                    val message = applicationContext.getString(
+                        com.example.itemremindertool.R.string.sync_provider_not_configured,
+                        providerName
+                    )
+                    SyncStateManager.syncError(message, applicationContext)
                 }
                 return Result.success()
             }
@@ -66,7 +70,8 @@ class CloudSyncWorker(
             // 如果本地没有数据，不进行上传
             if (localItemCount == 0) {
                 Log.d(TAG, "本地无数据，跳过上传")
-                SyncStateManager.syncSuccess("本地无数据，跳过同步")
+                val message = applicationContext.getString(com.example.itemremindertool.R.string.sync_no_local_data)
+                SyncStateManager.syncSuccess(applicationContext)
                 return Result.success()
             }
             
@@ -101,7 +106,7 @@ class CloudSyncWorker(
             if (backupFile == null) {
                 val errorMessage = backupResult.exceptionOrNull()?.message ?: "备份文件创建失败"
                 Log.e(TAG, "创建备份失败: $errorMessage")
-                SyncStateManager.syncError(errorMessage)
+                SyncStateManager.syncError(errorMessage, applicationContext)
                 return Result.failure()
             }
             
@@ -118,20 +123,28 @@ class CloudSyncWorker(
                     val currentTime = System.currentTimeMillis()
                     prefs.edit().putLong("last_cloud_sync_time", currentTime).apply()
                     
-                    SyncStateManager.syncSuccess("云端同步成功")
+                    SyncStateManager.syncSuccess(applicationContext)
                     val syncType = if (isManualSync) "手动同步" else "自动同步"
                     Log.d(TAG, "${syncType}成功，备份已上传到云端")
                     Result.success()
                 },
                 onFailure = { e ->
-                    SyncStateManager.syncError("云端同步失败: ${e.message}")
+                    val message = applicationContext.getString(
+                        com.example.itemremindertool.R.string.sync_error,
+                        e.message ?: ""
+                    )
+                    SyncStateManager.syncError(message, applicationContext)
                     val syncType = if (isManualSync) "手动同步" else "自动同步"
                     Log.e(TAG, "${syncType}失败", e)
                     Result.retry() // 失败时重试
                 }
             )
         } catch (e: Exception) {
-            SyncStateManager.syncError("同步异常: ${e.message}")
+            val message = applicationContext.getString(
+                com.example.itemremindertool.R.string.sync_exception,
+                e.message ?: ""
+            )
+            SyncStateManager.syncError(message, applicationContext)
             Log.e(TAG, "同步异常", e)
             Result.failure()
         }

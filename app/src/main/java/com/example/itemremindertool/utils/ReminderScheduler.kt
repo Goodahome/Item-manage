@@ -93,6 +93,20 @@ object ReminderScheduler {
     private fun calculateNextTriggerTime(reminder: ItemReminder): Long {
         val now = Calendar.getInstance()
         val targetTime = Calendar.getInstance()
+
+        fun parseHourMinute(timeStr: String?): Pair<Int, Int>? {
+            if (timeStr.isNullOrBlank()) return null
+            val parts = timeStr.split(":")
+            if (parts.size != 2) return null
+            val hour = parts[0].toIntOrNull() ?: return null
+            val minute = parts[1].toIntOrNull() ?: return null
+            return Pair(hour.coerceIn(0, 23), minute.coerceIn(0, 59))
+        }
+
+        fun clampDayForMonth(calendar: Calendar, day: Int): Int {
+            val maxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+            return day.coerceIn(1, maxDay)
+        }
         
         when (reminder.reminderType) {
             ReminderType.ONCE -> {
@@ -106,88 +120,61 @@ object ReminderScheduler {
             
             ReminderType.DAILY -> {
                 // 每日提醒：使用 dailyTime (格式: "HH:mm")
-                reminder.dailyTime?.let { timeStr ->
-                    val parts = timeStr.split(":")
-                    if (parts.size == 2) {
-                        val hour = parts[0].toIntOrNull() ?: 9
-                        val minute = parts[1].toIntOrNull() ?: 0
-                        
-                        targetTime.set(Calendar.HOUR_OF_DAY, hour)
-                        targetTime.set(Calendar.MINUTE, minute)
-                        targetTime.set(Calendar.SECOND, 0)
-                        targetTime.set(Calendar.MILLISECOND, 0)
-                        
-                        // 如果今天的时间已过，设置为明天
-                        if (targetTime.before(now)) {
-                            targetTime.add(Calendar.DAY_OF_YEAR, 1)
-                        }
-                        
-                        return targetTime.timeInMillis - now.timeInMillis
-                    }
+                val time = parseHourMinute(reminder.dailyTime) ?: return 0
+                targetTime.set(Calendar.HOUR_OF_DAY, time.first)
+                targetTime.set(Calendar.MINUTE, time.second)
+                targetTime.set(Calendar.SECOND, 0)
+                targetTime.set(Calendar.MILLISECOND, 0)
+
+                // 如果今天的时间已过，设置为明天
+                if (targetTime.before(now)) {
+                    targetTime.add(Calendar.DAY_OF_YEAR, 1)
                 }
-                return 0
+
+                return targetTime.timeInMillis - now.timeInMillis
             }
             
             ReminderType.MONTHLY -> {
                 // 每月提醒：使用 monthlyDay 和 monthlyTime
-                reminder.monthlyDay?.let { day ->
-                    reminder.monthlyTime?.let { timeStr ->
-                        val parts = timeStr.split(":")
-                        if (parts.size == 2) {
-                            val hour = parts[0].toIntOrNull() ?: 9
-                            val minute = parts[1].toIntOrNull() ?: 0
-                            
-                            targetTime.set(Calendar.DAY_OF_MONTH, day)
-                            targetTime.set(Calendar.HOUR_OF_DAY, hour)
-                            targetTime.set(Calendar.MINUTE, minute)
-                            targetTime.set(Calendar.SECOND, 0)
-                            targetTime.set(Calendar.MILLISECOND, 0)
-                            
-                            // 如果本月的时间已过，设置为下个月
-                            if (targetTime.before(now)) {
-                                targetTime.add(Calendar.MONTH, 1)
-                                // 处理月份天数不一致的情况
-                                val maxDay = targetTime.getActualMaximum(Calendar.DAY_OF_MONTH)
-                                if (day > maxDay) {
-                                    targetTime.set(Calendar.DAY_OF_MONTH, maxDay)
-                                }
-                            }
-                            
-                            return targetTime.timeInMillis - now.timeInMillis
-                        }
-                    }
+                val day = reminder.monthlyDay ?: return 0
+                val time = parseHourMinute(reminder.monthlyTime) ?: return 0
+
+                // 先设置到当前月的目标日期
+                targetTime.set(Calendar.DAY_OF_MONTH, clampDayForMonth(targetTime, day))
+                targetTime.set(Calendar.HOUR_OF_DAY, time.first)
+                targetTime.set(Calendar.MINUTE, time.second)
+                targetTime.set(Calendar.SECOND, 0)
+                targetTime.set(Calendar.MILLISECOND, 0)
+
+                // 如果本月的时间已过，设置为下个月并重新校准日期
+                if (targetTime.before(now)) {
+                    targetTime.add(Calendar.MONTH, 1)
+                    targetTime.set(Calendar.DAY_OF_MONTH, clampDayForMonth(targetTime, day))
                 }
-                return 0
+
+                return targetTime.timeInMillis - now.timeInMillis
             }
             
             ReminderType.YEARLY -> {
                 // 每年提醒：使用 yearlyMonth, yearlyDay 和 yearlyTime
-                reminder.yearlyMonth?.let { month ->
-                    reminder.yearlyDay?.let { day ->
-                        reminder.yearlyTime?.let { timeStr ->
-                            val parts = timeStr.split(":")
-                            if (parts.size == 2) {
-                                val hour = parts[0].toIntOrNull() ?: 9
-                                val minute = parts[1].toIntOrNull() ?: 0
-                                
-                                targetTime.set(Calendar.MONTH, month - 1) // Calendar.MONTH 是 0-based
-                                targetTime.set(Calendar.DAY_OF_MONTH, day)
-                                targetTime.set(Calendar.HOUR_OF_DAY, hour)
-                                targetTime.set(Calendar.MINUTE, minute)
-                                targetTime.set(Calendar.SECOND, 0)
-                                targetTime.set(Calendar.MILLISECOND, 0)
-                                
-                                // 如果今年的时间已过，设置为明年
-                                if (targetTime.before(now)) {
-                                    targetTime.add(Calendar.YEAR, 1)
-                                }
-                                
-                                return targetTime.timeInMillis - now.timeInMillis
-                            }
-                        }
-                    }
+                val month = reminder.yearlyMonth ?: return 0
+                val day = reminder.yearlyDay ?: return 0
+                val time = parseHourMinute(reminder.yearlyTime) ?: return 0
+
+                targetTime.set(Calendar.MONTH, month - 1) // Calendar.MONTH 是 0-based
+                targetTime.set(Calendar.DAY_OF_MONTH, clampDayForMonth(targetTime, day))
+                targetTime.set(Calendar.HOUR_OF_DAY, time.first)
+                targetTime.set(Calendar.MINUTE, time.second)
+                targetTime.set(Calendar.SECOND, 0)
+                targetTime.set(Calendar.MILLISECOND, 0)
+
+                // 如果今年的时间已过，设置为明年并重新校准日期（处理闰年/2月）
+                if (targetTime.before(now)) {
+                    targetTime.add(Calendar.YEAR, 1)
+                    targetTime.set(Calendar.DAY_OF_MONTH, clampDayForMonth(targetTime, day))
                 }
-                return 0
+
+                return targetTime.timeInMillis - now.timeInMillis
             }
         }
     }

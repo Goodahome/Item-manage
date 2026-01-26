@@ -265,6 +265,7 @@
     <!-- 标签 -->
     <string name="tags">Tags</string>
     <string name="nav_tag_management">Tag Management</string>
+    <string name="nav_reminder_list">Reminder List</string>
     <string name="tag_management">Tag Management</string>
     <string name="default_tag">Default</string>
     <string name="tag_usage_count">Usage Count: %1$d</string>
@@ -517,6 +518,23 @@
     <string name="reminder_content">Reminder Content</string>
     <string name="reminder_time">Reminder Time</string>
     <string name="reminder_type">Reminder Type</string>
+    <string name="reminder_notification_channel_name">Item Reminder</string>
+    <string name="reminder_notification_channel_description">Item reminder notifications</string>
+    <string name="reminder_notification_title">Item Reminder: %1$s</string>
+    <string name="unknown_item">Unknown item</string>
+    <string name="reminder_list_title">Reminder List</string>
+    <string name="no_reminders">No reminders</string>
+    <string name="no_enabled_reminders">No enabled reminders</string>
+    <string name="no_disabled_reminders">No disabled reminders</string>
+    <string name="filter_all_reminders">All</string>
+    <string name="filter_enabled_reminders">Enabled</string>
+    <string name="filter_disabled_reminders">Disabled</string>
+    <string name="disabled_label">Disabled</string>
+    <string name="confirm_delete_reminder">Delete Reminder</string>
+    <string name="confirm_delete_reminder_message">Are you sure you want to delete this reminder?</string>
+    <string name="no_time_set">No time set</string>
+    <string name="monthly_reminder_format">Day %1$d of each month at %2$s</string>
+    <string name="yearly_reminder_format">%1$d/%2$d at %3$s</string>
     
     <!-- 备份恢复 -->
     <string name="offline_backup">Offline Backup</string>
@@ -544,6 +562,32 @@
     <!-- 时间线描述 -->
     <string name="item_expiring_description">%1$s will expire in %2$d days</string>
     <string name="item_low_stock_description">%1$s current stock: %2$d</string>
+    <string name="item_used_quantity_description">%1$s × %2$d</string>
+    <string name="item_current_stock_description">%1$s current stock: %2$d</string>
+    <string name="item_days_until_expiry_description">%1$s will expire in %2$d days</string>
+    
+    <!-- 云端同步消息 -->
+    <string name="sync_success">Cloud sync successful</string>
+    <string name="sync_error">Cloud sync failed: %1$s</string>
+    <string name="sync_exception">Sync exception: %1$s</string>
+    <string name="sync_provider_not_configured">%1$s not configured or unauthorized</string>
+    <string name="sync_no_local_data">No local data, skipping sync</string>
+    <string name="sync_provider_error">%1$s</string>
+    
+    <!-- 操作消息 -->
+    <string name="operation_save_success">Saved successfully</string>
+    <string name="operation_save_failed">Save failed: %1$s</string>
+    <string name="operation_update_success">Updated successfully</string>
+    <string name="operation_update_failed">Update failed: %1$s</string>
+    <string name="operation_use_success">Used successfully</string>
+    <string name="operation_use_failed">Use failed: %1$s</string>
+    <string name="operation_delete_success">Deleted successfully</string>
+    <string name="operation_delete_failed">Delete failed: %1$s</string>
+    <string name="operation_add_shopping_success">Added to shopping list</string>
+    <string name="operation_add_shopping_failed">Add failed: %1$s</string>
+    <string name="operation_mark_complete">Marked as complete</string>
+    <string name="operation_mark_incomplete">Unmarked as complete</string>
+    <string name="operation_failed">Operation failed: %1$s</string>
     
     <!-- 备份恢复对话框 -->
     <string name="backup_to_downloads">Backup to Downloads</string>
@@ -594,6 +638,10 @@
     
     <!-- Reminder Type Display (Simple) -->
     <string name="reminder_type_once_simple">One-time Reminder</string>
+    <string name="reminder_type_once_short">Once</string>
+    <string name="reminder_type_daily_short">Daily</string>
+    <string name="reminder_type_monthly_short">Monthly</string>
+    <string name="reminder_type_yearly_short">Yearly</string>
     
     <!-- Time Display -->
     <string name="time_just_now">Just now</string>

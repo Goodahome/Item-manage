@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -60,9 +61,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.rememberCoroutineScope
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
-import com.loper7.date_time_picker.dialog.CardDatePickerDialog
-import com.loper7.date_time_picker.DateTimeConfig
 import android.app.Activity
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.ui.platform.LocalDensity
@@ -1264,38 +1266,47 @@ fun ItemEditScreen(
                         }
                     )
 
-                    // ==================== 日期选择器 - 使用 CardDatePickerDialog ====================
-                    val activity = context.findActivity()
-                    var datePickerKey by remember { mutableStateOf(0) }
-                    val selectExpiryDateTitle = stringResource(R.string.select_expiry_date)
-
-                    LaunchedEffect(showDatePicker, datePickerKey) {
-                        if (showDatePicker && activity != null) {
-                            val defaultTime = expiryDate?.time ?: System.currentTimeMillis()
-                            val dialog = CardDatePickerDialog.builder(activity)
-                                .setTitle(selectExpiryDateTitle)
-                                .setDefaultTime(defaultTime)
-                                .setDisplayType(
-                                    DateTimeConfig.YEAR,
-                                    DateTimeConfig.MONTH,
-                                    DateTimeConfig.DAY
-                                )
-                                .setOnChoose { millisecond ->
-                                    val zone = ZoneId.systemDefault()
-                                    val localDate =
-                                        Instant.ofEpochMilli(millisecond).atZone(zone).toLocalDate()
-                                    val startOfDay =
-                                        localDate.atStartOfDay(zone).toInstant().toEpochMilli()
-                                    expiryDate = Date(startOfDay)
+                    // ==================== 日期选择器 - 使用 Material3 DatePicker ====================
+                    val datePickerState = rememberDatePickerState(
+                        initialSelectedDateMillis = expiryDate?.time
+                    )
+                    LaunchedEffect(showDatePicker, expiryDate) {
+                        if (showDatePicker) {
+                            datePickerState.selectedDateMillis =
+                                expiryDate?.time ?: System.currentTimeMillis()
+                        }
+                    }
+                    if (showDatePicker) {
+                        DatePickerDialog(
+                            onDismissRequest = { showDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    val selectedMillis = datePickerState.selectedDateMillis
+                                    if (selectedMillis != null) {
+                                        val zone = ZoneId.systemDefault()
+                                        val localDate =
+                                            Instant.ofEpochMilli(selectedMillis).atZone(zone).toLocalDate()
+                                        val startOfDay =
+                                            localDate.atStartOfDay(zone).toInstant().toEpochMilli()
+                                        expiryDate = Date(startOfDay)
+                                    }
                                     showDatePicker = false
-                                    datePickerKey++
+                                }) {
+                                    Text(stringResource(R.string.confirm_button))
                                 }
-                                .setOnCancel {
-                                    showDatePicker = false
-                                    datePickerKey++
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDatePicker = false }) {
+                                    Text(stringResource(R.string.cancel))
                                 }
-                                .build()
-                            dialog.show()
+                            }
+                        ) {
+                            DatePicker(
+                                state = datePickerState,
+                                showModeToggle = false,
+                                modifier = Modifier
+                                    .graphicsLayer(scaleX = 0.9f, scaleY = 0.9f)
+                            )
                         }
                     }
 

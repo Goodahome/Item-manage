@@ -1,6 +1,7 @@
 package com.example.itemremindertool.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.itemremindertool.data.model.Warehouse
@@ -13,9 +14,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class WarehouseViewModel(
+    application: Application,
     private val warehouseRepository: WarehouseRepository,
     private val itemRepository: ItemRepository
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     val warehouses = warehouseRepository.getAllWarehouses()
     val topLevelWarehouses = warehouseRepository.getTopLevelWarehouses()
@@ -86,11 +88,18 @@ class WarehouseViewModel(
             try {
                 _operationState.value = OperationState.Saving
                 warehouseRepository.insertWarehouse(warehouse)
-                _operationState.value = OperationState.Success("保存成功")
+                _operationState.value = OperationState.Success(
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_save_success)
+                )
                 kotlinx.coroutines.delay(2000)
                 _operationState.value = OperationState.Idle
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("保存失败: ${e.message}")
+                _operationState.value = OperationState.Error(
+                    getApplication<Application>().getString(
+                        com.example.itemremindertool.R.string.operation_save_failed,
+                        e.message ?: ""
+                    )
+                )
                 kotlinx.coroutines.delay(2000)
                 _operationState.value = OperationState.Idle
             }
@@ -102,11 +111,18 @@ class WarehouseViewModel(
             try {
                 _operationState.value = OperationState.Saving
                 warehouseRepository.updateWarehouse(warehouse)
-                _operationState.value = OperationState.Success("更新成功")
+                _operationState.value = OperationState.Success(
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_update_success)
+                )
                 kotlinx.coroutines.delay(2000)
                 _operationState.value = OperationState.Idle
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("更新失败: ${e.message}")
+                _operationState.value = OperationState.Error(
+                    getApplication<Application>().getString(
+                        com.example.itemremindertool.R.string.operation_update_failed,
+                        e.message ?: ""
+                    )
+                )
                 kotlinx.coroutines.delay(2000)
                 _operationState.value = OperationState.Idle
             }
@@ -125,11 +141,18 @@ class WarehouseViewModel(
             try {
                 _operationState.value = OperationState.Deleting
                 warehouseRepository.deleteWarehouse(warehouse)
-                _operationState.value = OperationState.Success("删除成功")
+                _operationState.value = OperationState.Success(
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_delete_success)
+                )
                 kotlinx.coroutines.delay(2000)
                 _operationState.value = OperationState.Idle
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("删除失败: ${e.message}")
+                _operationState.value = OperationState.Error(
+                    getApplication<Application>().getString(
+                        com.example.itemremindertool.R.string.operation_delete_failed,
+                        e.message ?: ""
+                    )
+                )
                 kotlinx.coroutines.delay(2000)
                 _operationState.value = OperationState.Idle
             }
@@ -144,11 +167,18 @@ class WarehouseViewModel(
             try {
                 _operationState.value = OperationState.Deleting
                 warehouseRepository.deleteSubWarehouse(warehouse)
-                _operationState.value = OperationState.Success("删除成功")
+                _operationState.value = OperationState.Success(
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_delete_success)
+                )
                 kotlinx.coroutines.delay(2000)
                 _operationState.value = OperationState.Idle
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("删除失败: ${e.message}")
+                _operationState.value = OperationState.Error(
+                    getApplication<Application>().getString(
+                        com.example.itemremindertool.R.string.operation_delete_failed,
+                        e.message ?: ""
+                    )
+                )
                 kotlinx.coroutines.delay(2000)
                 _operationState.value = OperationState.Idle
             }
@@ -178,13 +208,14 @@ data class WarehouseUiState(
 )
 
 class WarehouseViewModelFactory(
+    private val application: Application,
     private val warehouseRepository: WarehouseRepository,
     private val itemRepository: ItemRepository
 ) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(WarehouseViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return WarehouseViewModel(warehouseRepository, itemRepository) as T
+            return WarehouseViewModel(application, warehouseRepository, itemRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

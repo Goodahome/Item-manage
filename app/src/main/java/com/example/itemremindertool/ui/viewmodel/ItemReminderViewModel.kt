@@ -16,6 +16,7 @@ class ItemReminderViewModel(application: Application) : AndroidViewModel(applica
     private val context = application.applicationContext
     
     val allActiveReminders: Flow<List<ItemReminder>> = itemReminderDao.getAllActiveReminders()
+    val allReminders: Flow<List<ItemReminder>> = itemReminderDao.getAllReminders()
     
     fun getRemindersByItemId(itemId: Long): Flow<List<ItemReminder>> {
         return itemReminderDao.getRemindersByItemId(itemId)

@@ -270,6 +270,7 @@
     <!-- 标签 -->
     <string name="tags">标签</string>
     <string name="nav_tag_management">标签管理</string>
+    <string name="nav_reminder_list">提醒列表</string>
     <string name="nav_excel_import_export">导入导出</string>
     <string name="excel_import_export_title">导入导出</string>
     <string name="excel_import_title">Excel 导入</string>
@@ -606,6 +607,23 @@
     <string name="reminder_content">提醒内容</string>
     <string name="reminder_time">提醒时间</string>
     <string name="reminder_type">提醒类型</string>
+    <string name="reminder_notification_channel_name">物品提醒</string>
+    <string name="reminder_notification_channel_description">物品提醒通知</string>
+    <string name="reminder_notification_title">物品提醒：%1$s</string>
+    <string name="unknown_item">未知物品</string>
+    <string name="reminder_list_title">提醒列表</string>
+    <string name="no_reminders">暂无提醒</string>
+    <string name="no_enabled_reminders">暂无已开启的提醒</string>
+    <string name="no_disabled_reminders">暂无已关闭的提醒</string>
+    <string name="filter_all_reminders">全部</string>
+    <string name="filter_enabled_reminders">已开启</string>
+    <string name="filter_disabled_reminders">已关闭</string>
+    <string name="disabled_label">已关闭</string>
+    <string name="confirm_delete_reminder">删除提醒</string>
+    <string name="confirm_delete_reminder_message">确定要删除这个提醒吗？</string>
+    <string name="no_time_set">未设置时间</string>
+    <string name="monthly_reminder_format">每月%1$d日 %2$s</string>
+    <string name="yearly_reminder_format">%1$d月%2$d日 %3$s</string>
     
     <!-- 备份恢复 -->
     <string name="offline_backup">离线备份</string>
@@ -632,6 +650,32 @@
     <!-- 时间线描述 -->
     <string name="item_expiring_description">%1$s 将在 %2$d 天后过期</string>
     <string name="item_low_stock_description">%1$s 当前库存：%2$d</string>
+    <string name="item_used_quantity_description">%1$s × %2$d</string>
+    <string name="item_current_stock_description">%1$s 当前库存：%2$d</string>
+    <string name="item_days_until_expiry_description">%1$s 将在 %2$d 天后过期</string>
+    
+    <!-- 云端同步消息 -->
+    <string name="sync_success">云端同步成功</string>
+    <string name="sync_error">云端同步失败: %1$s</string>
+    <string name="sync_exception">同步异常: %1$s</string>
+    <string name="sync_provider_not_configured">%1$s 未配置或未授权</string>
+    <string name="sync_no_local_data">本地无数据，跳过同步</string>
+    <string name="sync_provider_error">%1$s</string>
+    
+    <!-- 操作消息 -->
+    <string name="operation_save_success">保存成功</string>
+    <string name="operation_save_failed">保存失败: %1$s</string>
+    <string name="operation_update_success">更新成功</string>
+    <string name="operation_update_failed">更新失败: %1$s</string>
+    <string name="operation_use_success">使用成功</string>
+    <string name="operation_use_failed">使用失败: %1$s</string>
+    <string name="operation_delete_success">删除成功</string>
+    <string name="operation_delete_failed">删除失败: %1$s</string>
+    <string name="operation_add_shopping_success">已添加到购物清单</string>
+    <string name="operation_add_shopping_failed">添加失败: %1$s</string>
+    <string name="operation_mark_complete">已标记为完成</string>
+    <string name="operation_mark_incomplete">已取消完成</string>
+    <string name="operation_failed">操作失败: %1$s</string>
     
     <!-- 备份恢复对话框 -->
     <string name="backup_to_downloads">备份到Downloads</string>
@@ -682,6 +726,10 @@
     
     <!-- 提醒类型显示（简化版） -->
     <string name="reminder_type_once_simple">单次提醒</string>
+    <string name="reminder_type_once_short">单次</string>
+    <string name="reminder_type_daily_short">每日</string>
+    <string name="reminder_type_monthly_short">每月</string>
+    <string name="reminder_type_yearly_short">每年</string>
     
     <!-- 时间显示 -->
     <string name="time_just_now">刚刚</string>

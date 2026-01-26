@@ -559,7 +559,7 @@ object ColorHelpers {
     
     /**
      * 获取面包屑导航文字颜色
-     * 根据当前颜色方案和主题模式返回对应的面包屑文字颜色
+     * 使用程序文字色（OnPrimaryContainer）
      */
     @Composable
     fun getBreadcrumbTextColor(): Color {
@@ -568,7 +568,7 @@ object ColorHelpers {
     
     /**
      * 获取面包屑导航图标颜色
-     * 根据当前颜色方案和主题模式返回对应的面包屑图标颜色
+     * 使用程序文字色（OnPrimaryContainer）
      */
     @Composable
     fun getBreadcrumbIconColor(): Color {
@@ -579,11 +579,53 @@ object ColorHelpers {
     
     /**
      * 获取子容器名称颜色
-     * 根据当前颜色方案和主题模式返回对应的子容器名称颜色
+     * 使用程序文字色（OnPrimaryContainer）
      */
     @Composable
     fun getSubWarehouseNameColor(): Color {
         return getGroup4TextColor()
+    }
+    
+    // ==================== 顶部导航条颜色 ====================
+    
+    /**
+     * 获取顶部导航条文字/图标颜色
+     * 根据当前颜色方案和主题模式返回对应的顶部导航条颜色
+     */
+    @Composable
+    fun getTopBarColor(): Color {
+        val appSettings = LocalAppSettings.current
+        val schemeType = com.example.itemremindertool.ui.theme.ColorSchemeType.fromKey(appSettings.colorScheme)
+        
+        val isDarkTheme = when (appSettings.theme) {
+            "dark" -> true
+            "light" -> false
+            else -> isSystemInDarkTheme()
+        }
+        
+        return if (schemeType == com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM) {
+            getCustomColor("custom_color_top_bar", if (isDarkTheme) RedBlueTopBarDark else RedBlueTopBar)
+        } else if (isDarkTheme) {
+            when (schemeType) {
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueTopBarDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamTopBarDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.MINT -> MintTopBarDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceTopBarDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.WINE -> WineTopBarDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CHRISTMAS -> ChristmasTopBarDark
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueTopBarDark
+            }
+        } else {
+            when (schemeType) {
+                com.example.itemremindertool.ui.theme.ColorSchemeType.RED_BLUE -> RedBlueTopBar
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CREAM -> CreamTopBar
+                com.example.itemremindertool.ui.theme.ColorSchemeType.MINT -> MintTopBar
+                com.example.itemremindertool.ui.theme.ColorSchemeType.SPACE -> SpaceTopBar
+                com.example.itemremindertool.ui.theme.ColorSchemeType.WINE -> WineTopBar
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CHRISTMAS -> ChristmasTopBar
+                com.example.itemremindertool.ui.theme.ColorSchemeType.CUSTOM -> RedBlueTopBar
+            }
+        }
     }
     
     // ==================== Surface Variant 背景颜色 ====================

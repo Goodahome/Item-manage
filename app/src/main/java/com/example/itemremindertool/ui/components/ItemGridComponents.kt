@@ -119,56 +119,170 @@ fun ItemGridCard(
     // 根据背景色和对比度判断，返回对应的边框颜色
     val selectedBorderColor = cardBackgroundColor
     
-    val cardShape = if (isSelected) RoundedCornerShape(0.dp) else RoundedCornerShape(12.dp)
-    Card(
-        modifier = modifier
-            .aspectRatio(1f) // 保持正方形
-            .clickable { onClick() },
-        shape = cardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = if (backgroundBitmap != null || isOutlineActive || isSelected) {
-                Color.Transparent
-            } else {
-                cardBackgroundColor
-            }
-        ),
-        elevation = if (isOutlineActive || isSelected) {
-            CardDefaults.cardElevation(
-                defaultElevation = 0.dp,
-                pressedElevation = 0.dp,
-                hoveredElevation = 0.dp,
-                focusedElevation = 0.dp
-            )
-        } else {
-            CardDefaults.cardElevation(
-                defaultElevation = 6.dp, // 选中和未选中时使用相同的 elevation
-                pressedElevation = 8.dp,
-                hoveredElevation = 7.dp,
-                focusedElevation = 7.dp
-            )
-        },
-        border = null
+    val cardShape = RoundedCornerShape(12.dp)
+    
+    Box(
+        modifier = modifier.aspectRatio(1f)
     ) {
+        // 选中时完全不使用 Card，只用 Box 避免任何阴影
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { onClick() }
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    val contentPadding = 6.dp
+                    val contentShape = RoundedCornerShape(12.dp)
+                    val contentModifier = Modifier
+                        .fillMaxSize()
+                        .padding(contentPadding)
+                        .clip(contentShape)
+
+                    Box(modifier = contentModifier) {
+                        // 非镂空且无图片时显示背景色
+                        if (backgroundBitmap == null && !isOutlineActive) {
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .background(cardBackgroundColor)
+                            )
+                        }
+
+                        // 背景图片（使用缩略图）
+                        backgroundBitmap?.let { bitmap ->
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = null,
+                                modifier = Modifier.matchParentSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            // 添加半透明遮罩确保文字可读
+                            Box(
+                                modifier = Modifier.matchParentSize()
+                                    .background(
+                                        if (isImageBright) {
+                                            Color.White.copy(alpha = 0.18f)
+                                        } else {
+                                            Color.Black.copy(alpha = 0f)
+                                        }
+                                    )
+                            )
+                        }
+                    
+                        // 根据是否有图片决定文字颜色
+                        val displayTextColor = if (backgroundBitmap != null) {
+                            // 有图片时，根据图片亮度创建一个代表背景的颜色来计算对比度
+                            val imageBgColor = if (isImageBright) {
+                                Color.White.copy(alpha = 0.18f) // 亮图片，使用浅色背景
+                            } else {
+                                Color.Black.copy(alpha = 0.28f) // 暗图片，使用深色背景
+                            }
+                            ColorHelpers.getGroup4TextColorByContrast(imageBgColor)
+                        } else {
+                            // 无图片时使用与背景色对比的颜色
+                            if (isOutlineActive) {
+                                cardBackgroundColor
+                            } else {
+                                ColorHelpers.getGroup4TextColorByContrast(cardBackgroundColor)
+                            }
+                        }
+
+                        // 物品名称 - 有图片时不显示，无图片时居中显示
+                        if (backgroundBitmap == null) {
+                            Text(
+                                text = item.name,
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .padding(horizontal = 6.dp),
+                                color = displayTextColor,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis,
+                                lineHeight = 14.sp
+                            )
+                        }
+
+                        // 数量（右下角）- 纯数字显示，下移到真正的底部
+                        if (item.quantity > 0) {
+                            Text(
+                                text = "${item.quantity}",
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(end = 4.dp, bottom = 3.dp),
+                                color = displayTextColor,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    shadow = androidx.compose.ui.graphics.Shadow(
+                                        color = if (displayTextColor == Color.White) Color.Black else Color.White,
+                                        offset = androidx.compose.ui.geometry.Offset(1f, 1f),
+                                        blurRadius = 2f
+                                    )
+                                )
+                            )
+                        }
+                    }
+
+                    // 镂空模式的边框
+                    if (isOutlineActive) {
+                        Box(
+                            modifier = contentModifier.border(2.dp, cardBackgroundColor, RoundedCornerShape(12.dp))
+                        )
+                    }
+                }
+            }
+        } else {
+            // 未选中时使用 Card
+            Card(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { onClick() },
+                shape = cardShape,
+                colors = CardDefaults.cardColors(
+                    containerColor = if (backgroundBitmap != null || isOutlineActive) {
+                        Color.Transparent
+                    } else {
+                        cardBackgroundColor
+                    }
+                ),
+                elevation = if (isOutlineActive) {
+                    CardDefaults.cardElevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 0.dp,
+                        hoveredElevation = 0.dp,
+                        focusedElevation = 0.dp,
+                        draggedElevation = 0.dp,
+                        disabledElevation = 0.dp
+                    )
+                } else {
+                    CardDefaults.cardElevation(
+                        defaultElevation = 6.dp,
+                        pressedElevation = 8.dp,
+                        hoveredElevation = 7.dp,
+                        focusedElevation = 7.dp
+                    )
+                },
+                border = null
+            ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            val contentPadding = if (isSelected) 6.dp else 0.dp
+            val contentPadding = 0.dp
             val contentShape = RoundedCornerShape(12.dp)
             val contentModifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding)
                 .clip(contentShape)
-            val contentShadowModifier = if (isSelected && !isOutlineActive) {
-                contentModifier.shadow(
-                    elevation = 6.dp,
-                    shape = contentShape,
-                    clip = false
-                )
-            } else {
-                contentModifier
-            }
 
-            Box(modifier = contentShadowModifier) {
-                if (backgroundBitmap == null && isSelected && !isOutlineActive) {
-                    Box(modifier = Modifier.matchParentSize().background(cardBackgroundColor))
+            Box(modifier = contentModifier) {
+                // 非镂空且无图片时显示背景色
+                if (backgroundBitmap == null && !isOutlineActive) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(cardBackgroundColor)
+                    )
                 }
 
                 // 背景图片（使用缩略图）
@@ -192,40 +306,40 @@ fun ItemGridCard(
                     )
                 }
             
-            // 根据是否有图片决定文字颜色
-            val displayTextColor = if (backgroundBitmap != null) {
-                // 有图片时，根据图片亮度创建一个代表背景的颜色来计算对比度
-                val imageBgColor = if (isImageBright) {
-                    Color.White.copy(alpha = 0.18f) // 亮图片，使用浅色背景
+                // 根据是否有图片决定文字颜色
+                val displayTextColor = if (backgroundBitmap != null) {
+                    // 有图片时，根据图片亮度创建一个代表背景的颜色来计算对比度
+                    val imageBgColor = if (isImageBright) {
+                        Color.White.copy(alpha = 0.18f) // 亮图片，使用浅色背景
+                    } else {
+                        Color.Black.copy(alpha = 0.28f) // 暗图片，使用深色背景
+                    }
+                    ColorHelpers.getGroup4TextColorByContrast(imageBgColor)
                 } else {
-                    Color.Black.copy(alpha = 0.28f) // 暗图片，使用深色背景
+                    // 无图片时使用与背景色对比的颜色
+                    if (isOutlineActive) {
+                        cardBackgroundColor
+                    } else {
+                        ColorHelpers.getGroup4TextColorByContrast(cardBackgroundColor)
+                    }
                 }
-                ColorHelpers.getGroup4TextColorByContrast(imageBgColor)
-            } else {
-                // 无图片时使用与背景色对比的颜色
-                if (isOutlineActive) {
-                    cardBackgroundColor
-                } else {
-                    ColorHelpers.getGroup4TextColorByContrast(cardBackgroundColor)
-                }
-            }
 
                 // 物品名称 - 有图片时不显示，无图片时居中显示
-                if (backgroundBitmap == null) {
-                    Text(
-                        text = item.name,
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(horizontal = 6.dp),
-                        color = displayTextColor,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = 14.sp
-                    )
-                }
+                    if (backgroundBitmap == null) {
+                        Text(
+                            text = item.name,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(horizontal = 6.dp),
+                            color = displayTextColor,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = 14.sp
+                        )
+                    }
 
                 // 数量（右下角）- 纯数字显示，下移到真正的底部
                 if (item.quantity > 0) {
@@ -248,90 +362,86 @@ fun ItemGridCard(
                 }
             }
 
+            // 镂空模式的边框
             if (isOutlineActive) {
                 Box(
-                    modifier = if (isSelected) {
-                        contentModifier.border(2.dp, cardBackgroundColor, RoundedCornerShape(12.dp))
-                    } else {
-                        Modifier
-                            .fillMaxSize()
-                            .border(2.dp, cardBackgroundColor, RoundedCornerShape(12.dp))
-                    }
+                    modifier = contentModifier.border(2.dp, cardBackgroundColor, RoundedCornerShape(12.dp))
                 )
             }
+        }
+        }
+        }
+        
+        // 选中指示器绘制在最外层Box，保持原始大小包围缩小的内容
+        if (isSelected) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val strokeWidth = 3.dp.toPx()
+                val cornerLength = 14.dp.toPx()
+                val inset = 3.dp.toPx()
+                val maxX = size.width - inset
+                val maxY = size.height - inset
 
-            if (isSelected) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val strokeWidth = 3.dp.toPx()
-                    val cornerLength = 14.dp.toPx()
-                    val inset = 3.dp.toPx()
-                    val maxX = size.width - inset
-                    val maxY = size.height - inset
-
-                    // 左上角
-                    drawLine(
-                        color = selectedBorderColor,
-                        start = Offset(inset, inset),
-                        end = Offset(inset + cornerLength, inset),
-                        strokeWidth = strokeWidth,
-                        cap = StrokeCap.Round
-                    )
-                    drawLine(
-                        color = selectedBorderColor,
-                        start = Offset(inset, inset),
-                        end = Offset(inset, inset + cornerLength),
-                        strokeWidth = strokeWidth,
-                        cap = StrokeCap.Round
-                    )
-                    // 右上角
-                    drawLine(
-                        color = selectedBorderColor,
-                        start = Offset(maxX - cornerLength, inset),
-                        end = Offset(maxX, inset),
-                        strokeWidth = strokeWidth,
-                        cap = StrokeCap.Round
-                    )
-                    drawLine(
-                        color = selectedBorderColor,
-                        start = Offset(maxX, inset),
-                        end = Offset(maxX, inset + cornerLength),
-                        strokeWidth = strokeWidth,
-                        cap = StrokeCap.Round
-                    )
-                    // 左下角
-                    drawLine(
-                        color = selectedBorderColor,
-                        start = Offset(inset, maxY - cornerLength),
-                        end = Offset(inset, maxY),
-                        strokeWidth = strokeWidth,
-                        cap = StrokeCap.Round
-                    )
-                    drawLine(
-                        color = selectedBorderColor,
-                        start = Offset(inset, maxY),
-                        end = Offset(inset + cornerLength, maxY),
-                        strokeWidth = strokeWidth,
-                        cap = StrokeCap.Round
-                    )
-                    // 右下角
-                    drawLine(
-                        color = selectedBorderColor,
-                        start = Offset(maxX - cornerLength, maxY),
-                        end = Offset(maxX, maxY),
-                        strokeWidth = strokeWidth,
-                        cap = StrokeCap.Round
-                    )
-                    drawLine(
-                        color = selectedBorderColor,
-                        start = Offset(maxX, maxY - cornerLength),
-                        end = Offset(maxX, maxY),
-                        strokeWidth = strokeWidth,
-                        cap = StrokeCap.Round
-                    )
-                }
+                // 左上角
+                drawLine(
+                    color = selectedBorderColor,
+                    start = Offset(inset, inset),
+                    end = Offset(inset + cornerLength, inset),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round
+                )
+                drawLine(
+                    color = selectedBorderColor,
+                    start = Offset(inset, inset),
+                    end = Offset(inset, inset + cornerLength),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round
+                )
+                // 右上角
+                drawLine(
+                    color = selectedBorderColor,
+                    start = Offset(maxX - cornerLength, inset),
+                    end = Offset(maxX, inset),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round
+                )
+                drawLine(
+                    color = selectedBorderColor,
+                    start = Offset(maxX, inset),
+                    end = Offset(maxX, inset + cornerLength),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round
+                )
+                // 左下角
+                drawLine(
+                    color = selectedBorderColor,
+                    start = Offset(inset, maxY - cornerLength),
+                    end = Offset(inset, maxY),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round
+                )
+                drawLine(
+                    color = selectedBorderColor,
+                    start = Offset(inset, maxY),
+                    end = Offset(inset + cornerLength, maxY),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round
+                )
+                // 右下角
+                drawLine(
+                    color = selectedBorderColor,
+                    start = Offset(maxX - cornerLength, maxY),
+                    end = Offset(maxX, maxY),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round
+                )
+                drawLine(
+                    color = selectedBorderColor,
+                    start = Offset(maxX, maxY - cornerLength),
+                    end = Offset(maxX, maxY),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round
+                )
             }
-            
-            // 选中时只显示边框，不显示背景遮罩
         }
     }
 }

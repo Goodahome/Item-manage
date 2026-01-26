@@ -13,6 +13,7 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
     object Dashboard : Screen("dashboard", R.string.nav_home, Icons.Outlined.Dashboard, Icons.Filled.Dashboard)
     object Items : Screen("items", R.string.nav_item_management, Icons.Outlined.Category, Icons.Filled.Category)
     object Tags : Screen("tags", R.string.nav_tag_management, Icons.AutoMirrored.Outlined.Label, Icons.AutoMirrored.Filled.Label)
+    object ReminderList : Screen("reminder_list", R.string.nav_reminder_list, Icons.Outlined.NotificationsActive, Icons.Filled.NotificationsActive)
     object ExcelImportExport : Screen("excel_import_export", R.string.nav_excel_import_export, Icons.Outlined.ImportExport, Icons.Filled.ImportExport)
     object Settings : Screen("settings", R.string.settings, Icons.Outlined.Settings, Icons.Filled.Settings)
 

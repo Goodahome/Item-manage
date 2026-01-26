@@ -1,6 +1,7 @@
 package com.example.itemremindertool.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.itemremindertool.data.model.Item
@@ -15,10 +16,11 @@ import kotlinx.coroutines.launch
 import java.util.Date
 
 class ItemViewModel(
+    application: Application,
     private val itemRepository: ItemRepository,
     private val categoryRepository: CategoryRepository,
     private val warehouseRepository: WarehouseRepository
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     val items = itemRepository.getAllItems()
 
@@ -53,7 +55,9 @@ class ItemViewModel(
             try {
                 _operationState.value = OperationState.Saving
                 val itemId = itemRepository.insertItem(item.copy(updatedAt = Date()))
-                _operationState.value = OperationState.Success("保存成功")
+                _operationState.value = OperationState.Success(
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_save_success)
+                )
                 onSuccess?.invoke(itemId) // 回调返回插入后的 ID
                 kotlinx.coroutines.delay(2000) // 成功消息显示2秒
                 _operationState.value = OperationState.Idle
@@ -63,17 +67,29 @@ class ItemViewModel(
                     kotlinx.coroutines.delay(1000) // 等待1秒让数据库恢复
                     try {
                         val itemId = itemRepository.insertItem(item.copy(updatedAt = Date()))
-                        _operationState.value = OperationState.Success("保存成功")
+                        _operationState.value = OperationState.Success(
+                            getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_save_success)
+                        )
                         onSuccess?.invoke(itemId) // 回调返回插入后的 ID
                         kotlinx.coroutines.delay(2000)
                         _operationState.value = OperationState.Idle
                     } catch (retryException: Exception) {
-                        _operationState.value = OperationState.Error("保存失败: ${retryException.message}")
+                        _operationState.value = OperationState.Error(
+                            getApplication<Application>().getString(
+                                com.example.itemremindertool.R.string.operation_save_failed,
+                                retryException.message ?: ""
+                            )
+                        )
                         kotlinx.coroutines.delay(2000)
                         _operationState.value = OperationState.Idle
                     }
                 } else {
-                    _operationState.value = OperationState.Error("保存失败: ${e.message}")
+                    _operationState.value = OperationState.Error(
+                        getApplication<Application>().getString(
+                            com.example.itemremindertool.R.string.operation_save_failed,
+                            e.message ?: ""
+                        )
+                    )
                     kotlinx.coroutines.delay(2000) // 错误消息也显示2秒
                     _operationState.value = OperationState.Idle
                 }
@@ -86,7 +102,9 @@ class ItemViewModel(
             try {
                 _operationState.value = OperationState.Saving
                 itemRepository.updateItem(item.copy(updatedAt = Date()))
-                _operationState.value = OperationState.Success("更新成功")
+                _operationState.value = OperationState.Success(
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_update_success)
+                )
                 kotlinx.coroutines.delay(2000) // 成功消息显示2秒
                 _operationState.value = OperationState.Idle
             } catch (e: Exception) {
@@ -95,16 +113,28 @@ class ItemViewModel(
                     kotlinx.coroutines.delay(1000) // 等待1秒让数据库恢复
                     try {
                         itemRepository.updateItem(item.copy(updatedAt = Date()))
-                        _operationState.value = OperationState.Success("更新成功")
+                        _operationState.value = OperationState.Success(
+                            getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_update_success)
+                        )
                         kotlinx.coroutines.delay(2000)
                         _operationState.value = OperationState.Idle
                     } catch (retryException: Exception) {
-                        _operationState.value = OperationState.Error("更新失败: ${retryException.message}")
+                        _operationState.value = OperationState.Error(
+                            getApplication<Application>().getString(
+                                com.example.itemremindertool.R.string.operation_update_failed,
+                                retryException.message ?: ""
+                            )
+                        )
                         kotlinx.coroutines.delay(2000)
                         _operationState.value = OperationState.Idle
                     }
                 } else {
-                    _operationState.value = OperationState.Error("更新失败: ${e.message}")
+                    _operationState.value = OperationState.Error(
+                        getApplication<Application>().getString(
+                            com.example.itemremindertool.R.string.operation_update_failed,
+                            e.message ?: ""
+                        )
+                    )
                     kotlinx.coroutines.delay(2000) // 错误消息也显示2秒
                     _operationState.value = OperationState.Idle
                 }
@@ -120,7 +150,9 @@ class ItemViewModel(
             try {
                 _operationState.value = OperationState.Saving
                 itemRepository.useItem(item, usedQuantity)
-                _operationState.value = OperationState.Success("使用成功")
+                _operationState.value = OperationState.Success(
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_use_success)
+                )
                 kotlinx.coroutines.delay(2000) // 成功消息显示2秒
                 _operationState.value = OperationState.Idle
             } catch (e: Exception) {
@@ -129,16 +161,28 @@ class ItemViewModel(
                     kotlinx.coroutines.delay(1000) // 等待1秒让数据库恢复
                     try {
                         itemRepository.useItem(item, usedQuantity)
-                        _operationState.value = OperationState.Success("使用成功")
+                        _operationState.value = OperationState.Success(
+                            getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_use_success)
+                        )
                         kotlinx.coroutines.delay(2000)
                         _operationState.value = OperationState.Idle
                     } catch (retryException: Exception) {
-                        _operationState.value = OperationState.Error("使用失败: ${retryException.message}")
+                        _operationState.value = OperationState.Error(
+                            getApplication<Application>().getString(
+                                com.example.itemremindertool.R.string.operation_use_failed,
+                                retryException.message ?: ""
+                            )
+                        )
                         kotlinx.coroutines.delay(2000)
                         _operationState.value = OperationState.Idle
                     }
                 } else {
-                    _operationState.value = OperationState.Error("使用失败: ${e.message}")
+                    _operationState.value = OperationState.Error(
+                        getApplication<Application>().getString(
+                            com.example.itemremindertool.R.string.operation_use_failed,
+                            e.message ?: ""
+                        )
+                    )
                     kotlinx.coroutines.delay(2000) // 错误消息也显示2秒
                     _operationState.value = OperationState.Idle
                 }
@@ -151,11 +195,18 @@ class ItemViewModel(
             try {
                 _operationState.value = OperationState.Deleting
                 itemRepository.deleteItem(item)
-                _operationState.value = OperationState.Success("删除成功")
+                _operationState.value = OperationState.Success(
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_delete_success)
+                )
                 kotlinx.coroutines.delay(2000) // 成功消息显示2秒
                 _operationState.value = OperationState.Idle
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("删除失败: ${e.message}")
+                _operationState.value = OperationState.Error(
+                    getApplication<Application>().getString(
+                        com.example.itemremindertool.R.string.operation_delete_failed,
+                        e.message ?: ""
+                    )
+                )
                 kotlinx.coroutines.delay(2000) // 错误消息也显示2秒
                 _operationState.value = OperationState.Idle
             }
@@ -167,6 +218,10 @@ class ItemViewModel(
             val item = itemRepository.getItemByBarcode(barcode)
             onResult(item)
         }
+    }
+    
+    suspend fun getItemById(itemId: Long): Item? {
+        return itemRepository.getItemById(itemId)
     }
     
     fun searchItemsByName(query: String) = itemRepository.searchItemsByName(query)
@@ -190,14 +245,15 @@ sealed class OperationState {
 }
 
 class ItemViewModelFactory(
+    private val application: Application,
     private val itemRepository: ItemRepository,
     private val categoryRepository: CategoryRepository,
     private val warehouseRepository: WarehouseRepository
 ) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ItemViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ItemViewModel(itemRepository, categoryRepository, warehouseRepository) as T
+            return ItemViewModel(application, itemRepository, categoryRepository, warehouseRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

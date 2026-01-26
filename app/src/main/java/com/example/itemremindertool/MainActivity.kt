@@ -1,5 +1,6 @@
 package com.example.itemremindertool
 
+import android.app.Application
 import android.os.Bundle
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
@@ -67,6 +68,9 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // 初始化 SyncStateManager
+        com.example.itemremindertool.utils.SyncStateManager.init(applicationContext)
         
         // 确保语言设置已应用
         val language = LocaleHelper.getCurrentLanguage(this)
@@ -174,6 +178,7 @@ fun ItemReminderToolApp(
         when {
             currentRoute == Screen.Dashboard.route -> Screen.Dashboard
             currentRoute == Screen.Tags.route -> Screen.Tags
+            currentRoute == Screen.ReminderList.route -> Screen.ReminderList
             currentRoute == Screen.ExcelImportExport.route -> Screen.ExcelImportExport
             currentRoute == Screen.CustomColorSettings.route -> Screen.CustomColorSettings
             currentRoute == Screen.Settings.route -> Screen.Settings
@@ -315,6 +320,7 @@ fun ItemReminderToolApp(
 
     val itemViewModel: ItemViewModel = viewModel(
         factory = ItemViewModelFactory(
+            context.applicationContext as Application,
             itemRepository,
             categoryRepository,
             warehouseRepository
@@ -337,11 +343,18 @@ fun ItemReminderToolApp(
     )
 
     val shoppingItemViewModel: ShoppingItemViewModel = viewModel(
-        factory = ShoppingItemViewModelFactory(shoppingItemRepository)
+        factory = ShoppingItemViewModelFactory(
+            context.applicationContext as Application,
+            shoppingItemRepository
+        )
     )
 
     val warehouseViewModel: WarehouseViewModel = viewModel(
-        factory = WarehouseViewModelFactory(warehouseRepository, itemRepository)
+        factory = WarehouseViewModelFactory(
+            context.applicationContext as Application,
+            warehouseRepository,
+            itemRepository
+        )
     )
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -408,6 +421,29 @@ fun ItemReminderToolApp(
                         ),
                         onClick = {
                             navController.navigate(Screen.Tags.route) {
+                                popUpTo(Screen.Dashboard.route) {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Screen.ReminderList.icon, null) },
+                        label = { Text(stringResource(R.string.nav_reminder_list)) },
+                        selected = currentDestination == Screen.ReminderList,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                            selectedTextColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        onClick = {
+                            navController.navigate(Screen.ReminderList.route) {
                                 popUpTo(Screen.Dashboard.route) {
                                     inclusive = false
                                 }
@@ -747,6 +783,18 @@ fun ItemReminderToolApp(
                     itemViewModel = itemViewModel,
                     tagManager = tagManager,
                     onNavigateBack = { navController.popBackOrDashboard() }
+                )
+            }
+
+            composable(Screen.ReminderList.route) {
+                val reminderViewModel = androidx.lifecycle.viewmodel.compose.viewModel<com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel>()
+                ReminderListScreen(
+                    reminderViewModel = reminderViewModel,
+                    itemViewModel = itemViewModel,
+                    onNavigateBack = { navController.popBackOrDashboard() },
+                    onNavigateToItem = { itemId ->
+                        navController.navigate(Screen.ItemDetail.createRoute(itemId))
+                    }
                 )
             }
 

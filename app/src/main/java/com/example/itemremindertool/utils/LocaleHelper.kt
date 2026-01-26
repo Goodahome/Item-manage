@@ -11,12 +11,19 @@ object LocaleHelper {
      * 根据语言代码设置应用的语言环境
      */
     fun setLocale(context: Context, languageCode: String): Context {
+        val systemLocale = getSystemLocale(context)
         val locale = when (languageCode) {
             "zh" -> Locale("zh", "CN")
-            "en" -> Locale.ENGLISH
+            "en" -> {
+                if (systemLocale.language == "en" && systemLocale.country.isNotBlank()) {
+                    Locale("en", systemLocale.country)
+                } else {
+                    Locale.US
+                }
+            }
             "fr" -> Locale.FRENCH
             "de" -> Locale.GERMAN
-            else -> Locale.getDefault()
+            else -> systemLocale
         }
         
         return updateResources(context, locale)
@@ -71,6 +78,15 @@ object LocaleHelper {
             "fr" -> "fr"
             "de" -> "de"
             else -> "zh" // 默认使用中文
+        }
+    }
+
+    private fun getSystemLocale(context: Context): Locale {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            context.resources.configuration.locales[0]
+        } else {
+            @Suppress("DEPRECATION")
+            context.resources.configuration.locale
         }
     }
 }

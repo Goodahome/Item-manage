@@ -36,20 +36,20 @@ class ItemNotificationWorker(
         val currentTime = System.currentTimeMillis()
         val expiryReminderDays = alertSettingsManager.getExpiryReminderDays()
         val lowStockThreshold = alertSettingsManager.getLowStockThreshold()
-        
-        // 计算提醒结束时间
-        val calendar = java.util.Calendar.getInstance()
-        calendar.add(java.util.Calendar.DAY_OF_YEAR, expiryReminderDays)
-        val reminderEndTime = calendar.timeInMillis
+        val zone = java.time.ZoneId.systemDefault()
+        val today = java.time.Instant.ofEpochMilli(currentTime).atZone(zone).toLocalDate()
+        val endDate = today.plusDays(expiryReminderDays.toLong())
 
         // 获取所有物品
         val allItems = itemDao.getAllItems().first()
         
         // 检查即将过期的物品
         val expiringItems = allItems.filter { item ->
-            item.expiryDate != null &&
-            item.expiryDate.time >= currentTime &&
-            item.expiryDate.time <= reminderEndTime
+            val expiryDate = item.expiryDate ?: return@filter false
+            val expiryLocalDate = java.time.Instant.ofEpochMilli(expiryDate.time)
+                .atZone(zone)
+                .toLocalDate()
+            !expiryLocalDate.isBefore(today) && !expiryLocalDate.isAfter(endDate)
         }
 
         // 检查低库存的物品

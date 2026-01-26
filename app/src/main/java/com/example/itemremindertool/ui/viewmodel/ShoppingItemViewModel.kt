@@ -1,6 +1,7 @@
 package com.example.itemremindertool.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.itemremindertool.data.model.ShoppingItem
@@ -13,8 +14,9 @@ import kotlinx.coroutines.delay
 import java.util.Date
 
 class ShoppingItemViewModel(
+    application: Application,
     private val shoppingItemRepository: ShoppingItemRepository
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     val shoppingItems = shoppingItemRepository.getAllShoppingItems()
     val activeShoppingItems = shoppingItemRepository.getActiveShoppingItems()
@@ -38,11 +40,18 @@ class ShoppingItemViewModel(
             try {
                 _operationState.value = OperationState.Saving
                 shoppingItemRepository.insertShoppingItem(item)
-                _operationState.value = OperationState.Success("已添加到购物清单")
+                _operationState.value = OperationState.Success(
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_add_shopping_success)
+                )
                 delay(2000)
                 _operationState.value = OperationState.Idle
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("添加失败: ${e.message}")
+                _operationState.value = OperationState.Error(
+                    getApplication<Application>().getString(
+                        com.example.itemremindertool.R.string.operation_add_shopping_failed,
+                        e.message ?: ""
+                    )
+                )
                 delay(2000)
                 _operationState.value = OperationState.Idle
             }
@@ -54,11 +63,18 @@ class ShoppingItemViewModel(
             try {
                 _operationState.value = OperationState.Saving
                 shoppingItemRepository.updateShoppingItem(item)
-                _operationState.value = OperationState.Success("更新成功")
+                _operationState.value = OperationState.Success(
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_update_success)
+                )
                 delay(2000)
                 _operationState.value = OperationState.Idle
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("更新失败: ${e.message}")
+                _operationState.value = OperationState.Error(
+                    getApplication<Application>().getString(
+                        com.example.itemremindertool.R.string.operation_update_failed,
+                        e.message ?: ""
+                    )
+                )
                 delay(2000)
                 _operationState.value = OperationState.Idle
             }
@@ -70,11 +86,18 @@ class ShoppingItemViewModel(
             try {
                 _operationState.value = OperationState.Deleting
                 shoppingItemRepository.deleteShoppingItem(item)
-                _operationState.value = OperationState.Success("删除成功")
+                _operationState.value = OperationState.Success(
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_delete_success)
+                )
                 delay(2000)
                 _operationState.value = OperationState.Idle
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("删除失败: ${e.message}")
+                _operationState.value = OperationState.Error(
+                    getApplication<Application>().getString(
+                        com.example.itemremindertool.R.string.operation_delete_failed,
+                        e.message ?: ""
+                    )
+                )
                 delay(2000)
                 _operationState.value = OperationState.Idle
             }
@@ -91,12 +114,21 @@ class ShoppingItemViewModel(
                         completedAt = if (!item.isCompleted) Date() else null
                     )
                 )
-                val message = if (!item.isCompleted) "已标记为完成" else "已取消完成"
+                val message = if (!item.isCompleted) {
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_mark_complete)
+                } else {
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_mark_incomplete)
+                }
                 _operationState.value = OperationState.Success(message)
                 delay(2000)
                 _operationState.value = OperationState.Idle
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("操作失败: ${e.message}")
+                _operationState.value = OperationState.Error(
+                    getApplication<Application>().getString(
+                        com.example.itemremindertool.R.string.operation_failed,
+                        e.message ?: ""
+                    )
+                )
                 delay(2000)
                 _operationState.value = OperationState.Idle
             }
@@ -111,12 +143,13 @@ data class ShoppingItemUiState(
 )
 
 class ShoppingItemViewModelFactory(
+    private val application: Application,
     private val shoppingItemRepository: ShoppingItemRepository
 ) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ShoppingItemViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ShoppingItemViewModel(shoppingItemRepository) as T
+            return ShoppingItemViewModel(application, shoppingItemRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

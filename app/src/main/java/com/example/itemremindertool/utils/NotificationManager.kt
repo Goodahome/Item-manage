@@ -14,7 +14,6 @@ import com.example.itemremindertool.data.model.ItemReminder
 
 object NotificationHelper {
     private const val CHANNEL_ID = "item_reminder_channel"
-    private const val CHANNEL_NAME = "物品提醒"
     private const val NOTIFICATION_ID_BASE = 1000
     
     /**
@@ -24,10 +23,10 @@ object NotificationHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                CHANNEL_NAME,
+                context.getString(R.string.reminder_notification_channel_name),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "物品提醒通知"
+                description = context.getString(R.string.reminder_notification_channel_description)
                 enableVibration(true)
                 enableLights(true)
             }
@@ -62,21 +61,25 @@ object NotificationHelper {
         )
         
         // 构建通知
-        val itemName = item?.name ?: "未知物品"
+        val itemName = item?.name ?: context.getString(R.string.unknown_item)
         val reminderReason = if (reminder.reason.isNotBlank()) {
             reminder.reason
         } else {
             when (reminder.reminderType) {
-                com.example.itemremindertool.data.model.ReminderType.ONCE -> "一次性提醒"
-                com.example.itemremindertool.data.model.ReminderType.DAILY -> "每日提醒"
-                com.example.itemremindertool.data.model.ReminderType.MONTHLY -> "每月提醒"
-                com.example.itemremindertool.data.model.ReminderType.YEARLY -> "每年提醒"
+                com.example.itemremindertool.data.model.ReminderType.ONCE ->
+                    context.getString(R.string.reminder_type_once_display)
+                com.example.itemremindertool.data.model.ReminderType.DAILY ->
+                    context.getString(R.string.reminder_type_daily_display)
+                com.example.itemremindertool.data.model.ReminderType.MONTHLY ->
+                    context.getString(R.string.reminder_type_monthly_display)
+                com.example.itemremindertool.data.model.ReminderType.YEARLY ->
+                    context.getString(R.string.reminder_type_yearly_display)
             }
         }
         
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("物品提醒：$itemName")
+            .setContentTitle(context.getString(R.string.reminder_notification_title, itemName))
             .setContentText(reminderReason)
             .setStyle(NotificationCompat.BigTextStyle()
                 .bigText(reminderReason))

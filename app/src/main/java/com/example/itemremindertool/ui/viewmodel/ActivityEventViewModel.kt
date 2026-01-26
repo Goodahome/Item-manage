@@ -172,7 +172,11 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
             val event = ActivityEvent(
                 type = ActivityEventType.ITEM_EXPIRING,
                 title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_expiring_soon),
-                description = "$itemName 将在 $daysUntilExpiry 天后过期",
+                description = getApplication<android.app.Application>().getString(
+                    com.example.itemremindertool.R.string.item_days_until_expiry_description,
+                    itemName,
+                    daysUntilExpiry
+                ),
                 targetId = itemId,
                 targetName = itemName,
                 iconType = "expiring",
@@ -190,7 +194,11 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
             val event = ActivityEvent(
                 type = ActivityEventType.ITEM_LOW_STOCK,
                 title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_low_stock),
-                description = "$itemName 当前库存：$currentQuantity",
+                description = getApplication<android.app.Application>().getString(
+                    com.example.itemremindertool.R.string.item_current_stock_description,
+                    itemName,
+                    currentQuantity
+                ),
                 targetId = itemId,
                 targetName = itemName,
                 iconType = "low_stock",

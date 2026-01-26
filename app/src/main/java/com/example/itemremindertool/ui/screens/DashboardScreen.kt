@@ -2762,6 +2762,8 @@ fun ItemListRow(
                 ColorHelpers.getContrastColor(itemBackgroundColor)
             }
             val itemIconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
+            val displayChar = firstDisplayChar(item.name)
+            val displayText = if (displayChar.length == 1) displayChar.uppercase() else displayChar
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -2787,7 +2789,7 @@ fun ItemListRow(
                     )
                 } else {
                     Text(
-                        text = item.name.firstOrNull()?.uppercase() ?: "?",
+                        text = displayText,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = itemTextColor
@@ -5329,6 +5331,7 @@ fun TimelineItemView(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .height(IntrinsicSize.Min)
             .heightIn(min = 80.dp) // 设置最小高度，确保时间线连续
             .then(
                 if (onClick != null) {
@@ -5339,32 +5342,41 @@ fun TimelineItemView(
             ),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // 左侧：时间线和图标
-        Column(
-            modifier = Modifier.width(40.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        // 左侧：时间线和图标（图标与标题对齐）
+        Box(
+            modifier = Modifier
+                .width(40.dp)
+                .fillMaxHeight(),
+            contentAlignment = Alignment.TopCenter
         ) {
-            // 上半部分竖线（除了第一项）
-//            if (!isFirst) {
-//                Box(
-//                    modifier = Modifier
-//                        .width(3.dp)
-//                        .height(12.dp)
-//                        .background(
-//                            color = iconColor.copy(alpha = 0.3f)
-//                        )
-//                )
-//            } else {
-//                Spacer(modifier = Modifier.height(12.dp))
-//            }
-            
-            // 圆形图标
+            // 整体竖线
             Box(
                 modifier = Modifier
+                    .width(3.dp)
+                    .fillMaxHeight()
+                    .background(color = iconColor.copy(alpha = 0.3f))
+            )
+
+            // 顶部留空（与右侧内容上边距对齐）
+            val topOffset = 8.dp
+
+            // 顶部遮盖（第一项不显示上半段）
+            if (isFirst) {
+                Box(
+                    modifier = Modifier
+                        .width(3.dp)
+                        .height(topOffset + 18.dp)
+                        .background(ColorHelpers.getGroup2PageBgColor())
+                )
+            }
+
+            // 圆形图标（对齐标题行）
+            Box(
+                modifier = Modifier
+                    .padding(top = topOffset)
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(ColorHelpers.getGroup2PageBgColor()) // 背景色遮盖时间线
-                    // .border(3.dp, iconColor.copy(alpha = 0.3f), CircleShape)
+                    .background(ColorHelpers.getGroup2PageBgColor())
                     .background(iconColor.copy(alpha = 0.15f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -5375,19 +5387,16 @@ fun TimelineItemView(
                     modifier = Modifier.size(20.dp)
                 )
             }
-            
-            // 下半部分竖线（除了最后一项）- 使用足够的高度确保连续
-            if (!isLast) {
+
+            // 底部遮盖（最后一项不显示下半段）
+            if (isLast) {
                 Box(
                     modifier = Modifier
                         .width(3.dp)
-                        .height(60.dp) // 使用固定高度，足够连接下一个项目
-                        .background(
-                            color = iconColor.copy(alpha = 0.3f)
-                        )
+                        .fillMaxHeight()
+                        .padding(top = topOffset + 36.dp)
+                        .background(ColorHelpers.getGroup2PageBgColor())
                 )
-            } else {
-                Spacer(modifier = Modifier.height(12.dp))
             }
         }
         
@@ -5641,9 +5650,10 @@ fun AlertListSection(
     val expiringSoonTitle = stringResource(R.string.expiring_soon_title)
     val lowStockTitle = stringResource(R.string.low_stock_title)
     val allTimeline = remember(expiringItems, lowStockItems, activeReminders, activityEvents, themeColor, expiringSoonTitle, lowStockTitle) {
-        val timeline = mutableListOf<TimelineItem>()
+        val expiringTimeline = mutableListOf<TimelineItem>()
+        val otherTimeline = mutableListOf<TimelineItem>()
         
-        // 添加动态事件
+        // 添加动态事件（正常按时间排序）
         activityEvents.forEach { event ->
             val (icon, iconColor) = when (event.type) {
                 com.example.itemremindertool.data.model.ActivityEventType.ITEM_ADDED -> 
@@ -5668,12 +5678,39 @@ fun AlertListSection(
                     Icons.Default.Inventory2 to themeColor
             }
             
-            timeline.add(
+            // 动态生成本地化的标题和描述
+            val localizedTitle = when (event.type) {
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_ADDED ->
+                    context.getString(R.string.event_added_item)
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_DELETED ->
+                    context.getString(R.string.event_deleted_item)
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_UPDATED ->
+                    context.getString(R.string.event_updated_item)
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_USED ->
+                    context.getString(R.string.event_used_item)
+                com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_ADDED ->
+                    context.getString(R.string.event_created_warehouse)
+                com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_DELETED ->
+                    context.getString(R.string.event_deleted_warehouse)
+                com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_UPDATED ->
+                    context.getString(R.string.event_updated_warehouse)
+                com.example.itemremindertool.data.model.ActivityEventType.REMINDER_TRIGGERED ->
+                    context.getString(R.string.event_reminder)
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_EXPIRING ->
+                    context.getString(R.string.event_expiring_soon)
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_LOW_STOCK ->
+                    context.getString(R.string.event_low_stock)
+            }
+            
+            // 描述保持使用 targetName（物品名或容器名），不需要翻译
+            val localizedDescription = event.targetName.ifEmpty { event.description }
+            
+            otherTimeline.add(
                 TimelineItem(
                     id = "event_${event.id}",
                     type = "event",
-                    title = event.title,
-                    description = event.description,
+                    title = localizedTitle,
+                    description = localizedDescription,
                     time = event.createdAt.time,
                     icon = icon,
                     iconColor = iconColor,
@@ -5682,7 +5719,7 @@ fun AlertListSection(
             )
         }
         
-        // 添加即将过期提醒
+        // 添加即将过期提醒（置顶显示）
         expiringItems.forEach { item ->
             val daysUntilExpiry = ((item.expiryDate!!.time - System.currentTimeMillis()) / (1000 * 60 * 60 * 24)).toInt()
             val description = context.getString(
@@ -5690,7 +5727,7 @@ fun AlertListSection(
                 item.name,
                 daysUntilExpiry
             )
-            timeline.add(
+            expiringTimeline.add(
                 TimelineItem(
                     id = "expiring_${item.id}",
                     type = "expiring",
@@ -5705,14 +5742,14 @@ fun AlertListSection(
             )
         }
         
-        // 添加库存不足提醒
+        // 添加库存不足提醒（不置顶）
         lowStockItems.forEach { item ->
             val description = context.getString(
                 R.string.item_low_stock_description,
                 item.name,
                 item.quantity
             )
-            timeline.add(
+            otherTimeline.add(
                 TimelineItem(
                     id = "lowstock_${item.id}",
                     type = "lowstock",
@@ -5727,43 +5764,39 @@ fun AlertListSection(
             )
         }
         
-        // 添加自定义提醒
+        // 添加自定义提醒（只显示一次性提醒且未过期的，不置顶）
         val currentTime = System.currentTimeMillis()
         activeReminders.forEach { reminder ->
             val item = items.find { it.id == reminder.itemId }
-            if (item != null) {
-                val nextReminderTime = when (reminder.reminderType) {
-                    com.example.itemremindertool.data.model.ReminderType.ONCE -> 
-                        reminder.reminderTime?.time ?: currentTime
-                    else -> currentTime
-                }
+            if (item != null && reminder.reminderType == com.example.itemremindertool.data.model.ReminderType.ONCE) {
+                val reminderTime = reminder.reminderTime?.time ?: currentTime
                 
-                val typeStr = when (reminder.reminderType) {
-                    com.example.itemremindertool.data.model.ReminderType.ONCE -> "一次性提醒"
-                    com.example.itemremindertool.data.model.ReminderType.DAILY -> "每日提醒"
-                    com.example.itemremindertool.data.model.ReminderType.MONTHLY -> "每月提醒"
-                    com.example.itemremindertool.data.model.ReminderType.YEARLY -> "每年提醒"
-                }
-                
-                timeline.add(
-                    TimelineItem(
-                        id = "custom_${reminder.id}",
-                        type = "custom",
-                        title = typeStr,
-                        description = "${item.name} - ${reminder.reason}",
-                        time = nextReminderTime,
-                        icon = Icons.Default.Alarm,
-                        iconColor = themeColor,
-                        targetId = item.id,
-                        item = item,
-                        reminder = reminder
+                // 只显示未过期的一次性提醒
+                if (reminderTime >= currentTime) {
+                    val typeStr = context.getString(R.string.reminder_type_once_display)
+                    
+                    otherTimeline.add(
+                        TimelineItem(
+                            id = "custom_${reminder.id}",
+                            type = "custom",
+                            title = typeStr,
+                            description = "${item.name} - ${reminder.reason}",
+                            time = reminderTime,
+                            icon = Icons.Default.Alarm,
+                            iconColor = themeColor,
+                            targetId = item.id,
+                            item = item,
+                            reminder = reminder
+                        )
                     )
-                )
+                }
             }
         }
         
-        // 按时间降序排序（最新的在前）
-        timeline.sortedByDescending { it.time }
+        // 即将过期置顶（按到期时间升序），其他按时间降序
+        val sortedExpiring = expiringTimeline.sortedBy { it.time }
+        val sortedOthers = otherTimeline.sortedByDescending { it.time }
+        sortedExpiring + sortedOthers
     }
     
     if (allTimeline.isEmpty()) {

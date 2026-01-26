@@ -250,6 +250,7 @@
     <!-- 标签 -->
     <string name="tags">Tags</string>
     <string name="nav_tag_management">Tag-Verwaltung</string>
+    <string name="nav_reminder_list">Erinnerungsliste</string>
     <string name="nav_excel_import_export">Stapelimport/-export</string>
     <string name="excel_import_export_title">Stapelimport/-export</string>
     <string name="excel_import_title">Excel-Import</string>
@@ -519,6 +520,23 @@
     <string name="reminder_content">Erinnerungsinhalt</string>
     <string name="reminder_time">Erinnerungszeit</string>
     <string name="reminder_type">Erinnerungstyp</string>
+    <string name="reminder_notification_channel_name">Artikel-Erinnerung</string>
+    <string name="reminder_notification_channel_description">Benachrichtigungen für Artikel-Erinnerungen</string>
+    <string name="reminder_notification_title">Artikel-Erinnerung: %1$s</string>
+    <string name="unknown_item">Unbekannter Artikel</string>
+    <string name="reminder_list_title">Erinnerungsliste</string>
+    <string name="no_reminders">Keine Erinnerungen</string>
+    <string name="no_enabled_reminders">Keine aktivierten Erinnerungen</string>
+    <string name="no_disabled_reminders">Keine deaktivierten Erinnerungen</string>
+    <string name="filter_all_reminders">Alle</string>
+    <string name="filter_enabled_reminders">Aktiviert</string>
+    <string name="filter_disabled_reminders">Deaktiviert</string>
+    <string name="disabled_label">Deaktiviert</string>
+    <string name="confirm_delete_reminder">Erinnerung löschen</string>
+    <string name="confirm_delete_reminder_message">Möchten Sie diese Erinnerung wirklich löschen?</string>
+    <string name="no_time_set">Keine Zeit festgelegt</string>
+    <string name="monthly_reminder_format">Tag %1$d jeden Monats um %2$s</string>
+    <string name="yearly_reminder_format">%1$d.%2$d um %3$s</string>
     
     <!-- 备份恢复 -->
     <string name="offline_backup">Offline-Sicherung</string>
@@ -546,6 +564,32 @@
     <!-- 时间线描述 -->
     <string name="item_expiring_description">%1$s läuft in %2$d Tagen ab</string>
     <string name="item_low_stock_description">%1$s aktueller Bestand: %2$d</string>
+    <string name="item_used_quantity_description">%1$s × %2$d</string>
+    <string name="item_current_stock_description">%1$s aktueller Bestand: %2$d</string>
+    <string name="item_days_until_expiry_description">%1$s läuft in %2$d Tagen ab</string>
+    
+    <!-- 云端同步消息 -->
+    <string name="sync_success">Cloud-Synchronisation erfolgreich</string>
+    <string name="sync_error">Cloud-Synchronisation fehlgeschlagen: %1$s</string>
+    <string name="sync_exception">Synchronisationsausnahme: %1$s</string>
+    <string name="sync_provider_not_configured">%1$s nicht konfiguriert oder nicht autorisiert</string>
+    <string name="sync_no_local_data">Keine lokalen Daten, Synchronisation übersprungen</string>
+    <string name="sync_provider_error">%1$s</string>
+    
+    <!-- 操作消息 -->
+    <string name="operation_save_success">Erfolgreich gespeichert</string>
+    <string name="operation_save_failed">Speichern fehlgeschlagen: %1$s</string>
+    <string name="operation_update_success">Erfolgreich aktualisiert</string>
+    <string name="operation_update_failed">Aktualisierung fehlgeschlagen: %1$s</string>
+    <string name="operation_use_success">Erfolgreich verwendet</string>
+    <string name="operation_use_failed">Verwendung fehlgeschlagen: %1$s</string>
+    <string name="operation_delete_success">Erfolgreich gelöscht</string>
+    <string name="operation_delete_failed">Löschen fehlgeschlagen: %1$s</string>
+    <string name="operation_add_shopping_success">Zur Einkaufsliste hinzugefügt</string>
+    <string name="operation_add_shopping_failed">Hinzufügen fehlgeschlagen: %1$s</string>
+    <string name="operation_mark_complete">Als erledigt markiert</string>
+    <string name="operation_mark_incomplete">Als nicht erledigt markiert</string>
+    <string name="operation_failed">Vorgang fehlgeschlagen: %1$s</string>
     
     <!-- 备份恢复对话框 -->
     <string name="backup_to_downloads">In Downloads sichern</string>
@@ -642,6 +686,10 @@
 
     <!-- Anzeige des Erinnerungstyps (vereinfacht) -->
     <string name="reminder_type_once_simple">Einmalige Erinnerung</string>
+    <string name="reminder_type_once_short">Einmalig</string>
+    <string name="reminder_type_daily_short">Täglich</string>
+    <string name="reminder_type_monthly_short">Monatlich</string>
+    <string name="reminder_type_yearly_short">Jährlich</string>
 
     <!-- Zeitangabe -->
     <string name="time_just_now">Gerade eben</string>
