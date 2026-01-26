@@ -46,6 +46,8 @@
     <string name="low_stock_threshold_desc">Rappeler quand la quantité d\'article tombe en dessous de cette valeur</string>
     <string name="forget_protection">Rappel anti-oubli</string>
     <string name="forget_protection_desc">Lorsque activé, rappelle les articles non utilisés depuis longtemps</string>
+    <string name="forget_inactive_days">Seuil d\'inactivité</string>
+    <string name="forget_inactive_days_desc">Rappeler après ce nombre de jours d\'inactivité</string>
     <string name="system_notification">Notification système</string>
     <string name="system_notification_desc">Lorsque activé, les rappels apparaîtront dans la barre de notifications système</string>
     <string name="days_format">%d jours</string>
@@ -57,6 +59,13 @@
     <string name="alert_items">Articles avec rappel</string>
     <string name="enable_stock_alert">Activer l\'alerte stock</string>
     <string name="enable_stock_alert_desc">Rappeler quand la quantité tombe en dessous du seuil</string>
+    <string name="forget_reminder_title">Rappel anti-oubli</string>
+    <string name="forget_reminder_summary">%1$d articles inutilisés depuis longtemps, appuyez pour voir</string>
+    <string name="forget_reminder_summary_hint">Une partie des articles a été rappelée aujourd\'hui</string>
+    <string name="view_list">Voir</string>
+    <string name="back_to_timeline">Retour à la chronologie</string>
+    <string name="no_forget_items">Aucun article à rappeler</string>
+    <string name="forget_item_last_used">Dernière mise à jour : %1$s</string>
     <string name="notification_time">Heure de rappel</string>
     <string name="select_notification_time">Sélectionner l\'heure de rappel</string>
     <string name="hour">heure</string>
@@ -418,12 +427,12 @@
     <string name="feature_code">Code de caractéristique de l\'article</string>
     <string name="expiry_date">Date d\'expiration</string>
     <string name="created_at">Créé le</string>
-    <string name="recognizing_image">Reconnaissance de l\'image...</string>
+    <string name="recognizing_image">Reconnaissance de l\'image…</string>
     <string name="premium_remove_ads_desc">Profitez d\\\'une expérience sans publicité</string>
     <string name="take_photo_search">Recherche par photo</string>
     <string name="close">Fermer</string>
     <string name="take_photo_recognize_button">Reconnaissance par photo</string>
-    <string name="extracting_features_progress">Extraction des caractéristiques...</string>
+    <string name="extracting_features_progress">Extraction des caractéristiques…</string>
     <string name="camera_permission_required">Autorisation caméra requise</string>
     <string name="camera_permission_for_scanner">Autorisation caméra requise pour le scan</string>
     <string name="camera_frame_hint">Placer l\'article dans le cadre</string>
@@ -538,6 +547,7 @@
     <string name="event_deleted_item">Article supprimé</string>
     <string name="event_updated_item">Article mis à jour</string>
     <string name="event_used_item">Article utilisé</string>
+    <string name="event_viewed_item">Article consulté</string>
     <string name="event_created_warehouse">Conteneur créé</string>
     <string name="event_deleted_warehouse">Conteneur supprimé</string>
     <string name="event_updated_warehouse">Conteneur mis à jour</string>
@@ -595,10 +605,10 @@
     <string name="date_label">Date</string>
     <string name="time_label">Heure</string>
     <string name="daily_reminder_time">Heure de rappel quotidien</string>
-    <string name="monthly_date_hint">Date mensuelle (1-31)</string>
+    <string name="monthly_date_hint">Date mensuelle (1–31)</string>
     <string name="reminder_time_hint">Heure de rappel</string>
-    <string name="month_hint">Mois (1-12)</string>
-    <string name="day_hint">Jour (1-31)</string>
+    <string name="month_hint">Mois (1–12)</string>
+    <string name="day_hint">Jour (1–31)</string>
     <string name="reminder_reason_placeholder">Raison du rappel (optionnel)</string>
     
     <!-- 图片选择 -->
@@ -782,17 +792,17 @@
     <string name="excel_header_missing">Fichier Excel sans en-têtes</string>
     <string name="excel_export_log_failed">Échec de l’export Excel</string>
     <string name="excel_import_log_failed">Échec de l’import Excel</string>
-    <string name="feature_extract_log">Caractéristiques extraites, featureCode : %1$s...</string>
+    <string name="feature_extract_log">Caractéristiques extraites, featureCode : %1$s…</string>
     <string name="custom_color_field_search_box_text">Suchfeld-Text / IconTexte / icône de la barre de recherche</string>
     <string name="cloud_restore_desc">Restaurer les données de sauvegarde depuis le cloud</string>
     <string name="premium_excel_import_export">Import &amp; Export Excel</string>
-    <string name="premium_excel_import_export_desc">Import &amp; export en masse des données d\\\'articles pour plus d\\\'efficacité</string>
+    <string name="premium_excel_import_export_desc">Import &amp; export en masse des données d\'articles pour plus d\'efficacité</string>
     <string name="premium_theme_custom_colors">Changement de thème &amp; Couleurs personnalisées</string>
     <string name="premium_theme_custom_colors_desc">Déverrouillez plusieurs thèmes et schémas de couleurs personnalisés</string>
     <string name="premium_advanced_reminder">Stratégies de rappel avancées</string>
     <string name="premium_advanced_reminder_desc">Prend en charge les rappels récurrents et les règles de notification avancées</string>
     <string name="premium_unlimited_tags">Étiquettes illimitées</string>
-    <string name="premium_unlimited_tags_desc">Aucune limite sur le nombre d\\\'étiquettes</string>
+    <string name="premium_unlimited_tags_desc">Aucune limite sur le nombre d\'étiquettes</string>
     <string name="premium_remove_ads">Supprimer les publicités</string>
     <string name="remove_ads">Supprimer les publicités</string>
     <string name="remove_ads_desc">Supprimez définitivement toutes les publicités après achat pour une expérience sans interruption. Prix : %1$s</string>
@@ -808,7 +818,7 @@
     <string name="trial_remaining_days">Encore %1$d jours</string>
     <string name="trial_remaining_hours">Encore %1$d heures</string>
     <string name="trial_started">Essai commencé ! Profitez de 7 jours de fonctionnalités Premium !</string>
-    <string name="customize_app_name_icon">Personnaliser le nom &amp; l\\\'icône de l\\\'application</string>
+    <string name="customize_app_name_icon">Personnaliser le nom &amp; l\'icône de l\'application</string>
     <string name="reminder_list_title">Liste des rappels</string>
     <string name="no_reminders">Aucun rappel</string>
     <string name="no_enabled_reminders">Aucun rappel activé</string>

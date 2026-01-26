@@ -44,6 +44,7 @@ fun AlertSettingsScreen(
     var expiryReminderDays by remember { mutableStateOf(alertSettingsManager.getExpiryReminderDays()) }
     var lowStockThreshold by remember { mutableStateOf(alertSettingsManager.getLowStockThreshold()) }
     var forgetProtectionEnabled by remember { mutableStateOf(alertSettingsManager.isForgetProtectionEnabled()) }
+    var forgetInactiveDays by remember { mutableStateOf(alertSettingsManager.getForgetProtectionInactiveDays()) }
     var systemNotificationEnabled by remember { mutableStateOf(alertSettingsManager.isSystemNotificationEnabled()) }
     var notificationHour by remember { mutableStateOf(alertSettingsManager.getNotificationHour()) }
     var notificationMinute by remember { mutableStateOf(alertSettingsManager.getNotificationMinute()) }
@@ -140,6 +141,13 @@ fun AlertSettingsScreen(
                         onValueChange = { expiryReminderDays = it.toInt() },
                         valueRange = 1f..30f,
                         steps = 28,
+                        colors = SliderDefaults.colors(
+                            thumbColor = MaterialTheme.colorScheme.primary,
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = ColorHelpers.getGroup4TextColor(0.2f),
+                            activeTickColor = MaterialTheme.colorScheme.primary,
+                            inactiveTickColor = ColorHelpers.getGroup4TextColor(0.2f)
+                        ),
                         onValueChangeFinished = {
                             alertSettingsManager.setExpiryReminderDays(expiryReminderDays)
                         }
@@ -237,36 +245,101 @@ fun AlertSettingsScreen(
                     containerColor = ColorHelpers.getGroup3CardBgColor()
                 )
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.forget_protection),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = ColorHelpers.getGroup4TextColor()
-                        )
-                        Text(
-                            text = stringResource(R.string.forget_protection_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = ColorHelpers.getGroup4TextColor(0.6f)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.forget_protection),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = ColorHelpers.getGroup4TextColor()
+                            )
+                            Text(
+                                text = stringResource(R.string.forget_protection_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ColorHelpers.getGroup4TextColor(0.6f)
+                            )
+                        }
+                        Switch(
+                            checked = forgetProtectionEnabled,
+                            onCheckedChange = {
+                                forgetProtectionEnabled = it
+                                alertSettingsManager.setForgetProtectionEnabled(it)
+                            }
                         )
                     }
-                    Switch(
-                        checked = forgetProtectionEnabled,
-                        onCheckedChange = {
-                            if (!canAccessPremiumFeatures) {
-                                showPremiumFeatureDialog = true
-                                return@Switch
+
+                    if (forgetProtectionEnabled) {
+                        AppDivider(
+                            color = ColorHelpers.getDividerColor(),
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.forget_inactive_days),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = ColorHelpers.getGroup4TextColor()
+                            )
+                            Text(
+                                text = stringResource(R.string.forget_inactive_days_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ColorHelpers.getGroup4TextColor(0.6f)
+                            )
                             }
-                            forgetProtectionEnabled = it
-                            alertSettingsManager.setForgetProtectionEnabled(it)
+                            Text(
+                            text = stringResource(R.string.days_format, forgetInactiveDays),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = ColorHelpers.getGroup4TextColor()
+                            )
                         }
-                    )
+
+                        Slider(
+                            value = forgetInactiveDays.toFloat(),
+                            onValueChange = { forgetInactiveDays = it.toInt() },
+                            valueRange = 7f..180f,
+                            steps = 173,
+                            colors = SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = ColorHelpers.getGroup4TextColor(0.2f),
+                                activeTickColor = MaterialTheme.colorScheme.primary,
+                                inactiveTickColor = ColorHelpers.getGroup4TextColor(0.2f)
+                            ),
+                            onValueChangeFinished = {
+                                alertSettingsManager.setForgetProtectionInactiveDays(forgetInactiveDays)
+                            }
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                            text = "7",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ColorHelpers.getGroup4TextColor(0.6f)
+                            )
+                            Text(
+                            text = "180",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ColorHelpers.getGroup4TextColor(0.6f)
+                            )
+                        }
+                    }
                 }
             }
             

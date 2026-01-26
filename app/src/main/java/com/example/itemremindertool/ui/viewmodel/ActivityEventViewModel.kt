@@ -19,6 +19,10 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
     
     // 获取所有动态
     val allEvents: Flow<List<ActivityEvent>> = activityEventDao.getAllEvents()
+
+    fun getEventsByType(type: ActivityEventType): Flow<List<ActivityEvent>> {
+        return activityEventDao.getEventsByType(type)
+    }
     
     /**
      * 记录物品添加动态
@@ -86,6 +90,24 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
                 targetId = itemId,
                 targetName = itemName,
                 iconType = "use_item",
+                createdAt = Date()
+            )
+            activityEventDao.insert(event)
+        }
+    }
+
+    /**
+     * 记录查看物品详情动态
+     */
+    fun logItemViewed(itemId: Long, itemName: String) {
+        viewModelScope.launch {
+            val event = ActivityEvent(
+                type = ActivityEventType.ITEM_VIEWED,
+                title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_viewed_item),
+                description = itemName,
+                targetId = itemId,
+                targetName = itemName,
+                iconType = "view_item",
                 createdAt = Date()
             )
             activityEventDao.insert(event)

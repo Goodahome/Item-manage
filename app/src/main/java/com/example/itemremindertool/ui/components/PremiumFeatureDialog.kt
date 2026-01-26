@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -191,11 +192,6 @@ fun PremiumFeatureDialog(
                         description = stringResource(R.string.premium_theme_custom_colors_desc)
                     )
                     PremiumFeatureItem(
-                        icon = Icons.Default.NotificationsActive,
-                        title = stringResource(R.string.premium_advanced_reminder),
-                        description = stringResource(R.string.premium_advanced_reminder_desc)
-                    )
-                    PremiumFeatureItem(
                         icon = Icons.AutoMirrored.Filled.Label,
                         title = stringResource(R.string.premium_unlimited_tags),
                         description = stringResource(R.string.premium_unlimited_tags_desc)
@@ -371,109 +367,228 @@ fun PremiumFeatureDialog(
                 }
                 
                 // 底部按钮栏
-                Row(
+                BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 20.dp, vertical = 12.dp)
                 ) {
-                    if (!isPremiumPurchased && !isLifetimePurchased && !trialUsed && !isTrialActive) {
-                        // 试用按钮 - 使用 TextButton，缩小文字，去掉边框
-                        TextButton(
-                            onClick = {
-                                val started = PremiumFeatureManager.startTrial(context)
-                                if (started) {
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.trial_started),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    onTrialStart()
-                                    onDismiss()
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.trial_already_used),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
+                    val shouldStackButtons = maxWidth < 360.dp
+                    if (shouldStackButtons) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(
-                                text = stringResource(R.string.try_free),
-                                fontSize = 13.sp
-                            )
-                        }
-                    }
-                    
-                    if (!isPremiumPurchased && !isLifetimePurchased) {
-                        // 订阅按钮
-                        Button(
-                            onClick = {
-                                if (isReady && activity != null) {
-                                    val success = billingManager.launchPurchaseFlow(
-                                        activity,
-                                        BillingManager.PRODUCT_PREMIUM_FEATURES,
-                                        offerToken = selectedOfferToken
+                            if (!isPremiumPurchased && !isLifetimePurchased && !trialUsed && !isTrialActive) {
+                                TextButton(
+                                    onClick = {
+                                        val started = PremiumFeatureManager.startTrial(context)
+                                        if (started) {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.trial_started),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                            onTrialStart()
+                                            onDismiss()
+                                        } else {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.trial_already_used),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.try_free),
+                                        fontSize = 13.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
-                                    if (!success) {
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.product_not_available),
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                } else if (!isReady) {
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.billing_not_ready),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
                                 }
-                            },
-                            enabled = isReady && activity != null,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(stringResource(R.string.subscribe))
-                        }
-
-                        // 永久版购买按钮
-                        Button(
-                            onClick = {
-                                if (isReady && activity != null) {
-                                    val success = billingManager.launchPurchaseFlow(
-                                        activity,
-                                        BillingManager.PRODUCT_PREMIUM_LIFETIME
+                            }
+                            if (!isPremiumPurchased && !isLifetimePurchased) {
+                                Button(
+                                    onClick = {
+                                        if (isReady && activity != null) {
+                                            val success = billingManager.launchPurchaseFlow(
+                                                activity,
+                                                BillingManager.PRODUCT_PREMIUM_FEATURES,
+                                                offerToken = selectedOfferToken
+                                            )
+                                            if (!success) {
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.product_not_available),
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        } else if (!isReady) {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.billing_not_ready),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    },
+                                    enabled = isReady && activity != null,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.subscribe),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
-                                    if (!success) {
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.product_not_available),
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                } else if (!isReady) {
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.billing_not_ready),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
                                 }
-                            },
-                            enabled = isReady && activity != null,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(stringResource(R.string.buy_lifetime))
+                                Button(
+                                    onClick = {
+                                        if (isReady && activity != null) {
+                                            val success = billingManager.launchPurchaseFlow(
+                                                activity,
+                                                BillingManager.PRODUCT_PREMIUM_LIFETIME
+                                            )
+                                            if (!success) {
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.product_not_available),
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        } else if (!isReady) {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.billing_not_ready),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    },
+                                    enabled = isReady && activity != null,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.buy_lifetime),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            } else {
+                                Button(
+                                    onClick = onDismiss,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(stringResource(R.string.close))
+                                }
+                            }
                         }
                     } else {
-                        // 已购买，显示关闭按钮
-                        Button(
-                            onClick = onDismiss,
-                            modifier = Modifier.fillMaxWidth()
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(stringResource(R.string.close))
+                            if (!isPremiumPurchased && !isLifetimePurchased && !trialUsed && !isTrialActive) {
+                                TextButton(
+                                    onClick = {
+                                        val started = PremiumFeatureManager.startTrial(context)
+                                        if (started) {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.trial_started),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                            onTrialStart()
+                                            onDismiss()
+                                        } else {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.trial_already_used),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.try_free),
+                                        fontSize = 13.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                            if (!isPremiumPurchased && !isLifetimePurchased) {
+                                Button(
+                                    onClick = {
+                                        if (isReady && activity != null) {
+                                            val success = billingManager.launchPurchaseFlow(
+                                                activity,
+                                                BillingManager.PRODUCT_PREMIUM_FEATURES,
+                                                offerToken = selectedOfferToken
+                                            )
+                                            if (!success) {
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.product_not_available),
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        } else if (!isReady) {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.billing_not_ready),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    },
+                                    enabled = isReady && activity != null,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.subscribe),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                Button(
+                                    onClick = {
+                                        if (isReady && activity != null) {
+                                            val success = billingManager.launchPurchaseFlow(
+                                                activity,
+                                                BillingManager.PRODUCT_PREMIUM_LIFETIME
+                                            )
+                                            if (!success) {
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.product_not_available),
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        } else if (!isReady) {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.billing_not_ready),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    },
+                                    enabled = isReady && activity != null,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.buy_lifetime),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            } else {
+                                Button(
+                                    onClick = onDismiss,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(stringResource(R.string.close))
+                                }
+                            }
                         }
                     }
                 }

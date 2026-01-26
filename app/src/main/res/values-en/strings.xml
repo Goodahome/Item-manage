@@ -46,6 +46,8 @@
     <string name="low_stock_threshold_desc">Remind when item quantity falls below this value</string>
     <string name="forget_protection">Anti-Forgetting Reminder</string>
     <string name="forget_protection_desc">When enabled, reminds for items unused for a long time</string>
+    <string name="forget_inactive_days">Inactive threshold</string>
+    <string name="forget_inactive_days_desc">Remind when unused for this many days</string>
     <string name="system_notification">System Notification</string>
     <string name="system_notification_desc">When enabled, reminders will appear in the system notification bar</string>
     <string name="days_format">%d days</string>
@@ -57,6 +59,13 @@
     <string name="alert_items">Reminder Items</string>
     <string name="enable_stock_alert">Enable Stock Alert</string>
     <string name="enable_stock_alert_desc">Remind when item quantity falls below threshold</string>
+    <string name="forget_reminder_title">Anti-Forgetting Reminder</string>
+    <string name="forget_reminder_summary">%1$d items have been unused for a long time, tap to view</string>
+    <string name="forget_reminder_summary_hint">Some items were reminded today</string>
+    <string name="view_list">View</string>
+    <string name="back_to_timeline">Back to timeline</string>
+    <string name="no_forget_items">No items for anti-forgetting</string>
+    <string name="forget_item_last_used">Last updated: %1$s</string>
     <string name="notification_time">Reminder Time</string>
     <string name="select_notification_time">Select Reminder Time</string>
     <string name="hour">hour</string>
@@ -551,6 +560,7 @@
     <string name="event_deleted_item">Deleted item</string>
     <string name="event_updated_item">Updated item</string>
     <string name="event_used_item">Used item</string>
+    <string name="event_viewed_item">Viewed item</string>
     <string name="event_created_warehouse">Created container</string>
     <string name="event_deleted_warehouse">Deleted container</string>
     <string name="event_updated_warehouse">Updated container</string>

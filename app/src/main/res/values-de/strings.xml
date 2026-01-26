@@ -46,6 +46,8 @@
     <string name="low_stock_threshold_desc">Erinnerung, wenn die Artikelmenge unter diesen Wert fällt</string>
     <string name="forget_protection">Vergessensschutz-Erinnerung</string>
     <string name="forget_protection_desc">Bei Aktivierung Erinnerung bei lange ungenutzten Artikeln</string>
+    <string name="forget_inactive_days">Inaktivitätsgrenze</string>
+    <string name="forget_inactive_days_desc">Erinnerung nach dieser Anzahl inaktiver Tage</string>
     <string name="system_notification">Systembenachrichtigung</string>
     <string name="system_notification_desc">Bei Aktivierung werden Erinnerungen in der Systembenachrichtigungsleiste angezeigt</string>
     <string name="days_format">%d Tage</string>
@@ -57,6 +59,13 @@
     <string name="alert_items">Erinnerungsartikel</string>
     <string name="enable_stock_alert">Lagerwarnung aktivieren</string>
     <string name="enable_stock_alert_desc">Erinnerung, wenn die Artikelmenge unter den Schwellenwert fällt</string>
+    <string name="forget_reminder_title">Vergessensschutz-Erinnerung</string>
+    <string name="forget_reminder_summary">%1$d Artikel lange ungenutzt, tippen zum Anzeigen</string>
+    <string name="forget_reminder_summary_hint">Ein Teil der Artikel wurde heute erinnert</string>
+    <string name="view_list">Anzeigen</string>
+    <string name="back_to_timeline">Zur Zeitleiste</string>
+    <string name="no_forget_items">Keine Artikel für Erinnerungen</string>
+    <string name="forget_item_last_used">Zuletzt aktualisiert: %1$s</string>
     <string name="notification_time">Erinnerungszeit</string>
     <string name="select_notification_time">Erinnerungszeit auswählen</string>
     <string name="hour">Stunde</string>
@@ -553,6 +562,7 @@
     <string name="event_deleted_item">Artikel gelöscht</string>
     <string name="event_updated_item">Artikel aktualisiert</string>
     <string name="event_used_item">Artikel verwendet</string>
+    <string name="event_viewed_item">Artikel angesehen</string>
     <string name="event_created_warehouse">Behälter erstellt</string>
     <string name="event_deleted_warehouse">Behälter gelöscht</string>
     <string name="event_updated_warehouse">Behälter aktualisiert</string>

@@ -66,6 +66,8 @@ import java.util.*
 import java.util.Calendar
 import java.time.Instant
 import java.time.ZoneId
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.itemremindertool.ui.viewmodel.ActivityEventViewModel
 
 private fun firstDisplayChar(text: String): String {
     if (text.isBlank()) return "?"
@@ -85,6 +87,7 @@ fun ItemDetailScreen(
     onAddAlert: (Item) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val activityEventViewModel: ActivityEventViewModel = viewModel()
     // 加载物品信息
     LaunchedEffect(itemId) {
         itemViewModel.loadItem(itemId)
@@ -103,6 +106,12 @@ fun ItemDetailScreen(
     var showImageDialog by remember { mutableStateOf(false) }
     var selectedImageIndex by remember { mutableStateOf(0) }
     
+    LaunchedEffect(item?.id) {
+        item?.let { loadedItem ->
+            activityEventViewModel.logItemViewed(loadedItem.id, loadedItem.name)
+        }
+    }
+
     if (item == null) {
         // 加载中或物品不存在
         Scaffold(

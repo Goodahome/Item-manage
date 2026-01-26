@@ -5326,6 +5326,8 @@ fun TimelineItemView(
     isLast: Boolean,
     isFirst: Boolean = false,
     onClick: (() -> Unit)? = null,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -5439,6 +5441,16 @@ fun TimelineItemView(
                 color = ColorHelpers.getGroup4TextColor(0.5f),
                 fontSize = 12.sp
             )
+
+            if (actionLabel != null && onAction != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = onAction,
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(actionLabel, fontSize = 12.sp)
+                }
+            }
         }
     }
 }
@@ -5599,6 +5611,7 @@ fun AlertListSection(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    var showForgetList by remember { mutableStateOf(false) }
 
     // 获取提醒设置
     val expiryReminderDays = remember { alertSettingsManager.getExpiryReminderDays() }
@@ -5608,7 +5621,56 @@ fun AlertListSection(
     val activeReminders = itemReminderViewModel?.allActiveReminders?.collectAsState(initial = emptyList())?.value ?: emptyList()
     
     // 获取所有动态事件
-    val activityEvents = activityEventViewModel?.recentEvents?.collectAsState(initial = emptyList())?.value ?: emptyList()
+    val activityEvents = activityEventViewModel
+        ?.recentEvents
+        ?.collectAsState(initial = emptyList())
+        ?.value
+        ?.filterNot { it.type == com.example.itemremindertool.data.model.ActivityEventType.ITEM_VIEWED }
+        ?: emptyList()
+    val usedEvents = activityEventViewModel
+        ?.getEventsByType(com.example.itemremindertool.data.model.ActivityEventType.ITEM_USED)
+        ?.collectAsState(initial = emptyList())
+        ?.value
+        ?: emptyList()
+    val viewedEvents = activityEventViewModel
+        ?.getEventsByType(com.example.itemremindertool.data.model.ActivityEventType.ITEM_VIEWED)
+        ?.collectAsState(initial = emptyList())
+        ?.value
+        ?: emptyList()
+
+    val zone = remember { ZoneId.systemDefault() }
+    val today = remember { Instant.now().atZone(zone).toLocalDate() }
+    val forgetInactiveDays = remember { alertSettingsManager.getForgetProtectionInactiveDays() }
+    val forgetCandidates = remember(items, today, forgetInactiveDays, usedEvents, viewedEvents) {
+        val cutoff = today.minusDays(forgetInactiveDays.toLong())
+        val lastUsedByItem = mutableMapOf<Long, java.util.Date>()
+        usedEvents.forEach { event ->
+            val targetId = event.targetId ?: return@forEach
+            val current = lastUsedByItem[targetId]
+            if (current == null || event.createdAt.after(current)) {
+                lastUsedByItem[targetId] = event.createdAt
+            }
+        }
+        val lastViewedByItem = mutableMapOf<Long, java.util.Date>()
+        viewedEvents.forEach { event ->
+            val targetId = event.targetId ?: return@forEach
+            val current = lastViewedByItem[targetId]
+            if (current == null || event.createdAt.after(current)) {
+                lastViewedByItem[targetId] = event.createdAt
+            }
+        }
+        items.filter { item ->
+            val lastUsedAt = lastUsedByItem[item.id] ?: item.updatedAt
+            val lastViewedAt = lastViewedByItem[item.id] ?: item.createdAt
+            val lastUsedDate = Instant.ofEpochMilli(lastUsedAt.time)
+                .atZone(zone)
+                .toLocalDate()
+            val lastViewedDate = Instant.ofEpochMilli(lastViewedAt.time)
+                .atZone(zone)
+                .toLocalDate()
+            !lastUsedDate.isAfter(cutoff) && !lastViewedDate.isAfter(cutoff)
+        }.sortedBy { it.updatedAt.time }
+    }
     
     // 计算即将过期物品
     val calendar = Calendar.getInstance()
@@ -5649,7 +5711,7 @@ fun AlertListSection(
     val themeColor = MaterialTheme.colorScheme.primary
     val expiringSoonTitle = stringResource(R.string.expiring_soon_title)
     val lowStockTitle = stringResource(R.string.low_stock_title)
-    val allTimeline = remember(expiringItems, lowStockItems, activeReminders, activityEvents, themeColor, expiringSoonTitle, lowStockTitle) {
+    val allTimeline = remember(expiringItems, lowStockItems, activeReminders, activityEvents, forgetCandidates, themeColor, expiringSoonTitle, lowStockTitle) {
         val expiringTimeline = mutableListOf<TimelineItem>()
         val otherTimeline = mutableListOf<TimelineItem>()
         
@@ -5664,6 +5726,8 @@ fun AlertListSection(
                     Icons.Default.Edit to themeColor
                 com.example.itemremindertool.data.model.ActivityEventType.ITEM_USED -> 
                     Icons.Default.RemoveCircle to themeColor
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_VIEWED ->
+                    Icons.Default.Visibility to themeColor
                 com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_ADDED -> 
                     Icons.Default.Inventory2 to themeColor
                 com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_DELETED -> 
@@ -5688,6 +5752,8 @@ fun AlertListSection(
                     context.getString(R.string.event_updated_item)
                 com.example.itemremindertool.data.model.ActivityEventType.ITEM_USED ->
                     context.getString(R.string.event_used_item)
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_VIEWED ->
+                    context.getString(R.string.event_viewed_item)
                 com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_ADDED ->
                     context.getString(R.string.event_created_warehouse)
                 com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_DELETED ->
@@ -5792,6 +5858,21 @@ fun AlertListSection(
                 }
             }
         }
+
+        // 添加防遗忘提醒入口（不置顶）
+        if (alertSettingsManager.isForgetProtectionEnabled() && forgetCandidates.isNotEmpty()) {
+            otherTimeline.add(
+                TimelineItem(
+                    id = "forget_summary",
+                    type = "forget",
+                    title = context.getString(R.string.forget_reminder_title),
+                    description = context.getString(R.string.forget_reminder_summary, forgetCandidates.size),
+                    time = forgetCandidates.maxOfOrNull { it.updatedAt.time } ?: System.currentTimeMillis(),
+                    icon = Icons.Default.Timeline,
+                    iconColor = themeColor
+                )
+            )
+        }
         
         // 即将过期置顶（按到期时间升序），其他按时间降序
         val sortedExpiring = expiringTimeline.sortedBy { it.time }
@@ -5799,7 +5880,14 @@ fun AlertListSection(
         sortedExpiring + sortedOthers
     }
     
-    if (allTimeline.isEmpty()) {
+    if (showForgetList) {
+        ForgetReminderList(
+            items = forgetCandidates,
+            onBack = { showForgetList = false },
+            onViewItem = onViewItem,
+            modifier = modifier
+        )
+    } else if (allTimeline.isEmpty()) {
         // 空状态 - 使用可滚动容器以支持下拉刷新
         Box(
             modifier = modifier
@@ -5899,8 +5987,87 @@ fun AlertListSection(
                         timeStr = timeStr,
                         isLast = index == displayedCount - 1 || index == allTimeline.size - 1,
                         isFirst = index == 0,
-                        onClick = null // 移除点击跳转功能
+                        onClick = null, // 移除点击跳转功能
+                        actionLabel = if (timelineItem.type == "forget") stringResource(R.string.view_list) else null,
+                        onAction = if (timelineItem.type == "forget") ({ showForgetList = true }) else null
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ForgetReminderList(
+    items: List<Item>,
+    onBack: () -> Unit,
+    onViewItem: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.forget_reminder_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = ColorHelpers.getGroup4TextColor()
+            )
+            TextButton(onClick = onBack) {
+                Text(stringResource(R.string.back_to_timeline))
+            }
+        }
+
+        AppDivider(color = ColorHelpers.getDividerColor(), thickness = 1.dp)
+
+        if (items.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.no_forget_items),
+                    color = ColorHelpers.getGroup4TextColor(0.6f)
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(items, key = { it.id }) { item ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onViewItem(item.id) },
+                        colors = CardDefaults.cardColors(
+                            containerColor = ColorHelpers.getGroup3CardBgColor()
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = item.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = ColorHelpers.getGroup4TextColor()
+                            )
+                            Text(
+                                text = stringResource(
+                                    R.string.forget_item_last_used,
+                                    DateFormat.getDateInstance(DateFormat.MEDIUM).format(item.updatedAt)
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ColorHelpers.getGroup4TextColor(0.6f)
+                            )
+                        }
+                    }
                 }
             }
         }

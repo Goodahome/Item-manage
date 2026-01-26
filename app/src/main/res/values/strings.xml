@@ -45,6 +45,8 @@
     <string name="low_stock_threshold_desc">当物品数量低于此值时提醒</string>
     <string name="forget_protection">防遗忘提醒</string>
     <string name="forget_protection_desc">启用后会在物品长期未使用时提醒</string>
+    <string name="forget_inactive_days">长期未使用阈值</string>
+    <string name="forget_inactive_days_desc">超过该天数未使用的物品将提醒</string>
     <string name="system_notification">系统通知</string>
     <string name="system_notification_desc">启用后会在系统通知栏显示提醒</string>
     <string name="days_format">%d 天</string>
@@ -57,6 +59,13 @@
     <string name="enable_stock_alert">启用库存提醒</string>
     <string name="enable_stock_alert_desc">当物品数量低于阈值时提醒</string>
     <string name="notification_time">提醒时间</string>
+    <string name="forget_reminder_title">防遗忘提醒</string>
+    <string name="forget_reminder_summary">有 %1$d 个物品长期未使用，点击查看</string>
+    <string name="forget_reminder_summary_hint">今日已提醒部分物品</string>
+    <string name="view_list">查看</string>
+    <string name="back_to_timeline">返回时间线</string>
+    <string name="no_forget_items">暂无防遗忘提醒物品</string>
+    <string name="forget_item_last_used">最近更新时间：%1$s</string>
     <string name="select_notification_time">选择提醒时间</string>
     <string name="hour">小时</string>
     <string name="minute">分钟</string>
@@ -639,6 +648,7 @@
     <string name="event_deleted_item">删除了物品</string>
     <string name="event_updated_item">更新了物品</string>
     <string name="event_used_item">使用了物品</string>
+    <string name="event_viewed_item">查看了物品</string>
     <string name="event_created_warehouse">创建了容器</string>
     <string name="event_deleted_warehouse">删除了容器</string>
     <string name="event_updated_warehouse">更新了容器</string>
