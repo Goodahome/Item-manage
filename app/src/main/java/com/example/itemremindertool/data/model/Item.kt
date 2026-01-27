@@ -6,12 +6,14 @@ import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.example.itemremindertool.data.converters.StringListConverters
 import java.util.Date
+import java.util.UUID
 
 @Entity(tableName = "items")
 @TypeConverters(StringListConverters::class)
 data class Item(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    val uuid: String = UUID.randomUUID().toString(),
     val name: String,
     val description: String = "",
     val categoryId: Long? = null,
@@ -26,6 +28,10 @@ data class Item(
     val imageUri: String? = null, // 保留向后兼容
     @ColumnInfo(name = "imageUris")
     val imageUris: List<String> = emptyList(), // 多张图片路径列表
+    @ColumnInfo(name = "imageKeys")
+    val imageKeys: List<String> = emptyList(), // 远端图片对象存储 Key 列表
+    @ColumnInfo(name = "isSample")
+    val isSample: Boolean = false, // 示例数据标记（不参与云端同步）
     val primaryImageIndex: Int = 0, // 主图索引，默认为0
     val featureCode: String? = null, // 特征码（特征向量的字符串表示）
     val enableStockAlert: Boolean = true, // 是否启用库存提醒，默认为true

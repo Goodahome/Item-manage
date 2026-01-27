@@ -200,7 +200,13 @@
     
     <string name="set_cloud_server">设置服务器地址</string>
     <string name="server_url_hint">服务器地址</string>
-    <string name="server_url_example">例如: https://api.example.com</string>
+    <string name="server_url_example">例如: http://192.168.1.100:3000 或 https://api.example.com</string>
+    <string name="server_url_setting">服务器地址</string>
+    <string name="server_url_desc">输入你的 Node.js 后端服务器地址。模拟器使用 http://10.0.2.2:3000，真机使用 http://你的电脑IP:3000</string>
+    <string name="server_url_empty_error">服务器地址不能为空</string>
+    <string name="server_url_format_error">服务器地址必须以 http:// 或 https:// 开头</string>
+    <string name="server_url_invalid_error">服务器地址格式无效</string>
+    <string name="server_url_saved">服务器地址已保存，下次同步时将使用新地址</string>
     
     <!-- 统计卡片 -->
     <string name="total_items">物品总数</string>
@@ -622,6 +628,12 @@
     <string name="unknown_item">未知物品</string>
     <string name="reminder_list_title">提醒列表</string>
     <string name="no_reminders">暂无提醒</string>
+    <string name="drawer_guest_name">未登录</string>
+    <string name="drawer_account_label">账号：%1$s</string>
+    <string name="drawer_login">登录</string>
+    <string name="drawer_logout">退出</string>
+    <string name="drawer_name_hint">名称</string>
+    <string name="drawer_account_hint">账号</string>
     <string name="no_enabled_reminders">暂无已开启的提醒</string>
     <string name="no_disabled_reminders">暂无已关闭的提醒</string>
     <string name="filter_all_reminders">全部</string>
@@ -665,6 +677,7 @@
     <string name="item_days_until_expiry_description">%1$s 将在 %2$d 天后过期</string>
     
     <!-- 云端同步消息 -->
+    <string name="sync">同步</string>
     <string name="sync_success">云端同步成功</string>
     <string name="sync_error">云端同步失败: %1$s</string>
     <string name="sync_exception">同步异常: %1$s</string>

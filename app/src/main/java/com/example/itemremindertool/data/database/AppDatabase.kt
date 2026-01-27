@@ -11,12 +11,14 @@ import com.example.itemremindertool.data.converters.DateConverters
 import com.example.itemremindertool.data.converters.StringListConverters
 import com.example.itemremindertool.data.converters.ReminderTypeConverters
 import com.example.itemremindertool.data.converters.ActivityEventTypeConverters
+import com.example.itemremindertool.data.converters.SyncOperationConverters
 import com.example.itemremindertool.data.dao.CategoryDao
 import com.example.itemremindertool.data.dao.ItemDao
 import com.example.itemremindertool.data.dao.ShoppingItemDao
 import com.example.itemremindertool.data.dao.WarehouseDao
 import com.example.itemremindertool.data.dao.ItemReminderDao
 import com.example.itemremindertool.data.dao.DeletedRecordDao
+import com.example.itemremindertool.data.dao.SyncQueueDao
 import com.example.itemremindertool.data.model.Category
 import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.data.model.ShoppingItem
@@ -24,14 +26,15 @@ import com.example.itemremindertool.data.model.Warehouse
 import com.example.itemremindertool.data.model.ItemReminder
 import com.example.itemremindertool.data.model.DeletedRecord
 import com.example.itemremindertool.data.model.ActivityEvent
+import com.example.itemremindertool.data.model.SyncQueueItem
 import com.example.itemremindertool.data.dao.ActivityEventDao
 
 @Database(
-    entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class, ItemReminder::class, DeletedRecord::class, ActivityEvent::class],
-    version = 12,
+    entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class, ItemReminder::class, DeletedRecord::class, ActivityEvent::class, SyncQueueItem::class],
+    version = 16,
     exportSchema = false
 )
-@TypeConverters(DateConverters::class, StringListConverters::class, ReminderTypeConverters::class, ActivityEventTypeConverters::class)
+@TypeConverters(DateConverters::class, StringListConverters::class, ReminderTypeConverters::class, ActivityEventTypeConverters::class, SyncOperationConverters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun itemDao(): ItemDao
     abstract fun categoryDao(): CategoryDao
@@ -40,6 +43,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun itemReminderDao(): ItemReminderDao
     abstract fun deletedRecordDao(): DeletedRecordDao
     abstract fun activityEventDao(): ActivityEventDao
+    abstract fun syncQueueDao(): SyncQueueDao
 
     companion object {
         @Volatile
@@ -113,7 +117,7 @@ abstract class AppDatabase : RoomDatabase() {
                             )
                         }
                     })
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
@@ -244,22 +248,96 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE warehouses ADD COLUMN createdAt INTEGER NOT NULL DEFAULT $currentTimeMillis")
             }
         }
+        
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // 创建同步队列表
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS sync_queue (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        entityType TEXT NOT NULL,
+                        entityUuid TEXT NOT NULL,
+                        operation TEXT NOT NULL,
+                        entityJson TEXT NOT NULL,
+                        retryCount INTEGER NOT NULL DEFAULT 0,
+                        maxRetries INTEGER NOT NULL DEFAULT 5,
+                        lastAttemptAt INTEGER,
+                        createdAt INTEGER NOT NULL
+                    )
+                """)
+                
+                // 为 items 表添加 uuid 字段
+                database.execSQL("ALTER TABLE items ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
+                // 为现有数据生成 UUID（使用 id 作为临时值，实际使用时会在代码中生成真正的 UUID）
+                database.execSQL("UPDATE items SET uuid = 'item-' || id WHERE uuid = ''")
+                
+                // 为 categories 表添加 uuid 字段
+                database.execSQL("ALTER TABLE categories ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
+                database.execSQL("UPDATE categories SET uuid = 'category-' || id WHERE uuid = ''")
+                
+                // 为 warehouses 表添加 uuid 字段
+                database.execSQL("ALTER TABLE warehouses ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
+                database.execSQL("UPDATE warehouses SET uuid = 'warehouse-' || id WHERE uuid = ''")
+                
+                // 为 shopping_items 表添加 uuid 字段
+                database.execSQL("ALTER TABLE shopping_items ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
+                database.execSQL("UPDATE shopping_items SET uuid = 'shopping-' || id WHERE uuid = ''")
+                
+                // 为 item_reminders 表添加 uuid 字段
+                database.execSQL("ALTER TABLE item_reminders ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
+                database.execSQL("UPDATE item_reminders SET uuid = 'reminder-' || id WHERE uuid = ''")
+                
+                // 为 deleted_records 表添加 uuid 字段
+                database.execSQL("ALTER TABLE deleted_records ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
+                database.execSQL("UPDATE deleted_records SET uuid = 'deleted-' || id WHERE uuid = ''")
+                
+                // 为 activity_events 表添加 uuid 字段
+                database.execSQL("ALTER TABLE activity_events ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
+                database.execSQL("UPDATE activity_events SET uuid = 'event-' || id WHERE uuid = ''")
+            }
+        }
+
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE items ADD COLUMN imageKeys TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE items ADD COLUMN isSample INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE warehouses ADD COLUMN isSample INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE shopping_items ADD COLUMN isSample INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        private val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE warehouses ADD COLUMN imageKey TEXT")
+                database.execSQL("ALTER TABLE shopping_items ADD COLUMN imageKey TEXT")
+            }
+        }
 
         private fun seedSampleData(db: SupportSQLiteDatabase) {
             val now = System.currentTimeMillis()
             val dayMillis = 24 * 60 * 60 * 1000L
+            val warehouseUuid1 = java.util.UUID.randomUUID().toString()
+            val warehouseUuid2 = java.util.UUID.randomUUID().toString()
+            val itemUuid1 = java.util.UUID.randomUUID().toString()
+            val itemUuid2 = java.util.UUID.randomUUID().toString()
+            val shoppingUuid1 = java.util.UUID.randomUUID().toString()
 
             // 示例容器与子容器
             db.execSQL(
                 """
-                INSERT INTO warehouses (id, name, description, location, capacity, parentId, level, imageUri, createdAt)
-                VALUES (1, '示例容器', '用于演示的示例容器', '家中', 50, NULL, 1, NULL, $now)
+                INSERT INTO warehouses (id, uuid, name, description, location, capacity, parentId, level, imageUri, imageKey, createdAt, isSample)
+                VALUES (1, '$warehouseUuid1', '示例容器', '用于演示的示例容器', '家中', 50, NULL, 1, NULL, NULL, $now, 1)
                 """.trimIndent()
             )
             db.execSQL(
                 """
-                INSERT INTO warehouses (id, name, description, location, capacity, parentId, level, imageUri, createdAt)
-                VALUES (2, '子容器', '子容器示例', '', NULL, 1, 2, NULL, $now)
+                INSERT INTO warehouses (id, uuid, name, description, location, capacity, parentId, level, imageUri, imageKey, createdAt, isSample)
+                VALUES (2, '$warehouseUuid2', '子容器', '子容器示例', '', NULL, 1, 2, NULL, NULL, $now, 1)
                 """.trimIndent()
             )
 
@@ -267,24 +345,24 @@ abstract class AppDatabase : RoomDatabase() {
             db.execSQL(
                 """
                 INSERT INTO items (
-                    id, name, description, categoryId, warehouseId, tags, purchaseDate, expiryDate, price, quantity,
-                    barcode, imageUri, imageUris, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt
+                    id, uuid, name, description, categoryId, warehouseId, tags, purchaseDate, expiryDate, price, quantity,
+                    barcode, imageUri, imageUris, imageKeys, isSample, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt
                 ) VALUES (
-                    1, '示例物品A', '用于演示标签筛选和信息卡片', NULL, 1, '常用,食品',
+                    1, '$itemUuid1', '示例物品A', '用于演示标签筛选和信息卡片', NULL, 1, '常用,食品',
                     ${now - dayMillis * 2}, ${now + dayMillis * 5}, 12.5, 3,
-                    NULL, NULL, '', 0, NULL, 1, $now, $now
+                    NULL, NULL, '', '', 1, 0, NULL, 1, $now, $now
                 )
                 """.trimIndent()
             )
             db.execSQL(
                 """
                 INSERT INTO items (
-                    id, name, description, categoryId, warehouseId, tags, purchaseDate, expiryDate, price, quantity,
-                    barcode, imageUri, imageUris, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt
+                    id, uuid, name, description, categoryId, warehouseId, tags, purchaseDate, expiryDate, price, quantity,
+                    barcode, imageUri, imageUris, imageKeys, isSample, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt
                 ) VALUES (
-                    2, '示例物品B', '点击网格卡片查看详情', NULL, 1, '工具,示例',
+                    2, '$itemUuid2', '示例物品B', '点击网格卡片查看详情', NULL, 1, '工具,示例',
                     ${now - dayMillis * 3}, NULL, NULL, 1,
-                    NULL, NULL, '', 0, NULL, 1, $now, $now
+                    NULL, NULL, '', '', 1, 0, NULL, 1, $now, $now
                 )
                 """.trimIndent()
             )
@@ -293,9 +371,9 @@ abstract class AppDatabase : RoomDatabase() {
             db.execSQL(
                 """
                 INSERT INTO shopping_items (
-                    id, name, description, quantity, isCompleted, priority, createdAt, completedAt, imageUri, itemId
+                    id, uuid, name, description, quantity, isCompleted, priority, createdAt, completedAt, imageUri, imageKey, itemId, isSample
                 ) VALUES (
-                    1, '示例待购物品', '用于演示待购列表', 2, 0, 'MEDIUM', $now, NULL, NULL, NULL
+                    1, '$shoppingUuid1', '示例待购物品', '用于演示待购列表', 2, 0, 'MEDIUM', $now, NULL, NULL, NULL, NULL, 1
                 )
                 """.trimIndent()
             )

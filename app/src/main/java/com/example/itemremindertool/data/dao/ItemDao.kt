@@ -13,11 +13,17 @@ interface ItemDao {
     @Query("SELECT * FROM items WHERE id = :id")
     suspend fun getItemById(id: Long): Item?
 
+    @Query("SELECT * FROM items WHERE uuid = :uuid LIMIT 1")
+    suspend fun getItemByUuid(uuid: String): Item?
+
     @Query("SELECT * FROM items WHERE categoryId = :categoryId ORDER BY updatedAt DESC")
     fun getItemsByCategory(categoryId: Long): Flow<List<Item>>
 
     @Query("SELECT * FROM items WHERE warehouseId = :warehouseId ORDER BY updatedAt DESC")
     fun getItemsByWarehouse(warehouseId: Long): Flow<List<Item>>
+
+    @Query("SELECT * FROM items WHERE warehouseId = :warehouseId ORDER BY updatedAt DESC")
+    suspend fun getItemsByWarehouseSync(warehouseId: Long): List<Item>
 
     @Query("SELECT * FROM items WHERE expiryDate IS NOT NULL AND expiryDate < :currentTime ORDER BY updatedAt DESC")
     fun getExpiredItems(currentTime: Long): Flow<List<Item>>

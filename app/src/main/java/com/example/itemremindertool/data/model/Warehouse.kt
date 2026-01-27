@@ -3,11 +3,13 @@ package com.example.itemremindertool.data.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.Date
+import java.util.UUID
 
 @Entity(tableName = "warehouses")
 data class Warehouse(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    val uuid: String = UUID.randomUUID().toString(),
     val name: String,
     val description: String = "",
     val location: String = "",
@@ -15,6 +17,8 @@ data class Warehouse(
     val parentId: Long? = null, // 父容器ID，null表示顶层容器
     val level: Int = 1, // 层级，从1开始（顶层），最大5层
     val imageUri: String? = null, // 容器图片路径
-    val createdAt: Date = Date() // 创建时间戳
+    val imageKey: String? = null, // 远端图片对象存储 Key
+    val createdAt: Date = Date(), // 创建时间戳
+    val isSample: Boolean = false // 示例数据标记（不参与云端同步）
 )
 

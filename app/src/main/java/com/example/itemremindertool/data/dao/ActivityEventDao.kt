@@ -18,11 +18,14 @@ interface ActivityEventDao {
     
     @Query("SELECT * FROM activity_events WHERE targetId = :targetId ORDER BY createdAt DESC")
     fun getEventsByTarget(targetId: Long): Flow<List<ActivityEvent>>
+
+    @Query("SELECT * FROM activity_events ORDER BY createdAt DESC")
+    suspend fun getAllEventsSync(): List<ActivityEvent>
     
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(event: ActivityEvent): Long
     
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(events: List<ActivityEvent>): Unit
     
     @Delete

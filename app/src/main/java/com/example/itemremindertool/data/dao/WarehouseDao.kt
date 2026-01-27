@@ -15,6 +15,9 @@ interface WarehouseDao {
     @Query("SELECT * FROM warehouses WHERE id = :id")
     suspend fun getWarehouseById(id: Long): Warehouse?
 
+    @Query("SELECT * FROM warehouses WHERE uuid = :uuid LIMIT 1")
+    suspend fun getWarehouseByUuid(uuid: String): Warehouse?
+
     @Query("SELECT * FROM warehouses WHERE parentId IS NULL ORDER BY name ASC")
     fun getTopLevelWarehouses(): Flow<List<Warehouse>>
 

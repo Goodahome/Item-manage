@@ -191,7 +191,13 @@
     
     <string name="set_cloud_server">Set Server URL</string>
     <string name="server_url_hint">Server URL</string>
-    <string name="server_url_example">Example: https://api.example.com</string>
+    <string name="server_url_example">Example: http://192.168.1.100:3000 or https://api.example.com</string>
+    <string name="server_url_setting">Server Address</string>
+    <string name="server_url_desc">Enter your Node.js backend server address. Emulator: http://10.0.2.2:3000, Real device: http://your-computer-ip:3000</string>
+    <string name="server_url_empty_error">Server address cannot be empty</string>
+    <string name="server_url_format_error">Server address must start with http:// or https://</string>
+    <string name="server_url_invalid_error">Invalid server address format</string>
+    <string name="server_url_saved">Server address saved. New address will be used on next sync</string>
     
     <!-- 统计卡片 -->
     <string name="total_items">Total Items</string>
@@ -577,6 +583,7 @@
     <string name="item_days_until_expiry_description">%1$s will expire in %2$d days</string>
     
     <!-- 云端同步消息 -->
+    <string name="sync">Sync</string>
     <string name="sync_success">Cloud sync successful</string>
     <string name="sync_error">Cloud sync failed: %1$s</string>
     <string name="sync_exception">Sync exception: %1$s</string>
@@ -842,4 +849,10 @@
     <string name="trial_remaining_hours">%1$d hours remaining</string>
     <string name="trial_started">Trial started! Enjoy 7 days of premium features!</string>
     <string name="remove_ads">Remove Ads</string>
+    <string name="drawer_guest_name">Not logged in</string>
+    <string name="drawer_account_label">Account: %1$s</string>
+    <string name="drawer_login">Log in</string>
+    <string name="drawer_logout">Log out</string>
+    <string name="drawer_name_hint">Name</string>
+    <string name="drawer_account_hint">Account</string>
 </resources>

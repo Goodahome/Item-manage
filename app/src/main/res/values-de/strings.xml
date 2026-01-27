@@ -579,6 +579,7 @@
     <string name="item_days_until_expiry_description">%1$s läuft in %2$d Tagen ab</string>
     
     <!-- 云端同步消息 -->
+    <string name="sync">Synchronisieren</string>
     <string name="sync_success">Cloud-Synchronisation erfolgreich</string>
     <string name="sync_error">Cloud-Synchronisation fehlgeschlagen: %1$s</string>
     <string name="sync_exception">Synchronisationsausnahme: %1$s</string>
@@ -833,4 +834,10 @@
     <string name="trial_remaining_hours">Noch %1$d Stunden</string>
     <string name="trial_started">Testphase gestartet! 7 Tage Premium-Funktionen genießen!</string>
     <string name="customize_app_name_icon">App-Name &amp; Icon anpassen</string>
+    <string name="drawer_guest_name">Nicht angemeldet</string>
+    <string name="drawer_account_label">Konto: %1$s</string>
+    <string name="drawer_login">Anmelden</string>
+    <string name="drawer_logout">Abmelden</string>
+    <string name="drawer_name_hint">Name</string>
+    <string name="drawer_account_hint">Konto</string>
 </resources>

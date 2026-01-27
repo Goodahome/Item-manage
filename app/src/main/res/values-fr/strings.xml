@@ -178,7 +178,13 @@
     
     <string name="set_cloud_server">Définir l\'URL du serveur</string>
     <string name="server_url_hint">URL du serveur</string>
-    <string name="server_url_example">Exemple : https://api.example.com</string>
+    <string name="server_url_example">Exemple : http://192.168.1.100:3000 ou https://api.example.com</string>
+    <string name="server_url_setting">Adresse du serveur</string>
+    <string name="server_url_desc">Entrez l\'adresse de votre serveur backend Node.js. Émulateur : http://10.0.2.2:3000, Appareil réel : http://ip-de-votre-ordinateur:3000</string>
+    <string name="server_url_empty_error">L\'adresse du serveur ne peut pas être vide</string>
+    <string name="server_url_format_error">L\'adresse du serveur doit commencer par http:// ou https://</string>
+    <string name="server_url_invalid_error">Format d\'adresse de serveur invalide</string>
+    <string name="server_url_saved">Adresse du serveur enregistrée. La nouvelle adresse sera utilisée lors de la prochaine synchronisation</string>
     
     <!-- 统计卡片 -->
     <string name="total_items">Total des articles</string>
@@ -564,6 +570,7 @@
     <string name="item_days_until_expiry_description">%1$s expirera dans %2$d jours</string>
     
     <!-- 云端同步消息 -->
+    <string name="sync">Synchroniser</string>
     <string name="sync_success">Synchronisation cloud réussie</string>
     <string name="sync_error">Échec de la synchronisation cloud : %1$s</string>
     <string name="sync_exception">Exception de synchronisation : %1$s</string>
@@ -832,4 +839,10 @@
     <string name="no_time_set">Aucune heure définie</string>
     <string name="monthly_reminder_format">Le %1$d de chaque mois à %2$s</string>
     <string name="yearly_reminder_format">%1$d/%2$d à %3$s</string>
+    <string name="drawer_guest_name">Non connecté</string>
+    <string name="drawer_account_label">Compte : %1$s</string>
+    <string name="drawer_login">Se connecter</string>
+    <string name="drawer_logout">Se déconnecter</string>
+    <string name="drawer_name_hint">Nom</string>
+    <string name="drawer_account_hint">Compte</string>
 </resources>

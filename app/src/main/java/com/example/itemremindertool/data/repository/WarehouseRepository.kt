@@ -7,9 +7,13 @@ import com.example.itemremindertool.data.dao.DeletedRecordDao
 import com.example.itemremindertool.data.model.Warehouse
 import com.example.itemremindertool.data.model.DeletedRecord
 import com.example.itemremindertool.data.database.AppDatabase
+import com.example.itemremindertool.sync.SyncManager
 import java.util.Date
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class WarehouseRepository(
     private val warehouseDao: WarehouseDao,
@@ -17,6 +21,9 @@ class WarehouseRepository(
     private val itemDao: com.example.itemremindertool.data.dao.ItemDao? = null,
     private val context: Context? = null
 ) {
+    private val syncManager: SyncManager? by lazy {
+        context?.let { SyncManager.getInstance(it) }
+    }
     fun getAllWarehouses(): Flow<List<Warehouse>> = warehouseDao.getAllWarehouses()
 
     suspend fun getAllWarehousesSync(): List<Warehouse> = warehouseDao.getAllWarehousesSync()
@@ -30,8 +37,11 @@ class WarehouseRepository(
     suspend fun getChildWarehousesSync(parentId: Long): List<Warehouse> = warehouseDao.getChildWarehousesSync(parentId)
 
     suspend fun insertWarehouse(warehouse: Warehouse): Long {
+        // 1. 本地写入
         val warehouseId = warehouseDao.insertWarehouse(warehouse)
-        // 记录动态
+        val savedWarehouse = warehouseDao.getWarehouseById(warehouseId) ?: warehouse
+        
+        // 2. 记录动态
         context?.let {
             try {
                 val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
@@ -49,12 +59,26 @@ class WarehouseRepository(
                 android.util.Log.e("WarehouseRepository", "记录创建容器动态失败", e)
             }
         }
+        
+        // 3. 远端同步（异步，不阻塞）
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    manager.syncWarehouseToRemote(savedWarehouse)
+                } catch (e: Exception) {
+                    android.util.Log.e("WarehouseRepository", "同步容器到远端失败", e)
+                }
+            }
+        }
+        
         return warehouseId
     }
 
     suspend fun updateWarehouse(warehouse: Warehouse) {
+        // 1. 本地更新
         warehouseDao.updateWarehouse(warehouse)
-        // 记录动态
+        
+        // 2. 记录动态
         context?.let {
             try {
                 val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
@@ -72,6 +96,17 @@ class WarehouseRepository(
                 android.util.Log.e("WarehouseRepository", "记录更新容器动态失败", e)
             }
         }
+        
+        // 3. 远端同步（异步，不阻塞）
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    manager.syncWarehouseToRemote(warehouse)
+                } catch (e: Exception) {
+                    android.util.Log.e("WarehouseRepository", "同步容器到远端失败", e)
+                }
+            }
+        }
     }
 
     /**
@@ -81,18 +116,27 @@ class WarehouseRepository(
      */
     @androidx.room.Transaction
     suspend fun deleteWarehouseRecursively(warehouse: Warehouse): Pair<Int, Int> {
+        val rootWarehouse = warehouseDao.getWarehouseById(warehouse.id) ?: warehouse
         var childWarehouseCount = 0
         var itemCount = 0
+
+        val warehouseIdsToDelete = mutableListOf<Long>()
+        val itemUuidsToDelete = mutableListOf<String>()
         
         // 1. 递归删除所有子容器
         val childIds = getAllChildWarehouseIds(warehouse.id)
         childWarehouseCount = childIds.size
+
+        warehouseIdsToDelete.addAll(childIds)
+        warehouseIdsToDelete.add(rootWarehouse.id)
         
         // 先删除子容器中的物品
         childIds.forEach { childId ->
             itemDao?.let { dao ->
                 val count = dao.getItemCountByWarehouse(childId)
                 itemCount += count
+                val items = dao.getItemsByWarehouseSync(childId)
+                itemUuidsToDelete.addAll(items.filterNot { it.isSample }.map { it.uuid })
                 dao.deleteItemsByWarehouse(childId)
             }
             // 删除子容器
@@ -111,6 +155,8 @@ class WarehouseRepository(
         itemDao?.let { dao ->
             val count = dao.getItemCountByWarehouse(warehouse.id)
             itemCount += count
+            val items = dao.getItemsByWarehouseSync(warehouse.id)
+            itemUuidsToDelete.addAll(items.filterNot { it.isSample }.map { it.uuid })
             dao.deleteItemsByWarehouse(warehouse.id)
         }
         
@@ -124,6 +170,30 @@ class WarehouseRepository(
                 deletedAt = Date()
             )
         )
+        
+        // 4. 远端同步删除（异步，不阻塞）
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val warehouseUuids = warehouseIdsToDelete.distinct().mapNotNull { id ->
+                        warehouseDao.getWarehouseById(id)?.uuid
+                    }
+
+                    itemUuidsToDelete.distinct().forEach { itemUuid ->
+                        manager.deleteItemFromRemote(itemUuid)
+                    }
+
+                    warehouseUuids.forEach { warehouseUuid ->
+                        if (warehouseUuid != rootWarehouse.uuid) {
+                            manager.deleteWarehouseFromRemote(warehouseUuid)
+                        }
+                    }
+                    manager.deleteWarehouseFromRemote(rootWarehouse.uuid)
+                } catch (e: Exception) {
+                    android.util.Log.e("WarehouseRepository", "同步删除容器到远端失败", e)
+                }
+            }
+        }
         
         return Pair(childWarehouseCount, itemCount)
     }
@@ -162,6 +232,12 @@ class WarehouseRepository(
             deleteWarehouse(warehouse)
             return
         }
+        val childIds = getAllChildWarehouseIds(warehouse.id)
+        val warehouseIdsToDelete = mutableListOf<Long>().apply {
+            add(warehouse.id)
+            addAll(childIds)
+        }
+        val movedItems = mutableListOf<com.example.itemremindertool.data.model.Item>()
         
         // 1. 将子容器中的物品移动到父容器
         itemDao?.let { dao ->
@@ -173,11 +249,11 @@ class WarehouseRepository(
                     updatedAt = Date()
                 )
                 dao.updateItem(updatedItem)
+                movedItems.add(updatedItem)
             }
         }
         
         // 2. 递归删除所有子容器（子容器的子容器）
-        val childIds = getAllChildWarehouseIds(warehouse.id)
         childIds.forEach { childId ->
             // 对于子容器的子容器，也将其物品移动到当前要删除的容器的父容器
             itemDao?.let { dao ->
@@ -189,6 +265,7 @@ class WarehouseRepository(
                         updatedAt = Date()
                     )
                     dao.updateItem(updatedItem)
+                    movedItems.add(updatedItem)
                 }
             }
             // 删除子容器
@@ -214,7 +291,27 @@ class WarehouseRepository(
             )
         )
         
-        // 4. 记录动态
+        // 4. 远端同步：更新移动后的物品 + 删除云端子容器
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    movedItems.filterNot { it.isSample }.forEach { item ->
+                        manager.syncItemToRemote(item)
+                    }
+
+                    val warehouseUuids = warehouseIdsToDelete.mapNotNull { id ->
+                        warehouseDao.getWarehouseById(id)?.uuid
+                    }
+                    warehouseUuids.forEach { uuid ->
+                        manager.deleteWarehouseFromRemote(uuid)
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("WarehouseRepository", "同步删除子容器到远端失败", e)
+                }
+            }
+        }
+
+        // 5. 记录动态
         context?.let {
             try {
                 val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
