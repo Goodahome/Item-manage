@@ -1,0 +1,85 @@
+package com.example.itemremindertool.network
+
+import android.content.Context
+import com.example.itemremindertool.auth.AuthManager
+import com.example.itemremindertool.network.interceptor.AuthInterceptor
+import com.example.itemremindertool.network.interceptor.TokenRefreshInterceptor
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
+
+/**
+ * Retrofit 客户端单例
+ */
+object RetrofitClient {
+    private var retrofit: Retrofit? = null
+    private var apiService: ApiService? = null
+    
+    /**
+     * 获取 API 服务实例
+     * @param context 应用上下文
+     * @param baseUrl 服务器基础 URL（默认从设置中读取）
+     */
+    fun getApiService(context: Context, baseUrl: String? = null): ApiService {
+        val url = baseUrl ?: getServerUrl(context)
+        
+        // 如果 URL 变化或未初始化，重新创建实例
+        if (apiService == null || retrofit?.baseUrl().toString() != url) {
+            val authManager = AuthManager.getInstance(context)
+            
+            // 配置 OkHttpClient
+            val loggingInterceptor = HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            }
+            
+            val okHttpClient = OkHttpClient.Builder()
+                .addInterceptor(AuthInterceptor(authManager))
+                .addInterceptor(TokenRefreshInterceptor(context, authManager)) // Token 刷新拦截器
+                .addInterceptor(loggingInterceptor)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                // 连接池优化
+                .connectionPool(
+                    okhttp3.ConnectionPool(
+                        maxIdleConnections = 5, // 最大空闲连接数
+                        keepAliveDuration = 5, // 保持连接时长（分钟）
+                        timeUnit = TimeUnit.MINUTES
+                    )
+                )
+                .build()
+            
+            // 配置 Retrofit
+            retrofit = Retrofit.Builder()
+                .baseUrl(url)
+                .client(okHttpClient)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+            
+            apiService = retrofit?.create(ApiService::class.java)
+        }
+        
+        return apiService!!
+    }
+    
+    /**
+     * 从 SharedPreferences 读取服务器 URL
+     */
+    private fun getServerUrl(context: Context): String {
+        val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        val url = prefs.getString("server_url", "http://localhost:3000") ?: "http://localhost:3000"
+        
+        // 确保 URL 以斜杠结尾
+        return if (url.endsWith("/")) url else "$url/"
+    }
+    
+    /**
+     * 重置客户端（例如服务器地址变更时）
+     */
+    fun reset() {
+        retrofit = null
+        apiService = null
+    }
+}

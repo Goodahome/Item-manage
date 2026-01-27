@@ -3,6 +3,7 @@ package com.example.itemremindertool.data.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.Date
+import java.util.UUID
 
 /**
  * 动态事件类型
@@ -28,6 +29,7 @@ enum class ActivityEventType {
 data class ActivityEvent(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    val uuid: String = UUID.randomUUID().toString(),
     
     val type: ActivityEventType,        // 事件类型
     val title: String,                  // 事件标题

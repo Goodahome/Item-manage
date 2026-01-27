@@ -3,6 +3,7 @@ package com.example.itemremindertool.data.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.Date
+import java.util.UUID
 
 /**
  * 物品提醒数据模型
@@ -11,6 +12,7 @@ import java.util.Date
 data class ItemReminder(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    val uuid: String = UUID.randomUUID().toString(),
     
     // 关联的物品ID
     val itemId: Long,

@@ -126,6 +126,12 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     // OkHttp for Nextcloud WebDAV
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    // Retrofit for REST API
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    // Gson for JSON serialization
+    implementation("com.google.code.gson:gson:2.11.0")
     // TensorFlow Lite for MobileNetV3 (使用最新版本以支持 16KB 页面大小)
     // 强制使用统一的 TensorFlow Lite API 版本，避免与 ML Kit 的 litert-api 冲突
     implementation("org.tensorflow:tensorflow-lite:2.17.0") {
@@ -141,6 +147,8 @@ dependencies {
     implementation("com.github.loper7:DateTimePicker:0.6.3")
     // Biometric 库
     implementation("androidx.biometric:biometric:1.1.0")
+    // Security 库（EncryptedSharedPreferences）
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
     // Google Mobile Ads SDK
     implementation("com.google.android.gms:play-services-ads:24.9.0")
     // Google Play Billing Library

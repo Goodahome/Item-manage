@@ -71,6 +71,13 @@ fun AppSettingsScreen(
         mutableStateOf(prefs.getString("currency_symbol", defaultCurrencySymbol) ?: defaultCurrencySymbol)
     }
     
+    // 服务器地址
+    val defaultServerUrl = "http://localhost:3000"
+    var serverUrl by remember {
+        mutableStateOf(prefs.getString("server_url", defaultServerUrl) ?: defaultServerUrl)
+    }
+    var showServerUrlDialog by remember { mutableStateOf(false) }
+    
     // 广告单元 ID
     var adBannerUnitId by remember { 
         mutableStateOf(prefs.getString("ad_banner_unit_id", null) ?: "")
@@ -232,6 +239,35 @@ fun AppSettingsScreen(
                                 showSuffixDialog = true
                             }
                         }) {
+                        Text(stringResource(R.string.modify))
+                    }
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+            )
+            
+            AppDivider(
+                color = ColorHelpers.getDividerColor(),
+                thickness = 2.dp
+            )
+            
+            // 服务器地址设置
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.server_url_setting)) },
+                supportingContent = { 
+                    Text(
+                        text = serverUrl,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ColorHelpers.getGroup4TextColor(0.7f)
+                    )
+                },
+                trailingContent = { 
+                    Button(
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        onClick = { showServerUrlDialog = true }
+                    ) {
                         Text(stringResource(R.string.modify))
                     }
                 },
@@ -592,6 +628,87 @@ fun AppSettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
+        }
+    }
+    
+    // 服务器地址设置对话框
+    if (showServerUrlDialog) {
+        var newServerUrl by remember { mutableStateOf(serverUrl) }
+        var urlError by remember { mutableStateOf<String?>(null) }
+        
+        // URL 验证函数
+        fun validateUrl(url: String): String? {
+            val trimmed = url.trim()
+            if (trimmed.isEmpty()) {
+                return context.getString(R.string.server_url_empty_error)
+            }
+            if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+                return context.getString(R.string.server_url_format_error)
+            }
+            try {
+                val uri = java.net.URI(trimmed)
+                if (uri.host.isNullOrEmpty()) {
+                    return context.getString(R.string.server_url_invalid_error)
+                }
+            } catch (e: Exception) {
+                return context.getString(R.string.server_url_invalid_error)
+            }
+            return null
+        }
+        
+        ModernSettingsDialog(
+            title = stringResource(R.string.server_url_setting),
+            icon = Icons.Default.Cloud,
+            onDismiss = { 
+                showServerUrlDialog = false
+                urlError = null
+            },
+            onConfirm = {
+                val trimmed = newServerUrl.trim()
+                val error = validateUrl(trimmed)
+                if (error == null) {
+                    // 确保 URL 不以斜杠结尾（RetrofitClient 会自动添加）
+                    val finalUrl = trimmed.trimEnd('/')
+                    serverUrl = finalUrl
+                    prefs.edit().putString("server_url", finalUrl).apply()
+                    
+                    // 重置 Retrofit 客户端以使用新地址
+                    com.example.itemremindertool.network.RetrofitClient.reset()
+                    
+                    showServerUrlDialog = false
+                    urlError = null
+                    
+                    // 显示成功提示
+                    android.widget.Toast.makeText(
+                        context,
+                        context.getString(R.string.server_url_saved),
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    urlError = error
+                }
+            },
+            confirmEnabled = newServerUrl.trim().isNotEmpty()
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = newServerUrl,
+                    onValueChange = { 
+                        newServerUrl = it
+                        urlError = null // 清除错误提示
+                    },
+                    label = { Text(stringResource(R.string.server_url_hint)) },
+                    placeholder = { Text(stringResource(R.string.server_url_example)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = urlError != null,
+                    supportingText = if (urlError != null) {
+                        { Text(urlError!!, color = MaterialTheme.colorScheme.error) }
+                    } else {
+                        { Text(stringResource(R.string.server_url_desc), style = MaterialTheme.typography.bodySmall) }
+                    }
+                )
+            }
         }
     }
     

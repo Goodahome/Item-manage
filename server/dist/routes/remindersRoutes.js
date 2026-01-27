@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const remindersController_1 = require("../controllers/remindersController");
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+router.get("/", auth_1.requireAuth, remindersController_1.listReminders);
+router.get("/:uuid", auth_1.requireAuth, remindersController_1.getReminder);
+router.post("/", auth_1.requireAuth, remindersController_1.upsertReminder);
+router.put("/:uuid", auth_1.requireAuth, remindersController_1.upsertReminder);
+router.delete("/:uuid", auth_1.requireAuth, remindersController_1.deleteReminder);
+exports.default = router;

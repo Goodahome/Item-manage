@@ -8,14 +8,21 @@ import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.data.model.ItemStatus
 import com.example.itemremindertool.data.model.DeletedRecord
 import com.example.itemremindertool.data.database.AppDatabase
+import com.example.itemremindertool.sync.SyncManager
 import java.util.Date
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class ItemRepository(
     private val itemDao: ItemDao,
     private val deletedRecordDao: DeletedRecordDao? = null,
     private val context: Context? = null
 ) {
+    private val syncManager: SyncManager? by lazy {
+        context?.let { SyncManager.getInstance(it) }
+    }
     fun getAllItems(): Flow<List<Item>> = itemDao.getAllItems()
 
     suspend fun getItemById(id: Long): Item? = itemDao.getItemById(id)
@@ -41,8 +48,11 @@ class ItemRepository(
     fun getExpiredItemCount(currentTime: Long = System.currentTimeMillis()): Flow<Int> = itemDao.getExpiredItemCount(currentTime)
 
     suspend fun insertItem(item: Item): Long {
+        // 1. 本地写入
         val itemId = itemDao.insertItem(item)
-        // 记录动态
+        val savedItem = itemDao.getItemById(itemId) ?: item
+        
+        // 2. 记录动态
         context?.let {
             try {
                 val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
@@ -60,12 +70,26 @@ class ItemRepository(
                 android.util.Log.e("ItemRepository", "记录添加物品动态失败", e)
             }
         }
+        
+        // 3. 远端同步（异步，不阻塞）
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    manager.syncItemToRemote(savedItem)
+                } catch (e: Exception) {
+                    android.util.Log.e("ItemRepository", "同步物品到远端失败", e)
+                }
+            }
+        }
+        
         return itemId
     }
 
     suspend fun updateItem(item: Item) {
+        // 1. 本地更新
         itemDao.updateItem(item)
-        // 记录动态
+        
+        // 2. 记录动态
         context?.let {
             try {
                 val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
@@ -81,6 +105,17 @@ class ItemRepository(
                 activityEventDao.insert(event)
             } catch (e: Exception) {
                 android.util.Log.e("ItemRepository", "记录更新物品动态失败", e)
+            }
+        }
+        
+        // 3. 远端同步（异步，不阻塞）
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    manager.syncItemToRemote(item)
+                } catch (e: Exception) {
+                    android.util.Log.e("ItemRepository", "同步物品到远端失败", e)
+                }
             }
         }
     }
@@ -114,9 +149,10 @@ class ItemRepository(
 
     @androidx.room.Transaction
     suspend fun deleteItem(item: Item) {
-        // 在事务中删除数据和记录删除操作，确保原子性
+        val uuid = item.uuid
+        
+        // 1. 本地删除和记录删除操作
         itemDao.deleteItem(item)
-        // 记录删除操作
         deletedRecordDao?.insertDeletedRecord(
             DeletedRecord(
                 entityType = "item",
@@ -124,7 +160,8 @@ class ItemRepository(
                 deletedAt = Date()
             )
         )
-        // 记录动态
+        
+        // 2. 记录动态
         context?.let {
             try {
                 val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
@@ -140,6 +177,17 @@ class ItemRepository(
                 activityEventDao.insert(event)
             } catch (e: Exception) {
                 android.util.Log.e("ItemRepository", "记录删除物品动态失败", e)
+            }
+        }
+        
+        // 3. 远端同步删除（异步，不阻塞）
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    manager.deleteItemFromRemote(uuid)
+                } catch (e: Exception) {
+                    android.util.Log.e("ItemRepository", "同步删除物品到远端失败", e)
+                }
             }
         }
     }

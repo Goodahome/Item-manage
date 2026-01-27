@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReminderType {
+  ONCE
+  DAILY
+  MONTHLY
+  YEARLY
+}
+
+enum ActivityEventType {
+  ITEM_ADDED
+  ITEM_DELETED
+  ITEM_UPDATED
+  ITEM_USED
+  ITEM_VIEWED
+  WAREHOUSE_ADDED
+  WAREHOUSE_DELETED
+  WAREHOUSE_UPDATED
+  REMINDER_TRIGGERED
+  ITEM_EXPIRING
+  ITEM_LOW_STOCK
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  account      String   @unique
+  displayName  String
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  items          Item[]
+  categories     Category[]
+  warehouses     Warehouse[]
+  shoppingItems  ShoppingItem[]
+  itemReminders  ItemReminder[]
+  activityEvents ActivityEvent[]
+  deletedRecords DeletedRecord[]
+}
+
+model Item {
+  id                Int      @id @default(autoincrement())
+  uuid              String
+  userId            Int
+  name              String
+  description       String   @default("")
+  categoryId        Int?
+  warehouseId       Int?
+  tags              Json?
+  purchaseDate      DateTime?
+  expiryDate        DateTime?
+  price             Float?
+  quantity          Int      @default(1)
+  barcode           String?
+  imageUri          String?
+  imageUris         Json?
+  primaryImageIndex Int      @default(0)
+  featureCode       String?
+  enableStockAlert  Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@unique([uuid, userId])
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  uuid        String
+  userId      Int
+  name        String
+  description String   @default("")
+  color       String   @default("#6200EE")
+  icon        String   @default("category")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@unique([uuid, userId])
+}
+
+model Warehouse {
+  id          Int      @id @default(autoincrement())
+  uuid        String
+  userId      Int
+  name        String
+  description String   @default("")
+  location    String   @default("")
+  capacity    Int?
+  parentId    Int?
+  level       Int      @default(1)
+  imageUri    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@unique([uuid, userId])
+}
+
+model ShoppingItem {
+  id          Int      @id @default(autoincrement())
+  uuid        String
+  userId      Int
+  name        String
+  description String   @default("")
+  quantity    Int      @default(1)
+  isCompleted Boolean  @default(false)
+  priority    String   @default("MEDIUM")
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+  imageUri    String?
+  itemUuid    String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@unique([uuid, userId])
+}
+
+model ItemReminder {
+  id           Int      @id @default(autoincrement())
+  uuid         String
+  userId       Int
+  itemUuid     String
+  reminderType ReminderType
+  reminderTime DateTime?
+  dailyTime    String?
+  monthlyDay   Int?
+  monthlyTime  String?
+  yearlyMonth  Int?
+  yearlyDay    Int?
+  yearlyTime   String?
+  reason       String   @default("")
+  isEnabled    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@unique([uuid, userId])
+}
+
+model ActivityEvent {
+  id          Int               @id @default(autoincrement())
+  uuid        String
+  userId      Int
+  type        ActivityEventType
+  title       String
+  description String            @default("")
+  targetUuid  String?
+  targetName  String            @default("")
+  iconType    String            @default("")
+  createdAt   DateTime          @default(now())
+  metadata    String            @default("")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@unique([uuid, userId])
+}
+
+model DeletedRecord {
+  id         Int      @id @default(autoincrement())
+  uuid       String
+  userId     Int
+  entityType String
+  entityUuid String
+  deletedAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@unique([uuid, userId])
+}

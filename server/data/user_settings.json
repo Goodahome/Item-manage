@@ -1,0 +1,11 @@
+{
+  "1": {
+    "data": {
+      "has_completed_onboarding": "true",
+      "server_url": "http://192.168.124.2:3001",
+      "selected_app_icon": "0",
+      "selected_warehouse_id": "1"
+    },
+    "updatedAt": "2026-01-27T05:06:20.983Z"
+  }
+}

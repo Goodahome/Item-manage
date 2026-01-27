@@ -1,20 +1,87 @@
 package com.example.itemremindertool.data.repository
 
+import android.content.Context
 import com.example.itemremindertool.data.dao.CategoryDao
 import com.example.itemremindertool.data.model.Category
+import com.example.itemremindertool.sync.SyncManager
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-class CategoryRepository(private val categoryDao: CategoryDao) {
+class CategoryRepository(
+    private val categoryDao: CategoryDao,
+    private val context: Context? = null
+) {
+    private val syncManager: SyncManager? by lazy {
+        context?.let { SyncManager.getInstance(it) }
+    }
+    
     fun getAllCategories(): Flow<List<Category>> = categoryDao.getAllCategories()
 
     suspend fun getCategoryById(id: Long): Category? = categoryDao.getCategoryById(id)
 
-    suspend fun insertCategory(category: Category): Long = categoryDao.insertCategory(category)
+    suspend fun insertCategory(category: Category): Long {
+        // 1. 本地写入
+        val categoryId = categoryDao.insertCategory(category)
+        val savedCategory = categoryDao.getCategoryById(categoryId) ?: category
+        
+        // 2. 远端同步（异步，不阻塞）
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    manager.syncCategoryToRemote(savedCategory)
+                } catch (e: Exception) {
+                    android.util.Log.e("CategoryRepository", "同步分类到远端失败", e)
+                }
+            }
+        }
+        
+        return categoryId
+    }
 
-    suspend fun updateCategory(category: Category) = categoryDao.updateCategory(category)
+    suspend fun updateCategory(category: Category) {
+        // 1. 本地更新
+        categoryDao.updateCategory(category)
+        
+        // 2. 远端同步（异步，不阻塞）
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    manager.syncCategoryToRemote(category)
+                } catch (e: Exception) {
+                    android.util.Log.e("CategoryRepository", "同步分类到远端失败", e)
+                }
+            }
+        }
+    }
 
-    suspend fun deleteCategory(category: Category) = categoryDao.deleteCategory(category)
+    suspend fun deleteCategory(category: Category) {
+        val uuid = category.uuid
+        
+        // 1. 本地删除
+        categoryDao.deleteCategory(category)
+        
+        // 2. 远端同步删除（异步，不阻塞）
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    manager.deleteCategoryFromRemote(uuid)
+                } catch (e: Exception) {
+                    android.util.Log.e("CategoryRepository", "同步删除分类到远端失败", e)
+                }
+            }
+        }
+    }
 
-    suspend fun deleteCategoryById(id: Long) = categoryDao.deleteCategoryById(id)
+    suspend fun deleteCategoryById(id: Long) {
+        // 先获取分类的 uuid
+        val category = categoryDao.getCategoryById(id)
+        if (category != null) {
+            deleteCategory(category)
+        } else {
+            categoryDao.deleteCategoryById(id)
+        }
+    }
 }
 
