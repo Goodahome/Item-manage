@@ -126,6 +126,12 @@
     <string name="auto_sync_enabled">Activé</string>
     <string name="auto_sync_disabled">Désactivé</string>
     <string name="auto_sync_not_supported">La synchronisation automatique est uniquement prise en charge par Nextcloud</string>
+    <string name="auto_backup">Sauvegarde automatique</string>
+    <string name="auto_backup_enabled">Activé</string>
+    <string name="auto_backup_disabled">Désactivé</string>
+    <string name="auto_backup_not_supported">La sauvegarde automatique est uniquement prise en charge par Nextcloud</string>
+    <string name="auto_backup_toast_enabled">Sauvegarde automatique activée</string>
+    <string name="auto_backup_toast_disabled">Sauvegarde automatique désactivée</string>
     <string name="nextcloud_settings">Paramètres Nextcloud</string>
     <string name="nextcloud_configured">Configuré</string>
     <string name="nextcloud_not_configured">Non configuré</string>

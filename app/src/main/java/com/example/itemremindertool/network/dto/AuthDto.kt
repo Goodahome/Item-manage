@@ -42,8 +42,8 @@ data class AuthResponse(
  * 用户信息 DTO
  */
 data class UserDto(
-    @SerializedName("id")
-    val id: Int,
+    @SerializedName("uuid")
+    val uuid: String,
     
     @SerializedName("account")
     val account: String,

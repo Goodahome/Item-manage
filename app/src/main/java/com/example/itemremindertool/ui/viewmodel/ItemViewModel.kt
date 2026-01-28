@@ -43,22 +43,22 @@ class ItemViewModel(
         _pendingFeatureCode.value = null
     }
 
-    fun loadItem(itemId: Long) {
+    fun loadItemByUuid(itemUuid: String) {
         viewModelScope.launch {
-            val item = itemRepository.getItemById(itemId)
+            val item = itemRepository.getItemByUuid(itemUuid)
             _uiState.value = _uiState.value.copy(selectedItem = item)
         }
     }
 
-    fun insertItem(item: Item, onSuccess: ((Long) -> Unit)? = null) {
+    fun insertItem(item: Item, onSuccess: ((String) -> Unit)? = null) {
         viewModelScope.launch {
             try {
                 _operationState.value = OperationState.Saving
-                val itemId = itemRepository.insertItem(item.copy(updatedAt = Date()))
+                itemRepository.insertItem(item.copy(updatedAt = Date()))
                 _operationState.value = OperationState.Success(
                     getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_save_success)
                 )
-                onSuccess?.invoke(itemId) // 回调返回插入后的 ID
+                onSuccess?.invoke(item.uuid)
                 kotlinx.coroutines.delay(2000) // 成功消息显示2秒
                 _operationState.value = OperationState.Idle
             } catch (e: Exception) {
@@ -66,11 +66,11 @@ class ItemViewModel(
                 if (e.message?.contains("connection pool has been closed") == true) {
                     kotlinx.coroutines.delay(1000) // 等待1秒让数据库恢复
                     try {
-                        val itemId = itemRepository.insertItem(item.copy(updatedAt = Date()))
+                        itemRepository.insertItem(item.copy(updatedAt = Date()))
                         _operationState.value = OperationState.Success(
                             getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_save_success)
                         )
-                        onSuccess?.invoke(itemId) // 回调返回插入后的 ID
+                        onSuccess?.invoke(item.uuid)
                         kotlinx.coroutines.delay(2000)
                         _operationState.value = OperationState.Idle
                     } catch (retryException: Exception) {
@@ -220,8 +220,8 @@ class ItemViewModel(
         }
     }
     
-    suspend fun getItemById(itemId: Long): Item? {
-        return itemRepository.getItemById(itemId)
+    suspend fun getItemByUuid(itemUuid: String): Item? {
+        return itemRepository.getItemByUuid(itemUuid)
     }
     
     fun searchItemsByName(query: String) = itemRepository.searchItemsByName(query)

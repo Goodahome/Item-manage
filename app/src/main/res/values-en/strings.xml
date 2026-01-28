@@ -127,6 +127,12 @@
     <string name="auto_sync_enabled">Enabled</string>
     <string name="auto_sync_disabled">Disabled</string>
     <string name="auto_sync_not_supported">Auto sync is only supported for Nextcloud</string>
+    <string name="auto_backup">Auto Backup</string>
+    <string name="auto_backup_enabled">Enabled</string>
+    <string name="auto_backup_disabled">Disabled</string>
+    <string name="auto_backup_not_supported">Auto backup is only supported for Nextcloud</string>
+    <string name="auto_backup_toast_enabled">Auto backup enabled</string>
+    <string name="auto_backup_toast_disabled">Auto backup disabled</string>
     <string name="nextcloud_settings">Nextcloud Settings</string>
     <string name="nextcloud_configured">Configured</string>
     <string name="nextcloud_not_configured">Not configured</string>

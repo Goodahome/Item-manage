@@ -49,7 +49,7 @@ interface ApiService {
     suspend fun bootstrapSync(@Body request: SyncBootstrapRequest): Response<ApiResponse<SyncBootstrapResponse>>
 
     @POST("api/sync/bootstrap-ack")
-    suspend fun bootstrapSyncAck(@Body request: SyncBootstrapAckRequest): Response<ApiResponse<Map<String, String>>>
+    suspend fun bootstrapSyncAck(@Body request: SyncBootstrapAckRequest): Response<ApiResponse<SyncBootstrapAckResponse>>
     
     // ==================== 物品相关 ====================
     
@@ -61,8 +61,8 @@ interface ApiService {
         @Query("page") page: Int = 1,
         @Query("pageSize") pageSize: Int = 50,
         @Query("search") search: String? = null,
-        @Query("categoryId") categoryId: Int? = null,
-        @Query("warehouseId") warehouseId: Int? = null
+        @Query("categoryUuid") categoryUuid: String? = null,
+        @Query("warehouseUuid") warehouseUuid: String? = null
     ): Response<ApiResponse<ItemListResponse>>
     
     /**

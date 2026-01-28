@@ -10,7 +10,7 @@ const warehouseSchema = z.object({
   description: z.string().optional(),
   location: z.string().optional(),
   capacity: z.number().int().nullable().optional(),
-  parentId: z.number().int().nullable().optional(),
+  parentUuid: z.string().uuid().nullable().optional(),
   level: z.number().int().optional(),
   imageUri: z.string().nullable().optional(),
   createdAt: z.string().datetime().optional(),
@@ -19,7 +19,7 @@ const warehouseSchema = z.object({
 
 export async function listWarehouses(req: Request, res: Response) {
   const { page, pageSize } = parsePagination(req.query);
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -50,7 +50,7 @@ export async function listWarehouses(req: Request, res: Response) {
 }
 
 export async function getWarehouse(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -77,7 +77,7 @@ export async function getWarehouse(req: Request, res: Response) {
 }
 
 export async function upsertWarehouse(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -114,7 +114,7 @@ export async function upsertWarehouse(req: Request, res: Response) {
       description: data.description ?? "",
       location: data.location ?? "",
       capacity: data.capacity ?? null,
-      parentId: data.parentId ?? null,
+      parentUuid: data.parentUuid ?? null,
       level: data.level ?? 1,
       imageUri: data.imageUri ?? null,
       createdAt: createdAt ?? undefined,
@@ -127,7 +127,7 @@ export async function upsertWarehouse(req: Request, res: Response) {
       description: data.description ?? "",
       location: data.location ?? "",
       capacity: data.capacity ?? null,
-      parentId: data.parentId ?? null,
+      parentUuid: data.parentUuid ?? null,
       level: data.level ?? 1,
       imageUri: data.imageUri ?? null,
       createdAt: createdAt ?? undefined,
@@ -139,7 +139,7 @@ export async function upsertWarehouse(req: Request, res: Response) {
 }
 
 export async function deleteWarehouse(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -162,6 +162,8 @@ export async function deleteWarehouse(req: Request, res: Response) {
     );
   }
 
-  await prisma.warehouse.delete({ where: { id: warehouse.id } });
+  await prisma.warehouse.delete({
+    where: { uuid_userId: { uuid: warehouse.uuid, userId: warehouse.userId } }
+  });
   return res.json(ok({ deleted: true }));
 }

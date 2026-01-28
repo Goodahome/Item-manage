@@ -26,7 +26,7 @@ const reminderSchema = zod_1.z.object({
 });
 async function listReminders(req, res) {
     const { page, pageSize } = (0, pagination_1.parsePagination)(req.query);
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -50,7 +50,7 @@ async function listReminders(req, res) {
     }));
 }
 async function getReminder(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -70,7 +70,7 @@ async function getReminder(req, res) {
     return res.json((0, response_1.ok)(reminder));
 }
 async function upsertReminder(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -131,7 +131,7 @@ async function upsertReminder(req, res) {
     return res.json((0, response_1.ok)(reminder));
 }
 async function deleteReminder(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -148,6 +148,8 @@ async function deleteReminder(req, res) {
             message: "Reminder not found"
         }));
     }
-    await prisma_1.prisma.itemReminder.delete({ where: { id: reminder.id } });
+    await prisma_1.prisma.itemReminder.delete({
+        where: { uuid_userId: { uuid: reminder.uuid, userId: reminder.userId } }
+    });
     return res.json((0, response_1.ok)({ deleted: true }));
 }

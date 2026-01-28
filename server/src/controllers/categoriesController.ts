@@ -16,7 +16,7 @@ const categorySchema = z.object({
 
 export async function listCategories(req: Request, res: Response) {
   const { page, pageSize } = parsePagination(req.query);
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -47,7 +47,7 @@ export async function listCategories(req: Request, res: Response) {
 }
 
 export async function getCategory(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -74,7 +74,7 @@ export async function getCategory(req: Request, res: Response) {
 }
 
 export async function upsertCategory(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -130,7 +130,7 @@ export async function upsertCategory(req: Request, res: Response) {
 }
 
 export async function deleteCategory(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -153,6 +153,8 @@ export async function deleteCategory(req: Request, res: Response) {
     );
   }
 
-  await prisma.category.delete({ where: { id: category.id } });
+  await prisma.category.delete({
+    where: { uuid_userId: { uuid: category.uuid, userId: category.userId } }
+  });
   return res.json(ok({ deleted: true }));
 }

@@ -14,7 +14,7 @@ const deletedRecordSchema = zod_1.z.object({
 });
 async function listDeletedRecords(req, res) {
     const { page, pageSize } = (0, pagination_1.parsePagination)(req.query);
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -38,7 +38,7 @@ async function listDeletedRecords(req, res) {
     }));
 }
 async function upsertDeletedRecord(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",

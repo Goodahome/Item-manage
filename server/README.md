@@ -253,6 +253,127 @@ npm install -g pm2
 pm2 start dist/index.js --name itemreminder
 ```
 
+## MinIO 配置
+
+### 基本配置
+
+MinIO 用于存储图片文件。基本配置在 `.env` 文件中：
+
+```env
+STORAGE_ENDPOINT=http://182.140.144.150:21152  # MinIO API 端点
+STORAGE_BUCKET=itemremindertool                 # Bucket 名称
+STORAGE_ACCESS_KEY=minioadmin                  # 访问密钥
+STORAGE_SECRET_KEY=minioadmin                  # 秘密密钥
+STORAGE_REGION=auto                            # 区域
+STORAGE_FORCE_PATH_STYLE=true                  # 使用路径样式
+```
+
+### 服务器端加密（SSE）配置
+
+#### 选项 1：禁用加密（推荐用于开发环境）
+
+如果 MinIO 未配置 KMS，请禁用服务器端加密：
+
+```env
+# 注释掉或删除 STORAGE_SSE
+# STORAGE_SSE=AES256
+```
+
+#### 选项 2：使用 MinIO KMS（生产环境）
+
+如果需要启用服务器端加密，需要先配置 MinIO KMS：
+
+**1. 安装 MinIO KMS**
+
+MinIO KMS 是一个独立的密钥管理服务器。安装方式：
+
+- **Docker 方式（推荐用于开发/测试）：**
+  ```bash
+  docker pull minio/kms:latest
+  docker run -d \
+    --name minio-kms \
+    -p 7373:7373 \
+    -v /path/to/kms/config:/etc/minkms \
+    -v /path/to/kms/data:/mnt/minio-kms \
+    minio/kms:latest
+  ```
+
+- **Linux 二进制方式（生产环境）：**
+  参考官方文档：https://docs.min.io/enterprise/minio-kms/installation/linux/
+
+**2. 配置 MinIO 使用 KMS**
+
+在 MinIO 启动时添加环境变量：
+
+```bash
+export MINIO_KMS_SERVER="http://kms-host:7373"
+export MINIO_KMS_SSE_KEY="my-encryption-key"
+export MINIO_KMS_ENCLAVE="my-enclave"
+export MINIO_KMS_API_KEY="your-api-key"
+
+minio server /path/to/data --console-address ":21152" --address ":21152"
+```
+
+**3. 配置应用使用 KMS**
+
+在 `.env` 文件中：
+
+```env
+# 使用 KMS 加密
+STORAGE_SSE=aws:kms
+STORAGE_SSE_KMS_KEY=my-encryption-key  # KMS 密钥名称
+```
+
+或者使用 AES256（如果 MinIO 支持）：
+
+```env
+STORAGE_SSE=AES256
+```
+
+**4. 验证配置**
+
+重启服务器后，查看日志应该显示：
+```
+[mediaController] STORAGE_SSE="AES256", 服务器端加密: 启用
+```
+
+### MinIO 启动命令示例
+
+```bash
+# API 端口和 Console 端口可以相同或不同
+minio.exe server E:\heji_server\minio\data \
+  --console-address "0.0.0.0:21152" \
+  --address "0.0.0.0:21152"
+```
+
+**注意：**
+- `--address` 指定 API 端口（S3 兼容接口）
+- `--console-address` 指定 Web Console 端口
+- 两个端口可以相同，也可以不同
+- 确保 `.env` 中的 `STORAGE_ENDPOINT` 指向 API 端口
+
+### 常见问题
+
+**Q: 上传失败，返回 "KMS not configured" 错误**
+
+A: MinIO 未配置 KMS 但启用了服务器端加密。解决方案：
+- 禁用加密：在 `.env` 中注释掉 `STORAGE_SSE`
+- 或配置 MinIO KMS（见上方说明）
+
+**Q: 上传返回 HTML 错误页面**
+
+A: 签名 URL 可能指向了错误的端点。检查：
+- `STORAGE_ENDPOINT` 是否指向 API 端口（不是 Console 端口）
+- 服务器端日志中的签名 URL 是否正确
+
+**Q: 如何验证 MinIO 配置是否正确？**
+
+A: 使用 MinIO 客户端测试：
+```bash
+mc alias set myminio http://182.140.144.150:21152 minioadmin minioadmin
+mc ls myminio/itemremindertool
+```
+
 ## 故障排除
 
 ### 数据库连接失败
@@ -266,6 +387,14 @@ pm2 start dist/index.js --name itemreminder
 - 检查 JWT_SECRET 配置
 - 确认 token 格式正确（Bearer <token>）
 - 检查 token 是否过期
+
+### MinIO 上传失败
+
+- 检查 `STORAGE_ENDPOINT` 是否正确指向 MinIO API 端口
+- 确认 MinIO 服务是否运行
+- 检查访问密钥和秘密密钥是否正确
+- 如果启用了加密，确认 MinIO KMS 已配置
+- 查看服务器端日志中的详细错误信息
 
 ## License
 

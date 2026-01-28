@@ -17,24 +17,24 @@ object ReminderScheduler {
      */
     fun scheduleReminder(context: Context, reminder: ItemReminder) {
         if (!reminder.isEnabled) {
-            cancelReminder(context, reminder.id)
+            cancelReminder(context, reminder.uuid)
             return
         }
         
         val workManager = WorkManager.getInstance(context)
-        val workName = "${WORK_NAME_PREFIX}${reminder.id}"
+        val workName = "${WORK_NAME_PREFIX}${reminder.uuid}"
         
         // 计算下次触发时间
         val delayMillis = calculateNextTriggerTime(reminder)
         if (delayMillis <= 0) {
             // 如果时间已过，取消提醒
-            cancelReminder(context, reminder.id)
+            cancelReminder(context, reminder.uuid)
             return
         }
         
         // 创建输入数据
         val inputData = Data.Builder()
-            .putLong("reminderId", reminder.id)
+            .putString("reminderId", reminder.uuid)
             .build()
         
         // 创建一次性工作请求
@@ -55,7 +55,7 @@ object ReminderScheduler {
     /**
      * 取消提醒
      */
-    fun cancelReminder(context: Context, reminderId: Long) {
+    fun cancelReminder(context: Context, reminderId: String) {
         val workManager = WorkManager.getInstance(context)
         val workName = "${WORK_NAME_PREFIX}${reminderId}"
         workManager.cancelUniqueWork(workName)

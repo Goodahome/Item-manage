@@ -29,7 +29,7 @@ enum ActivityEventType {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
+  uuid         String   @id
   account      String   @unique
   displayName  String
   passwordHash String
@@ -46,13 +46,12 @@ model User {
 }
 
 model Item {
-  id                Int      @id @default(autoincrement())
-  uuid              String
-  userId            Int
+  uuid              String   @id
+  userId            String
   name              String
   description       String   @default("")
-  categoryId        Int?
-  warehouseId       Int?
+  categoryUuid      String?
+  warehouseUuid     String?
   tags              Json?
   purchaseDate      DateTime?
   expiryDate        DateTime?
@@ -67,16 +66,15 @@ model Item {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [uuid], onDelete: Cascade)
 
   @@index([userId])
   @@unique([uuid, userId])
 }
 
 model Category {
-  id          Int      @id @default(autoincrement())
-  uuid        String
-  userId      Int
+  uuid        String   @id
+  userId      String
   name        String
   description String   @default("")
   color       String   @default("#6200EE")
@@ -84,36 +82,34 @@ model Category {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [uuid], onDelete: Cascade)
 
   @@index([userId])
   @@unique([uuid, userId])
 }
 
 model Warehouse {
-  id          Int      @id @default(autoincrement())
-  uuid        String
-  userId      Int
+  uuid        String   @id
+  userId      String
   name        String
   description String   @default("")
   location    String   @default("")
   capacity    Int?
-  parentId    Int?
+  parentUuid  String?
   level       Int      @default(1)
   imageUri    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [uuid], onDelete: Cascade)
 
   @@index([userId])
   @@unique([uuid, userId])
 }
 
 model ShoppingItem {
-  id          Int      @id @default(autoincrement())
-  uuid        String
-  userId      Int
+  uuid        String   @id
+  userId      String
   name        String
   description String   @default("")
   quantity    Int      @default(1)
@@ -124,16 +120,15 @@ model ShoppingItem {
   imageUri    String?
   itemUuid    String?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [uuid], onDelete: Cascade)
 
   @@index([userId])
   @@unique([uuid, userId])
 }
 
 model ItemReminder {
-  id           Int      @id @default(autoincrement())
-  uuid         String
-  userId       Int
+  uuid         String   @id
+  userId       String
   itemUuid     String
   reminderType ReminderType
   reminderTime DateTime?
@@ -148,16 +143,15 @@ model ItemReminder {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [uuid], onDelete: Cascade)
 
   @@index([userId])
   @@unique([uuid, userId])
 }
 
 model ActivityEvent {
-  id          Int               @id @default(autoincrement())
-  uuid        String
-  userId      Int
+  uuid        String            @id
+  userId      String
   type        ActivityEventType
   title       String
   description String            @default("")
@@ -167,21 +161,20 @@ model ActivityEvent {
   createdAt   DateTime          @default(now())
   metadata    String            @default("")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [uuid], onDelete: Cascade)
 
   @@index([userId])
   @@unique([uuid, userId])
 }
 
 model DeletedRecord {
-  id         Int      @id @default(autoincrement())
-  uuid       String
-  userId     Int
+  uuid       String   @id
+  userId     String
   entityType String
   entityUuid String
   deletedAt  DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [uuid], onDelete: Cascade)
 
   @@index([userId])
   @@unique([uuid, userId])

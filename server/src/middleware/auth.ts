@@ -5,7 +5,7 @@ import { fail } from "../utils/response";
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
 
 type TokenPayload = {
-  id: number;
+  uuid: string;
   account: string;
 };
 
@@ -23,7 +23,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 
   try {
     const payload = jwt.verify(token, JWT_SECRET) as TokenPayload;
-    req.user = { id: payload.id, account: payload.account };
+    req.user = { uuid: payload.uuid, account: payload.account };
     return next();
   } catch (error) {
     return res.status(401).json(

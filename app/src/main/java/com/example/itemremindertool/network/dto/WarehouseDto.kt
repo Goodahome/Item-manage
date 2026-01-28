@@ -21,8 +21,8 @@ data class WarehouseDto(
     @SerializedName("capacity")
     val capacity: Int? = null,
     
-    @SerializedName("parentId")
-    val parentId: Int? = null,
+    @SerializedName("parentUuid")
+    val parentUuid: String? = null,
     
     @SerializedName("level")
     val level: Int? = null,

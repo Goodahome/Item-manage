@@ -21,8 +21,8 @@ class ReminderWorker(
     
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            val reminderId = inputData.getLong("reminderId", -1)
-            if (reminderId == -1L) {
+            val reminderId = inputData.getString("reminderId")
+            if (reminderId.isNullOrEmpty()) {
                 return@withContext Result.failure()
             }
             
@@ -30,7 +30,7 @@ class ReminderWorker(
             val itemDao = AppDatabase.getDatabase(applicationContext).itemDao()
             
             // 获取提醒信息
-            val reminder = reminderDao.getReminderById(reminderId) ?: return@withContext Result.failure()
+            val reminder = reminderDao.getReminderByUuid(reminderId) ?: return@withContext Result.failure()
             
             // 检查提醒是否仍然启用
             if (!reminder.isEnabled) {
@@ -38,7 +38,7 @@ class ReminderWorker(
             }
             
             // 获取关联的物品信息
-            val item = itemDao.getItemById(reminder.itemId)
+            val item = itemDao.getItemByUuid(reminder.itemUuid)
             
             // 发送通知
             NotificationHelper.sendReminderNotification(

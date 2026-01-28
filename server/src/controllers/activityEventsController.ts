@@ -30,7 +30,7 @@ const eventSchema = z.object({
 
 export async function listActivityEvents(req: Request, res: Response) {
   const { page, pageSize } = parsePagination(req.query);
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -61,7 +61,7 @@ export async function listActivityEvents(req: Request, res: Response) {
 }
 
 export async function getActivityEvent(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -88,7 +88,7 @@ export async function getActivityEvent(req: Request, res: Response) {
 }
 
 export async function upsertActivityEvent(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({

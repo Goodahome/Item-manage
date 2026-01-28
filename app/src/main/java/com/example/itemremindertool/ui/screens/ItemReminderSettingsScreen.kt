@@ -43,7 +43,7 @@ fun ItemReminderSettingsScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val reminders by viewModel.getRemindersByItemId(item.id).collectAsState(initial = emptyList())
+    val reminders by viewModel.getRemindersByItemUuid(item.uuid).collectAsState(initial = emptyList())
     var showAddReminderDialog by remember { mutableStateOf(false) }
     var editingReminder by remember { mutableStateOf<ItemReminder?>(null) }
     
@@ -356,8 +356,8 @@ fun ReminderEditDialog(
             Button(
                 onClick = {
                     val newReminder = ItemReminder(
-                        id = existingReminder?.id ?: 0,
-                        itemId = item.id,
+                        uuid = existingReminder?.uuid ?: java.util.UUID.randomUUID().toString(),
+                        itemUuid = item.uuid,
                         reminderType = selectedType,
                         reminderTime = if (selectedType == ReminderType.ONCE) reminderTime else null,
                         dailyTime = if (selectedType == ReminderType.DAILY) dailyTime else null,

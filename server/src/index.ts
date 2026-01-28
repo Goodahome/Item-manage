@@ -3,6 +3,13 @@ import cors from "cors";
 import morgan from "morgan";
 import compression from "compression";
 import dotenv from "dotenv";
+
+// 必须先加载环境变量，然后才能初始化数据库配置
+dotenv.config();
+
+// 初始化数据库配置（必须在 dotenv.config() 之后）
+import "./config/database";
+
 import { errorHandler } from "./middleware/errorHandler";
 import { authRateLimiter, apiRateLimiter } from "./middleware/rateLimiter";
 import authRoutes from "./routes/authRoutes";
@@ -15,8 +22,6 @@ import activityEventsRoutes from "./routes/activityEventsRoutes";
 import deletedRecordsRoutes from "./routes/deletedRecordsRoutes";
 import mediaRoutes from "./routes/mediaRoutes";
 import syncRoutes from "./routes/syncRoutes";
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;

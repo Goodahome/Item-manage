@@ -25,7 +25,7 @@ function buildObjectKey(userId, itemUuid, ext) {
     return `users/${userId}/items/${itemSegment}/${fileName}.${ext}`;
 }
 async function presignUpload(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -80,7 +80,7 @@ async function presignUpload(req, res) {
     }));
 }
 async function presignRead(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",

@@ -58,7 +58,7 @@ import java.time.*
 fun ItemsScreen(
     viewModel: ItemViewModel,
     onAddItem: () -> Unit,
-    onEditItem: (Long) -> Unit,
+    onEditItem: (String) -> Unit,
     onScanBarcode: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -119,10 +119,10 @@ fun ItemsScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(items, key = { it.id }) { item ->
+                    items(items, key = { it.uuid }) { item ->
                         ItemCard(
                             item = item,
-                            onEdit = { onEditItem(item.id) },
+                            onEdit = { onEditItem(item.uuid) },
                             onDelete = { viewModel.deleteItem(item) }
                         )
                     }

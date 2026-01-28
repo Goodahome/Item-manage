@@ -23,7 +23,7 @@ const reminderSchema = z.object({
 
 export async function listReminders(req: Request, res: Response) {
   const { page, pageSize } = parsePagination(req.query);
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -54,7 +54,7 @@ export async function listReminders(req: Request, res: Response) {
 }
 
 export async function getReminder(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -81,7 +81,7 @@ export async function getReminder(req: Request, res: Response) {
 }
 
 export async function upsertReminder(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -151,7 +151,7 @@ export async function upsertReminder(req: Request, res: Response) {
 }
 
 export async function deleteReminder(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -174,6 +174,8 @@ export async function deleteReminder(req: Request, res: Response) {
     );
   }
 
-  await prisma.itemReminder.delete({ where: { id: reminder.id } });
+  await prisma.itemReminder.delete({
+    where: { uuid_userId: { uuid: reminder.uuid, userId: reminder.userId } }
+  });
   return res.json(ok({ deleted: true }));
 }

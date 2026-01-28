@@ -7,5 +7,16 @@
       "selected_warehouse_id": "1"
     },
     "updatedAt": "2026-01-27T05:06:20.983Z"
+  },
+  "a1c767a4-2e78-4ad3-9c3a-3dd2993e8c02": {
+    "data": {
+      "is_processing_activity_result": "false",
+      "selected_app_icon": "0",
+      "has_completed_onboarding": "true",
+      "server_url": "http://192.168.124.2:3001",
+      "premium_trial_used": "true",
+      "premium_trial_start_time": "1769514401576"
+    },
+    "updatedAt": "2026-01-27T11:58:35.986Z"
   }
 }

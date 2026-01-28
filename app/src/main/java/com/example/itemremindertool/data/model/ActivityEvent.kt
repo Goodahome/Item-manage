@@ -27,14 +27,12 @@ enum class ActivityEventType {
  */
 @Entity(tableName = "activity_events")
 data class ActivityEvent(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    @PrimaryKey
     val uuid: String = UUID.randomUUID().toString(),
-    
-    val type: ActivityEventType,        // 事件类型
+    val type: ActivityEventType,
     val title: String,                  // 事件标题
     val description: String = "",       // 事件描述
-    val targetId: Long? = null,         // 目标ID（物品ID或容器ID）
+    val targetUuid: String? = null,     // 目标 UUID（物品或容器）
     val targetName: String = "",        // 目标名称
     val iconType: String = "",          // 图标类型（用于显示）
     val createdAt: Date = Date(),       // 创建时间

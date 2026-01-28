@@ -15,9 +15,6 @@ interface ShoppingItemDao {
     @Query("SELECT * FROM shopping_items WHERE isCompleted = 0 ORDER BY priority DESC, createdAt DESC")
     fun getActiveShoppingItems(): Flow<List<ShoppingItem>>
 
-    @Query("SELECT * FROM shopping_items WHERE id = :id")
-    suspend fun getShoppingItemById(id: Long): ShoppingItem?
-
     @Query("SELECT * FROM shopping_items WHERE uuid = :uuid LIMIT 1")
     suspend fun getShoppingItemByUuid(uuid: String): ShoppingItem?
 
@@ -30,7 +27,7 @@ interface ShoppingItemDao {
     @Delete
     suspend fun deleteShoppingItem(item: ShoppingItem): Int
 
-    @Query("DELETE FROM shopping_items WHERE id = :id")
-    suspend fun deleteShoppingItemById(id: Long): Int
+    @Query("DELETE FROM shopping_items WHERE uuid = :uuid")
+    suspend fun deleteShoppingItemByUuid(uuid: String): Int
 }
 

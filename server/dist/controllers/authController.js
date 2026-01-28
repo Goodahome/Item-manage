@@ -9,6 +9,7 @@ exports.refresh = refresh;
 exports.logout = logout;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const crypto_1 = __importDefault(require("crypto"));
 const prisma_1 = require("../prisma");
 const response_1 = require("../utils/response");
 const auth_1 = require("../validators/auth");
@@ -34,16 +35,17 @@ async function register(req, res) {
     const passwordHash = await bcryptjs_1.default.hash(password, 10);
     const user = await prisma_1.prisma.user.create({
         data: {
+            uuid: crypto_1.default.randomUUID(),
             account,
             displayName,
             passwordHash
         }
     });
-    const token = jsonwebtoken_1.default.sign({ id: user.id, account: user.account }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const token = jsonwebtoken_1.default.sign({ uuid: user.uuid, account: user.account }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     return res.json((0, response_1.ok)({
         token,
         user: {
-            id: user.id,
+            uuid: user.uuid,
             account: user.account,
             displayName: user.displayName
         }
@@ -73,11 +75,11 @@ async function login(req, res) {
             message: "Account or password incorrect"
         }));
     }
-    const token = jsonwebtoken_1.default.sign({ id: user.id, account: user.account }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const token = jsonwebtoken_1.default.sign({ uuid: user.uuid, account: user.account }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     return res.json((0, response_1.ok)({
         token,
         user: {
-            id: user.id,
+            uuid: user.uuid,
             account: user.account,
             displayName: user.displayName
         }
@@ -90,7 +92,7 @@ async function refresh(req, res) {
             message: "Missing user context"
         }));
     }
-    const token = jsonwebtoken_1.default.sign({ id: req.user.id, account: req.user.account }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const token = jsonwebtoken_1.default.sign({ uuid: req.user.uuid, account: req.user.account }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     return res.json((0, response_1.ok)({
         token
     }));

@@ -12,10 +12,8 @@ const itemSchema = zod_1.z.object({
     uuid: zod_1.z.string().min(1),
     name: zod_1.z.string().min(1),
     description: zod_1.z.string().optional(),
-    categoryId: zod_1.z.number().int().nullable().optional(),
-    categoryUuid: zod_1.z.string().min(1).nullable().optional(),
-    warehouseId: zod_1.z.number().int().nullable().optional(),
-    warehouseUuid: zod_1.z.string().min(1).nullable().optional(),
+    categoryUuid: zod_1.z.string().uuid().nullable().optional(),
+    warehouseUuid: zod_1.z.string().uuid().nullable().optional(),
     tags: zod_1.z.array(zod_1.z.string()).optional(),
     purchaseDate: zod_1.z.string().datetime().nullable().optional(),
     expiryDate: zod_1.z.string().datetime().nullable().optional(),
@@ -32,7 +30,7 @@ const itemSchema = zod_1.z.object({
 });
 async function listItems(req, res) {
     const { page, pageSize } = (0, pagination_1.parsePagination)(req.query);
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -40,21 +38,21 @@ async function listItems(req, res) {
         }));
     }
     const search = typeof req.query.search === "string" ? req.query.search : "";
-    const categoryId = typeof req.query.categoryId === "string"
-        ? Number(req.query.categoryId)
+    const categoryUuid = typeof req.query.categoryUuid === "string" && req.query.categoryUuid.length > 0
+        ? req.query.categoryUuid
         : undefined;
-    const warehouseId = typeof req.query.warehouseId === "string"
-        ? Number(req.query.warehouseId)
+    const warehouseUuid = typeof req.query.warehouseUuid === "string" && req.query.warehouseUuid.length > 0
+        ? req.query.warehouseUuid
         : undefined;
     const where = { userId };
     if (search) {
         where.name = { contains: search };
     }
-    if (!Number.isNaN(categoryId)) {
-        where.categoryId = categoryId;
+    if (categoryUuid) {
+        where.categoryUuid = categoryUuid;
     }
-    if (!Number.isNaN(warehouseId)) {
-        where.warehouseId = warehouseId;
+    if (warehouseUuid) {
+        where.warehouseUuid = warehouseUuid;
     }
     const [items, total] = await Promise.all([
         prisma_1.prisma.item.findMany({
@@ -65,22 +63,10 @@ async function listItems(req, res) {
         }),
         prisma_1.prisma.item.count({ where })
     ]);
-    const warehouseIds = Array.from(new Set(items.map((item) => item.warehouseId).filter((id) => typeof id === "number")));
-    const categoryIds = Array.from(new Set(items.map((item) => item.categoryId).filter((id) => typeof id === "number")));
-    const [warehouses, categories] = await Promise.all([
-        warehouseIds.length
-            ? prisma_1.prisma.warehouse.findMany({ where: { userId, id: { in: warehouseIds } } })
-            : Promise.resolve([]),
-        categoryIds.length
-            ? prisma_1.prisma.category.findMany({ where: { userId, id: { in: categoryIds } } })
-            : Promise.resolve([])
-    ]);
-    const warehouseMap = new Map(warehouses.map((wh) => [wh.id, wh.uuid]));
-    const categoryMap = new Map(categories.map((cat) => [cat.id, cat.uuid]));
     const withUuids = items.map((item) => ({
         ...item,
-        warehouseUuid: item.warehouseId ? warehouseMap.get(item.warehouseId) ?? null : null,
-        categoryUuid: item.categoryId ? categoryMap.get(item.categoryId) ?? null : null
+        warehouseUuid: item.warehouseUuid ?? null,
+        categoryUuid: item.categoryUuid ?? null
     }));
     return res.json((0, response_1.ok)({
         items: withUuids,
@@ -90,7 +76,7 @@ async function listItems(req, res) {
     }));
 }
 async function getItem(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -110,22 +96,14 @@ async function getItem(req, res) {
             message: "Item not found"
         }));
     }
-    const [warehouse, category] = await Promise.all([
-        item.warehouseId
-            ? prisma_1.prisma.warehouse.findFirst({ where: { id: item.warehouseId, userId } })
-            : Promise.resolve(null),
-        item.categoryId
-            ? prisma_1.prisma.category.findFirst({ where: { id: item.categoryId, userId } })
-            : Promise.resolve(null)
-    ]);
     return res.json((0, response_1.ok)({
         ...item,
-        warehouseUuid: warehouse?.uuid ?? null,
-        categoryUuid: category?.uuid ?? null
+        warehouseUuid: item.warehouseUuid ?? null,
+        categoryUuid: item.categoryUuid ?? null
     }));
 }
 async function upsertItem(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -143,21 +121,8 @@ async function upsertItem(req, res) {
     const data = parsed.data;
     const createdAt = data.createdAt ? new Date(data.createdAt) : undefined;
     const updatedAt = data.updatedAt ? new Date(data.updatedAt) : undefined;
-    const resolvedWarehouse = data.warehouseUuid
-        ? await prisma_1.prisma.warehouse.findFirst({ where: { uuid: data.warehouseUuid, userId } })
-        : null;
-    const resolvedCategory = data.categoryUuid
-        ? await prisma_1.prisma.category.findFirst({ where: { uuid: data.categoryUuid, userId } })
-        : null;
-    // 记录警告：如果客户端发送了warehouseUuid但找不到对应容器
-    if (data.warehouseUuid && !resolvedWarehouse) {
-        console.warn(`[upsertItem] 警告：物品 ${data.name} (${data.uuid}) 的容器 UUID ${data.warehouseUuid} 未找到，warehouseId 将设置为 null`);
-    }
-    if (data.categoryUuid && !resolvedCategory) {
-        console.warn(`[upsertItem] 警告：物品 ${data.name} (${data.uuid}) 的分类 UUID ${data.categoryUuid} 未找到，categoryId 将设置为 null`);
-    }
-    const categoryId = resolvedCategory?.id ?? data.categoryId ?? null;
-    const warehouseId = resolvedWarehouse?.id ?? data.warehouseId ?? null;
+    const categoryUuid = data.categoryUuid ?? null;
+    const warehouseUuid = data.warehouseUuid ?? null;
     const item = await prisma_1.prisma.item.upsert({
         where: {
             uuid_userId: {
@@ -168,8 +133,8 @@ async function upsertItem(req, res) {
         update: {
             name: data.name,
             description: data.description ?? "",
-            categoryId,
-            warehouseId,
+            categoryUuid: categoryUuid,
+            warehouseUuid: warehouseUuid,
             tags: data.tags ?? [],
             purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : null,
             expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
@@ -189,8 +154,8 @@ async function upsertItem(req, res) {
             userId,
             name: data.name,
             description: data.description ?? "",
-            categoryId,
-            warehouseId,
+            categoryUuid: categoryUuid,
+            warehouseUuid: warehouseUuid,
             tags: data.tags ?? [],
             purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : null,
             expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
@@ -209,7 +174,7 @@ async function upsertItem(req, res) {
     return res.json((0, response_1.ok)(item));
 }
 async function deleteItem(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -230,9 +195,7 @@ async function deleteItem(req, res) {
         }));
     }
     await prisma_1.prisma.item.delete({
-        where: {
-            id: item.id
-        }
+        where: { uuid_userId: { uuid: item.uuid, userId: item.userId } }
     });
     return res.json((0, response_1.ok)({ deleted: true }));
 }

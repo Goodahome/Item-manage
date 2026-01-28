@@ -27,10 +27,8 @@ const itemDtoSchema = z.object({
   uuid: z.string().min(1),
   name: z.string().min(1),
   description: z.string().optional().nullable(),
-  categoryId: z.number().int().optional().nullable(),
-  categoryUuid: z.string().min(1).optional().nullable(),
-  warehouseId: z.number().int().optional().nullable(),
-  warehouseUuid: z.string().min(1).optional().nullable(),
+  categoryUuid: z.string().uuid().optional().nullable(),
+  warehouseUuid: z.string().uuid().optional().nullable(),
   tags: z.array(z.string()).optional().nullable(),
   purchaseDate: z.string().datetime().optional().nullable(),
   expiryDate: z.string().datetime().optional().nullable(),
@@ -62,7 +60,7 @@ const warehouseDtoSchema = z.object({
   description: z.string().optional().nullable(),
   location: z.string().optional().nullable(),
   capacity: z.number().int().optional().nullable(),
-  parentId: z.number().int().optional().nullable(),
+  parentUuid: z.string().uuid().optional().nullable(),
   level: z.number().int().optional().nullable(),
   imageUri: z.string().optional().nullable(),
   createdAt: z.string().datetime().optional().nullable(),
@@ -79,7 +77,7 @@ const shoppingItemDtoSchema = z.object({
   createdAt: z.string().datetime().optional().nullable(),
   completedAt: z.string().datetime().optional().nullable(),
   imageUri: z.string().optional().nullable(),
-  itemUuid: z.string().optional().nullable()
+  itemUuid: z.string().uuid().optional().nullable()
 });
 
 const activityEventDtoSchema = z.object({
@@ -87,7 +85,7 @@ const activityEventDtoSchema = z.object({
   type: z.string().min(1),
   title: z.string().min(1),
   description: z.string().optional().nullable(),
-  targetUuid: z.string().optional().nullable(),
+  targetUuid: z.string().uuid().optional().nullable(),
   targetName: z.string().optional().nullable(),
   iconType: z.string().optional().nullable(),
   createdAt: z.string().datetime().optional().nullable(),
@@ -122,7 +120,7 @@ function compareUpdated(
 }
 
 export async function bootstrapSync(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -151,9 +149,6 @@ export async function bootstrapSync(req: Request, res: Response) {
     prisma.shoppingItem.findMany({ where: { userId } }),
     prisma.activityEvent.findMany({ where: { userId } })
   ]);
-
-  const warehouseMap = new Map(warehouses.map((wh) => [wh.id, wh.uuid]));
-  const categoryMap = new Map(categories.map((cat) => [cat.id, cat.uuid]));
 
   const toApply = {
     items: [] as unknown[],
@@ -184,8 +179,8 @@ export async function bootstrapSync(req: Request, res: Response) {
     if (verdict === "server_newer") {
       toApply.items.push({
         ...item,
-        warehouseUuid: item.warehouseId ? warehouseMap.get(item.warehouseId) ?? null : null,
-        categoryUuid: item.categoryId ? categoryMap.get(item.categoryId) ?? null : null
+        warehouseUuid: item.warehouseUuid ?? null,
+        categoryUuid: item.categoryUuid ?? null
       });
     } else if (verdict === "client_newer") {
       toUpload.items.push(item.uuid);
@@ -285,7 +280,7 @@ export async function bootstrapSync(req: Request, res: Response) {
 }
 
 export async function bootstrapSyncAck(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -308,177 +303,338 @@ export async function bootstrapSyncAck(req: Request, res: Response) {
 
   const payload = parsed.data;
 
-  for (const category of payload.categories) {
-    await prisma.category.upsert({
-      where: { uuid_userId: { uuid: category.uuid, userId } },
-      update: {
-        name: category.name,
-        description: category.description ?? "",
-        color: category.color ?? "#6200EE",
-        icon: category.icon ?? "category",
-        createdAt: parseDate(category.createdAt),
-        updatedAt: parseDate(category.updatedAt)
-      },
-      create: {
-        uuid: category.uuid,
-        userId,
-        name: category.name,
-        description: category.description ?? "",
-        color: category.color ?? "#6200EE",
-        icon: category.icon ?? "category",
-        createdAt: parseDate(category.createdAt),
-        updatedAt: parseDate(category.updatedAt)
+  // 辅助函数：检查是否为示例数据（通过名称模式）
+  const isSampleData = (name: string): boolean => {
+    const sampleKeywords = ["示例", "Sample", "sample", "EXAMPLE", "Example", "演示", "Demo", "demo"];
+    return sampleKeywords.some(keyword => name.includes(keyword));
+  };
+
+  // 冲突记录列表，用于返回给客户端
+  const conflicts = {
+    items: [] as string[],
+    categories: [] as string[],
+    warehouses: [] as string[],
+    shoppingItems: [] as string[],
+    activityEvents: [] as string[]
+  };
+
+  // 使用事务确保多设备并发更新的一致性
+  // 使用 Serializable 隔离级别确保最高一致性
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 处理分类 - 使用乐观锁检查
+    for (const category of payload.categories) {
+      // 拒绝示例数据
+      if (isSampleData(category.name)) {
+        console.log(`拒绝示例分类: ${category.name} (UUID: ${category.uuid})`);
+        continue;
       }
-    });
-  }
+      const existing = await tx.category.findUnique({
+        where: { uuid_userId: { uuid: category.uuid, userId } }
+      });
 
-  for (const warehouse of payload.warehouses) {
-    await prisma.warehouse.upsert({
-      where: { uuid_userId: { uuid: warehouse.uuid, userId } },
-      update: {
-        name: warehouse.name,
-        description: warehouse.description ?? "",
-        location: warehouse.location ?? "",
-        capacity: warehouse.capacity ?? null,
-        parentId: warehouse.parentId ?? null,
-        level: warehouse.level ?? 1,
-        imageUri: warehouse.imageUri ?? null,
-        createdAt: parseDate(warehouse.createdAt),
-        updatedAt: parseDate(warehouse.updatedAt)
-      },
-      create: {
-        uuid: warehouse.uuid,
-        userId,
-        name: warehouse.name,
-        description: warehouse.description ?? "",
-        location: warehouse.location ?? "",
-        capacity: warehouse.capacity ?? null,
-        parentId: warehouse.parentId ?? null,
-        level: warehouse.level ?? 1,
-        imageUri: warehouse.imageUri ?? null,
-        createdAt: parseDate(warehouse.createdAt),
-        updatedAt: parseDate(warehouse.updatedAt)
+      if (existing) {
+        // 乐观锁：如果客户端发送的 updatedAt 早于服务器当前的 updatedAt，拒绝更新
+        const clientUpdatedAt = parseDate(category.updatedAt);
+        const serverUpdatedAt = existing.updatedAt;
+        
+        if (clientUpdatedAt && serverUpdatedAt && clientUpdatedAt < serverUpdatedAt) {
+          conflicts.categories.push(category.uuid);
+          continue; // 跳过这个更新，保留服务器版本
+        }
       }
-    });
-  }
 
-  for (const item of payload.items) {
-    const resolvedWarehouse = item.warehouseUuid
-      ? await prisma.warehouse.findFirst({ where: { uuid: item.warehouseUuid, userId } })
-      : null;
-    const resolvedCategory = item.categoryUuid
-      ? await prisma.category.findFirst({ where: { uuid: item.categoryUuid, userId } })
-      : null;
+      await tx.category.upsert({
+        where: { uuid_userId: { uuid: category.uuid, userId } },
+        update: {
+          name: category.name,
+          description: category.description ?? "",
+          color: category.color ?? "#6200EE",
+          icon: category.icon ?? "category",
+          createdAt: parseDate(category.createdAt),
+          updatedAt: parseDate(category.updatedAt) ?? new Date()
+        },
+        create: {
+          uuid: category.uuid,
+          userId,
+          name: category.name,
+          description: category.description ?? "",
+          color: category.color ?? "#6200EE",
+          icon: category.icon ?? "category",
+          createdAt: parseDate(category.createdAt),
+          updatedAt: parseDate(category.updatedAt) ?? new Date()
+        }
+      });
+    }
 
-    await prisma.item.upsert({
-      where: { uuid_userId: { uuid: item.uuid, userId } },
-      update: {
-        name: item.name,
-        description: item.description ?? "",
-        categoryId: resolvedCategory?.id ?? item.categoryId ?? null,
-        warehouseId: resolvedWarehouse?.id ?? item.warehouseId ?? null,
-        tags: item.tags ?? [],
-        purchaseDate: item.purchaseDate ? new Date(item.purchaseDate) : null,
-        expiryDate: item.expiryDate ? new Date(item.expiryDate) : null,
-        price: item.price ?? null,
-        quantity: item.quantity ?? 1,
-        barcode: item.barcode ?? null,
-        imageUri: item.imageUri ?? null,
-        imageUris: item.imageUris ?? [],
-        primaryImageIndex: item.primaryImageIndex ?? 0,
-        featureCode: item.featureCode ?? null,
-        enableStockAlert: item.enableStockAlert ?? true,
-        createdAt: parseDate(item.createdAt),
-        updatedAt: parseDate(item.updatedAt)
-      },
-      create: {
-        uuid: item.uuid,
-        userId,
-        name: item.name,
-        description: item.description ?? "",
-        categoryId: resolvedCategory?.id ?? item.categoryId ?? null,
-        warehouseId: resolvedWarehouse?.id ?? item.warehouseId ?? null,
-        tags: item.tags ?? [],
-        purchaseDate: item.purchaseDate ? new Date(item.purchaseDate) : null,
-        expiryDate: item.expiryDate ? new Date(item.expiryDate) : null,
-        price: item.price ?? null,
-        quantity: item.quantity ?? 1,
-        barcode: item.barcode ?? null,
-        imageUri: item.imageUri ?? null,
-        imageUris: item.imageUris ?? [],
-        primaryImageIndex: item.primaryImageIndex ?? 0,
-        featureCode: item.featureCode ?? null,
-        enableStockAlert: item.enableStockAlert ?? true,
-        createdAt: parseDate(item.createdAt),
-        updatedAt: parseDate(item.updatedAt)
+    // 处理容器 - 使用乐观锁检查
+    for (const warehouse of payload.warehouses) {
+      // 拒绝示例数据
+      if (isSampleData(warehouse.name)) {
+        console.log(`拒绝示例容器: ${warehouse.name} (UUID: ${warehouse.uuid})`);
+        continue;
       }
-    });
-  }
 
-  for (const shopping of payload.shoppingItems) {
-    await prisma.shoppingItem.upsert({
-      where: { uuid_userId: { uuid: shopping.uuid, userId } },
-      update: {
-        name: shopping.name,
-        description: shopping.description ?? "",
-        quantity: shopping.quantity ?? 1,
-        isCompleted: shopping.isCompleted ?? false,
-        priority: shopping.priority ?? "MEDIUM",
-        completedAt: parseDate(shopping.completedAt) ?? null,
-        imageUri: shopping.imageUri ?? null,
-        itemUuid: shopping.itemUuid ?? null,
-        createdAt: parseDate(shopping.createdAt)
-      },
-      create: {
-        uuid: shopping.uuid,
-        userId,
-        name: shopping.name,
-        description: shopping.description ?? "",
-        quantity: shopping.quantity ?? 1,
-        isCompleted: shopping.isCompleted ?? false,
-        priority: shopping.priority ?? "MEDIUM",
-        completedAt: parseDate(shopping.completedAt) ?? null,
-        imageUri: shopping.imageUri ?? null,
-        itemUuid: shopping.itemUuid ?? null,
-        createdAt: parseDate(shopping.createdAt)
+      const existing = await tx.warehouse.findUnique({
+        where: { uuid_userId: { uuid: warehouse.uuid, userId } }
+      });
+
+      if (existing) {
+        // 乐观锁：如果客户端发送的 updatedAt 早于服务器当前的 updatedAt，拒绝更新
+        const clientUpdatedAt = parseDate(warehouse.updatedAt);
+        const serverUpdatedAt = existing.updatedAt;
+        
+        if (clientUpdatedAt && serverUpdatedAt && clientUpdatedAt < serverUpdatedAt) {
+          conflicts.warehouses.push(warehouse.uuid);
+          continue; // 跳过这个更新，保留服务器版本
+        }
       }
-    });
-  }
 
-  for (const event of payload.activityEvents) {
-    await prisma.activityEvent.upsert({
-      where: { uuid_userId: { uuid: event.uuid, userId } },
-      update: {
-        type: event.type as any,
-        title: event.title,
-        description: event.description ?? "",
-        targetUuid: event.targetUuid ?? null,
-        targetName: event.targetName ?? "",
-        iconType: event.iconType ?? "",
-        createdAt: parseDate(event.createdAt),
-        metadata: event.metadata ?? ""
-      },
-      create: {
-        uuid: event.uuid,
-        userId,
-        type: event.type as any,
-        title: event.title,
-        description: event.description ?? "",
-        targetUuid: event.targetUuid ?? null,
-        targetName: event.targetName ?? "",
-        iconType: event.iconType ?? "",
-        createdAt: parseDate(event.createdAt),
-        metadata: event.metadata ?? ""
+      await tx.warehouse.upsert({
+        where: { uuid_userId: { uuid: warehouse.uuid, userId } },
+        update: {
+          name: warehouse.name,
+          description: warehouse.description ?? "",
+          location: warehouse.location ?? "",
+          capacity: warehouse.capacity ?? null,
+          parentUuid: warehouse.parentUuid ?? null,
+          level: warehouse.level ?? 1,
+          imageUri: warehouse.imageUri ?? null,
+          createdAt: parseDate(warehouse.createdAt),
+          updatedAt: parseDate(warehouse.updatedAt) ?? new Date()
+        },
+        create: {
+          uuid: warehouse.uuid,
+          userId,
+          name: warehouse.name,
+          description: warehouse.description ?? "",
+          location: warehouse.location ?? "",
+          capacity: warehouse.capacity ?? null,
+          parentUuid: warehouse.parentUuid ?? null,
+          level: warehouse.level ?? 1,
+          imageUri: warehouse.imageUri ?? null,
+          createdAt: parseDate(warehouse.createdAt),
+          updatedAt: parseDate(warehouse.updatedAt) ?? new Date()
+        }
+      });
+    }
+
+    // 处理物品 - 使用乐观锁检查
+    for (const item of payload.items) {
+      // 拒绝示例数据
+      if (isSampleData(item.name)) {
+        console.log(`拒绝示例物品: ${item.name} (UUID: ${item.uuid})`);
+        continue;
       }
-    });
-  }
 
-  if (payload.settings?.data) {
-    await setUserSettings(userId, {
-      data: payload.settings.data,
-      updatedAt: payload.settings.updatedAt ?? new Date().toISOString()
-    });
-  }
+      const categoryUuid = item.categoryUuid ?? null;
+      const warehouseUuid = item.warehouseUuid ?? null;
 
-  return res.json(ok({ success: true }));
+      const existing = await tx.item.findUnique({
+        where: { uuid_userId: { uuid: item.uuid, userId } }
+      });
+
+      if (existing) {
+        // 乐观锁：如果客户端发送的 updatedAt 早于服务器当前的 updatedAt，拒绝更新
+        const clientUpdatedAt = parseDate(item.updatedAt);
+        const serverUpdatedAt = existing.updatedAt;
+        
+        if (clientUpdatedAt && serverUpdatedAt && clientUpdatedAt < serverUpdatedAt) {
+          conflicts.items.push(item.uuid);
+          continue; // 跳过这个更新，保留服务器版本
+        }
+      }
+
+      await tx.item.upsert({
+        where: { uuid_userId: { uuid: item.uuid, userId } },
+        update: {
+          name: item.name,
+          description: item.description ?? "",
+          categoryUuid,
+          warehouseUuid,
+          tags: item.tags ?? [],
+          purchaseDate: item.purchaseDate ? new Date(item.purchaseDate) : null,
+          expiryDate: item.expiryDate ? new Date(item.expiryDate) : null,
+          price: item.price ?? null,
+          quantity: item.quantity ?? 1,
+          barcode: item.barcode ?? null,
+          imageUri: item.imageUri ?? null,
+          imageUris: item.imageUris ?? [],
+          primaryImageIndex: item.primaryImageIndex ?? 0,
+          featureCode: item.featureCode ?? null,
+          enableStockAlert: item.enableStockAlert ?? true,
+          createdAt: parseDate(item.createdAt),
+          updatedAt: parseDate(item.updatedAt) ?? new Date()
+        },
+        create: {
+          uuid: item.uuid,
+          userId,
+          name: item.name,
+          description: item.description ?? "",
+          categoryUuid,
+          warehouseUuid,
+          tags: item.tags ?? [],
+          purchaseDate: item.purchaseDate ? new Date(item.purchaseDate) : null,
+          expiryDate: item.expiryDate ? new Date(item.expiryDate) : null,
+          price: item.price ?? null,
+          quantity: item.quantity ?? 1,
+          barcode: item.barcode ?? null,
+          imageUri: item.imageUri ?? null,
+          imageUris: item.imageUris ?? [],
+          primaryImageIndex: item.primaryImageIndex ?? 0,
+          featureCode: item.featureCode ?? null,
+          enableStockAlert: item.enableStockAlert ?? true,
+          createdAt: parseDate(item.createdAt),
+          updatedAt: parseDate(item.updatedAt) ?? new Date()
+        }
+      });
+    }
+
+    // 处理购物项 - 使用乐观锁检查（使用 completedAt 或 createdAt）
+    for (const shopping of payload.shoppingItems) {
+      // 拒绝示例数据
+      if (isSampleData(shopping.name)) {
+        console.log(`拒绝示例购物项: ${shopping.name} (UUID: ${shopping.uuid})`);
+        continue;
+      }
+
+      const existing = await tx.shoppingItem.findUnique({
+        where: { uuid_userId: { uuid: shopping.uuid, userId } }
+      });
+
+      if (existing) {
+        // 乐观锁：比较 completedAt 或 createdAt
+        const clientTime = parseDate(shopping.completedAt) ?? parseDate(shopping.createdAt);
+        const serverTime = existing.completedAt ?? existing.createdAt;
+        
+        if (clientTime && serverTime && clientTime < serverTime) {
+          conflicts.shoppingItems.push(shopping.uuid);
+          continue; // 跳过这个更新，保留服务器版本
+        }
+      }
+
+      await tx.shoppingItem.upsert({
+        where: { uuid_userId: { uuid: shopping.uuid, userId } },
+        update: {
+          name: shopping.name,
+          description: shopping.description ?? "",
+          quantity: shopping.quantity ?? 1,
+          isCompleted: shopping.isCompleted ?? false,
+          priority: shopping.priority ?? "MEDIUM",
+          completedAt: parseDate(shopping.completedAt) ?? null,
+          imageUri: shopping.imageUri ?? null,
+          itemUuid: shopping.itemUuid ?? null,
+          createdAt: parseDate(shopping.createdAt)
+        },
+        create: {
+          uuid: shopping.uuid,
+          userId,
+          name: shopping.name,
+          description: shopping.description ?? "",
+          quantity: shopping.quantity ?? 1,
+          isCompleted: shopping.isCompleted ?? false,
+          priority: shopping.priority ?? "MEDIUM",
+          completedAt: parseDate(shopping.completedAt) ?? null,
+          imageUri: shopping.imageUri ?? null,
+          itemUuid: shopping.itemUuid ?? null,
+          createdAt: parseDate(shopping.createdAt)
+        }
+      });
+    }
+
+    // 处理活动事件 - 使用乐观锁检查（使用 createdAt）
+    for (const event of payload.activityEvents) {
+      const existing = await tx.activityEvent.findUnique({
+        where: { uuid_userId: { uuid: event.uuid, userId } }
+      });
+
+      if (existing) {
+        // 乐观锁：如果客户端发送的 createdAt 早于服务器当前的 createdAt，拒绝更新
+        const clientCreatedAt = parseDate(event.createdAt);
+        const serverCreatedAt = existing.createdAt;
+        
+        if (clientCreatedAt && serverCreatedAt && clientCreatedAt < serverCreatedAt) {
+          conflicts.activityEvents.push(event.uuid);
+          continue; // 跳过这个更新，保留服务器版本
+        }
+      }
+
+      await tx.activityEvent.upsert({
+        where: { uuid_userId: { uuid: event.uuid, userId } },
+        update: {
+          type: event.type as any,
+          title: event.title,
+          description: event.description ?? "",
+          targetUuid: event.targetUuid ?? null,
+          targetName: event.targetName ?? "",
+          iconType: event.iconType ?? "",
+          createdAt: parseDate(event.createdAt),
+          metadata: event.metadata ?? ""
+        },
+        create: {
+          uuid: event.uuid,
+          userId,
+          type: event.type as any,
+          title: event.title,
+          description: event.description ?? "",
+          targetUuid: event.targetUuid ?? null,
+          targetName: event.targetName ?? "",
+          iconType: event.iconType ?? "",
+          createdAt: parseDate(event.createdAt),
+          metadata: event.metadata ?? ""
+        }
+      });
+    }
+
+    if (payload.settings?.data) {
+      await setUserSettings(userId, {
+        data: payload.settings.data,
+        updatedAt: payload.settings.updatedAt ?? new Date().toISOString()
+      });
+    }
+    }, {
+      timeout: 30000, // 30秒超时，确保有足够时间处理大量数据
+      isolationLevel: 'Serializable' as const // 使用可串行化隔离级别，确保最高一致性
+    });
+
+    // 返回成功结果和冲突信息
+    return res.json(ok({ 
+      success: true,
+      conflicts: conflicts // 返回冲突的 UUID 列表，客户端需要重新拉取这些记录
+    }));
+  } catch (error: any) {
+    // 处理事务错误（可能是超时或死锁）
+    console.error("Sync transaction error:", error);
+    
+    // 如果是超时错误，返回特殊错误码
+    if (error.code === 'P2034' || error.message?.includes('timeout')) {
+      return res.status(408).json(
+        fail({
+          code: "SYNC_TIMEOUT",
+          message: "Sync operation timed out. Please try again with fewer items.",
+          details: { conflicts } // 返回已检测到的冲突
+        })
+      );
+    }
+    
+    // 如果是死锁错误，返回特殊错误码
+    if (error.code === 'P2034' || error.message?.includes('deadlock')) {
+      return res.status(409).json(
+        fail({
+          code: "SYNC_CONFLICT",
+          message: "Database conflict detected. Please sync again.",
+          details: { conflicts } // 返回已检测到的冲突
+        })
+      );
+    }
+    
+    // 其他错误
+    return res.status(500).json(
+      fail({
+        code: "SYNC_ERROR",
+        message: "Failed to sync data",
+        details: error.message
+      })
+    );
+  }
 }

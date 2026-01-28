@@ -90,27 +90,27 @@ class ItemNotificationWorker(
             val usedEvents = activityEventDao.getEventsByType(ActivityEventType.ITEM_USED).first()
             val viewedEvents = activityEventDao.getEventsByType(ActivityEventType.ITEM_VIEWED).first()
 
-            val lastUsedByItem = mutableMapOf<Long, java.util.Date>()
+            val lastUsedByItem = mutableMapOf<String, java.util.Date>()
             usedEvents.forEach { event ->
-                val targetId = event.targetId ?: return@forEach
-                val current = lastUsedByItem[targetId]
+                val targetUuid = event.targetUuid ?: return@forEach
+                val current = lastUsedByItem[targetUuid]
                 if (current == null || event.createdAt.after(current)) {
-                    lastUsedByItem[targetId] = event.createdAt
+                    lastUsedByItem[targetUuid] = event.createdAt
                 }
             }
 
-            val lastViewedByItem = mutableMapOf<Long, java.util.Date>()
+            val lastViewedByItem = mutableMapOf<String, java.util.Date>()
             viewedEvents.forEach { event ->
-                val targetId = event.targetId ?: return@forEach
-                val current = lastViewedByItem[targetId]
+                val targetUuid = event.targetUuid ?: return@forEach
+                val current = lastViewedByItem[targetUuid]
                 if (current == null || event.createdAt.after(current)) {
-                    lastViewedByItem[targetId] = event.createdAt
+                    lastViewedByItem[targetUuid] = event.createdAt
                 }
             }
 
             val forgetCandidates = allItems.filter { item ->
-                val lastUsedAt = lastUsedByItem[item.id] ?: item.updatedAt
-                val lastViewedAt = lastViewedByItem[item.id] ?: item.createdAt
+                val lastUsedAt = lastUsedByItem[item.uuid] ?: item.updatedAt
+                val lastViewedAt = lastViewedByItem[item.uuid] ?: item.createdAt
 
                 val lastUsedDate = java.time.Instant.ofEpochMilli(lastUsedAt.time)
                     .atZone(zone)

@@ -152,6 +152,11 @@ class MainActivity : FragmentActivity() {
         // 初始化应用图标
         IconManager.initializeIcon(applicationContext)
         
+        // 清理损坏的图片文件（在后台线程执行，不阻塞启动）
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            com.example.itemremindertool.utils.ImageUtils.cleanupCorruptedImages(applicationContext)
+        }
+        
         // 检查并应用待处理的系统级别更改
         // 注意：系统级别的名称和图标修改需要重新安装应用
         // 这里我们只是清除标志，实际修改需要用户重新安装应用
@@ -401,19 +406,17 @@ fun ItemReminderToolApp(
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     
-    // 维护当前选中的容器ID状态
-    // 从SharedPreferences恢复状态，用于侧边栏风格下解锁后保持容器页面
-    val savedWarehouseId = prefs.getLong("selected_warehouse_id", -1L)
-    var selectedWarehouseId by remember { 
-        mutableStateOf<Long?>(if (savedWarehouseId != -1L) savedWarehouseId else null) 
+    val savedWarehouseUuid = remember {
+        prefs.getString("selected_warehouse_uuid", null)?.takeIf { it.isNotBlank() }
     }
-    
-    // 保存selectedWarehouseId到SharedPreferences，用于解锁后恢复状态
-    LaunchedEffect(selectedWarehouseId) {
-        if (selectedWarehouseId != null) {
-            prefs.edit().putLong("selected_warehouse_id", selectedWarehouseId!!).apply()
+    var selectedWarehouseUuid by remember { 
+        mutableStateOf<String?>(savedWarehouseUuid) 
+    }
+    LaunchedEffect(selectedWarehouseUuid) {
+        if (selectedWarehouseUuid != null) {
+            prefs.edit().putString("selected_warehouse_uuid", selectedWarehouseUuid!!).apply()
         } else {
-            prefs.edit().remove("selected_warehouse_id").apply()
+            prefs.edit().remove("selected_warehouse_uuid").apply()
         }
     }
     
@@ -684,21 +687,15 @@ fun ItemReminderToolApp(
                     itemReminderViewModel = itemReminderViewModel,
                     activityEventViewModel = activityEventViewModel,
                     accessHistoryManager = accessHistoryManager,
-                    onAddItem = { warehouseId ->
-                        // 保存当前选中的容器ID，用于设置初始容器
-                        if (warehouseId != null) {
-                            selectedWarehouseId = warehouseId
-                        } else {
-                            // 从所有物品页面添加时，清理 selectedWarehouseId
-                            selectedWarehouseId = null
-                        }
+                    onAddItem = { warehouseUuid ->
+                        selectedWarehouseUuid = warehouseUuid
                         navController.navigate(Screen.AddItem.route)
                     },
-                    onEditItem = { itemId ->
-                        navController.navigate(Screen.EditItem.createRoute(itemId))
+                    onEditItem = { itemUuid ->
+                        navController.navigate(Screen.EditItem.createRoute(itemUuid))
                     },
-                    onViewItem = { itemId ->
-                        navController.navigate(Screen.ItemDetail.createRoute(itemId))
+                    onViewItem = { itemUuid ->
+                        navController.navigate(Screen.ItemDetail.createRoute(itemUuid))
                     },
                     onScanBarcode = { navController.navigate(Screen.BarcodeScanner.route) },
                     onItemRecognition = { navController.navigate(Screen.ItemRecognition.route) },
@@ -706,30 +703,28 @@ fun ItemReminderToolApp(
                     onAddWarehouse = {
                         navController.navigate(Screen.AddWarehouse.route)
                     },
-                    onAddChildWarehouse = { parentId ->
-                        selectedWarehouseId = parentId // 保存父容器ID
-                        navController.navigate(Screen.AddChildWarehouse.createRoute(parentId))
+                    onAddChildWarehouse = { parentUuid ->
+                        selectedWarehouseUuid = parentUuid
+                        navController.navigate(Screen.AddChildWarehouse.createRoute(parentUuid))
                     },
-                    onEditWarehouse = { warehouseId ->
-                        navController.navigate(Screen.EditWarehouse.createRoute(warehouseId))
+                    onEditWarehouse = { warehouseUuid ->
+                        navController.navigate(Screen.EditWarehouse.createRoute(warehouseUuid))
                     },
                     onDeleteWarehouse = { warehouse ->
                         warehouseViewModel.deleteWarehouse(warehouse)
                     },
                     onAddAlert = { item ->
-                        navController.navigate(Screen.ItemReminderSettings.createRoute(item.id))
+                        navController.navigate(Screen.ItemReminderSettings.createRoute(item.uuid))
                     },
-                    onNavigateToWarehouseItemsTab = { warehouseId ->
-                        selectedWarehouseId = warehouseId
-                        // 直接导航，不使用 popUpTo，让返回按钮正常工作
-                        navController.navigate(Screen.WarehouseItemsTab.createRoute(warehouseId)) {
+                    onNavigateToWarehouseItemsTab = { warehouseUuid ->
+                        selectedWarehouseUuid = warehouseUuid
+                        navController.navigate(Screen.WarehouseItemsTab.createRoute(warehouseUuid)) {
                             launchSingleTop = true
                         }
                     },
-                    // 传递 selectedWarehouseId，确保返回时保持在当前容器页面
-                    initialSelectedWarehouseId = selectedWarehouseId,
-                    onSelectedWarehouseIdChanged = { warehouseId ->
-                        selectedWarehouseId = warehouseId
+                    initialSelectedWarehouseUuid = selectedWarehouseUuid,
+                    onSelectedWarehouseUuidChanged = { warehouseUuid ->
+                        selectedWarehouseUuid = warehouseUuid
                     }
                 )
             }
@@ -738,14 +733,13 @@ fun ItemReminderToolApp(
                 val warehouses by warehouseViewModel.warehouses.collectAsState(initial = emptyList())
                 val pendingFeatureCode by itemViewModel.pendingFeatureCode.collectAsState()
                 ItemEditScreen(
-                    itemId = null,
+                    itemUuid = null,
                     viewModel = itemViewModel,
                     categories = emptyList(),
                     warehouses = warehouses,
                     tagManager = tagManager,
                     initialFeatureCode = pendingFeatureCode,
-                    // 未选择容器时，不传递容器ID（为 null）
-                    initialWarehouseId = if (selectedWarehouseId == null) null else selectedWarehouseId,
+                    initialWarehouseUuid = selectedWarehouseUuid,
                     onNavigateBack = { 
                         itemViewModel.clearPendingFeatureCode()
                         navController.popBackOrDashboard()
@@ -775,70 +769,60 @@ fun ItemReminderToolApp(
 
             composable(
                 route = Screen.EditItem.route,
-                arguments = listOf(navArgument("itemId") { type = NavType.LongType })
+                arguments = listOf(navArgument("itemUuid") { type = NavType.StringType })
             ) { backStackEntry ->
-                val itemId = backStackEntry.arguments?.getLong("itemId") ?: return@composable
+                val itemUuid = backStackEntry.arguments?.getString("itemUuid") ?: return@composable
                 val warehouses by warehouseViewModel.warehouses.collectAsState(initial = emptyList())
-                
-                // 加载物品并设置 selectedWarehouseId，以便返回时保持在当前容器页面
-                LaunchedEffect(itemId) {
-                    itemViewModel.loadItem(itemId)
+                LaunchedEffect(itemUuid) {
+                    itemViewModel.loadItemByUuid(itemUuid)
                 }
                 val selectedItem by itemViewModel.uiState.collectAsState()
                 LaunchedEffect(selectedItem.selectedItem) {
-                    selectedItem.selectedItem?.warehouseId?.let { warehouseId ->
-                        selectedWarehouseId = warehouseId
+                    selectedItem.selectedItem?.warehouseUuid?.let { uuid ->
+                        selectedWarehouseUuid = uuid
                     }
                 }
-                
                 ItemEditScreen(
-                    itemId = itemId,
+                    itemUuid = itemUuid,
                     viewModel = itemViewModel,
                     categories = emptyList(),
                     warehouses = warehouses,
                     tagManager = tagManager,
-                    onNavigateBack = { 
-                        // 不清理 selectedWarehouseId，保持在当前选中的容器页面
-                        navController.popBackOrDashboard() 
-                    }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
 
             composable(
                 route = Screen.ItemDetail.route,
-                arguments = listOf(navArgument("itemId") { type = NavType.LongType })
+                arguments = listOf(navArgument("itemUuid") { type = NavType.StringType })
             ) { backStackEntry ->
-                val itemId = backStackEntry.arguments?.getLong("itemId") ?: return@composable
+                val itemUuid = backStackEntry.arguments?.getString("itemUuid") ?: return@composable
                 val itemReminderViewModel = androidx.lifecycle.viewmodel.compose.viewModel<com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel>()
-                
                 com.example.itemremindertool.ui.screens.ItemDetailScreen(
-                    itemId = itemId,
+                    itemUuid = itemUuid,
                     itemViewModel = itemViewModel,
                     reminderViewModel = itemReminderViewModel,
                     onNavigateBack = { navController.popBackOrDashboard() },
-                    onEditItem = { editItemId ->
-                        navController.navigate(Screen.EditItem.createRoute(editItemId))
+                    onEditItem = { editItemUuid ->
+                        navController.navigate(Screen.EditItem.createRoute(editItemUuid))
                     },
                     onAddAlert = { item ->
-                        navController.navigate(Screen.ItemReminderSettings.createRoute(item.id))
+                        navController.navigate(Screen.ItemReminderSettings.createRoute(item.uuid))
                     }
                 )
             }
 
             composable(
                 route = Screen.ItemReminderSettings.route,
-                arguments = listOf(navArgument("itemId") { type = NavType.LongType })
+                arguments = listOf(navArgument("itemUuid") { type = NavType.StringType })
             ) { backStackEntry ->
-                val itemId = backStackEntry.arguments?.getLong("itemId") ?: return@composable
+                val itemUuid = backStackEntry.arguments?.getString("itemUuid") ?: return@composable
                 val itemReminderViewModel = androidx.lifecycle.viewmodel.compose.viewModel<com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel>()
-                
-                // 加载物品信息
-                LaunchedEffect(itemId) {
-                    itemViewModel.loadItem(itemId)
+                LaunchedEffect(itemUuid) {
+                    itemViewModel.loadItemByUuid(itemUuid)
                 }
                 val selectedItem by itemViewModel.uiState.collectAsState()
                 val item = selectedItem.selectedItem
-                
                 if (item != null) {
                     com.example.itemremindertool.ui.screens.ItemReminderSettingsScreen(
                         item = item,
@@ -858,18 +842,15 @@ fun ItemReminderToolApp(
                         // 尝试解析为容器二维码
                         val warehouseInfo = com.example.itemremindertool.utils.QRCodeUtils.decodeWarehouseInfo(scannedValue)
                         if (warehouseInfo != null) {
-                            // 是容器二维码，直接导航到Dashboard并选中容器
-                            selectedWarehouseId = warehouseInfo.id
+                            selectedWarehouseUuid = warehouseInfo.uuid
                             navController.navigate(Screen.Dashboard.route) {
                                 popUpTo(Screen.Dashboard.route) { inclusive = true }
                                 launchSingleTop = true
                             }
                         } else {
-                            // 不是容器二维码，尝试作为条形码查找物品
                             itemViewModel.getItemByBarcode(scannedValue) { item ->
                                 if (item != null) {
-                                    // 找到物品，打开物品信息页面
-                                    navController.navigate(Screen.ItemDetail.createRoute(item.id)) {
+                                    navController.navigate(Screen.ItemDetail.createRoute(item.uuid)) {
                                         launchSingleTop = true
                                     }
                                 } else {
@@ -899,8 +880,8 @@ fun ItemReminderToolApp(
                     reminderViewModel = reminderViewModel,
                     itemViewModel = itemViewModel,
                     onNavigateBack = { navController.popBackOrDashboard() },
-                    onNavigateToItem = { itemId ->
-                        navController.navigate(Screen.ItemDetail.createRoute(itemId))
+                    onNavigateToItem = { itemUuid ->
+                        navController.navigate(Screen.ItemDetail.createRoute(itemUuid))
                     }
                 )
             }
@@ -1040,42 +1021,32 @@ fun ItemReminderToolApp(
 
             composable(Screen.AddWarehouse.route) {
                 WarehouseEditScreen(
-                    warehouseId = null,
+                    warehouseUuid = null,
                     viewModel = warehouseViewModel,
-                    onNavigateBack = { 
-                        // 不清理 selectedWarehouseId，保持在当前选中的容器页面（如果是从容器页面添加）
-                        navController.popBackOrDashboard() 
-                    }
+                    onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }
 
             composable(
                 route = Screen.AddChildWarehouse.route,
-                arguments = listOf(navArgument("parentId") { type = NavType.LongType })
+                arguments = listOf(navArgument("parentUuid") { type = NavType.StringType })
             ) { backStackEntry ->
-                val parentId = backStackEntry.arguments?.getLong("parentId") ?: return@composable
+                val parentUuid = backStackEntry.arguments?.getString("parentUuid") ?: return@composable
                 WarehouseEditScreen(
-                    warehouseId = null,
+                    warehouseUuid = null,
                     viewModel = warehouseViewModel,
-                    onNavigateBack = { 
-                        // 不清理 selectedWarehouseId，保持在当前选中的容器页面
-                        navController.popBackOrDashboard()
-                    },
-                    initialParentId = parentId,
-                    onSaveSuccess = { savedParentId ->
-                        // 保存成功后，不设置 selectedWarehouseId，避免返回时意外导航
-                        // selectedWarehouseId 应该只在用户主动点击容器时设置
-                    }
+                    onNavigateBack = { navController.popBackOrDashboard() },
+                    initialParentUuid = parentUuid
                 )
             }
 
             composable(
                 route = Screen.EditWarehouse.route,
-                arguments = listOf(navArgument("warehouseId") { type = NavType.LongType })
+                arguments = listOf(navArgument("warehouseUuid") { type = NavType.StringType })
             ) { backStackEntry ->
-                val warehouseId = backStackEntry.arguments?.getLong("warehouseId") ?: return@composable
+                val warehouseUuid = backStackEntry.arguments?.getString("warehouseUuid") ?: return@composable
                 WarehouseEditScreen(
-                    warehouseId = warehouseId,
+                    warehouseUuid = warehouseUuid,
                     viewModel = warehouseViewModel,
                     onNavigateBack = { navController.popBackOrDashboard() }
                 )
@@ -1083,18 +1054,18 @@ fun ItemReminderToolApp(
 
             composable(
                 route = Screen.WarehouseItems.route,
-                arguments = listOf(navArgument("warehouseId") { type = NavType.LongType })
+                arguments = listOf(navArgument("warehouseUuid") { type = NavType.StringType })
             ) { backStackEntry ->
-                val warehouseId = backStackEntry.arguments?.getLong("warehouseId") ?: return@composable
+                val warehouseUuid = backStackEntry.arguments?.getString("warehouseUuid") ?: return@composable
                 WarehouseItemsScreen(
-                    warehouseId = warehouseId,
+                    warehouseUuid = warehouseUuid,
                     warehouseViewModel = warehouseViewModel,
                     itemViewModel = itemViewModel,
-                    onEditItem = { itemId ->
-                        navController.navigate(Screen.EditItem.createRoute(itemId))
+                    onEditItem = { itemUuid ->
+                        navController.navigate(Screen.EditItem.createRoute(itemUuid))
                     },
-                    onViewItem = { itemId ->
-                        navController.navigate(Screen.ItemDetail.createRoute(itemId))
+                    onViewItem = { itemUuid ->
+                        navController.navigate(Screen.ItemDetail.createRoute(itemUuid))
                     },
                     onNavigateBack = { navController.popBackOrDashboard() }
                 )
@@ -1102,60 +1073,44 @@ fun ItemReminderToolApp(
 
             composable(
                 route = Screen.WarehouseItemsTab.route,
-                arguments = listOf(navArgument("warehouseId") { type = NavType.LongType })
+                arguments = listOf(navArgument("warehouseUuid") { type = NavType.StringType })
             ) { backStackEntry ->
-                val warehouseId = backStackEntry.arguments?.getLong("warehouseId") ?: return@composable
-                // 创建一个带有标签页的容器详情页面（容器信息 + 容器物品）
+                val warehouseUuid = backStackEntry.arguments?.getString("warehouseUuid") ?: return@composable
                 WarehouseDetailScreen(
-                    warehouseId = warehouseId,
+                    warehouseUuid = warehouseUuid,
                     warehouseViewModel = warehouseViewModel,
                     itemViewModel = itemViewModel,
                     shoppingItemViewModel = shoppingItemViewModel,
                     accessHistoryManager = accessHistoryManager,
-                    onAddItem = { warehouseId ->
-                        // 保存当前选中的容器ID，用于设置初始容器
-                        selectedWarehouseId = warehouseId
+                    onAddItem = { addWarehouseUuid ->
+                        selectedWarehouseUuid = addWarehouseUuid
                         navController.navigate(Screen.AddItem.route)
                     },
-                    onEditItem = { itemId ->
-                        // 设置 selectedWarehouseId，以便返回时保持在当前容器页面
-                        selectedWarehouseId = warehouseId
-                        navController.navigate(Screen.EditItem.createRoute(itemId))
+                    onEditItem = { itemUuid ->
+                        selectedWarehouseUuid = warehouseUuid
+                        navController.navigate(Screen.EditItem.createRoute(itemUuid))
                     },
-                    onViewItem = { itemId ->
-                        // 导航到物品详情页面
-                        navController.navigate(Screen.ItemDetail.createRoute(itemId))
+                    onViewItem = { itemUuid ->
+                        navController.navigate(Screen.ItemDetail.createRoute(itemUuid))
                     },
-                    onAddChildWarehouse = { parentId ->
-                        navController.navigate(Screen.AddChildWarehouse.createRoute(parentId))
+                    onAddChildWarehouse = { parentUuid ->
+                        navController.navigate(Screen.AddChildWarehouse.createRoute(parentUuid))
                     },
-                    onEditWarehouse = { warehouseId ->
-                        navController.navigate(Screen.EditWarehouse.createRoute(warehouseId))
+                    onEditWarehouse = { whUuid ->
+                        navController.navigate(Screen.EditWarehouse.createRoute(whUuid))
                     },
                     onDeleteWarehouse = { warehouse ->
                         warehouseViewModel.deleteWarehouse(warehouse)
                         navController.popBackOrDashboard()
                     },
-                    onNavigateToWarehouseItemsTab = { childWarehouseId ->
-                        // 正常导航到子容器详情页面，保持导航栈，让返回按钮能够正常工作
-                        navController.navigate(Screen.WarehouseItemsTab.createRoute(childWarehouseId))
+                    onNavigateToWarehouseItemsTab = { childWarehouseUuid ->
+                        navController.navigate(Screen.WarehouseItemsTab.createRoute(childWarehouseUuid))
                     },
-                    onNavigateBack = { 
-                        // 返回时清理 selectedWarehouseId，避免意外导航到容器页面
-                        selectedWarehouseId = null
-                        navController.popBackOrDashboard() 
-                    },
-                    onNavigateToParentWarehouse = { targetWarehouseId ->
-                        // 导航到目标容器（可能是父容器或更上层的容器）
-                        // 策略：尝试弹出到目标容器，如果不存在则导航到它
-                        val targetRoute = Screen.WarehouseItemsTab.createRoute(targetWarehouseId)
-                        
-                        // 尝试弹出到目标路由（如果存在）
+                    onNavigateBack = { navController.popBackOrDashboard() },
+                    onNavigateToParentWarehouse = { targetWarehouseUuid ->
+                        val targetRoute = Screen.WarehouseItemsTab.createRoute(targetWarehouseUuid)
                         val popped = navController.popBackStack(targetRoute, inclusive = false)
-                        
                         if (!popped) {
-                            // 如果目标路由不在栈中，直接导航到它
-                            // 先弹出当前页面，然后导航到目标
                             navController.popBackOrDashboard()
                             navController.navigate(targetRoute)
                         }
@@ -1230,7 +1185,7 @@ fun ItemReminderToolApp(
                                                 // 保存登录信息
                                                 authManager.saveLoginInfo(
                                                     token = authResponse.token,
-                                                    userId = authResponse.user.id,
+                                                    userUuid = authResponse.user.uuid,
                                                     account = authResponse.user.account,
                                                     displayName = authResponse.user.displayName
                                                 )
@@ -1366,7 +1321,7 @@ fun ItemReminderToolApp(
                                                 // 保存登录信息
                                                 authManager.saveLoginInfo(
                                                     token = authResponse.token,
-                                                    userId = authResponse.user.id,
+                                                    userUuid = authResponse.user.uuid,
                                                     account = authResponse.user.account,
                                                     displayName = authResponse.user.displayName
                                                 )

@@ -145,7 +145,7 @@ fun ItemRecognitionScreen(
                     CoroutineScope(Dispatchers.IO).launch {
                         try {
                             android.util.Log.d("ItemRecognition", "开始处理图片: $imagePath")
-                            val bitmap = BitmapFactory.decodeFile(imagePath)
+                            val bitmap = ImageUtils.loadBitmapFromPath(imagePath)
                             if (bitmap != null) {
                                 android.util.Log.d("ItemRecognition", "图片加载成功，大小: ${bitmap.width}x${bitmap.height}")
                                 val extractor = featureExtractor

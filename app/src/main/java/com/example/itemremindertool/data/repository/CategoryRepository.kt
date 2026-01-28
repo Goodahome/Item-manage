@@ -19,12 +19,12 @@ class CategoryRepository(
     
     fun getAllCategories(): Flow<List<Category>> = categoryDao.getAllCategories()
 
-    suspend fun getCategoryById(id: Long): Category? = categoryDao.getCategoryById(id)
+    suspend fun getCategoryByUuid(uuid: String): Category? = categoryDao.getCategoryByUuid(uuid)
 
-    suspend fun insertCategory(category: Category): Long {
+    suspend fun insertCategory(category: Category) {
         // 1. 本地写入
-        val categoryId = categoryDao.insertCategory(category)
-        val savedCategory = categoryDao.getCategoryById(categoryId) ?: category
+        categoryDao.insertCategory(category)
+        val savedCategory = categoryDao.getCategoryByUuid(category.uuid) ?: category
         
         // 2. 远端同步（异步，不阻塞）
         syncManager?.let { manager ->
@@ -36,8 +36,6 @@ class CategoryRepository(
                 }
             }
         }
-        
-        return categoryId
     }
 
     suspend fun updateCategory(category: Category) {
@@ -74,13 +72,12 @@ class CategoryRepository(
         }
     }
 
-    suspend fun deleteCategoryById(id: Long) {
-        // 先获取分类的 uuid
-        val category = categoryDao.getCategoryById(id)
+    suspend fun deleteCategoryByUuid(uuid: String) {
+        val category = categoryDao.getCategoryByUuid(uuid)
         if (category != null) {
             deleteCategory(category)
         } else {
-            categoryDao.deleteCategoryById(id)
+            categoryDao.deleteCategoryByUuid(uuid)
         }
     }
 }

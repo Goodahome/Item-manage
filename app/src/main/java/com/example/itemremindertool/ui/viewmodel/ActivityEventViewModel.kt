@@ -27,13 +27,14 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
     /**
      * 记录物品添加动态
      */
-    fun logItemAdded(itemId: Long, itemName: String) {
+    fun logItemAdded(itemUuid: String, itemName: String) {
         viewModelScope.launch {
+            val item = database.itemDao().getItemByUuid(itemUuid)
             val event = ActivityEvent(
                 type = ActivityEventType.ITEM_ADDED,
                 title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_added_item),
                 description = itemName,
-                targetId = itemId,
+                targetUuid = item?.uuid,
                 targetName = itemName,
                 iconType = "add_item",
                 createdAt = Date()
@@ -45,13 +46,14 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
     /**
      * 记录物品删除动态
      */
-    fun logItemDeleted(itemId: Long, itemName: String) {
+    fun logItemDeleted(itemUuid: String, itemName: String) {
         viewModelScope.launch {
+            val item = database.itemDao().getItemByUuid(itemUuid)
             val event = ActivityEvent(
                 type = ActivityEventType.ITEM_DELETED,
                 title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_deleted_item),
                 description = itemName,
-                targetId = itemId,
+                targetUuid = item?.uuid,
                 targetName = itemName,
                 iconType = "delete_item",
                 createdAt = Date()
@@ -63,13 +65,14 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
     /**
      * 记录物品更新动态
      */
-    fun logItemUpdated(itemId: Long, itemName: String, updateInfo: String = "") {
+    fun logItemUpdated(itemUuid: String, itemName: String, updateInfo: String = "") {
         viewModelScope.launch {
+            val item = database.itemDao().getItemByUuid(itemUuid)
             val event = ActivityEvent(
                 type = ActivityEventType.ITEM_UPDATED,
                 title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_updated_item),
                 description = if (updateInfo.isNotEmpty()) "$itemName - $updateInfo" else itemName,
-                targetId = itemId,
+                targetUuid = item?.uuid,
                 targetName = itemName,
                 iconType = "update_item",
                 createdAt = Date()
@@ -81,13 +84,14 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
     /**
      * 记录使用物品动态
      */
-    fun logItemUsed(itemId: Long, itemName: String, usedQuantity: Int) {
+    fun logItemUsed(itemUuid: String, itemName: String, usedQuantity: Int) {
         viewModelScope.launch {
+            val item = database.itemDao().getItemByUuid(itemUuid)
             val event = ActivityEvent(
                 type = ActivityEventType.ITEM_USED,
                 title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_used_item),
                 description = "$itemName × $usedQuantity",
-                targetId = itemId,
+                targetUuid = item?.uuid,
                 targetName = itemName,
                 iconType = "use_item",
                 createdAt = Date()
@@ -99,13 +103,14 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
     /**
      * 记录查看物品详情动态
      */
-    fun logItemViewed(itemId: Long, itemName: String) {
+    fun logItemViewed(itemUuid: String, itemName: String) {
         viewModelScope.launch {
+            val item = database.itemDao().getItemByUuid(itemUuid)
             val event = ActivityEvent(
                 type = ActivityEventType.ITEM_VIEWED,
                 title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_viewed_item),
                 description = itemName,
-                targetId = itemId,
+                targetUuid = item?.uuid,
                 targetName = itemName,
                 iconType = "view_item",
                 createdAt = Date()
@@ -117,13 +122,14 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
     /**
      * 记录容器添加动态
      */
-    fun logWarehouseAdded(warehouseId: Long, warehouseName: String) {
+    fun logWarehouseAdded(warehouseUuid: String, warehouseName: String) {
         viewModelScope.launch {
+            val warehouse = database.warehouseDao().getWarehouseByUuid(warehouseUuid)
             val event = ActivityEvent(
                 type = ActivityEventType.WAREHOUSE_ADDED,
                 title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_created_warehouse),
                 description = warehouseName,
-                targetId = warehouseId,
+                targetUuid = warehouse?.uuid,
                 targetName = warehouseName,
                 iconType = "add_warehouse",
                 createdAt = Date()
@@ -135,13 +141,14 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
     /**
      * 记录容器删除动态
      */
-    fun logWarehouseDeleted(warehouseId: Long, warehouseName: String) {
+    fun logWarehouseDeleted(warehouseUuid: String, warehouseName: String) {
         viewModelScope.launch {
+            val warehouse = database.warehouseDao().getWarehouseByUuid(warehouseUuid)
             val event = ActivityEvent(
                 type = ActivityEventType.WAREHOUSE_DELETED,
                 title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_deleted_warehouse),
                 description = warehouseName,
-                targetId = warehouseId,
+                targetUuid = warehouse?.uuid,
                 targetName = warehouseName,
                 iconType = "delete_warehouse",
                 createdAt = Date()
@@ -153,13 +160,14 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
     /**
      * 记录容器更新动态
      */
-    fun logWarehouseUpdated(warehouseId: Long, warehouseName: String) {
+    fun logWarehouseUpdated(warehouseUuid: String, warehouseName: String) {
         viewModelScope.launch {
+            val warehouse = database.warehouseDao().getWarehouseByUuid(warehouseUuid)
             val event = ActivityEvent(
                 type = ActivityEventType.WAREHOUSE_UPDATED,
                 title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_updated_warehouse),
                 description = warehouseName,
-                targetId = warehouseId,
+                targetUuid = warehouse?.uuid,
                 targetName = warehouseName,
                 iconType = "update_warehouse",
                 createdAt = Date()
@@ -171,13 +179,14 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
     /**
      * 记录提醒触发动态
      */
-    fun logReminderTriggered(itemId: Long, itemName: String, reminderReason: String) {
+    fun logReminderTriggered(itemUuid: String, itemName: String, reminderReason: String) {
         viewModelScope.launch {
+            val item = database.itemDao().getItemByUuid(itemUuid)
             val event = ActivityEvent(
                 type = ActivityEventType.REMINDER_TRIGGERED,
                 title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_reminder),
                 description = "$itemName - $reminderReason",
-                targetId = itemId,
+                targetUuid = item?.uuid,
                 targetName = itemName,
                 iconType = "reminder",
                 createdAt = Date()
@@ -189,8 +198,9 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
     /**
      * 记录物品即将过期动态
      */
-    fun logItemExpiring(itemId: Long, itemName: String, daysUntilExpiry: Int) {
+    fun logItemExpiring(itemUuid: String, itemName: String, daysUntilExpiry: Int) {
         viewModelScope.launch {
+            val item = database.itemDao().getItemByUuid(itemUuid)
             val event = ActivityEvent(
                 type = ActivityEventType.ITEM_EXPIRING,
                 title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_expiring_soon),
@@ -199,7 +209,7 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
                     itemName,
                     daysUntilExpiry
                 ),
-                targetId = itemId,
+                targetUuid = item?.uuid,
                 targetName = itemName,
                 iconType = "expiring",
                 createdAt = Date()
@@ -211,8 +221,9 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
     /**
      * 记录物品库存不足动态
      */
-    fun logItemLowStock(itemId: Long, itemName: String, currentQuantity: Int) {
+    fun logItemLowStock(itemUuid: String, itemName: String, currentQuantity: Int) {
         viewModelScope.launch {
+            val item = database.itemDao().getItemByUuid(itemUuid)
             val event = ActivityEvent(
                 type = ActivityEventType.ITEM_LOW_STOCK,
                 title = getApplication<android.app.Application>().getString(com.example.itemremindertool.R.string.event_low_stock),
@@ -221,7 +232,7 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
                     itemName,
                     currentQuantity
                 ),
-                targetId = itemId,
+                targetUuid = item?.uuid,
                 targetName = itemName,
                 iconType = "low_stock",
                 createdAt = Date()

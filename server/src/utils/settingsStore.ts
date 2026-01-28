@@ -24,13 +24,13 @@ async function writeSettingsFile(data: SettingsFile) {
   await fs.writeFile(SETTINGS_PATH, JSON.stringify(data, null, 2), "utf-8");
 }
 
-export async function getUserSettings(userId: number): Promise<StoredSettings | null> {
+export async function getUserSettings(userId: string): Promise<StoredSettings | null> {
   const all = await readSettingsFile();
-  return all[String(userId)] ?? null;
+  return all[userId] ?? null;
 }
 
-export async function setUserSettings(userId: number, settings: StoredSettings) {
+export async function setUserSettings(userId: string, settings: StoredSettings) {
   const all = await readSettingsFile();
-  all[String(userId)] = settings;
+  all[userId] = settings;
   await writeSettingsFile(all);
 }

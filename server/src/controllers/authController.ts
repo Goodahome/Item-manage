@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
+import crypto from "crypto";
 import { prisma } from "../prisma";
 import { fail, ok } from "../utils/response";
 import { loginSchema, registerSchema } from "../validators/auth";
@@ -34,6 +35,7 @@ export async function register(req: Request, res: Response) {
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
     data: {
+      uuid: crypto.randomUUID(),
       account,
       displayName,
       passwordHash
@@ -41,7 +43,7 @@ export async function register(req: Request, res: Response) {
   });
 
   const token = jwt.sign(
-    { id: user.id, account: user.account },
+    { uuid: user.uuid, account: user.account },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN } as SignOptions
   );
@@ -50,7 +52,7 @@ export async function register(req: Request, res: Response) {
     ok({
       token,
       user: {
-        id: user.id,
+        uuid: user.uuid,
         account: user.account,
         displayName: user.displayName
       }
@@ -92,7 +94,7 @@ export async function login(req: Request, res: Response) {
   }
 
   const token = jwt.sign(
-    { id: user.id, account: user.account },
+    { uuid: user.uuid, account: user.account },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN } as SignOptions
   );
@@ -101,7 +103,7 @@ export async function login(req: Request, res: Response) {
     ok({
       token,
       user: {
-        id: user.id,
+        uuid: user.uuid,
         account: user.account,
         displayName: user.displayName
       }
@@ -120,7 +122,7 @@ export async function refresh(req: Request, res: Response) {
   }
 
   const token = jwt.sign(
-    { id: req.user.id, account: req.user.account },
+    { uuid: req.user.uuid, account: req.user.account },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN } as SignOptions
   );

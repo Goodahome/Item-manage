@@ -19,9 +19,9 @@ class CategoryViewModel(
     private val _uiState = MutableStateFlow<CategoryUiState>(CategoryUiState())
     val uiState: StateFlow<CategoryUiState> = _uiState.asStateFlow()
 
-    fun loadCategory(categoryId: Long) {
+    fun loadCategory(categoryId: String) {
         viewModelScope.launch {
-            val category = categoryRepository.getCategoryById(categoryId)
+            val category = categoryRepository.getCategoryByUuid(categoryId)
             _uiState.value = _uiState.value.copy(selectedCategory = category)
         }
     }

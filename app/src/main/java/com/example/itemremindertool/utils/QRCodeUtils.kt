@@ -46,12 +46,12 @@ object QRCodeUtils {
     fun encodeWarehouseInfo(warehouse: com.example.itemremindertool.data.model.Warehouse): String {
         val json = JSONObject().apply {
             put("type", "warehouse")
-            put("id", warehouse.id)
+            put("uuid", warehouse.uuid)
             put("name", warehouse.name)
             put("description", warehouse.description)
             put("location", warehouse.location)
             warehouse.capacity?.let { put("capacity", it) }
-            warehouse.parentId?.let { put("parentId", it) }
+            warehouse.parentUuid?.let { put("parentUuid", it) }
             put("level", warehouse.level)
         }
         return json.toString()
@@ -64,13 +64,15 @@ object QRCodeUtils {
         return try {
             val json = JSONObject(jsonString)
             if (json.getString("type") == "warehouse") {
+                val uuid = json.optString("uuid", "").ifEmpty { null }
+                    ?: return@decodeWarehouseInfo null
                 WarehouseQRInfo(
-                    id = json.getLong("id"),
+                    uuid = uuid,
                     name = json.getString("name"),
                     description = json.optString("description", ""),
                     location = json.optString("location", ""),
                     capacity = if (json.has("capacity")) json.getInt("capacity") else null,
-                    parentId = if (json.has("parentId")) json.getLong("parentId") else null,
+                    parentUuid = if (json.has("parentUuid")) json.optString("parentUuid", null).ifEmpty { null } else null,
                     level = json.optInt("level", 1)
                 )
             } else {
@@ -83,12 +85,12 @@ object QRCodeUtils {
     }
     
     data class WarehouseQRInfo(
-        val id: Long,
+        val uuid: String,
         val name: String,
         val description: String,
         val location: String,
         val capacity: Int?,
-        val parentId: Long?,
+        val parentUuid: String?,
         val level: Int
     )
 }

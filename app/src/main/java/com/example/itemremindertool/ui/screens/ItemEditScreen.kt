@@ -99,22 +99,21 @@ import androidx.core.content.edit
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ItemEditScreen(
-    itemId: Long?,
+    itemUuid: String?,
     viewModel: ItemViewModel,
     categories: List<com.example.itemremindertool.data.model.Category>,
     warehouses: List<com.example.itemremindertool.data.model.Warehouse>,
     tagManager: com.example.itemremindertool.data.TagManager,
     onNavigateBack: () -> Unit,
     initialFeatureCode: String? = null, // 初始特征码（从识别页面传入）
-    initialWarehouseId: Long? = null, // 初始容器ID（从容器页面传入）
+    initialWarehouseUuid: String? = null, // 初始容器UUID（从容器页面传入）
     modifier: Modifier = Modifier
 ) {
     // ==================== 基础字段 ====================
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
-    // 如果 initialWarehouseId 为 null，则不默认填充容器（问题2的修复）
-    var selectedWarehouseId by remember { mutableStateOf<Long?>(initialWarehouseId) }
+    var selectedCategoryUuid by remember { mutableStateOf<String?>(null) }
+    var selectedWarehouseUuid by remember { mutableStateOf<String?>(initialWarehouseUuid) }
     var warehouseError by remember { mutableStateOf(false) }
     var tags by remember { mutableStateOf(setOf<String>()) }
     var price by remember { mutableStateOf("") }
@@ -212,9 +211,9 @@ fun ItemEditScreen(
     }
 
     // ==================== 加载已有物品数据 ====================
-    LaunchedEffect(itemId) {
-        if (itemId != null) {
-            viewModel.loadItem(itemId)
+    LaunchedEffect(itemUuid) {
+        if (itemUuid != null) {
+            viewModel.loadItemByUuid(itemUuid)
         }
     }
     LaunchedEffect(isTagInputFocused) {
@@ -227,14 +226,14 @@ fun ItemEditScreen(
     }
 
     val selectedItem by viewModel.uiState.collectAsState()
-    LaunchedEffect(itemId, selectedItem.selectedItem, initialWarehouseId) {
-        if (itemId != null) {
-            // 编辑模式：加载已有物品数据
+    
+    LaunchedEffect(itemUuid, selectedItem.selectedItem, initialWarehouseUuid) {
+        if (itemUuid != null) {
             selectedItem.selectedItem?.let { item ->
                 name = item.name
                 description = item.description
-                selectedCategoryId = item.categoryId
-                selectedWarehouseId = item.warehouseId
+                selectedCategoryUuid = item.categoryUuid
+                selectedWarehouseUuid = item.warehouseUuid
                 tags = item.tags.toSet()
                 price = item.price?.toString() ?: ""
                 quantity = item.quantity.toString()
@@ -276,17 +275,16 @@ fun ItemEditScreen(
             }
         } else {
             // 新建模式：设置初始容器
-            if (initialWarehouseId != null && selectedWarehouseId == null) {
-                selectedWarehouseId = initialWarehouseId
+            if (initialWarehouseUuid != null && selectedWarehouseUuid == null) {
+                selectedWarehouseUuid = initialWarehouseUuid
             }
         }
     }
 
-    // 确保在新建模式下，初始容器ID正确设置
-    LaunchedEffect(initialWarehouseId) {
-        if (itemId == null && initialWarehouseId != null) {
-            selectedWarehouseId = initialWarehouseId
-            // selectedStatus = ItemStatus.NORMAL
+    // 确保在新建模式下，初始容器UUID正确设置
+    LaunchedEffect(initialWarehouseUuid) {
+        if (itemUuid == null && initialWarehouseUuid != null) {
+            selectedWarehouseUuid = initialWarehouseUuid
         }
     }
 
@@ -296,7 +294,7 @@ fun ItemEditScreen(
             GradientTopAppBar(
                 title = {
                     Text(
-                        if (itemId == null) stringResource(R.string.add_item) else stringResource(
+                        if (itemUuid == null) stringResource(R.string.add_item) else stringResource(
                             R.string.edit_item
                         )
                     )
@@ -316,18 +314,22 @@ fun ItemEditScreen(
                             contentColor = contrastColor
                         ),
                         onClick = {
-                            if (selectedWarehouseId == null) {
+                            if (selectedWarehouseUuid == null) {
                                 warehouseError = true
                                 return@TextButton
                             } else {
                                 warehouseError = false
                             }
+                            val categoryUuid = selectedCategoryUuid
+                            val warehouseUuid = selectedWarehouseUuid
+                            
+                            val isAdd = itemUuid == null
                             val item = Item(
-                                id = itemId ?: 0L,
+                                uuid = if (isAdd) UUID.randomUUID().toString() else (selectedItem.selectedItem?.uuid ?: UUID.randomUUID().toString()),
                                 name = name,
                                 description = description,
-                                categoryId = selectedCategoryId,
-                                warehouseId = selectedWarehouseId,
+                                categoryUuid = categoryUuid,
+                                warehouseUuid = warehouseUuid,
                                 tags = tags.toList(),
                                 price = price.toDoubleOrNull(),
                                 quantity = quantity.toIntOrNull() ?: 1,
@@ -345,7 +347,10 @@ fun ItemEditScreen(
                                     0
                                 },
                                 featureCode = featureCode,
-                                enableStockAlert = enableStockAlert
+                                enableStockAlert = enableStockAlert,
+                                isSample = if (isAdd) false else (selectedItem.selectedItem?.isSample ?: false),
+                                createdAt = if (isAdd) Date() else (selectedItem.selectedItem?.createdAt ?: Date()),
+                                updatedAt = Date()
                             )
 
                             // 检查是否需要添加到购物篮（仅在新建物品时）
@@ -353,41 +358,34 @@ fun ItemEditScreen(
                                 "app_settings",
                                 android.content.Context.MODE_PRIVATE
                             )
-                            val shouldAddToShoppingList = itemId == null && prefs.getBoolean(
+                            val shouldAddToShoppingList = itemUuid == null && prefs.getBoolean(
                                 "add_to_shopping_list_after_save",
                                 false
                             )
 
                             // 保存物品
-                            if (itemId == null) {
-                                // 新建物品 - 只调用一次 ViewModel 的 insertItem
-                                viewModel.insertItem(item) { savedItemId ->
-                                    // 如果需要添加到购物篮
+                            if (itemUuid == null) {
+                                viewModel.insertItem(item) { savedItemUuid ->
                                     if (shouldAddToShoppingList) {
                                         scope.launch(Dispatchers.IO) {
-                                            // 清除标记
                                             prefs.edit().putBoolean(
                                                 "add_to_shopping_list_after_save",
                                                 false
                                             ).apply()
-                                            // 获取保存后的物品
                                             val database =
                                                 com.example.itemremindertool.data.database.AppDatabase.getDatabase(
                                                     context
                                                 )
                                             val savedItem =
-                                                database.itemDao().getItemById(savedItemId)
-
+                                                database.itemDao().getItemByUuid(savedItemUuid)
                                             savedItem?.let { saved ->
-                                                // 添加到购物篮
                                                 val shoppingItem =
                                                     com.example.itemremindertool.data.model.ShoppingItem(
-                                                        id = 0L,
                                                         name = saved.name,
                                                         description = saved.description,
                                                         quantity = saved.quantity,
                                                         priority = com.example.itemremindertool.data.model.Priority.MEDIUM,
-                                                        itemId = saved.id,
+                                                        itemUuid = saved.uuid,
                                                         imageUri = saved.imageUri
                                                     )
                                                 database.shoppingItemDao()
@@ -397,8 +395,7 @@ fun ItemEditScreen(
                                     }
                                 }
                             } else {
-                                // 更新物品
-                                viewModel.updateItem(item.copy(id = itemId))
+                                viewModel.updateItem(item)
                             }
                             // 直接返回，导航栈会自动返回到打开前的页面
                             onNavigateBack()
@@ -455,9 +452,7 @@ fun ItemEditScreen(
                 if (uri != null) {
                     // 处理选中的图片
                     try {
-                        val inputStream = context.contentResolver.openInputStream(uri)
-                        val bitmap = BitmapFactory.decodeStream(inputStream)
-                        inputStream?.close()
+                        val bitmap = ImageUtils.loadBitmapFromUri(context, uri)
 
                         if (bitmap != null) {
                             // 显示裁剪对话框
@@ -512,9 +507,7 @@ fun ItemEditScreen(
                     scope.launch(Dispatchers.IO) {
                         try {
                             val uri = uris[0]
-                            val inputStream = context.contentResolver.openInputStream(uri)
-                            val bitmap = BitmapFactory.decodeStream(inputStream)
-                            inputStream?.close()
+                            val bitmap = ImageUtils.loadBitmapFromUri(context, uri)
 
                             if (bitmap != null) {
                                 // 显示裁剪对话框
@@ -527,13 +520,11 @@ fun ItemEditScreen(
                             if (uris.size > 1) {
                                 uris.drop(1).forEach { remainingUri ->
                                     try {
-                                        val remainingInputStream = context.contentResolver.openInputStream(remainingUri)
-                                        val remainingBitmap = BitmapFactory.decodeStream(remainingInputStream)
-                                        remainingInputStream?.close()
+                                        val remainingBitmap = ImageUtils.loadBitmapFromUri(context, remainingUri)
 
                                         if (remainingBitmap != null) {
                                             val fileName =
-                                                "item_${itemId ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
+                                                "item_${itemUuid ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
                                             val savedPath = ImageUtils.saveImageToInternalStorage(
                                                 context,
                                                 remainingBitmap,
@@ -803,7 +794,7 @@ fun ItemEditScreen(
                         onExpandedChange = { expandedWarehouse = !expandedWarehouse }
                     ) {
                         OutlinedTextField(
-                            value = warehouses.find { it.id == selectedWarehouseId }?.name ?: "",
+                            value = warehouses.find { it.uuid == selectedWarehouseUuid }?.name ?: "",
                             onValueChange = { },
                             readOnly = true,
                             label = { Text(stringResource(R.string.warehouse)) },
@@ -822,7 +813,7 @@ fun ItemEditScreen(
                                 DropdownMenuItem(
                                     text = { Text(warehouse.name) },
                                     onClick = {
-                                        selectedWarehouseId = warehouse.id
+                                        selectedWarehouseUuid = warehouse.uuid
                                         warehouseError = false
                                         expandedWarehouse = false
                                     }
@@ -1351,7 +1342,7 @@ fun ItemEditScreen(
                                         ImageUtils.deleteImageAndCropped(oldPath)
                                         // 保存新图片
                                         val fileName =
-                                            "item_${itemId ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
+                                            "item_${itemUuid ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
                                         val savedPath = ImageUtils.saveImageToInternalStorage(
                                             context,
                                             croppedBitmap,
@@ -1370,7 +1361,7 @@ fun ItemEditScreen(
                                     } else {
                                         // 添加新图片
                                         val fileName =
-                                            "item_${itemId ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
+                                            "item_${itemUuid ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
                                         val savedPath = ImageUtils.saveImageToInternalStorage(
                                             context,
                                             croppedBitmap,

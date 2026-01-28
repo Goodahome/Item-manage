@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.example.itemremindertool.ui.components.AppDialogLayout
 import com.example.itemremindertool.ui.theme.ColorHelpers
+import com.example.itemremindertool.utils.ImageUtils
 
 /**
  * 图片识别搜索对话框
@@ -116,7 +117,7 @@ fun ItemSearchByImageDialog(
                     isProcessing = true
                     CoroutineScope(Dispatchers.IO).launch {
                         try {
-                            val bitmap = BitmapFactory.decodeFile(imagePath)
+                            val bitmap = ImageUtils.loadBitmapFromPath(imagePath)
                             if (bitmap != null && featureExtractor != null) {
                                 val features = featureExtractor.extractFeatures(bitmap)
                                 if (features != null) {

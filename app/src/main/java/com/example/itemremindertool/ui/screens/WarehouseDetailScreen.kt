@@ -38,33 +38,31 @@ import com.example.itemremindertool.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WarehouseDetailScreen(
-    warehouseId: Long,
+    warehouseUuid: String,
     warehouseViewModel: WarehouseViewModel,
     itemViewModel: ItemViewModel,
     shoppingItemViewModel: ShoppingItemViewModel,
     accessHistoryManager: com.example.itemremindertool.data.AccessHistoryManager,
-    onAddItem: (Long) -> Unit,
-    onEditItem: (Long) -> Unit,
-    onViewItem: (Long) -> Unit = {},
-    onAddChildWarehouse: (Long) -> Unit,
-    onEditWarehouse: (Long) -> Unit,
+    onAddItem: (String) -> Unit,
+    onEditItem: (String) -> Unit,
+    onViewItem: (String) -> Unit = {},
+    onAddChildWarehouse: (String) -> Unit,
+    onEditWarehouse: (String) -> Unit,
     onDeleteWarehouse: (com.example.itemremindertool.data.model.Warehouse) -> Unit,
-    onNavigateToWarehouseItemsTab: (Long) -> Unit,
+    onNavigateToWarehouseItemsTab: (String) -> Unit,
     onNavigateBack: () -> Unit,
-    onNavigateToParentWarehouse: (Long) -> Unit,
+    onNavigateToParentWarehouse: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    
-    // 记录访问历史
-    LaunchedEffect(warehouseId) {
-        accessHistoryManager.recordAccess(warehouseId)
+
+    LaunchedEffect(warehouseUuid) {
+        accessHistoryManager.recordAccess(warehouseUuid)
     }
-    
-    // 加载容器数据
-    LaunchedEffect(warehouseId) {
-        warehouseViewModel.loadWarehouse(warehouseId)
-        warehouseViewModel.loadWarehouseItems(warehouseId)
+
+    LaunchedEffect(warehouseUuid) {
+        warehouseViewModel.loadWarehouse(warehouseUuid)
+        warehouseViewModel.loadWarehouseItems(warehouseUuid)
     }
 
     val warehouseItemsState by warehouseViewModel.uiState.collectAsState()
@@ -72,23 +70,15 @@ fun WarehouseDetailScreen(
     val warehousePath = warehouseItemsState.warehousePath
     val items by itemViewModel.items.collectAsState(initial = emptyList())
     val allWarehouses by warehouseViewModel.warehouses.collectAsState(initial = emptyList())
-    
-    // 获取父容器ID（路径中倒数第二个，如果存在）
-    val parentWarehouseId = remember(warehousePath) {
-        if (warehousePath.size > 1) {
-            warehousePath[warehousePath.size - 2].id
-        } else {
-            null
-        }
+
+    val parentWarehouseUuid = remember(warehousePath) {
+        if (warehousePath.size > 1) warehousePath[warehousePath.size - 2].uuid else null
     }
-    
-    // 计算容器物品数量
+
     val warehouseItemCounts = remember(allWarehouses, items) {
-        allWarehouses.associate { w ->
-            w.id to items.count { it.warehouseId == w.id }
-        }
+        allWarehouses.associate { w -> w.uuid to items.count { it.warehouseUuid == w.uuid } }
     }
-    val currentItemCount = warehouseItemCounts[warehouseId] ?: 0
+    val currentItemCount = warehouseItemCounts[warehouseUuid] ?: 0
     val hasCapacityLimit = warehouse?.capacity != null
     val isCapacityFull = hasCapacityLimit && currentItemCount >= (warehouse?.capacity ?: 0)
     
@@ -114,9 +104,9 @@ fun WarehouseDetailScreen(
                 },
                 navigationIcon = {
                     // 如果有父容器，显示返回按钮；否则不显示
-                    if (parentWarehouseId != null) {
+                    if (parentWarehouseUuid != null) {
                         IconButton(onClick = {
-                            onNavigateToParentWarehouse(parentWarehouseId)
+                            onNavigateToParentWarehouse(parentWarehouseUuid)
                         }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                         }
@@ -148,7 +138,7 @@ fun WarehouseDetailScreen(
                                 },
                                 onClick = {
                                     showTopMenu = false
-                                    warehouse?.let { onEditWarehouse(it.id) }
+                                    warehouse?.let { onEditWarehouse(it.uuid) }
                                 },
                                 leadingIcon = { 
                                     Icon(
@@ -233,7 +223,7 @@ fun WarehouseDetailScreen(
                                 ).show()
                             } else {
                                 fabExpanded = false
-                                onAddItem(warehouseId)
+                                onAddItem(warehouseUuid)
                             }
                         },
                         backgroundColor = ColorHelpers.getGroup5FabColor(),
@@ -256,7 +246,7 @@ fun WarehouseDetailScreen(
                         AppFloatingActionButton(
                             onClick = {
                                 fabExpanded = false
-                                onAddChildWarehouse(warehouseId)
+                                onAddChildWarehouse(warehouseUuid)
                             },
                             backgroundColor = ColorHelpers.getGroup5FabColor(),
                             modifier = Modifier.size(UIConstants.FAB_SIZE)
@@ -288,7 +278,7 @@ fun WarehouseDetailScreen(
         if (warehouse != null) {
             WarehouseInfoScreen(
                 warehouse = warehouse,
-                itemCount = warehouseItemCounts[warehouse.id] ?: 0,
+                itemCount = warehouseItemCounts[warehouse.uuid] ?: 0,
                 childWarehouses = warehouseItemsState.childWarehouses,
                 warehouseItemCounts = warehouseItemCounts,
                 allWarehouses = allWarehouses,

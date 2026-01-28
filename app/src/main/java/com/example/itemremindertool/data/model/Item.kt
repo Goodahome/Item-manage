@@ -11,13 +11,12 @@ import java.util.UUID
 @Entity(tableName = "items")
 @TypeConverters(StringListConverters::class)
 data class Item(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    @PrimaryKey
     val uuid: String = UUID.randomUUID().toString(),
     val name: String,
     val description: String = "",
-    val categoryId: Long? = null,
-    val warehouseId: Long? = null,
+    val categoryUuid: String? = null,
+    val warehouseUuid: String? = null,
     @ColumnInfo(name = "tags")
     val tags: List<String> = emptyList(),
     val purchaseDate: Date? = null,

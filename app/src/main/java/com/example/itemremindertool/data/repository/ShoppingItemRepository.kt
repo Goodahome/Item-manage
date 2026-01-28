@@ -24,12 +24,12 @@ class ShoppingItemRepository(
 
     suspend fun getAllShoppingItemsSync(): List<ShoppingItem> = shoppingItemDao.getAllShoppingItemsSync()
 
-    suspend fun getShoppingItemById(id: Long): ShoppingItem? = shoppingItemDao.getShoppingItemById(id)
+    suspend fun getShoppingItemByUuid(uuid: String): ShoppingItem? = shoppingItemDao.getShoppingItemByUuid(uuid)
 
-    suspend fun insertShoppingItem(item: ShoppingItem): Long {
+    suspend fun insertShoppingItem(item: ShoppingItem) {
         // 1. 本地写入
-        val itemId = shoppingItemDao.insertShoppingItem(item)
-        val savedItem = shoppingItemDao.getShoppingItemById(itemId) ?: item
+        shoppingItemDao.insertShoppingItem(item)
+        val savedItem = shoppingItemDao.getShoppingItemByUuid(item.uuid) ?: item
         
         // 2. 远端同步（异步，不阻塞）
         syncManager?.let { manager ->
@@ -41,8 +41,6 @@ class ShoppingItemRepository(
                 }
             }
         }
-        
-        return itemId
     }
 
     suspend fun updateShoppingItem(item: ShoppingItem) {
@@ -76,7 +74,7 @@ class ShoppingItemRepository(
                         type = com.example.itemremindertool.data.model.ActivityEventType.ITEM_ADDED,
                         title = it.getString(com.example.itemremindertool.R.string.event_purchased_item),
                         description = "${item.name}${if (item.quantity > 1) " × ${item.quantity}" else ""}",
-                        targetId = item.itemId,
+                        targetUuid = item.itemUuid,
                         targetName = item.name,
                         iconType = "purchase",
                         createdAt = Date()
@@ -100,13 +98,12 @@ class ShoppingItemRepository(
         }
     }
 
-    suspend fun deleteShoppingItemById(id: Long) {
-        // 先获取购物项的 uuid
-        val item = shoppingItemDao.getShoppingItemById(id)
+    suspend fun deleteShoppingItemByUuid(uuid: String) {
+        val item = shoppingItemDao.getShoppingItemByUuid(uuid)
         if (item != null) {
             deleteShoppingItem(item)
         } else {
-            shoppingItemDao.deleteShoppingItemById(id)
+            shoppingItemDao.deleteShoppingItemByUuid(uuid)
         }
     }
 }

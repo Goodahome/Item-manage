@@ -15,12 +15,12 @@ interface ItemReminderDao {
     @Query("SELECT * FROM item_reminders ORDER BY createdAt DESC")
     suspend fun getAllRemindersSync(): List<ItemReminder>
     
-    @Query("SELECT * FROM item_reminders WHERE itemId = :itemId ORDER BY createdAt DESC")
-    fun getRemindersByItemId(itemId: Long): Flow<List<ItemReminder>>
-    
-    @Query("SELECT * FROM item_reminders WHERE id = :id")
-    suspend fun getReminderById(id: Long): ItemReminder?
-    
+    @Query("SELECT * FROM item_reminders WHERE itemUuid = :itemUuid ORDER BY createdAt DESC")
+    fun getRemindersByItemId(itemUuid: String): Flow<List<ItemReminder>>
+
+    @Query("SELECT * FROM item_reminders WHERE uuid = :uuid LIMIT 1")
+    suspend fun getReminderByUuid(uuid: String): ItemReminder?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReminder(reminder: ItemReminder): Long
     
@@ -30,8 +30,8 @@ interface ItemReminderDao {
     @Delete
     suspend fun deleteReminder(reminder: ItemReminder): Int
     
-    @Query("DELETE FROM item_reminders WHERE itemId = :itemId")
-    suspend fun deleteRemindersByItemId(itemId: Long): Int
+    @Query("DELETE FROM item_reminders WHERE itemUuid = :itemUuid")
+    suspend fun deleteRemindersByItemId(itemUuid: String): Int
 }
 
 

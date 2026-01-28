@@ -31,7 +31,23 @@ object IconManager {
      */
     fun getCurrentIcon(context: Context): Int {
         val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-        return prefs.getInt(PREF_KEY_ICON, DEFAULT_ICON)
+        return try {
+            // 尝试读取 Int 类型
+            prefs.getInt(PREF_KEY_ICON, DEFAULT_ICON)
+        } catch (e: ClassCastException) {
+            // 如果存储的是 String 类型，尝试转换
+            try {
+                val stringValue = prefs.getString(PREF_KEY_ICON, DEFAULT_ICON.toString())
+                val intValue = stringValue?.toIntOrNull() ?: DEFAULT_ICON
+                // 清理错误的值，重新存储为 Int 类型
+                prefs.edit().putInt(PREF_KEY_ICON, intValue).apply()
+                intValue
+            } catch (e2: Exception) {
+                // 如果转换失败，使用默认值并清理
+                prefs.edit().remove(PREF_KEY_ICON).putInt(PREF_KEY_ICON, DEFAULT_ICON).apply()
+                DEFAULT_ICON
+            }
+        }
     }
     
     /**

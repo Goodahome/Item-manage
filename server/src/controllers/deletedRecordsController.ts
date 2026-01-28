@@ -13,7 +13,7 @@ const deletedRecordSchema = z.object({
 
 export async function listDeletedRecords(req: Request, res: Response) {
   const { page, pageSize } = parsePagination(req.query);
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -44,7 +44,7 @@ export async function listDeletedRecords(req: Request, res: Response) {
 }
 
 export async function upsertDeletedRecord(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({

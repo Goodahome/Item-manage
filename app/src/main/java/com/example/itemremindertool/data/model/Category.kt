@@ -6,8 +6,7 @@ import java.util.UUID
 
 @Entity(tableName = "categories")
 data class Category(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    @PrimaryKey
     val uuid: String = UUID.randomUUID().toString(),
     val name: String,
     val description: String = "",

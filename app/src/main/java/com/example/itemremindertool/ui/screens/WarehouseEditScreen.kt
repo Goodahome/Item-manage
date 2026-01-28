@@ -48,28 +48,26 @@ import java.io.File
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WarehouseEditScreen(
-    warehouseId: Long?,
+    warehouseUuid: String?,
     viewModel: WarehouseViewModel,
     onNavigateBack: () -> Unit,
-    initialParentId: Long? = null, // 预设的父容器ID
-    onSaveSuccess: ((Long?) -> Unit)? = null, // 保存成功后的回调，传递父容器ID
+    initialParentUuid: String? = null,
     modifier: Modifier = Modifier
 ) {
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
     var capacity by remember { mutableStateOf("") }
-    var selectedParentId by remember { mutableStateOf<Long?>(initialParentId) }
+    var selectedParentUuid by remember { mutableStateOf<String?>(initialParentUuid) }
     var showParentDropdown by remember { mutableStateOf(false) }
     var imageUri by remember { mutableStateOf<String?>(null) }
     var showCameraDialog by remember { mutableStateOf(false) }
     var showCropDialog by remember { mutableStateOf(false) }
     var bitmapToCrop by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
 
-    // 当 initialParentId 变化时更新 selectedParentId（仅在添加模式下）
-    LaunchedEffect(initialParentId) {
-        if (warehouseId == null) {
-            selectedParentId = initialParentId
+    LaunchedEffect(initialParentUuid) {
+        if (warehouseUuid == null) {
+            selectedParentUuid = initialParentUuid
         }
     }
 
@@ -95,9 +93,7 @@ fun WarehouseEditScreen(
         if (uri != null) {
             scope.launch(Dispatchers.IO) {
                 try {
-                    val inputStream = context.contentResolver.openInputStream(uri)
-                    val bitmap = BitmapFactory.decodeStream(inputStream)
-                    inputStream?.close()
+                    val bitmap = ImageUtils.loadBitmapFromUri(context, uri)
                     
                     if (bitmap != null) {
                         bitmapToCrop = bitmap
@@ -131,58 +127,44 @@ fun WarehouseEditScreen(
         }
     }
 
-    // 递归查找所有子容器ID（包括子容器的子容器等）
-    fun getAllChildIds(parentId: Long, warehouses: List<Warehouse>): Set<Long> {
-        val childIds = mutableSetOf<Long>()
-        val directChildren = warehouses.filter { it.parentId == parentId }
-        childIds.addAll(directChildren.map { it.id })
-        directChildren.forEach { child ->
-            childIds.addAll(getAllChildIds(child.id, warehouses))
-        }
-        return childIds
+    fun getAllChildUuids(parentUuid: String, warehouses: List<Warehouse>): Set<String> {
+        val direct = warehouses.filter { it.parentUuid == parentUuid }
+        val uuids = direct.map { it.uuid }.toMutableSet()
+        direct.forEach { uuids.addAll(getAllChildUuids(it.uuid, warehouses)) }
+        return uuids
     }
 
-    // 过滤可用的父容器（排除当前容器、当前容器的所有子容器和层级>=5的容器）
-    val availableParents = remember(allWarehouses, warehouseId) {
-        if (warehouseId == null) {
-            // 添加模式：只排除层级>=5的容器
+    val availableParents = remember(allWarehouses, warehouseUuid) {
+        if (warehouseUuid == null) {
             allWarehouses.filter { it.level < 5 }
         } else {
-            // 编辑模式：排除当前容器、当前容器的所有子容器和层级>=5的容器
-            val excludedIds = mutableSetOf<Long>()
-            excludedIds.add(warehouseId)
-            excludedIds.addAll(getAllChildIds(warehouseId, allWarehouses))
-            
-            allWarehouses.filter { 
-                it.id !in excludedIds && it.level < 5
-            }
+            val excluded = mutableSetOf(warehouseUuid)
+            excluded.addAll(getAllChildUuids(warehouseUuid, allWarehouses))
+            allWarehouses.filter { it.uuid !in excluded && it.level < 5 }
         }
     }
 
-    LaunchedEffect(warehouseId) {
-        if (warehouseId != null) {
-            viewModel.loadWarehouse(warehouseId)
+    LaunchedEffect(warehouseUuid) {
+        if (warehouseUuid != null) {
+            viewModel.loadWarehouse(warehouseUuid)
         } else {
-            // 添加新容器时，清空表单
             name = ""
             description = ""
             location = ""
             capacity = ""
-            // 保持 initialParentId 的设置
-            selectedParentId = initialParentId
+            selectedParentUuid = initialParentUuid
         }
     }
 
     val selectedWarehouse by viewModel.uiState.collectAsState()
-    LaunchedEffect(warehouseId, selectedWarehouse.selectedWarehouse) {
-        // 只有在编辑模式下（warehouseId 不为 null）才填充表单
-        if (warehouseId != null) {
+    LaunchedEffect(warehouseUuid, selectedWarehouse.selectedWarehouse) {
+        if (warehouseUuid != null) {
             selectedWarehouse.selectedWarehouse?.let { warehouse ->
                 name = warehouse.name
                 description = warehouse.description
                 location = warehouse.location
                 capacity = warehouse.capacity?.toString() ?: ""
-                selectedParentId = warehouse.parentId
+                selectedParentUuid = warehouse.parentUuid
                 imageUri = warehouse.imageUri
             }
         }
@@ -191,7 +173,7 @@ fun WarehouseEditScreen(
     Scaffold(
         topBar = {
             GradientTopAppBar(
-                title = { Text(if (warehouseId == null) stringResource(R.string.add_warehouse) else stringResource(R.string.edit_warehouse)) },
+                title = { Text(if (warehouseUuid == null) stringResource(R.string.add_warehouse) else stringResource(R.string.edit_warehouse)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
@@ -212,11 +194,8 @@ fun WarehouseEditScreen(
                                 val canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
                                 val unlimitedContainers = prefs.getBoolean("unlimited_containers", false) && canAccessPremiumFeatures
                                 
-                                val level = if (selectedParentId != null) {
-                                    viewModel.calculateLevel(selectedParentId)
-                                } else {
-                                    1
-                                }
+                                val parentUuid = selectedParentUuid
+                                val level = viewModel.calculateLevel(parentUuid)
                                 
                                 // 检查层级限制（除非开启无限容器模式）
                                 if (!unlimitedContainers && level > 5) {
@@ -229,29 +208,21 @@ fun WarehouseEditScreen(
                                     return@launch
                                 }
                                 
-                                val existingWarehouse = if (warehouseId != null) {
-                                    selectedWarehouse.selectedWarehouse
-                                } else {
-                                    null
-                                }
-                                
+                                val existingWarehouse = if (warehouseUuid != null) selectedWarehouse.selectedWarehouse else null
                                 val warehouse = Warehouse(
-                                    id = warehouseId ?: 0,
                                     name = name,
                                     description = description,
                                     location = location,
                                     capacity = capacity.toIntOrNull(),
-                                    parentId = selectedParentId,
+                                    parentUuid = parentUuid,
                                     level = level,
                                     imageUri = imageUri,
                                     createdAt = existingWarehouse?.createdAt ?: java.util.Date()
                                 )
-                                if (warehouseId == null) {
+                                if (warehouseUuid == null) {
                                     viewModel.insertWarehouse(warehouse)
-                                    // 如果是添加新容器，保存成功后调用回调
-                                    onSaveSuccess?.invoke(selectedParentId)
                                 } else {
-                                    viewModel.updateWarehouse(warehouse.copy(id = warehouseId))
+                                    viewModel.updateWarehouse(warehouse.copy(uuid = warehouseUuid))
                                 }
                                 onNavigateBack()
                             }
@@ -463,8 +434,8 @@ fun WarehouseEditScreen(
             // 父容器选择
             Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
-                    value = selectedParentId?.let { parentId ->
-                        availableParents.find { it.id == parentId }?.name ?: ""
+                    value = selectedParentUuid?.let { uuid ->
+                        availableParents.find { it.uuid == uuid }?.name ?: ""
                     } ?: "",
                     onValueChange = { },
                     label = { Text(stringResource(R.string.parent_container)) },
@@ -488,7 +459,7 @@ fun WarehouseEditScreen(
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.no_warehouse_option)) },
                         onClick = {
-                            selectedParentId = null
+                            selectedParentUuid = null
                             showParentDropdown = false
                         }
                     )
@@ -496,7 +467,7 @@ fun WarehouseEditScreen(
                         DropdownMenuItem(
                             text = { Text(parent.name) },
                             onClick = {
-                                selectedParentId = parent.id
+                                selectedParentUuid = parent.uuid
                                 showParentDropdown = false
                             }
                         )
@@ -533,7 +504,7 @@ fun WarehouseEditScreen(
                 onCropped = { croppedBitmap ->
                     showCropDialog = false
                     scope.launch(Dispatchers.IO) {
-                        val fileName = "warehouse_${warehouseId ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
+                        val fileName = "warehouse_${warehouseUuid ?: "new"}_${System.currentTimeMillis()}.jpg"
                         val savedPath = ImageUtils.saveImageToInternalStorage(
                             context,
                             croppedBitmap,

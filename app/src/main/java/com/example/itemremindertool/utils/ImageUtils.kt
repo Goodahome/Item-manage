@@ -69,7 +69,22 @@ object ImageUtils {
     fun loadBitmapFromUri(context: Context, uri: Uri): Bitmap? {
         return try {
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                BitmapFactory.decodeStream(inputStream)
+                val options = BitmapFactory.Options()
+                options.inJustDecodeBounds = false
+                options.inPreferredConfig = Bitmap.Config.RGB_565
+                options.inSampleSize = 1
+                
+                // 尝试解码
+                var bitmap = BitmapFactory.decodeStream(inputStream, null, options)
+                
+                // 如果失败，重新打开流再试一次
+                if (bitmap == null) {
+                    context.contentResolver.openInputStream(uri)?.use { retryStream ->
+                        bitmap = BitmapFactory.decodeStream(retryStream, null, options)
+                    }
+                }
+                
+                bitmap
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -83,10 +98,78 @@ object ImageUtils {
     fun loadBitmapFromPath(path: String): Bitmap? {
         return try {
             val file = File(path)
-            if (!file.exists()) {
+            if (!file.exists() || !file.canRead()) {
+                android.util.Log.w("ImageUtils", "文件不存在或不可读: $path")
                 return null
             }
-            val bitmap = BitmapFactory.decodeFile(path) ?: return null
+            
+            // 首先检查文件大小，空文件或损坏的文件可能导致解码失败
+            val fileSize = file.length()
+            if (fileSize == 0L) {
+                android.util.Log.w("ImageUtils", "文件大小为0: $path")
+                return null
+            }
+            
+            // 验证文件头是否为有效的图片格式
+            val fileHeader = ByteArray(minOf(12, fileSize.toInt()))
+            file.inputStream().use { input ->
+                val bytesRead = input.read(fileHeader)
+                if (bytesRead < 4) {
+                    android.util.Log.w("ImageUtils", "文件太小或无法读取文件头: $path")
+                    return null
+                }
+            }
+            
+            // 检查是否为有效的图片格式
+            val isValidImage = when {
+                // JPEG: FF D8 FF
+                fileHeader[0] == 0xFF.toByte() && fileHeader[1] == 0xD8.toByte() && fileHeader[2] == 0xFF.toByte() -> true
+                // PNG: 89 50 4E 47
+                fileHeader[0] == 0x89.toByte() && fileHeader[1] == 0x50.toByte() && 
+                fileHeader[2] == 0x4E.toByte() && fileHeader[3] == 0x47.toByte() -> true
+                // GIF: 47 49 46 38
+                fileHeader[0] == 0x47.toByte() && fileHeader[1] == 0x49.toByte() && 
+                fileHeader[2] == 0x46.toByte() && fileHeader[3] == 0x38.toByte() -> true
+                // WebP: RIFF...WEBP
+                fileHeader.size >= 12 && fileHeader[0] == 0x52.toByte() && fileHeader[1] == 0x49.toByte() && 
+                fileHeader[2] == 0x46.toByte() && fileHeader[3] == 0x46.toByte() &&
+                fileHeader[8] == 0x57.toByte() && fileHeader[9] == 0x45.toByte() && 
+                fileHeader[10] == 0x42.toByte() && fileHeader[11] == 0x50.toByte() -> true
+                else -> false
+            }
+            
+            if (!isValidImage) {
+                android.util.Log.w("ImageUtils", "文件不是有效的图片格式: $path, 文件头: ${fileHeader.take(12).joinToString(" ") { "%02X".format(it.toInt() and 0xFF) }}")
+                return null
+            }
+            
+            // 使用 BitmapFactory.Options 来更好地控制解码过程
+            val options = BitmapFactory.Options()
+            options.inJustDecodeBounds = false
+            options.inPreferredConfig = Bitmap.Config.RGB_565 // 使用更节省内存的配置
+            options.inSampleSize = 1
+            
+            // 尝试解码图片
+            var bitmap = BitmapFactory.decodeFile(path, options)
+            
+            // 如果直接解码失败，尝试使用输入流方式
+            if (bitmap == null) {
+                try {
+                    val inputStream = file.inputStream()
+                    bitmap = BitmapFactory.decodeStream(inputStream, null, options)
+                    inputStream.close()
+                    if (bitmap == null) {
+                        android.util.Log.w("ImageUtils", "使用输入流方式解码也失败: $path")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("ImageUtils", "使用输入流解码图片时出错: $path", e)
+                }
+            }
+            
+            if (bitmap == null) {
+                android.util.Log.w("ImageUtils", "无法解码图片: $path, 文件大小: $fileSize")
+                return null
+            }
             
             // 读取 EXIF 信息并旋转图片
             try {
@@ -106,7 +189,12 @@ object ImageUtils {
                     else -> return bitmap // 无需旋转
                 }
                 
-                Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                val rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                // 如果创建了新bitmap，释放原始bitmap
+                if (rotatedBitmap != bitmap) {
+                    bitmap.recycle()
+                }
+                rotatedBitmap
             } catch (e: Exception) {
                 // EXIF读取失败，直接返回原始bitmap
                 e.printStackTrace()
@@ -465,6 +553,129 @@ object ImageUtils {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+    }
+    
+    /**
+     * 清理损坏的图片文件（HTML 错误页面等）
+     * @param context 上下文
+     * @return 清理的文件数量
+     */
+    fun cleanupCorruptedImages(context: Context): Int {
+        var cleanedCount = 0
+        try {
+            // 检查外部存储目录
+            val externalDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+            val externalImageDir = externalDir?.let { File(it, "ItemReminderTool") }
+            if (externalImageDir?.exists() == true) {
+                cleanedCount += cleanupDirectory(externalImageDir)
+            }
+            
+            // 检查缓存目录
+            val cacheDir = File(context.cacheDir, "remote_images")
+            if (cacheDir.exists()) {
+                cleanedCount += cleanupDirectory(cacheDir)
+            }
+            
+            // 检查内部存储的图片目录
+            val internalImageDir = File(context.filesDir, "images")
+            if (internalImageDir.exists()) {
+                cleanedCount += cleanupDirectory(internalImageDir)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ImageUtils", "清理损坏图片时出错", e)
+        }
+        
+        if (cleanedCount > 0) {
+            android.util.Log.i("ImageUtils", "清理了 $cleanedCount 个损坏的图片文件")
+        }
+        
+        return cleanedCount
+    }
+    
+    /**
+     * 清理目录中的损坏图片文件
+     */
+    private fun cleanupDirectory(directory: File): Int {
+        var cleanedCount = 0
+        try {
+            directory.listFiles()?.forEach { file ->
+                if (file.isFile && (file.name.endsWith(".jpg", ignoreCase = true) ||
+                    file.name.endsWith(".jpeg", ignoreCase = true) ||
+                    file.name.endsWith(".png", ignoreCase = true) ||
+                    file.name.endsWith(".webp", ignoreCase = true) ||
+                    file.name.endsWith(".gif", ignoreCase = true) ||
+                    file.name.endsWith(".img", ignoreCase = true))) {
+                    
+                    // 检查文件是否为损坏的图片
+                    if (!isValidImageFile(file.absolutePath)) {
+                        try {
+                            file.delete()
+                            cleanedCount++
+                            android.util.Log.d("ImageUtils", "删除损坏的图片文件: ${file.absolutePath}")
+                        } catch (e: Exception) {
+                            android.util.Log.e("ImageUtils", "删除损坏图片文件失败: ${file.absolutePath}", e)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ImageUtils", "清理目录失败: ${directory.absolutePath}", e)
+        }
+        return cleanedCount
+    }
+    
+    /**
+     * 检查文件是否为有效的图片文件
+     * 验证文件是否存在、大小是否大于0、文件头是否为有效的图片格式
+     */
+    fun isValidImageFile(filePath: String): Boolean {
+        return try {
+            val file = File(filePath)
+            if (!file.exists() || file.length() == 0L) {
+                return false
+            }
+            
+            // 读取文件头
+            val fileHeader = ByteArray(minOf(12, file.length().toInt()))
+            file.inputStream().use { input ->
+                val bytesRead = input.read(fileHeader)
+                if (bytesRead < 4) {
+                    return false
+                }
+            }
+            
+            // 检查是否为 HTML 错误页面
+            val startString = String(fileHeader, Charsets.UTF_8).lowercase()
+            if (startString.startsWith("<!doctype") ||
+                startString.startsWith("<html") ||
+                startString.startsWith("<?xml") ||
+                startString.contains("error") ||
+                startString.contains("404") ||
+                startString.contains("not found")) {
+                return false
+            }
+            
+            // 检查是否为有效的图片格式
+            when {
+                // JPEG: FF D8 FF
+                fileHeader[0] == 0xFF.toByte() && fileHeader[1] == 0xD8.toByte() && fileHeader[2] == 0xFF.toByte() -> true
+                // PNG: 89 50 4E 47
+                fileHeader[0] == 0x89.toByte() && fileHeader[1] == 0x50.toByte() && 
+                fileHeader[2] == 0x4E.toByte() && fileHeader[3] == 0x47.toByte() -> true
+                // GIF: 47 49 46 38
+                fileHeader[0] == 0x47.toByte() && fileHeader[1] == 0x49.toByte() && 
+                fileHeader[2] == 0x46.toByte() && fileHeader[3] == 0x38.toByte() -> true
+                // WebP: RIFF...WEBP
+                fileHeader.size >= 12 && fileHeader[0] == 0x52.toByte() && fileHeader[1] == 0x49.toByte() && 
+                fileHeader[2] == 0x46.toByte() && fileHeader[3] == 0x46.toByte() &&
+                fileHeader[8] == 0x57.toByte() && fileHeader[9] == 0x45.toByte() && 
+                fileHeader[10] == 0x42.toByte() && fileHeader[11] == 0x50.toByte() -> true
+                else -> false
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ImageUtils", "验证图片文件失败: $filePath", e)
+            false
         }
     }
 }

@@ -22,7 +22,7 @@ const shoppingItemSchema = zod_1.z.object({
 });
 async function listShoppingItems(req, res) {
     const { page, pageSize } = (0, pagination_1.parsePagination)(req.query);
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -46,7 +46,7 @@ async function listShoppingItems(req, res) {
     }));
 }
 async function getShoppingItem(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -66,7 +66,7 @@ async function getShoppingItem(req, res) {
     return res.json((0, response_1.ok)(shoppingItem));
 }
 async function upsertShoppingItem(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -119,7 +119,7 @@ async function upsertShoppingItem(req, res) {
     return res.json((0, response_1.ok)(shoppingItem));
 }
 async function deleteShoppingItem(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -136,6 +136,8 @@ async function deleteShoppingItem(req, res) {
             message: "Shopping item not found"
         }));
     }
-    await prisma_1.prisma.shoppingItem.delete({ where: { id: shoppingItem.id } });
+    await prisma_1.prisma.shoppingItem.delete({
+        where: { uuid_userId: { uuid: shoppingItem.uuid, userId: shoppingItem.userId } }
+    });
     return res.json((0, response_1.ok)({ deleted: true }));
 }

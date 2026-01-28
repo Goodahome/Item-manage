@@ -125,6 +125,12 @@
     <string name="auto_sync_enabled">已启用</string>
     <string name="auto_sync_disabled">已禁用</string>
     <string name="auto_sync_not_supported">仅 Nextcloud 支持自动同步</string>
+    <string name="auto_backup">自动备份</string>
+    <string name="auto_backup_enabled">已启用</string>
+    <string name="auto_backup_disabled">已禁用</string>
+    <string name="auto_backup_not_supported">仅 Nextcloud 支持自动备份</string>
+    <string name="auto_backup_toast_enabled">自动备份已启用</string>
+    <string name="auto_backup_toast_disabled">自动备份已禁用</string>
     <string name="nextcloud_settings">Nextcloud 设置</string>
     <string name="nextcloud_configured">已配置</string>
     <string name="nextcloud_not_configured">未配置</string>

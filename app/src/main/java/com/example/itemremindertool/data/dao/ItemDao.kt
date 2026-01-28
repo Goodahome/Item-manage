@@ -10,20 +10,17 @@ interface ItemDao {
     @Query("SELECT * FROM items ORDER BY updatedAt DESC")
     fun getAllItems(): Flow<List<Item>>
 
-    @Query("SELECT * FROM items WHERE id = :id")
-    suspend fun getItemById(id: Long): Item?
-
     @Query("SELECT * FROM items WHERE uuid = :uuid LIMIT 1")
     suspend fun getItemByUuid(uuid: String): Item?
 
-    @Query("SELECT * FROM items WHERE categoryId = :categoryId ORDER BY updatedAt DESC")
-    fun getItemsByCategory(categoryId: Long): Flow<List<Item>>
+    @Query("SELECT * FROM items WHERE categoryUuid = :categoryUuid ORDER BY updatedAt DESC")
+    fun getItemsByCategory(categoryUuid: String): Flow<List<Item>>
 
-    @Query("SELECT * FROM items WHERE warehouseId = :warehouseId ORDER BY updatedAt DESC")
-    fun getItemsByWarehouse(warehouseId: Long): Flow<List<Item>>
+    @Query("SELECT * FROM items WHERE warehouseUuid = :warehouseUuid ORDER BY updatedAt DESC")
+    fun getItemsByWarehouse(warehouseUuid: String): Flow<List<Item>>
 
-    @Query("SELECT * FROM items WHERE warehouseId = :warehouseId ORDER BY updatedAt DESC")
-    suspend fun getItemsByWarehouseSync(warehouseId: Long): List<Item>
+    @Query("SELECT * FROM items WHERE warehouseUuid = :warehouseUuid ORDER BY updatedAt DESC")
+    suspend fun getItemsByWarehouseSync(warehouseUuid: String): List<Item>
 
     @Query("SELECT * FROM items WHERE expiryDate IS NOT NULL AND expiryDate < :currentTime ORDER BY updatedAt DESC")
     fun getExpiredItems(currentTime: Long): Flow<List<Item>>
@@ -58,13 +55,13 @@ interface ItemDao {
     @Delete
     suspend fun deleteItem(item: Item): Int
 
-    @Query("DELETE FROM items WHERE id = :id")
-    suspend fun deleteItemById(id: Long): Int
+    @Query("DELETE FROM items WHERE uuid = :uuid")
+    suspend fun deleteItemByUuid(uuid: String): Int
+
+    @Query("DELETE FROM items WHERE warehouseUuid = :warehouseUuid")
+    suspend fun deleteItemsByWarehouse(warehouseUuid: String): Int
     
-    @Query("DELETE FROM items WHERE warehouseId = :warehouseId")
-    suspend fun deleteItemsByWarehouse(warehouseId: Long): Int
-    
-    @Query("SELECT COUNT(*) FROM items WHERE warehouseId = :warehouseId")
-    suspend fun getItemCountByWarehouse(warehouseId: Long): Int
+    @Query("SELECT COUNT(*) FROM items WHERE warehouseUuid = :warehouseUuid")
+    suspend fun getItemCountByWarehouse(warehouseUuid: String): Int
 }
 

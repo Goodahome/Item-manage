@@ -26,10 +26,8 @@ const itemDtoSchema = zod_1.z.object({
     uuid: zod_1.z.string().min(1),
     name: zod_1.z.string().min(1),
     description: zod_1.z.string().optional().nullable(),
-    categoryId: zod_1.z.number().int().optional().nullable(),
-    categoryUuid: zod_1.z.string().min(1).optional().nullable(),
-    warehouseId: zod_1.z.number().int().optional().nullable(),
-    warehouseUuid: zod_1.z.string().min(1).optional().nullable(),
+    categoryUuid: zod_1.z.string().uuid().optional().nullable(),
+    warehouseUuid: zod_1.z.string().uuid().optional().nullable(),
     tags: zod_1.z.array(zod_1.z.string()).optional().nullable(),
     purchaseDate: zod_1.z.string().datetime().optional().nullable(),
     expiryDate: zod_1.z.string().datetime().optional().nullable(),
@@ -59,7 +57,7 @@ const warehouseDtoSchema = zod_1.z.object({
     description: zod_1.z.string().optional().nullable(),
     location: zod_1.z.string().optional().nullable(),
     capacity: zod_1.z.number().int().optional().nullable(),
-    parentId: zod_1.z.number().int().optional().nullable(),
+    parentUuid: zod_1.z.string().uuid().optional().nullable(),
     level: zod_1.z.number().int().optional().nullable(),
     imageUri: zod_1.z.string().optional().nullable(),
     createdAt: zod_1.z.string().datetime().optional().nullable(),
@@ -75,14 +73,14 @@ const shoppingItemDtoSchema = zod_1.z.object({
     createdAt: zod_1.z.string().datetime().optional().nullable(),
     completedAt: zod_1.z.string().datetime().optional().nullable(),
     imageUri: zod_1.z.string().optional().nullable(),
-    itemUuid: zod_1.z.string().optional().nullable()
+    itemUuid: zod_1.z.string().uuid().optional().nullable()
 });
 const activityEventDtoSchema = zod_1.z.object({
     uuid: zod_1.z.string().min(1),
     type: zod_1.z.string().min(1),
     title: zod_1.z.string().min(1),
     description: zod_1.z.string().optional().nullable(),
-    targetUuid: zod_1.z.string().optional().nullable(),
+    targetUuid: zod_1.z.string().uuid().optional().nullable(),
     targetName: zod_1.z.string().optional().nullable(),
     iconType: zod_1.z.string().optional().nullable(),
     createdAt: zod_1.z.string().datetime().optional().nullable(),
@@ -113,7 +111,7 @@ function compareUpdated(serverDate, clientDateStr) {
     return "same";
 }
 async function bootstrapSync(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -136,8 +134,6 @@ async function bootstrapSync(req, res) {
         prisma_1.prisma.shoppingItem.findMany({ where: { userId } }),
         prisma_1.prisma.activityEvent.findMany({ where: { userId } })
     ]);
-    const warehouseMap = new Map(warehouses.map((wh) => [wh.id, wh.uuid]));
-    const categoryMap = new Map(categories.map((cat) => [cat.id, cat.uuid]));
     const toApply = {
         items: [],
         categories: [],
@@ -165,8 +161,8 @@ async function bootstrapSync(req, res) {
         if (verdict === "server_newer") {
             toApply.items.push({
                 ...item,
-                warehouseUuid: item.warehouseId ? warehouseMap.get(item.warehouseId) ?? null : null,
-                categoryUuid: item.categoryId ? categoryMap.get(item.categoryId) ?? null : null
+                warehouseUuid: item.warehouseUuid ?? null,
+                categoryUuid: item.categoryUuid ?? null
             });
         }
         else if (verdict === "client_newer") {
@@ -259,7 +255,7 @@ async function bootstrapSync(req, res) {
     }));
 }
 async function bootstrapSyncAck(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -306,7 +302,7 @@ async function bootstrapSyncAck(req, res) {
                 description: warehouse.description ?? "",
                 location: warehouse.location ?? "",
                 capacity: warehouse.capacity ?? null,
-                parentId: warehouse.parentId ?? null,
+                parentUuid: warehouse.parentUuid ?? null,
                 level: warehouse.level ?? 1,
                 imageUri: warehouse.imageUri ?? null,
                 createdAt: parseDate(warehouse.createdAt),
@@ -319,7 +315,7 @@ async function bootstrapSyncAck(req, res) {
                 description: warehouse.description ?? "",
                 location: warehouse.location ?? "",
                 capacity: warehouse.capacity ?? null,
-                parentId: warehouse.parentId ?? null,
+                parentUuid: warehouse.parentUuid ?? null,
                 level: warehouse.level ?? 1,
                 imageUri: warehouse.imageUri ?? null,
                 createdAt: parseDate(warehouse.createdAt),
@@ -328,26 +324,15 @@ async function bootstrapSyncAck(req, res) {
         });
     }
     for (const item of payload.items) {
-        const resolvedWarehouse = item.warehouseUuid
-            ? await prisma_1.prisma.warehouse.findFirst({ where: { uuid: item.warehouseUuid, userId } })
-            : null;
-        const resolvedCategory = item.categoryUuid
-            ? await prisma_1.prisma.category.findFirst({ where: { uuid: item.categoryUuid, userId } })
-            : null;
-        // 记录警告：如果客户端发送了warehouseUuid但找不到对应容器
-        if (item.warehouseUuid && !resolvedWarehouse) {
-            console.warn(`[bootstrapSyncAck] 警告：物品 ${item.name} (${item.uuid}) 的容器 UUID ${item.warehouseUuid} 未找到，warehouseId 将设置为 null`);
-        }
-        if (item.categoryUuid && !resolvedCategory) {
-            console.warn(`[bootstrapSyncAck] 警告：物品 ${item.name} (${item.uuid}) 的分类 UUID ${item.categoryUuid} 未找到，categoryId 将设置为 null`);
-        }
+        const categoryUuid = item.categoryUuid ?? null;
+        const warehouseUuid = item.warehouseUuid ?? null;
         await prisma_1.prisma.item.upsert({
             where: { uuid_userId: { uuid: item.uuid, userId } },
             update: {
                 name: item.name,
                 description: item.description ?? "",
-                categoryId: resolvedCategory?.id ?? item.categoryId ?? null,
-                warehouseId: resolvedWarehouse?.id ?? item.warehouseId ?? null,
+                categoryUuid: categoryUuid,
+                warehouseUuid: warehouseUuid,
                 tags: item.tags ?? [],
                 purchaseDate: item.purchaseDate ? new Date(item.purchaseDate) : null,
                 expiryDate: item.expiryDate ? new Date(item.expiryDate) : null,
@@ -367,8 +352,8 @@ async function bootstrapSyncAck(req, res) {
                 userId,
                 name: item.name,
                 description: item.description ?? "",
-                categoryId: resolvedCategory?.id ?? item.categoryId ?? null,
-                warehouseId: resolvedWarehouse?.id ?? item.warehouseId ?? null,
+                categoryUuid: categoryUuid,
+                warehouseUuid: warehouseUuid,
                 tags: item.tags ?? [],
                 purchaseDate: item.purchaseDate ? new Date(item.purchaseDate) : null,
                 expiryDate: item.expiryDate ? new Date(item.expiryDate) : null,

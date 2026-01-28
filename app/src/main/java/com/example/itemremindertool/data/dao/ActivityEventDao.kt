@@ -16,8 +16,8 @@ interface ActivityEventDao {
     @Query("SELECT * FROM activity_events WHERE type = :type ORDER BY createdAt DESC")
     fun getEventsByType(type: ActivityEventType): Flow<List<ActivityEvent>>
     
-    @Query("SELECT * FROM activity_events WHERE targetId = :targetId ORDER BY createdAt DESC")
-    fun getEventsByTarget(targetId: Long): Flow<List<ActivityEvent>>
+    @Query("SELECT * FROM activity_events WHERE targetUuid = :targetUuid ORDER BY createdAt DESC")
+    fun getEventsByTarget(targetUuid: String): Flow<List<ActivityEvent>>
 
     @Query("SELECT * FROM activity_events ORDER BY createdAt DESC")
     suspend fun getAllEventsSync(): List<ActivityEvent>
@@ -31,8 +31,8 @@ interface ActivityEventDao {
     @Delete
     suspend fun delete(event: ActivityEvent): Int
     
-    @Query("DELETE FROM activity_events WHERE id = :eventId")
-    suspend fun deleteById(eventId: Long): Int
+    @Query("DELETE FROM activity_events WHERE uuid = :uuid")
+    suspend fun deleteByUuid(uuid: String): Int
     
     @Query("DELETE FROM activity_events WHERE createdAt < :beforeDate")
     suspend fun deleteOlderThan(beforeDate: Long): Int

@@ -33,7 +33,7 @@ class AuthManager(context: Context) {
     
     companion object {
         private const val KEY_TOKEN = "jwt_token"
-        private const val KEY_USER_ID = "user_id"
+        private const val KEY_USER_UUID = "user_uuid"
         private const val KEY_ACCOUNT = "user_account"
         private const val KEY_DISPLAY_NAME = "user_display_name"
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
@@ -51,10 +51,10 @@ class AuthManager(context: Context) {
     /**
      * 保存登录信息
      */
-    fun saveLoginInfo(token: String, userId: Int, account: String, displayName: String) {
+    fun saveLoginInfo(token: String, userUuid: String, account: String, displayName: String) {
         prefs.edit().apply {
             putString(KEY_TOKEN, token)
-            putInt(KEY_USER_ID, userId)
+            putString(KEY_USER_UUID, userUuid)
             putString(KEY_ACCOUNT, account)
             putString(KEY_DISPLAY_NAME, displayName)
             putBoolean(KEY_IS_LOGGED_IN, true)
@@ -70,10 +70,10 @@ class AuthManager(context: Context) {
     }
     
     /**
-     * 获取用户 ID
+     * 获取用户 UUID
      */
-    fun getUserId(): Int {
-        return prefs.getInt(KEY_USER_ID, -1)
+    fun getUserUuid(): String? {
+        return prefs.getString(KEY_USER_UUID, null)
     }
     
     /**

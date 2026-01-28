@@ -18,7 +18,7 @@ function requireAuth(req, res, next) {
     }
     try {
         const payload = jsonwebtoken_1.default.verify(token, JWT_SECRET);
-        req.user = { id: payload.id, account: payload.account };
+        req.user = { uuid: payload.uuid, account: payload.account };
         return next();
     }
     catch (error) {

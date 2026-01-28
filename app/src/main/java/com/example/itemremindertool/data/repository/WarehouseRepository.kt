@@ -30,16 +30,14 @@ class WarehouseRepository(
 
     fun getTopLevelWarehouses(): Flow<List<Warehouse>> = warehouseDao.getTopLevelWarehouses()
 
-    suspend fun getWarehouseById(id: Long): Warehouse? = warehouseDao.getWarehouseById(id)
+    fun getChildWarehouses(parentUuid: String): Flow<List<Warehouse>> = warehouseDao.getChildWarehouses(parentUuid)
 
-    fun getChildWarehouses(parentId: Long): Flow<List<Warehouse>> = warehouseDao.getChildWarehouses(parentId)
+    suspend fun getChildWarehousesSync(parentUuid: String): List<Warehouse> = warehouseDao.getChildWarehousesSync(parentUuid)
 
-    suspend fun getChildWarehousesSync(parentId: Long): List<Warehouse> = warehouseDao.getChildWarehousesSync(parentId)
-
-    suspend fun insertWarehouse(warehouse: Warehouse): Long {
+    suspend fun insertWarehouse(warehouse: Warehouse) {
         // 1. 本地写入
-        val warehouseId = warehouseDao.insertWarehouse(warehouse)
-        val savedWarehouse = warehouseDao.getWarehouseById(warehouseId) ?: warehouse
+        warehouseDao.insertWarehouse(warehouse)
+        val savedWarehouse = warehouseDao.getWarehouseByUuid(warehouse.uuid) ?: warehouse
         
         // 2. 记录动态
         context?.let {
@@ -49,7 +47,7 @@ class WarehouseRepository(
                     type = com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_ADDED,
                     title = it.getString(com.example.itemremindertool.R.string.event_created_warehouse),
                     description = warehouse.name,
-                    targetId = warehouseId,
+                    targetUuid = savedWarehouse.uuid,
                     targetName = warehouse.name,
                     iconType = "add_warehouse",
                     createdAt = Date()
@@ -70,8 +68,6 @@ class WarehouseRepository(
                 }
             }
         }
-        
-        return warehouseId
     }
 
     suspend fun updateWarehouse(warehouse: Warehouse) {
@@ -86,7 +82,7 @@ class WarehouseRepository(
                     type = com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_UPDATED,
                     title = it.getString(com.example.itemremindertool.R.string.event_updated_warehouse),
                     description = warehouse.name,
-                    targetId = warehouse.id,
+                    targetUuid = warehouse.uuid,
                     targetName = warehouse.name,
                     iconType = "update_warehouse",
                     createdAt = Date()
@@ -116,36 +112,34 @@ class WarehouseRepository(
      */
     @androidx.room.Transaction
     suspend fun deleteWarehouseRecursively(warehouse: Warehouse): Pair<Int, Int> {
-        val rootWarehouse = warehouseDao.getWarehouseById(warehouse.id) ?: warehouse
+        val rootWarehouse = warehouseDao.getWarehouseByUuid(warehouse.uuid) ?: warehouse
         var childWarehouseCount = 0
         var itemCount = 0
 
-        val warehouseIdsToDelete = mutableListOf<Long>()
+        val warehouseUuidsToDelete = mutableListOf<String>()
         val itemUuidsToDelete = mutableListOf<String>()
         
-        // 1. 递归删除所有子容器
-        val childIds = getAllChildWarehouseIds(warehouse.id)
-        childWarehouseCount = childIds.size
+        // 1. 递归获取所有子容器
+        val childWarehouseUuids = getAllChildWarehouseUuids(rootWarehouse.uuid)
+        val childWarehouses = childWarehouseUuids.mapNotNull { uuid -> 
+            warehouseDao.getWarehouseByUuid(uuid)
+        }
+        childWarehouseCount = childWarehouses.size
 
-        warehouseIdsToDelete.addAll(childIds)
-        warehouseIdsToDelete.add(rootWarehouse.id)
-        
-        // 先删除子容器中的物品
-        childIds.forEach { childId ->
+        childWarehouses.forEach { child ->
+            warehouseUuidsToDelete.add(child.uuid)
             itemDao?.let { dao ->
-                val count = dao.getItemCountByWarehouse(childId)
+                val count = dao.getItemCountByWarehouse(child.uuid)
                 itemCount += count
-                val items = dao.getItemsByWarehouseSync(childId)
+                val items = dao.getItemsByWarehouseSync(child.uuid)
                 itemUuidsToDelete.addAll(items.filterNot { it.isSample }.map { it.uuid })
-                dao.deleteItemsByWarehouse(childId)
+                dao.deleteItemsByWarehouse(child.uuid)
             }
-            // 删除子容器
-            warehouseDao.deleteWarehouseById(childId)
-            // 记录删除操作
+            warehouseDao.deleteWarehouseByUuid(child.uuid)
             deletedRecordDao?.insertDeletedRecord(
                 DeletedRecord(
                     entityType = "warehouse",
-                    entityId = childId,
+                    entityUuid = child.uuid,
                     deletedAt = Date()
                 )
             )
@@ -153,20 +147,19 @@ class WarehouseRepository(
         
         // 2. 删除当前容器中的物品
         itemDao?.let { dao ->
-            val count = dao.getItemCountByWarehouse(warehouse.id)
+            val count = dao.getItemCountByWarehouse(rootWarehouse.uuid)
             itemCount += count
-            val items = dao.getItemsByWarehouseSync(warehouse.id)
+            val items = dao.getItemsByWarehouseSync(rootWarehouse.uuid)
             itemUuidsToDelete.addAll(items.filterNot { it.isSample }.map { it.uuid })
-            dao.deleteItemsByWarehouse(warehouse.id)
+            dao.deleteItemsByWarehouse(rootWarehouse.uuid)
         }
         
         // 3. 删除当前容器
-        warehouseDao.deleteWarehouse(warehouse)
-        // 记录删除操作
+        warehouseDao.deleteWarehouse(rootWarehouse)
         deletedRecordDao?.insertDeletedRecord(
             DeletedRecord(
                 entityType = "warehouse",
-                entityId = warehouse.id,
+                entityUuid = rootWarehouse.uuid,
                 deletedAt = Date()
             )
         )
@@ -175,18 +168,11 @@ class WarehouseRepository(
         syncManager?.let { manager ->
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val warehouseUuids = warehouseIdsToDelete.distinct().mapNotNull { id ->
-                        warehouseDao.getWarehouseById(id)?.uuid
-                    }
-
                     itemUuidsToDelete.distinct().forEach { itemUuid ->
                         manager.deleteItemFromRemote(itemUuid)
                     }
-
-                    warehouseUuids.forEach { warehouseUuid ->
-                        if (warehouseUuid != rootWarehouse.uuid) {
-                            manager.deleteWarehouseFromRemote(warehouseUuid)
-                        }
+                    childWarehouses.forEach { w ->
+                        manager.deleteWarehouseFromRemote(w.uuid)
                     }
                     manager.deleteWarehouseFromRemote(rootWarehouse.uuid)
                 } catch (e: Exception) {
@@ -202,22 +188,23 @@ class WarehouseRepository(
      * 获取删除容器时的统计信息（子容器数量和物品数量）
      */
     suspend fun getDeleteStatistics(warehouse: Warehouse): Pair<Int, Int> {
-        val childIds = getAllChildWarehouseIds(warehouse.id)
+        val childWarehouseUuids = getAllChildWarehouseUuids(warehouse.uuid)
+        val childWarehouses = childWarehouseUuids.mapNotNull { uuid -> 
+            warehouseDao.getWarehouseByUuid(uuid)
+        }
         var itemCount = 0
         
-        // 统计所有子容器中的物品
-        childIds.forEach { childId ->
+        childWarehouses.forEach { child ->
             itemDao?.let { dao ->
-                itemCount += dao.getItemCountByWarehouse(childId)
+                itemCount += dao.getItemCountByWarehouse(child.uuid)
             }
         }
         
-        // 统计当前容器中的物品
         itemDao?.let { dao ->
-            itemCount += dao.getItemCountByWarehouse(warehouse.id)
+            itemCount += dao.getItemCountByWarehouse(warehouse.uuid)
         }
         
-        return Pair(childIds.size, itemCount)
+        return Pair(childWarehouses.size, itemCount)
     }
 
     /**
@@ -226,26 +213,30 @@ class WarehouseRepository(
      */
     @androidx.room.Transaction
     suspend fun deleteSubWarehouse(warehouse: Warehouse) {
-        val parentId = warehouse.parentId
-        if (parentId == null) {
-            // 如果没有父容器，使用普通删除方法
+        val parentUuid = warehouse.parentUuid
+        if (parentUuid == null) {
             deleteWarehouse(warehouse)
             return
         }
-        val childIds = getAllChildWarehouseIds(warehouse.id)
-        val warehouseIdsToDelete = mutableListOf<Long>().apply {
-            add(warehouse.id)
-            addAll(childIds)
+        val parentWarehouse = getWarehouseByUuid(parentUuid)
+        if (parentWarehouse == null) {
+            deleteWarehouse(warehouse)
+            return
+        }
+        val parentWarehouseUuid = parentWarehouse.uuid
+        val childUuids = getAllChildWarehouseUuids(warehouse.uuid)
+        val warehouseUuidsToDelete = mutableListOf<String>().apply {
+            add(warehouse.uuid)
+            addAll(childUuids)
         }
         val movedItems = mutableListOf<com.example.itemremindertool.data.model.Item>()
         
-        // 1. 将子容器中的物品移动到父容器
         itemDao?.let { dao ->
-            val itemsFlow = dao.getItemsByWarehouse(warehouse.id)
-            val itemList = itemsFlow.first() // 获取第一个值（当前物品列表）
+            val itemsFlow = dao.getItemsByWarehouse(warehouse.uuid)
+            val itemList = itemsFlow.first()
             itemList.forEach { item ->
                 val updatedItem = item.copy(
-                    warehouseId = parentId,
+                    warehouseUuid = parentWarehouseUuid,
                     updatedAt = Date()
                 )
                 dao.updateItem(updatedItem)
@@ -253,56 +244,48 @@ class WarehouseRepository(
             }
         }
         
-        // 2. 递归删除所有子容器（子容器的子容器）
-        childIds.forEach { childId ->
-            // 对于子容器的子容器，也将其物品移动到当前要删除的容器的父容器
+        childUuids.forEach { childUuid ->
+            val childWarehouse = getWarehouseByUuid(childUuid)
             itemDao?.let { dao ->
-                val itemsFlow = dao.getItemsByWarehouse(childId)
-                val itemList = itemsFlow.first() // 获取第一个值（当前物品列表）
-                itemList.forEach { item ->
-                    val updatedItem = item.copy(
-                        warehouseId = parentId,
-                        updatedAt = Date()
-                    )
-                    dao.updateItem(updatedItem)
-                    movedItems.add(updatedItem)
+                childWarehouse?.let { c ->
+                    val itemsFlow = dao.getItemsByWarehouse(c.uuid)
+                    val itemList = itemsFlow.first()
+                    itemList.forEach { item ->
+                        val updatedItem = item.copy(
+                            warehouseUuid = parentWarehouseUuid,
+                            updatedAt = Date()
+                        )
+                        dao.updateItem(updatedItem)
+                        movedItems.add(updatedItem)
+                    }
                 }
             }
-            // 删除子容器
-            warehouseDao.deleteWarehouseById(childId)
-            // 记录删除操作
+            warehouseDao.deleteWarehouseByUuid(childUuid)
             deletedRecordDao?.insertDeletedRecord(
                 DeletedRecord(
                     entityType = "warehouse",
-                    entityId = childId,
+                    entityUuid = childUuid,
                     deletedAt = Date()
                 )
             )
         }
         
-        // 3. 删除当前子容器
         warehouseDao.deleteWarehouse(warehouse)
-        // 记录删除操作
         deletedRecordDao?.insertDeletedRecord(
             DeletedRecord(
                 entityType = "warehouse",
-                entityId = warehouse.id,
+                entityUuid = warehouse.uuid,
                 deletedAt = Date()
             )
         )
         
-        // 4. 远端同步：更新移动后的物品 + 删除云端子容器
         syncManager?.let { manager ->
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     movedItems.filterNot { it.isSample }.forEach { item ->
                         manager.syncItemToRemote(item)
                     }
-
-                    val warehouseUuids = warehouseIdsToDelete.mapNotNull { id ->
-                        warehouseDao.getWarehouseById(id)?.uuid
-                    }
-                    warehouseUuids.forEach { uuid ->
+                    warehouseUuidsToDelete.forEach { uuid ->
                         manager.deleteWarehouseFromRemote(uuid)
                     }
                 } catch (e: Exception) {
@@ -319,7 +302,7 @@ class WarehouseRepository(
                     type = com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_DELETED,
                     title = it.getString(com.example.itemremindertool.R.string.event_deleted_warehouse),
                     description = warehouse.name,
-                    targetId = warehouse.id,
+                    targetUuid = warehouse.uuid,
                     targetName = warehouse.name,
                     iconType = "delete_warehouse",
                     createdAt = Date()
@@ -343,7 +326,7 @@ class WarehouseRepository(
                     type = com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_DELETED,
                     title = it.getString(com.example.itemremindertool.R.string.event_deleted_warehouse),
                     description = warehouse.name,
-                    targetId = warehouse.id,
+                    targetUuid = warehouse.uuid,
                     targetName = warehouse.name,
                     iconType = "delete_warehouse",
                     createdAt = Date()
@@ -356,62 +339,56 @@ class WarehouseRepository(
     }
 
     @androidx.room.Transaction
-    suspend fun deleteWarehouseById(id: Long) {
-        // 在事务中删除数据和记录删除操作，确保原子性
-        warehouseDao.deleteWarehouseById(id)
-        // 记录删除操作
-        deletedRecordDao?.insertDeletedRecord(
-            DeletedRecord(
-                entityType = "warehouse",
-                entityId = id,
-                deletedAt = Date()
+    suspend fun deleteWarehouseByUuid(uuid: String) {
+        val warehouse = warehouseDao.getWarehouseByUuid(uuid)
+        warehouseDao.deleteWarehouseByUuid(uuid)
+        if (warehouse != null) {
+            deletedRecordDao?.insertDeletedRecord(
+                DeletedRecord(
+                    entityType = "warehouse",
+                    entityUuid = warehouse.uuid,
+                    deletedAt = Date()
+                )
             )
-        )
+        }
     }
+    
+    suspend fun getWarehouseByUuid(uuid: String): Warehouse? = warehouseDao.getWarehouseByUuid(uuid)
 
     /**
      * 获取容器的完整路径（从顶层到当前容器）
      */
-    suspend fun getWarehousePath(warehouseId: Long): List<Warehouse> {
+    suspend fun getWarehousePath(warehouseUuid: String): List<Warehouse> {
         val path = mutableListOf<Warehouse>()
-        var current: Warehouse? = getWarehouseById(warehouseId)
-        val visitedIds = mutableSetOf<Long>() // 防止循环引用
+        var current: Warehouse? = getWarehouseByUuid(warehouseUuid)
+        val visitedUuids = mutableSetOf<String>()
         
-        while (current != null && !visitedIds.contains(current.id)) {
-            visitedIds.add(current.id)
-            path.add(0, current) // 添加到开头，保持从顶层到当前的顺序
-            
-            // 防止无限循环：如果路径过长（超过5层），停止
-            if (path.size > 5) {
-                break
-            }
-            
-            current = current.parentId?.let { parentId ->
-                if (visitedIds.contains(parentId)) {
-                    null // 检测到循环，停止
-                } else {
-                    getWarehouseById(parentId)
-                }
+        while (current != null && !visitedUuids.contains(current.uuid)) {
+            visitedUuids.add(current.uuid)
+            path.add(0, current)
+            if (path.size > 5) break
+            current = current.parentUuid?.let { pu ->
+                val parent = getWarehouseByUuid(pu)
+                if (parent != null && visitedUuids.contains(parent.uuid)) null else parent
             }
         }
-        
         return path
     }
-
+    
     /**
-     * 递归获取所有子容器的ID（包括子容器的子容器）
+     * 递归获取所有子容器的UUID（包括子容器的子容器）
      */
-    suspend fun getAllChildWarehouseIds(parentId: Long): List<Long> {
-        val allIds = mutableListOf<Long>()
-        val directChildren = getChildWarehousesSync(parentId)
+    suspend fun getAllChildWarehouseUuids(parentUuid: String): List<String> {
+        val allUuids = mutableListOf<String>()
+        val directChildren = getChildWarehousesSync(parentUuid)
         
         directChildren.forEach { child ->
-            allIds.add(child.id)
+            allUuids.add(child.uuid)
             // 递归获取子容器的子容器
-            allIds.addAll(getAllChildWarehouseIds(child.id))
+            allUuids.addAll(getAllChildWarehouseUuids(child.uuid))
         }
         
-        return allIds
+        return allUuids
     }
 }
 

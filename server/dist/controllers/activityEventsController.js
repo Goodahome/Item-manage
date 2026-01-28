@@ -32,7 +32,7 @@ const eventSchema = zod_1.z.object({
 });
 async function listActivityEvents(req, res) {
     const { page, pageSize } = (0, pagination_1.parsePagination)(req.query);
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -56,7 +56,7 @@ async function listActivityEvents(req, res) {
     }));
 }
 async function getActivityEvent(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -76,7 +76,7 @@ async function getActivityEvent(req, res) {
     return res.json((0, response_1.ok)(event));
 }
 async function upsertActivityEvent(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",

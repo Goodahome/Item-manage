@@ -17,33 +17,33 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
     object ExcelImportExport : Screen("excel_import_export", R.string.nav_excel_import_export, Icons.Outlined.ImportExport, Icons.Filled.ImportExport)
     object Settings : Screen("settings", R.string.settings, Icons.Outlined.Settings, Icons.Filled.Settings)
 
-    object ItemDetail : Screen("item_detail/{itemId}", R.string.item_detail, Icons.Default.Info, Icons.Default.Info) {
-        fun createRoute(itemId: Long) = "item_detail/$itemId"
+    object ItemDetail : Screen("item_detail/{itemUuid}", R.string.item_detail, Icons.Default.Info, Icons.Default.Info) {
+        fun createRoute(itemUuid: String) = "item_detail/$itemUuid"
     }
 
     object AddItem : Screen("add_item", R.string.add_item, Icons.Default.Add, Icons.Default.Add)
-    object EditItem : Screen("edit_item/{itemId}", R.string.edit_item, Icons.Default.Edit, Icons.Default.Edit) {
-        fun createRoute(itemId: Long) = "edit_item/$itemId"
+    object EditItem : Screen("edit_item/{itemUuid}", R.string.edit_item, Icons.Default.Edit, Icons.Default.Edit) {
+        fun createRoute(itemUuid: String) = "edit_item/$itemUuid"
     }
     
-    object ItemReminderSettings : Screen("item_reminder_settings/{itemId}", R.string.item_reminder_settings, Icons.Default.Notifications, Icons.Default.Notifications) {
-        fun createRoute(itemId: Long) = "item_reminder_settings/$itemId"
+    object ItemReminderSettings : Screen("item_reminder_settings/{itemUuid}", R.string.item_reminder_settings, Icons.Default.Notifications, Icons.Default.Notifications) {
+        fun createRoute(itemUuid: String) = "item_reminder_settings/$itemUuid"
     }
 
     object AddWarehouse : Screen("add_warehouse", R.string.add_warehouse, Icons.Default.Add, Icons.Default.Add)
-    object AddChildWarehouse : Screen("add_warehouse/{parentId}", R.string.add_warehouse, Icons.Default.Add, Icons.Default.Add) {
-        fun createRoute(parentId: Long) = "add_warehouse/$parentId"
+    object AddChildWarehouse : Screen("add_warehouse/{parentUuid}", R.string.add_warehouse, Icons.Default.Add, Icons.Default.Add) {
+        fun createRoute(parentUuid: String) = "add_warehouse/$parentUuid"
     }
-    object EditWarehouse : Screen("edit_warehouse/{warehouseId}", R.string.edit_warehouse, Icons.Default.Edit, Icons.Default.Edit) {
-        fun createRoute(warehouseId: Long) = "edit_warehouse/$warehouseId"
+    object EditWarehouse : Screen("edit_warehouse/{warehouseUuid}", R.string.edit_warehouse, Icons.Default.Edit, Icons.Default.Edit) {
+        fun createRoute(warehouseUuid: String) = "edit_warehouse/$warehouseUuid"
     }
 
-    object WarehouseItems : Screen("warehouse_items/{warehouseId}", R.string.warehouse_items, Icons.Default.Category, Icons.Default.Category) {
-        fun createRoute(warehouseId: Long) = "warehouse_items/$warehouseId"
+    object WarehouseItems : Screen("warehouse_items/{warehouseUuid}", R.string.warehouse_items, Icons.Default.Category, Icons.Default.Category) {
+        fun createRoute(warehouseUuid: String) = "warehouse_items/$warehouseUuid"
     }
     
-    object WarehouseItemsTab : Screen("warehouse_items_tab/{warehouseId}", R.string.nav_items, Icons.Default.Category, Icons.Default.Category) {
-        fun createRoute(warehouseId: Long) = "warehouse_items_tab/$warehouseId"
+    object WarehouseItemsTab : Screen("warehouse_items_tab/{warehouseUuid}", R.string.nav_items, Icons.Default.Category, Icons.Default.Category) {
+        fun createRoute(warehouseUuid: String) = "warehouse_items_tab/$warehouseUuid"
     }
 
     object BarcodeScanner : Screen("barcode_scanner", R.string.barcode_scanner, Icons.Default.QrCodeScanner, Icons.Default.QrCodeScanner)

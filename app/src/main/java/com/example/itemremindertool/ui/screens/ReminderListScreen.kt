@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.itemremindertool.R
 import com.example.itemremindertool.data.model.ItemReminder
 import com.example.itemremindertool.data.model.ReminderType
+import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
@@ -38,7 +40,7 @@ fun ReminderListScreen(
     reminderViewModel: ItemReminderViewModel = viewModel(),
     itemViewModel: ItemViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateToItem: (Long) -> Unit
+    onNavigateToItem: (String) -> Unit
 ) {
     val allReminders by reminderViewModel.allReminders.collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
@@ -54,15 +56,15 @@ fun ReminderListScreen(
     }
     
     // 用于存储物品信息的Map
-    var itemsMap by remember { mutableStateOf<Map<Long, Item>>(emptyMap()) }
+    var itemsMap by remember { mutableStateOf<Map<String, Item>>(emptyMap()) }
     
     // 加载所有相关物品信息
     LaunchedEffect(allReminders) {
-        val itemIds = allReminders.map { it.itemId }.distinct()
-        val items = mutableMapOf<Long, Item>()
-        itemIds.forEach { itemId ->
-            itemViewModel.getItemById(itemId)?.let { item ->
-                items[itemId] = item
+        val itemUuids = allReminders.map { it.itemUuid }.distinct()
+        val items = mutableMapOf<String, Item>()
+        itemUuids.forEach { itemUuid ->
+            itemViewModel.getItemByUuid(itemUuid)?.let { item ->
+                items[itemUuid] = item
             }
         }
         itemsMap = items
@@ -70,18 +72,13 @@ fun ReminderListScreen(
     
     Scaffold(
         topBar = {
-            TopAppBar(
+            GradientTopAppBar(
                 title = { Text(stringResource(R.string.reminder_list_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ColorHelpers.getGroup1NavBarColor(),
-                    titleContentColor = ColorHelpers.getGroup4TextColor(),
-                    navigationIconContentColor = ColorHelpers.getGroup4TextColor()
-                )
+                }
             )
         },
         containerColor = ColorHelpers.getGroup2PageBgColor()
@@ -195,10 +192,10 @@ fun ReminderListScreen(
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(filteredReminders, key = { it.id }) { reminder ->
+                    items(filteredReminders, key = { it.uuid }) { reminder ->
                         ReminderCard(
                             reminder = reminder,
-                            item = itemsMap[reminder.itemId],
+                            item = itemsMap[reminder.itemUuid],
                             onToggleEnabled = { enabled ->
                                 scope.launch {
                                     reminderViewModel.updateReminder(reminder.copy(isEnabled = enabled))
@@ -224,7 +221,7 @@ private fun ReminderCard(
     item: Item?,
     onToggleEnabled: (Boolean) -> Unit,
     onDelete: () -> Unit,
-    onNavigateToItem: (Long) -> Unit
+    onNavigateToItem: (String) -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
@@ -234,7 +231,7 @@ private fun ReminderCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { item?.let { onNavigateToItem(it.id) } },
+            .clickable { item?.let { onNavigateToItem(it.uuid) } },
         shape = RoundedCornerShape(8.dp),
         color = ColorHelpers.getGroup3CardBgColor(),
         shadowElevation = 1.dp,

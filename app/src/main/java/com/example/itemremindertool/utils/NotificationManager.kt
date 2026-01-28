@@ -50,12 +50,12 @@ object NotificationHelper {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             // 可以添加额外数据，比如跳转到物品详情页
-            putExtra("itemId", reminder.itemId)
+            putExtra("itemUuid", reminder.itemUuid)
         }
         
         val pendingIntent = PendingIntent.getActivity(
             context,
-            reminder.id.toInt(),
+            reminder.uuid.hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -91,7 +91,7 @@ object NotificationHelper {
         
         // 发送通知
         notificationManager.notify(
-            (NOTIFICATION_ID_BASE + reminder.id).toInt(),
+            NOTIFICATION_ID_BASE + reminder.uuid.hashCode(),
             notification
         )
     }

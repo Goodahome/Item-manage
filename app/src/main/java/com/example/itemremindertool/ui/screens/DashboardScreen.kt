@@ -96,6 +96,8 @@ import com.example.itemremindertool.ui.components.CameraCaptureDialog
 import com.example.itemremindertool.ui.components.ImageCropDialog
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.utils.CurrencyUtils
+import com.example.itemremindertool.sync.SyncManager
+import com.example.itemremindertool.workers.SyncQueueWorker
 import kotlinx.coroutines.Dispatchers
 import java.io.File
 import com.example.itemremindertool.ui.theme.LocalAppSettings
@@ -110,6 +112,7 @@ import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.config.FeatureFlags
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.DateFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -132,21 +135,21 @@ fun DashboardScreen(
     itemReminderViewModel: com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel? = null, // 物品提醒ViewModel
     activityEventViewModel: com.example.itemremindertool.ui.viewmodel.ActivityEventViewModel? = null, // 动态事件ViewModel
     accessHistoryManager: com.example.itemremindertool.data.AccessHistoryManager,
-    onAddItem: (Long?) -> Unit, // 传递当前选中的容器ID
-    onEditItem: (Long) -> Unit,
-    onViewItem: (Long) -> Unit = {}, // 查看物品信息回调
+    onAddItem: (String?) -> Unit, // 传递当前选中的容器UUID
+    onEditItem: (String) -> Unit,
+    onViewItem: (String) -> Unit = {}, // 查看物品信息回调
     onScanBarcode: () -> Unit,
     onItemRecognition: () -> Unit,
     onMenuClick: () -> Unit,
     onAddWarehouse: () -> Unit = {}, // 添加容器回调
-    onAddChildWarehouse: (Long) -> Unit = {},
-    onEditWarehouse: (Long) -> Unit = {}, // 编辑容器回调
+    onAddChildWarehouse: (String) -> Unit = {},
+    onEditWarehouse: (String) -> Unit = {}, // 编辑容器回调
     onDeleteWarehouse: (com.example.itemremindertool.data.model.Warehouse) -> Unit = {}, // 删除容器回调
     onDeleteItem: (Item) -> Unit = {}, // 删除物品回调
     onAddAlert: (Item) -> Unit = {}, // 添加提醒回调
-    onNavigateToWarehouseItemsTab: (Long) -> Unit = {}, // 导航到容器物品页面
-    initialSelectedWarehouseId: Long? = null, // 初始选中的容器ID
-    onSelectedWarehouseIdChanged: (Long?) -> Unit = {}, // 选中容器ID变化时的回调
+    onNavigateToWarehouseItemsTab: (String) -> Unit = {},
+    initialSelectedWarehouseUuid: String? = null,
+    onSelectedWarehouseUuidChanged: (String?) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val stats by dashboardViewModel.stats.collectAsState()
@@ -157,7 +160,29 @@ fun DashboardScreen(
         context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
     }
     val hasCompletedOnboarding = remember {
-        mutableStateOf(prefs.getBoolean("has_completed_onboarding", false))
+        mutableStateOf(
+            try {
+                // 安全读取 Boolean 值，处理旧版本可能存储的 String 类型
+                val value = prefs.getAll()["has_completed_onboarding"]
+                val result = when (value) {
+                    is Boolean -> value
+                    is String -> {
+                        // 如果存储的是 String，尝试转换并修复 SharedPreferences
+                        val boolValue = value.toBooleanStrictOrNull() ?: false
+                        prefs.edit().putBoolean("has_completed_onboarding", boolValue).apply()
+                        boolValue
+                    }
+                    else -> false
+                }
+                result
+            } catch (e: Exception) {
+                // 如果出现异常，清理可能损坏的数据
+                try {
+                    prefs.edit().remove("has_completed_onboarding").apply()
+                } catch (ignored: Exception) { }
+                false
+            }
+        )
     }
     val onboardingAnchors = remember { mutableStateMapOf<OnboardingAnchorKey, androidx.compose.ui.geometry.Rect>() }
     val savedOnboardingStep = remember {
@@ -259,7 +284,7 @@ fun DashboardScreen(
     val items by itemViewModel.items.collectAsState(initial = emptyList())
     val warehouses by warehouseViewModel.topLevelWarehouses.collectAsState(initial = emptyList())
     val allWarehouses by warehouseViewModel.warehouses.collectAsState(initial = emptyList())
-    val sampleWarehouseId = remember(warehouses) { warehouses.firstOrNull()?.id }
+    val sampleWarehouseUuid = remember(warehouses) { warehouses.firstOrNull()?.uuid }
     val itemOperationState by itemViewModel.operationState.collectAsState()
     val shoppingOperationState by shoppingItemViewModel.operationState.collectAsState()
     val warehouseOperationState by warehouseViewModel.operationState.collectAsState()
@@ -308,9 +333,13 @@ fun DashboardScreen(
     val warehouseItemCounts by remember {
         derivedStateOf {
             // 使用 groupBy 一次性分组，然后计算每个容器的数量，性能更好
-            // 过滤掉 null 值，确保类型为 Map<Long, Int>
-            items.filter { it.warehouseId != null }
-                .groupBy { it.warehouseId!! }
+            // 通过 warehouseUuid 找到对应的本地 ID，然后分组
+            items.filter { it.warehouseUuid != null }
+                .mapNotNull { item ->
+                    val w = allWarehouses.find { it.uuid == item.warehouseUuid }
+                    w?.uuid?.let { uuid -> item to uuid }
+                }
+                .groupBy { it.second }
                 .mapValues { it.value.size }
         }
     }
@@ -318,30 +347,28 @@ fun DashboardScreen(
     // 预先构建容器ID到容器名称的映射，避免在列表项中重复查找
     val warehouseNameMap by remember(allWarehouses) {
         derivedStateOf {
-            allWarehouses.associate { it.id to it.name }
+            allWarehouses.associate { it.uuid to it.name }
         }
     }
     
     // 选中的容器ID状态（null表示显示首页）
-    // 以外部传入的 initialSelectedWarehouseId 作为单一数据源，避免双向同步导致状态错乱
-    val selectedWarehouseId = initialSelectedWarehouseId
+    val selectedWarehouseUuid = initialSelectedWarehouseUuid
     
     // 当容器列表变化时，如果选中的容器已被删除，返回首页
-    LaunchedEffect(allWarehouses, selectedWarehouseId) {
-        // 仓库列表加载完成且不为空时才进行校验，避免列表为空导致误清空选中状态
-        if (selectedWarehouseId != null && allWarehouses.isNotEmpty() && allWarehouses.none { it.id == selectedWarehouseId }) {
-            onSelectedWarehouseIdChanged(null) // 返回首页
+    LaunchedEffect(allWarehouses, selectedWarehouseUuid) {
+        if (selectedWarehouseUuid != null && allWarehouses.isNotEmpty() && allWarehouses.none { it.uuid == selectedWarehouseUuid }) {
+            onSelectedWarehouseUuidChanged(null)
         }
     }
 
     // 按系统返回键：若在子容器则返回父容器，否则回到首页
-    val currentWarehouse = allWarehouses.find { it.id == selectedWarehouseId }
-    val parentId = currentWarehouse?.parentId
-    BackHandler(enabled = selectedWarehouseId != null) {
-        if (parentId != null) {
-            onSelectedWarehouseIdChanged(parentId)
+    val currentWarehouse = allWarehouses.find { it.uuid == selectedWarehouseUuid }
+    val parentUuid = currentWarehouse?.parentUuid
+    BackHandler(enabled = selectedWarehouseUuid != null) {
+        if (parentUuid != null) {
+            onSelectedWarehouseUuidChanged(parentUuid)
         } else {
-            onSelectedWarehouseIdChanged(null)
+            onSelectedWarehouseUuidChanged(null)
         }
     }
     
@@ -446,22 +473,14 @@ fun DashboardScreen(
                     IconButton(
                         onClick = {
                             if (isRefreshing) return@IconButton
-                            val serverUrl = prefs.getString("nextcloud_server_url", "") ?: ""
-                            val username = prefs.getString("nextcloud_username", "") ?: ""
-                            val password = prefs.getString("nextcloud_password", "") ?: ""
-                            val hasCloudConfig = serverUrl.isNotEmpty() && username.isNotEmpty() && password.isNotEmpty()
-                            if (hasCloudConfig) {
-                                Log.d("DashboardScreen", "手动触发云端同步")
-                                isRefreshing = true
-                                com.example.itemremindertool.utils.CloudSyncScheduler.syncNow(context)
-                            } else {
-                                Log.d("DashboardScreen", "未配置云端同步，仅刷新本地数据")
-                                isRefreshing = true
-                                scope.launch {
-                                    kotlinx.coroutines.delay(500)
-                                    dashboardViewModel.refresh()
-                                    isRefreshing = false
+                            isRefreshing = true
+                            scope.launch {
+                                withContext(Dispatchers.IO) {
+                                    SyncManager.getInstance(context).mergeRemoteAndLocalOnce()
+                                    SyncQueueWorker.runNow(context)
                                 }
+                                dashboardViewModel.refresh()
+                                isRefreshing = false
                             }
                         },
                         enabled = !showOnboarding
@@ -530,7 +549,7 @@ fun DashboardScreen(
                 allWarehouses = allWarehouses,
                 allItems = items,
                 warehouseItemCounts = warehouseItemCounts,
-                selectedWarehouseId = selectedWarehouseId,
+                selectedWarehouseUuid = selectedWarehouseUuid,
                 shoppingItemsCount = activeShoppingItemsCount,
                 alertSettingsManager = alertSettingsManager,
                 shoppingItemViewModel = shoppingItemViewModel,
@@ -547,27 +566,27 @@ fun DashboardScreen(
                 contentPadding = paddingValues,
                 adBottomPadding = adBottomPadding,
                 onWarehouseSelect = { warehouse ->
-                    onSelectedWarehouseIdChanged(warehouse.id)
+                    onSelectedWarehouseUuidChanged(warehouse.uuid)
                     if (showOnboarding &&
                         currentOnboardingStep == OnboardingStep.HOME_SIDEBAR_SAMPLE &&
-                        sampleWarehouseId != null &&
-                        warehouse.id == sampleWarehouseId
+                        sampleWarehouseUuid != null &&
+                        warehouse.uuid == sampleWarehouseUuid
                     ) {
                         setOnboardingStep(OnboardingStep.WAREHOUSE_CHILDREN_BREADCRUMB)
                     }
                 },
                 onHomeClick = {
                     // 点击首页图标，取消容器选中，显示统计和提醒
-                    onSelectedWarehouseIdChanged(null)
+                    onSelectedWarehouseUuidChanged(null)
                 },
                 onSubWarehouseClick = { subWarehouse ->
                     // 点击子容器，切换到该子容器显示其物品
-                    onSelectedWarehouseIdChanged(subWarehouse.id)
+                    onSelectedWarehouseUuidChanged(subWarehouse.uuid)
                 },
                 onAddWarehouse = onAddWarehouse,
                 onNavigateToWarehouseItemsTab = onNavigateToWarehouseItemsTab,
-                onAddChildWarehouse = { parentId ->
-                    onAddChildWarehouse(parentId)
+                onAddChildWarehouse = { parentUuid ->
+                    onAddChildWarehouse(parentUuid)
                 },
                 onEditWarehouse = onEditWarehouse,
                 onDeleteWarehouse = onDeleteWarehouse,
@@ -593,8 +612,8 @@ fun DashboardScreen(
             )
 
             // 可拖拽的主 FAB（侧边栏风格首页）
-            val isShoppingListVisible = remember(selectedWarehouseId) {
-                selectedWarehouseId == null
+            val isShoppingListVisible = remember(selectedWarehouseUuid) {
+                selectedWarehouseUuid == null
             }
             val fabBackground = ColorHelpers.getGroup5FabColor()
             val fabIconColor = ColorHelpers.getGroup4IconColorByContrast(fabBackground)
@@ -620,7 +639,7 @@ fun DashboardScreen(
                             prefs.edit().putBoolean("add_to_shopping_list_after_save", true).apply()
                         }
                         // 如果当前选中了容器，则带入容器ID
-                        onAddItem(selectedWarehouseId)
+                        onAddItem(selectedWarehouseUuid)
                     },
                     backgroundColor = fabBackground,
                     modifier = fabModifier.size(UIConstants.FAB_SIZE)
@@ -903,8 +922,8 @@ fun DashboardScreen(
                                 val newItem = Item(
                                     name = "未命名物品",
                                     description = "",
-                                    categoryId = null,
-                                    warehouseId = selectedWarehouseForQuickAdd!!.id,
+                                    categoryUuid = null,
+                                    warehouseUuid = selectedWarehouseForQuickAdd!!.uuid,
                                     tags = emptyList(),
                                     price = null,
                                     quantity = 1,
@@ -962,16 +981,16 @@ fun WarehouseInfoScreen(
     warehouse: Warehouse,
     itemCount: Int,
     childWarehouses: List<Warehouse> = emptyList(),
-    warehouseItemCounts: Map<Long, Int> = emptyMap(),
+    warehouseItemCounts: Map<String, Int> = emptyMap(),
     allWarehouses: List<Warehouse> = emptyList(),
     allItems: List<Item> = emptyList(),
     warehouseViewModel: WarehouseViewModel? = null,
     itemViewModel: ItemViewModel? = null,
     shoppingItemViewModel: com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel? = null,
-    onWarehouseClick: (Long) -> Unit = {},
+    onWarehouseClick: (String) -> Unit = {},
     onEditWarehouse: () -> Unit = {},
-    onEditItem: ((Long) -> Unit)? = null,
-    onViewItem: ((Long) -> Unit)? = null,
+    onEditItem: ((String) -> Unit)? = null,
+    onViewItem: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     
@@ -999,11 +1018,11 @@ fun WarehouseInfoScreen(
     val iconColor = ColorHelpers.getGroup4IconColor(infoCardBgColor)
     val badgeBgColor = ColorHelpers.getGroup2SettingsBtnColor()
     val badgeTextColor = ColorHelpers.getContrastColor(badgeBgColor)
-    val totalChildCount = remember(warehouse.id, allWarehouses) {
-        countAllChildWarehouses(warehouse.id, allWarehouses)
+    val totalChildCount = remember(warehouse.uuid, allWarehouses) {
+        countAllChildWarehouses(warehouse.uuid, allWarehouses)
     }
-    val totalItemCount = remember(warehouse.id, allWarehouses, allItems, warehouseItemCounts) {
-        countAllItemsInWarehouse(warehouse.id, allWarehouses, allItems, warehouseItemCounts)
+    val totalItemCount = remember(warehouse.uuid, allWarehouses, allItems, warehouseItemCounts) {
+        countAllItemsInWarehouse(warehouse.uuid, allWarehouses, allItems, warehouseItemCounts)
     }
     
     Column(
@@ -1270,11 +1289,11 @@ fun WarehouseInfoScreen(
 /**
  * 递归计算所有子容器数量（包括子容器的子容器）
  */
-fun countAllChildWarehouses(warehouseId: Long, allWarehouses: List<Warehouse>): Int {
-    val directChildren = allWarehouses.filter { it.parentId == warehouseId }
+fun countAllChildWarehouses(warehouseUuid: String, allWarehouses: List<Warehouse>): Int {
+    val directChildren = allWarehouses.filter { it.parentUuid == warehouseUuid }
     var count = directChildren.size
     directChildren.forEach { child ->
-        count += countAllChildWarehouses(child.id, allWarehouses)
+        count += countAllChildWarehouses(child.uuid, allWarehouses)
     }
     return count
 }
@@ -1283,20 +1302,16 @@ fun countAllChildWarehouses(warehouseId: Long, allWarehouses: List<Warehouse>): 
  * 递归计算容器及其所有子容器中的物品数量
  */
 fun countAllItemsInWarehouse(
-    warehouseId: Long,
+    warehouseUuid: String,
     allWarehouses: List<Warehouse>,
     allItems: List<Item>,
-    warehouseItemCounts: Map<Long, Int>
+    warehouseItemCounts: Map<String, Int>
 ): Int {
-    // 当前容器的物品数量
-    var count = warehouseItemCounts[warehouseId] ?: 0
-    
-    // 递归计算所有子容器的物品数量
-    val directChildren = allWarehouses.filter { it.parentId == warehouseId }
+    var count = warehouseItemCounts[warehouseUuid] ?: 0
+    val directChildren = allWarehouses.filter { it.parentUuid == warehouseUuid }
     directChildren.forEach { child ->
-        count += countAllItemsInWarehouse(child.id, allWarehouses, allItems, warehouseItemCounts)
+        count += countAllItemsInWarehouse(child.uuid, allWarehouses, allItems, warehouseItemCounts)
     }
-    
     return count
 }
 
@@ -1415,9 +1430,9 @@ fun WarehouseInfoBottomSheet(
     warehouse: Warehouse?,
     allWarehouses: List<Warehouse>,
     allItems: List<Item>,
-    warehouseItemCounts: Map<Long, Int>,
+    warehouseItemCounts: Map<String, Int>,
     onDismiss: () -> Unit,
-    onNavigateToWarehouse: (Long) -> Unit = {},
+    onNavigateToWarehouse: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     if (warehouse == null) return
@@ -1425,11 +1440,12 @@ fun WarehouseInfoBottomSheet(
     // 获取子容器（使用 derivedStateOf 优化性能）
     val childWarehouses by remember {
         derivedStateOf {
-            allWarehouses.filter { it.parentId == warehouse.id }
+            val warehouseUuid = warehouse.uuid
+            allWarehouses.filter { it.parentUuid == warehouseUuid }
         }
     }
 
-    val itemCount = warehouseItemCounts[warehouse.id] ?: 0
+    val itemCount = warehouseItemCounts[warehouse.uuid] ?: 0
 
     // 加载容器图片
     var warehouseImageBitmap by remember(warehouse.imageUri) {
@@ -1824,7 +1840,7 @@ fun WarehouseIconItem(
                                 Modifier.background(backgroundColor) // 与右侧容器按钮一致
                             }
                         )
-                        .pointerInput(warehouse.id) {
+                        .pointerInput(warehouse.uuid) {
                             detectTapGestures(
                                 onTap = {
                                     // 取消之前的延迟任务
@@ -2047,8 +2063,8 @@ fun WarehouseIconItem(
 @Composable
 fun WarehouseSidebarColumn(
     warehouses: List<Warehouse>,
-    selectedWarehouseId: Long?,
-    warehouseItemCounts: Map<Long, Int>,
+    selectedWarehouseUuid: String?,
+    warehouseItemCounts: Map<String, Int>,
     onWarehouseClick: (Warehouse) -> Unit,
     onHomeClick: () -> Unit, // 新增：点击首页图标的回调
     onAddWarehouse: () -> Unit,
@@ -2084,7 +2100,7 @@ fun WarehouseSidebarColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp) // 减小：12dp → 8dp
         ) {
             // 首页图标（固定在顶部）
-            val isHomeSelected = selectedWarehouseId == null
+            val isHomeSelected = selectedWarehouseUuid == null
             val iconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
             Box(
                     modifier = Modifier.fillMaxWidth() // 确保容器占满宽度，让指示器能正确显示
@@ -2177,11 +2193,11 @@ fun WarehouseSidebarColumn(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp) // 减小：12dp → 8dp
             ) {
-                itemsIndexed(warehouses, key = { _, warehouse -> warehouse.id }) { index, warehouse ->
+                itemsIndexed(warehouses, key = { _, warehouse -> warehouse.uuid }) { index, warehouse ->
                     WarehouseIconItem(
                         warehouse = warehouse,
-                        isSelected = warehouse.id == selectedWarehouseId,
-                        itemCount = warehouseItemCounts[warehouse.id] ?: 0,
+                        isSelected = warehouse.uuid == selectedWarehouseUuid,
+                        itemCount = warehouseItemCounts[warehouse.uuid] ?: 0,
                         onClick = { onWarehouseClick(warehouse) },
                         onEditWarehouse = onEditWarehouse,
                         onDeleteWarehouse = onDeleteWarehouse,
@@ -2303,7 +2319,7 @@ fun SubWarehouseIcon(
     Box {
         Column(
             modifier = modifier
-                .pointerInput(warehouse.id) {
+                .pointerInput(warehouse.uuid) {
                     detectTapGestures(
                         onTap = {
                             // 如果已经有待处理的单击，说明是双击
@@ -2486,7 +2502,7 @@ fun SubWarehouseIcon(
 @Composable
 fun SubWarehouseRow(
     subWarehouses: List<Warehouse>,
-    warehouseItemCounts: Map<Long, Int>,
+    warehouseItemCounts: Map<String, Int>,
     onSubWarehouseClick: (Warehouse) -> Unit,
     onAddSubWarehouse: () -> Unit,
     onEditWarehouse: (Warehouse) -> Unit = {},
@@ -2611,10 +2627,10 @@ fun SubWarehouseRow(
                     .padding(vertical = 8.dp, horizontal = 6.dp), // 减小：12dp,8dp → 8dp,6dp
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(subWarehouses, key = { it.id }) { subWarehouse ->
+                items(subWarehouses, key = { it.uuid }) { subWarehouse ->
                     SubWarehouseIcon(
                         warehouse = subWarehouse,
-                        itemCount = warehouseItemCounts[subWarehouse.id] ?: 0,
+                        itemCount = warehouseItemCounts[subWarehouse.uuid] ?: 0,
                         onClick = { onSubWarehouseClick(subWarehouse) },
                         onEditWarehouse = onEditWarehouse,
                         onDeleteWarehouse = onDeleteWarehouse,
@@ -2692,7 +2708,7 @@ private val TAG_COLORS = listOf(
 fun ItemListRow(
     item: Item,
     onClick: () -> Unit,
-    onEditItem: (Long) -> Unit = {},
+    onEditItem: (String) -> Unit = {},
     onMoveToContainer: (Item) -> Unit = {},
     showMoveAction: Boolean = false,
     onAddToShoppingCart: (Item) -> Unit = {},
@@ -3100,7 +3116,7 @@ fun ItemListRow(
                             },
                             onClick = {
                                 showMenu = false
-                                onEditItem(item.id)
+                                onEditItem(item.uuid)
                             },
                             leadingIcon = { 
                                 Icon(
@@ -3358,8 +3374,8 @@ fun TagFilterBar(
 @Composable
 fun ItemListSection(
     items: List<Item>,
-    onEditItem: (Long) -> Unit,
-    onViewItem: (Long) -> Unit = {}, // 查看物品信息回调
+    onEditItem: (String) -> Unit,
+    onViewItem: (String) -> Unit = {}, // 查看物品信息回调
     shoppingItemViewModel: com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel? = null,
     itemViewModel: ItemViewModel? = null,
     alertSettingsManager: AlertSettingsManager? = null,
@@ -3380,10 +3396,10 @@ fun ItemListSection(
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val expiredTagLabel = stringResource(R.string.status_expired)
     
-    // 预先构建容器ID到容器名称的映射，避免在列表项中重复查找
+    // 预先构建容器UUID到容器名称的映射，避免在列表项中重复查找
     val warehouseNameMap by remember(allWarehouses) {
         derivedStateOf {
-            (allWarehouses ?: emptyList()).associate { it.id to it.name }
+            (allWarehouses ?: emptyList()).associate { it.uuid to it.name }
         }
     }
     
@@ -3395,14 +3411,14 @@ fun ItemListSection(
     var selectedTags by remember(items) { mutableStateOf<Set<String>>(emptySet()) }
     
     // 选中的物品（仅网格模式使用）- 使用 rememberSaveable 保存配置变更
-    var selectedItemId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var selectedItemUuid by rememberSaveable { mutableStateOf<String?>(null) }
     var itemToMove by remember { mutableStateOf<Item?>(null) }
     var showMoveDialog by remember { mutableStateOf(false) }
     val canMoveItems = warehouseViewModel != null
 
-    val selectedItem by remember(items, selectedItemId) {
+    val selectedItem by remember(items, selectedItemUuid) {
         derivedStateOf {
-            selectedItemId?.let { id -> items.find { it.id == id } }
+            selectedItemUuid?.let { uuid -> items.find { it.uuid == uuid } }
         }
     }
     
@@ -3413,7 +3429,7 @@ fun ItemListSection(
     DisposableEffect(configuration) {
         // 配置变更开始
         isConfigChanging = true
-        selectedItemId = null
+        selectedItemUuid = null
         
         onDispose {
             // 配置变更结束
@@ -3610,13 +3626,15 @@ fun ItemListSection(
                         end = 0.dp
                     )
                 ) {
-                    items(filteredItems, key = { it.id }) { item ->
+                    items(filteredItems, key = { it.uuid }) { item ->
                         // 使用预先构建的映射查找容器名称，避免重复查找
-                        val warehouseName = item.warehouseId?.let { warehouseNameMap[it] }
+                        val warehouseName = item.warehouseUuid?.let { uuid ->
+                            warehouseNameMap[uuid]
+                        }
                         
                         ItemListRow(
                             item = item,
-                            onClick = { onViewItem(item.id) },
+                            onClick = { onViewItem(item.uuid) },
                             onEditItem = onEditItem,
                             warehouseName = warehouseName, // 传递容器名称
                             useCircleIcon = useCircleIcon, // 传递侧边栏风格图标形状设置
@@ -3633,7 +3651,7 @@ fun ItemListSection(
                                         description = item.description,
                                         quantity = item.quantity,
                                         priority = com.example.itemremindertool.data.model.Priority.MEDIUM,
-                                        itemId = item.id // 关联物品ID，用于完成购买时补充库存
+                                        itemUuid = item.uuid // 关联物品UUID，用于完成购买时补充库存
                                     )
                                     vm.insertShoppingItem(shoppingItem)
                                 }
@@ -3699,15 +3717,15 @@ fun ItemListSection(
                 
                 // 使用 derivedStateOf 优化性能，减少不必要的重组
                 // 添加 filteredItems 作为依赖，确保标签筛选变化时能正确更新
-                val itemsWithDetail by remember(filteredItems, selectedItemId, gridColumns) {
+                val itemsWithDetail by remember(filteredItems, selectedItemUuid, gridColumns) {
                     derivedStateOf {
                         // 添加空列表检查，避免配置变更时的问题
                         if (filteredItems.isEmpty()) {
                             emptyList()
-                        } else if (selectedItemId == null) {
+                        } else if (selectedItemUuid == null) {
                             filteredItems.map { it to false }
                         } else {
-                            val selectedIndex = filteredItems.indexOfFirst { it.id == selectedItemId }
+                            val selectedIndex = filteredItems.indexOfFirst { it.uuid == selectedItemUuid }
                             if (selectedIndex == -1) {
                                 filteredItems.map { it to false }
                             } else {
@@ -3809,12 +3827,12 @@ fun ItemListSection(
                                     end = 12.dp // 右侧留出空间显示圆角
                                 )
                             ) {
-                            val firstGridItemId = filteredItems.firstOrNull()?.id
+                            val firstGridItemUuid = filteredItems.firstOrNull()?.uuid
                             items(
                                 count = itemsWithDetail.size,
                                 key = { index ->
                                     val (item, isDetail) = itemsWithDetail[index]
-                                    if (isDetail) "detail_${item.id}" else "item_${item.id}"
+                                    if (isDetail) "detail_${item.uuid}" else "item_${item.uuid}"
                                 },
                                 span = { index ->
                                     val (_, isDetail) = itemsWithDetail[index]
@@ -3844,7 +3862,7 @@ fun ItemListSection(
                                                 // 保持选中状态，ID不变
                                             },
                                             onViewDetails = {
-                                                onViewItem(item.id)
+                                                onViewItem(item.uuid)
                                             },
                                             onAddToShoppingCart = {
                                                 shoppingItemViewModel?.let { vm ->
@@ -3853,7 +3871,7 @@ fun ItemListSection(
                                                         description = item.description,
                                                         quantity = 1,
                                                         priority = com.example.itemremindertool.data.model.Priority.MEDIUM,
-                                                        itemId = item.id
+                                                        itemUuid = item.uuid
                                                     )
                                                     vm.insertShoppingItem(shoppingItem)
                                                 }
@@ -3888,12 +3906,12 @@ fun ItemListSection(
                                     // 普通物品卡片
                                     com.example.itemremindertool.ui.components.ItemGridCard(
                                         item = item,
-                                        isSelected = selectedItemId == item.id,
+                                        isSelected = selectedItemUuid == item.uuid,
                                         useOutlineIcon = useOutlineIcon,
                                         onClick = {
-                                            val willSelect = selectedItemId != item.id
-                                            selectedItemId = if (willSelect) {
-                                                item.id
+                                            val willSelect = selectedItemUuid != item.uuid
+                                            selectedItemUuid = if (willSelect) {
+                                                item.uuid
                                             } else {
                                                 null
                                             }
@@ -3901,7 +3919,7 @@ fun ItemListSection(
                                                 onOnboardingGridItemClick?.invoke()
                                             }
                                         },
-                                        modifier = if (item.id == firstGridItemId && onGridItemPositioned != null) {
+                                        modifier = if (item.uuid == firstGridItemUuid && onGridItemPositioned != null) {
                                             Modifier.onGloballyPositioned { onGridItemPositioned(it) }
                                         } else {
                                             Modifier
@@ -3920,15 +3938,15 @@ fun ItemListSection(
     if (showMoveDialog && itemToMove != null && warehouseViewModel != null) {
         MoveItemDialog(
             itemName = itemToMove!!.name,
-            currentWarehouseId = itemToMove!!.warehouseId,
+            currentWarehouseUuid = itemToMove!!.warehouseUuid,
             warehouseViewModel = warehouseViewModel,
             onDismiss = {
                 showMoveDialog = false
                 itemToMove = null
             },
-            onConfirm = { targetWarehouseId ->
+            onConfirm = { targetWarehouseUuid ->
                 val updatedItem = itemToMove!!.copy(
-                    warehouseId = targetWarehouseId,
+                    warehouseUuid = targetWarehouseUuid,
                     updatedAt = Date()
                 )
                 itemViewModel?.updateItem(updatedItem)
@@ -3949,8 +3967,8 @@ fun SidebarStyleMainLayout(
     warehouses: List<Warehouse>,
     allWarehouses: List<Warehouse>,
     allItems: List<Item>,
-    warehouseItemCounts: Map<Long, Int>,
-    selectedWarehouseId: Long?,
+    warehouseItemCounts: Map<String, Int>,
+    selectedWarehouseUuid: String?,
     shoppingItemsCount: Int, // 待购物品数量
     alertSettingsManager: AlertSettingsManager, // 新增：提醒设置管理器
     shoppingItemViewModel: com.example.itemremindertool.ui.viewmodel.ShoppingItemViewModel? = null,
@@ -3968,15 +3986,15 @@ fun SidebarStyleMainLayout(
     onHomeClick: () -> Unit, // 新增：点击首页的回调
     onSubWarehouseClick: (Warehouse) -> Unit,
     onAddWarehouse: () -> Unit,
-    onAddChildWarehouse: (Long) -> Unit,
-    onEditWarehouse: (Long) -> Unit = {},
+    onAddChildWarehouse: (String) -> Unit,
+    onEditWarehouse: (String) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
     onGenerateQRCode: ((Warehouse) -> Unit)? = null, // 新增：生成二维码回调
-    onEditItem: (Long) -> Unit,
-    onViewItem: (Long) -> Unit = {}, // 查看物品信息回调
+    onEditItem: (String) -> Unit,
+    onViewItem: (String) -> Unit = {}, // 查看物品信息回调
     onDeleteItem: (Item) -> Unit = {},
     onAddAlert: (Item) -> Unit = {},
-    onNavigateToWarehouseItemsTab: (Long) -> Unit = {}, // 导航到容器详情页面
+    onNavigateToWarehouseItemsTab: (String) -> Unit = {},
     useCircleIcon: Boolean = true, // 新增：是否使用圆形图标
     useOutlineIcon: Boolean = false, // 新增：是否使用镂空图标
     onboardingEnabled: Boolean = false,
@@ -4000,72 +4018,51 @@ fun SidebarStyleMainLayout(
         }
     }
     val isSearching = searchQuery.isNotBlank()
-    // 计算当前容器的根容器（顶级容器）ID，用于侧边栏选中状态
-    val rootWarehouseId = remember(selectedWarehouseId, allWarehouses, warehouses) {
-        if (selectedWarehouseId == null) {
-            null
-        } else {
-            // 递归查找根容器
-            var currentId = selectedWarehouseId
-            var currentWarehouse = allWarehouses.find { it.id == currentId }
-            while (currentWarehouse != null && currentWarehouse.parentId != null) {
-                currentId = currentWarehouse.parentId
-                currentWarehouse = allWarehouses.find { it.id == currentId }
+    val rootWarehouseUuid = remember(selectedWarehouseUuid, allWarehouses, warehouses) {
+        if (selectedWarehouseUuid == null) null
+        else {
+            var currentUuid = selectedWarehouseUuid
+            var current = allWarehouses.find { it.uuid == currentUuid }
+            while (current != null && current.parentUuid != null) {
+                val parent = allWarehouses.find { it.uuid == current.parentUuid }
+                currentUuid = parent?.uuid ?: break
+                current = parent
             }
-            currentId
+            currentUuid
         }
     }
     
-    // 计算当前容器的层级路径（面包屑导航）
-    val breadcrumbPath = remember(selectedWarehouseId, allWarehouses, warehouses) {
-        if (selectedWarehouseId == null) {
-            emptyList<Warehouse>()
-        } else {
+    val allContainersForBreadcrumb = remember(allWarehouses, warehouses) {
+        (allWarehouses + warehouses).distinctBy { it.uuid }
+    }
+    val breadcrumbPath = remember(selectedWarehouseUuid, allWarehouses, warehouses) {
+        if (selectedWarehouseUuid == null) emptyList<Warehouse>()
+        else {
             val path = mutableListOf<Warehouse>()
-            var currentId = selectedWarehouseId
-            
-            // 合并所有容器列表，确保能找到容器
-            val allContainers = (allWarehouses + warehouses).distinctBy { it.id }
-            
-            // 查找当前容器
-            var currentWarehouse = allContainers.find { it.id == currentId }
-            
-            // 如果找不到当前容器，返回空列表
-            if (currentWarehouse == null) {
-                return@remember emptyList<Warehouse>()
-            }
-            
-            // 从当前容器向上查找，直到根容器
+            var currentUuid = selectedWarehouseUuid
+            var currentWarehouse = allContainersForBreadcrumb.find { it.uuid == currentUuid }
+            if (currentWarehouse == null) return@remember emptyList<Warehouse>()
             while (currentWarehouse != null) {
-                path.add(0, currentWarehouse) // 添加到开头，保持从根到当前的顺序
-                if (currentWarehouse.parentId != null) {
-                    currentId = currentWarehouse.parentId
-                    // 查找父容器
-                    currentWarehouse = allContainers.find { it.id == currentId }
-                } else {
-                    break
-                }
+                path.add(0, currentWarehouse)
+                if (currentWarehouse.parentUuid != null) {
+                    val parent = allContainersForBreadcrumb.find { it.uuid == currentWarehouse.parentUuid }
+                    currentUuid = parent?.uuid ?: break
+                    currentWarehouse = parent
+                } else break
             }
             path
         }
     }
     
-    // 获取选中容器的子容器
-    val childWarehouses = remember(selectedWarehouseId, allWarehouses) {
-        if (selectedWarehouseId != null) {
-            allWarehouses.filter { it.parentId == selectedWarehouseId }
-        } else {
-            emptyList()
-        }
+    val childWarehouses = remember(selectedWarehouseUuid, allWarehouses) {
+        if (selectedWarehouseUuid != null)
+            allWarehouses.filter { it.parentUuid == selectedWarehouseUuid }
+        else emptyList()
     }
     
-    // 获取选中容器的物品
-    // 直接基于参数计算，避免 derivedStateOf 误捕获导致不刷新
-    val warehouseItems = if (selectedWarehouseId != null) {
-        allItems.filter { it.warehouseId == selectedWarehouseId }
-    } else {
-        emptyList()
-    }
+    val warehouseItems = if (selectedWarehouseUuid != null) {
+        allItems.filter { it.warehouseUuid == selectedWarehouseUuid }
+    } else emptyList()
     
     // 删除确认对话框相关状态
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -4076,12 +4073,12 @@ fun SidebarStyleMainLayout(
     
     // 合并所有容器列表
     val allContainers = remember(allWarehouses, warehouses) {
-        (allWarehouses + warehouses).distinctBy { it.id }
+        (allWarehouses + warehouses).distinctBy { it.uuid }
     }
     
     // 查看容器信息的回调（双击时导航到容器详情页面）
     val onViewWarehouseInfo: (Warehouse) -> Unit = { warehouse ->
-        onNavigateToWarehouseItemsTab(warehouse.id)
+        onNavigateToWarehouseItemsTab(warehouse.uuid)
     }
     
     val topPadding = contentPadding.calculateTopPadding()
@@ -4094,12 +4091,12 @@ fun SidebarStyleMainLayout(
             // 左侧容器图标列
             WarehouseSidebarColumn(
                 warehouses = warehouses,
-                selectedWarehouseId = rootWarehouseId, // 使用根容器ID保持选中状态
+                selectedWarehouseUuid = rootWarehouseUuid,
                 warehouseItemCounts = warehouseItemCounts,
                 onWarehouseClick = onWarehouseSelect,
                 onHomeClick = onHomeClick,
                 onAddWarehouse = onAddWarehouse,
-                onEditWarehouse = { warehouse -> onEditWarehouse(warehouse.id) },
+                onEditWarehouse = { warehouse -> onEditWarehouse(warehouse.uuid) },
                 onDeleteWarehouse = onDeleteWarehouse,
                 onViewInfo = onViewWarehouseInfo,
                 onGenerateQRCode = onGenerateQRCode,
@@ -4199,14 +4196,13 @@ fun SidebarStyleMainLayout(
                         }
                     }
                 }
-                // 首页状态（selectedWarehouseId == null）
-                else if (selectedWarehouseId == null) {
+                else if (selectedWarehouseUuid == null) {
                     // 添加待购列表切换状态
                     var showShoppingList by remember { mutableStateOf(false) }
                     var showContainerList by remember { mutableStateOf(false) }
                     var showItemList by remember { mutableStateOf(false) }
                     val allContainers = remember(allWarehouses, warehouses) {
-                        (allWarehouses + warehouses).distinctBy { it.id }
+                        (allWarehouses + warehouses).distinctBy { it.uuid }
                     }
 
                     LaunchedEffect(onboardingEnabled, onboardingStep) {
@@ -4325,13 +4321,13 @@ fun SidebarStyleMainLayout(
                                         bottom = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding() + 90.dp + 16.dp
                                     )
                                 ) {
-                                    items(allContainers, key = { it.id }) { warehouse ->
+                                    items(allContainers, key = { it.uuid }) { warehouse ->
                                         val childCount = remember(allContainers, warehouse) {
-                                            countAllChildWarehouses(warehouse.id, allContainers)
+                                            countAllChildWarehouses(warehouse.uuid, allContainers)
                                         }
                                         val itemCount = remember(allContainers, allItems, warehouse) {
                                             countAllItemsInWarehouse(
-                                                warehouse.id,
+                                                warehouse.uuid,
                                                 allContainers,
                                                 allItems,
                                                 warehouseItemCounts
@@ -4494,16 +4490,16 @@ fun SidebarStyleMainLayout(
                     } else {
                         // 合并所有容器列表，确保能找到容器
                         val allContainers = remember(allWarehouses, warehouses) {
-                            (allWarehouses + warehouses).distinctBy { it.id }
+                            (allWarehouses + warehouses).distinctBy { it.uuid }
                         }
                         
                         // 计算显示路径：优先使用计算好的路径，如果为空则至少显示当前容器
-                        val displayPath = remember(selectedWarehouseId, breadcrumbPath, allContainers) {
+                        val displayPath = remember(selectedWarehouseUuid, breadcrumbPath, allContainers) {
                             if (breadcrumbPath.isNotEmpty()) {
                                 breadcrumbPath
                             } else {
                                 // 如果路径为空，从合并的容器列表中查找当前容器
-                                allContainers.find { it.id == selectedWarehouseId }
+                                allContainers.find { it.uuid == selectedWarehouseUuid }
                                     ?.let { listOf(it) } ?: emptyList()
                             }
                         }
@@ -4514,8 +4510,8 @@ fun SidebarStyleMainLayout(
                                 subWarehouses = childWarehouses,
                                 warehouseItemCounts = warehouseItemCounts,
                                 onSubWarehouseClick = onSubWarehouseClick,
-                                onAddSubWarehouse = { onAddChildWarehouse(selectedWarehouseId) },
-                                onEditWarehouse = { warehouse -> onEditWarehouse(warehouse.id) },
+                                onAddSubWarehouse = { onAddChildWarehouse(selectedWarehouseUuid) },
+                                onEditWarehouse = { warehouse -> onEditWarehouse(warehouse.uuid) },
                                 onDeleteWarehouse = { warehouse ->
                                     // 子容器删除也需要确认
                                     warehouseToDelete = warehouse
@@ -4584,8 +4580,8 @@ fun SidebarStyleMainLayout(
         // 子容器删除确认对话框
         if (showDeleteDialog && warehouseToDelete != null) {
             val (childCount, itemCount) = deleteStatistics
-            val parentWarehouse = warehouseToDelete!!.parentId?.let { parentId ->
-                allContainers.find { it.id == parentId }
+            val parentWarehouse = warehouseToDelete!!.parentUuid?.let { parentUuid ->
+                allContainers.find { it.uuid == parentUuid }
             }
             val parentName = parentWarehouse?.name ?: "父容器"
             
@@ -4615,7 +4611,7 @@ fun SidebarStyleMainLayout(
                             warehouseToDelete = null
                             val isSubDelete = isSubWarehouseDelete
                             isSubWarehouseDelete = false
-                            if (isSubDelete && warehouse.parentId != null) {
+                            if (isSubDelete && warehouse.parentUuid != null) {
                                 warehouseViewModel?.deleteSubWarehouse(warehouse)
                             } else {
                                 onDeleteWarehouse(warehouse)
@@ -5116,9 +5112,9 @@ fun ShoppingListSection(
 
                                     completedItems.forEach { shoppingItem ->
                                         // 如果有关联的物品，补充库存
-                                        shoppingItem.itemId?.let { itemId ->
+                                        shoppingItem.itemUuid?.let { itemUuid ->
                                             try {
-                                                val item = itemDao.getItemById(itemId)
+                                                val item = itemDao.getItemByUuid(itemUuid)
                                                 item?.let {
                                                     val updatedItem = it.copy(
                                                         quantity = it.quantity + shoppingItem.quantity
@@ -5126,10 +5122,10 @@ fun ShoppingListSection(
                                                     itemDao.updateItem(updatedItem)
                                                 } ?: run {
                                                     // 如果物品不存在，记录错误但不阻止删除购物项
-                                                    android.util.Log.e("ShoppingList", "物品不存在: itemId=$itemId")
+                                                    android.util.Log.e("ShoppingList", "物品不存在: itemUuid=$itemUuid")
                                                 }
                                             } catch (e: Exception) {
-                                                android.util.Log.e("ShoppingList", "更新物品库存失败: itemId=$itemId", e)
+                                                android.util.Log.e("ShoppingList", "更新物品库存失败: itemUuid=$itemUuid", e)
                                             }
                                         } ?: run {
                                             // 如果没有关联的物品ID，记录警告
@@ -5606,8 +5602,8 @@ fun AlertListSection(
     alertSettingsManager: AlertSettingsManager,
     itemReminderViewModel: com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel? = null,
     activityEventViewModel: com.example.itemremindertool.ui.viewmodel.ActivityEventViewModel? = null,
-    onEditItem: (Long) -> Unit,
-    onViewItem: (Long) -> Unit = {}, // 查看物品信息回调
+    onEditItem: (String) -> Unit,
+    onViewItem: (String) -> Unit = {}, // 查看物品信息回调
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -5643,25 +5639,27 @@ fun AlertListSection(
     val forgetInactiveDays = remember { alertSettingsManager.getForgetProtectionInactiveDays() }
     val forgetCandidates = remember(items, today, forgetInactiveDays, usedEvents, viewedEvents) {
         val cutoff = today.minusDays(forgetInactiveDays.toLong())
-        val lastUsedByItem = mutableMapOf<Long, java.util.Date>()
+        val lastUsedByItem = mutableMapOf<String, java.util.Date>()
         usedEvents.forEach { event ->
-            val targetId = event.targetId ?: return@forEach
-            val current = lastUsedByItem[targetId]
+            val targetUuid = event.targetUuid ?: return@forEach
+            val item = items.find { it.uuid == targetUuid } ?: return@forEach
+            val current = lastUsedByItem[item.uuid]
             if (current == null || event.createdAt.after(current)) {
-                lastUsedByItem[targetId] = event.createdAt
+                lastUsedByItem[item.uuid] = event.createdAt
             }
         }
-        val lastViewedByItem = mutableMapOf<Long, java.util.Date>()
+        val lastViewedByItem = mutableMapOf<String, java.util.Date>()
         viewedEvents.forEach { event ->
-            val targetId = event.targetId ?: return@forEach
-            val current = lastViewedByItem[targetId]
+            val targetUuid = event.targetUuid ?: return@forEach
+            val item = items.find { it.uuid == targetUuid } ?: return@forEach
+            val current = lastViewedByItem[item.uuid]
             if (current == null || event.createdAt.after(current)) {
-                lastViewedByItem[targetId] = event.createdAt
+                lastViewedByItem[item.uuid] = event.createdAt
             }
         }
         items.filter { item ->
-            val lastUsedAt = lastUsedByItem[item.id] ?: item.updatedAt
-            val lastViewedAt = lastViewedByItem[item.id] ?: item.createdAt
+            val lastUsedAt = lastUsedByItem[item.uuid] ?: item.updatedAt
+            val lastViewedAt = lastViewedByItem[item.uuid] ?: item.createdAt
             val lastUsedDate = Instant.ofEpochMilli(lastUsedAt.time)
                 .atZone(zone)
                 .toLocalDate()
@@ -5702,7 +5700,8 @@ fun AlertListSection(
         val time: Long,
         val icon: androidx.compose.ui.graphics.vector.ImageVector,
         val iconColor: androidx.compose.ui.graphics.Color,
-        val targetId: Long? = null,
+        val targetId: String? = null,
+        val targetUuid: String? = null,
         val item: Item? = null,
         val reminder: com.example.itemremindertool.data.model.ItemReminder? = null
     )
@@ -5773,14 +5772,14 @@ fun AlertListSection(
             
             otherTimeline.add(
                 TimelineItem(
-                    id = "event_${event.id}",
+                    id = "event_${event.uuid}",
                     type = "event",
                     title = localizedTitle,
                     description = localizedDescription,
                     time = event.createdAt.time,
                     icon = icon,
                     iconColor = iconColor,
-                    targetId = event.targetId
+                    targetUuid = event.targetUuid
                 )
             )
         }
@@ -5795,14 +5794,14 @@ fun AlertListSection(
             )
             expiringTimeline.add(
                 TimelineItem(
-                    id = "expiring_${item.id}",
+                    id = "expiring_${item.uuid}",
                     type = "expiring",
                     title = expiringSoonTitle,
                     description = description,
                     time = item.expiryDate.time,
                     icon = Icons.Default.CalendarToday,
                     iconColor = themeColor,
-                    targetId = item.id,
+                    targetId = item.uuid,
                     item = item
                 )
             )
@@ -5817,14 +5816,14 @@ fun AlertListSection(
             )
             otherTimeline.add(
                 TimelineItem(
-                    id = "lowstock_${item.id}",
+                    id = "lowstock_${item.uuid}",
                     type = "lowstock",
                     title = lowStockTitle,
                     description = description,
                     time = item.updatedAt.time,
                     icon = Icons.Default.Inventory,
                     iconColor = themeColor,
-                    targetId = item.id,
+                    targetId = item.uuid,
                     item = item
                 )
             )
@@ -5833,7 +5832,7 @@ fun AlertListSection(
         // 添加自定义提醒（只显示一次性提醒且未过期的，不置顶）
         val currentTime = System.currentTimeMillis()
         activeReminders.forEach { reminder ->
-            val item = items.find { it.id == reminder.itemId }
+            val item = items.find { it.uuid == reminder.itemUuid }
             if (item != null && reminder.reminderType == com.example.itemremindertool.data.model.ReminderType.ONCE) {
                 val reminderTime = reminder.reminderTime?.time ?: currentTime
                 
@@ -5843,14 +5842,14 @@ fun AlertListSection(
                     
                     otherTimeline.add(
                         TimelineItem(
-                            id = "custom_${reminder.id}",
+                            id = "custom_${reminder.uuid}",
                             type = "custom",
                             title = typeStr,
                             description = "${item.name} - ${reminder.reason}",
                             time = reminderTime,
                             icon = Icons.Default.Alarm,
                             iconColor = themeColor,
-                            targetId = item.id,
+                            targetId = item.uuid,
                             item = item,
                             reminder = reminder
                         )
@@ -6001,7 +6000,7 @@ fun AlertListSection(
 private fun ForgetReminderList(
     items: List<Item>,
     onBack: () -> Unit,
-    onViewItem: (Long) -> Unit,
+    onViewItem: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -6041,11 +6040,11 @@ private fun ForgetReminderList(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(items, key = { it.id }) { item ->
+                items(items, key = { it.uuid }) { item ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onViewItem(item.id) },
+                            .clickable { onViewItem(item.uuid) },
                         colors = CardDefaults.cardColors(
                             containerColor = ColorHelpers.getGroup3CardBgColor()
                         ),

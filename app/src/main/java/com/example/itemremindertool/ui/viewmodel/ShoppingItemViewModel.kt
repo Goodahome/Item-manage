@@ -28,9 +28,9 @@ class ShoppingItemViewModel(
     private val _operationState = MutableStateFlow<OperationState>(OperationState.Idle)
     val operationState: StateFlow<OperationState> = _operationState.asStateFlow()
 
-    fun loadShoppingItem(itemId: Long) {
+    fun loadShoppingItem(itemId: String) {
         viewModelScope.launch {
-            val item = shoppingItemRepository.getShoppingItemById(itemId)
+            val item = shoppingItemRepository.getShoppingItemByUuid(itemId)
             _uiState.value = _uiState.value.copy(selectedItem = item)
         }
     }

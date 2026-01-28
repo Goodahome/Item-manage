@@ -24,12 +24,12 @@ import java.util.Date
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WarehouseItemsTabScreen(
-    warehouseId: Long,
+    warehouseId: String,
     warehouseViewModel: WarehouseViewModel,
     itemViewModel: ItemViewModel,
     shoppingItemViewModel: ShoppingItemViewModel,
     onAddItem: () -> Unit,
-    onEditItem: (Long) -> Unit,
+    onEditItem: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // 加载容器物品
@@ -68,10 +68,10 @@ fun WarehouseItemsTabScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(warehouseItems, key = { it.id }) { item ->
+            items(warehouseItems, key = { it.uuid }) { item ->
                 ItemCard(
                     item = item,
-                    onEdit = { onEditItem(item.id) },
+                    onEdit = { onEditItem(item.uuid) },
                     onDelete = { itemViewModel.deleteItem(item) },
                     onAddToShoppingCart = {
                         val shoppingItem = ShoppingItem(

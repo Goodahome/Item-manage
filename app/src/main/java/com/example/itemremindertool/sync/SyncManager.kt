@@ -161,9 +161,9 @@ class SyncManager(private val context: Context) {
             for (remote in remoteWarehouses) {
                 val local = localWarehousesByUuid[remote.uuid]
                 if (local == null) {
-                    val entity = warehouseFromDto(remote, null)
+                    val entity = warehouseFromDto(remote, null, warehouseDao)
                     val insertedId = warehouseDao.insertWarehouse(entity)
-                    val inserted = warehouseDao.getWarehouseById(insertedId) ?: entity
+                    val inserted = warehouseDao.getWarehouseByUuid(entity.uuid) ?: entity
                     if (remote.imageUri != null && inserted.imageUri.isNullOrBlank()) {
                         val localPath = downloadImage(apiService, remote.imageUri)
                         if (localPath != null) {
@@ -173,7 +173,7 @@ class SyncManager(private val context: Context) {
                 } else {
                     val remoteTime = parseDateOrNull(remote.updatedAt) ?: parseDateOrNull(remote.createdAt)
                     if (isRemoteNewer(remoteTime, local.createdAt)) {
-                        val entity = warehouseFromDto(remote, local)
+                        val entity = warehouseFromDto(remote, local, warehouseDao)
                         warehouseDao.insertWarehouse(entity)
                         if (remote.imageUri != null && local.imageUri.isNullOrBlank()) {
                             val localPath = downloadImage(apiService, remote.imageUri)
@@ -220,7 +220,7 @@ class SyncManager(private val context: Context) {
                 if (local == null) {
                     val entity = itemFromDto(remote, null, warehouseDao, categoryDao)
                     val insertedId = itemDao.insertItem(entity)
-                    val inserted = itemDao.getItemById(insertedId) ?: entity
+                    val inserted = itemDao.getItemByUuid(entity.uuid) ?: entity
                     downloadRemoteImagesIfNeeded(inserted, remote.imageUris ?: emptyList(), itemDao)
                 } else {
                     val remoteTime = parseDateOrNull(remote.updatedAt) ?: parseDateOrNull(remote.createdAt)
@@ -243,10 +243,10 @@ class SyncManager(private val context: Context) {
             for (remote in remoteShoppingItems) {
                 val local = localShoppingByUuid[remote.uuid]
                 if (local == null) {
-                    val itemId = resolveItemIdByUuid(itemDao, remote.itemUuid)
-                    val entity = shoppingItemFromDto(remote, null, itemId)
+                    val itemUuid = remote.itemUuid
+                    val entity = shoppingItemFromDto(remote, null, itemUuid)
                     val insertedId = shoppingItemDao.insertShoppingItem(entity)
-                    val inserted = shoppingItemDao.getShoppingItemById(insertedId) ?: entity
+                    val inserted = shoppingItemDao.getShoppingItemByUuid(entity.uuid) ?: entity
                     if (remote.imageUri != null && inserted.imageUri.isNullOrBlank()) {
                         val localPath = downloadImage(apiService, remote.imageUri)
                         if (localPath != null) {
@@ -257,8 +257,8 @@ class SyncManager(private val context: Context) {
                     val remoteTime = parseDateOrNull(remote.completedAt) ?: parseDateOrNull(remote.createdAt)
                     val localTime = local.completedAt ?: local.createdAt
                     if (isRemoteNewer(remoteTime, localTime)) {
-                        val itemId = resolveItemIdByUuid(itemDao, remote.itemUuid) ?: local.itemId
-                        val entity = shoppingItemFromDto(remote, local, itemId)
+                        val itemUuid = remote.itemUuid ?: local.itemUuid
+                        val entity = shoppingItemFromDto(remote, local, itemUuid)
                         shoppingItemDao.insertShoppingItem(entity)
                         if (remote.imageUri != null && local.imageUri.isNullOrBlank()) {
                             val localPath = downloadImage(apiService, remote.imageUri)
@@ -425,22 +425,45 @@ class SyncManager(private val context: Context) {
         item: Item,
         itemDao: com.example.itemremindertool.data.dao.ItemDao
     ): Item {
-        if (item.imageKeys.isNotEmpty() || item.imageUris.isEmpty()) {
+        // 如果已经有 imageKeys，不需要重新上传
+        if (item.imageKeys.isNotEmpty()) {
+            Log.d(TAG, "物品 ${item.uuid} 已有图片键，跳过上传: ${item.imageKeys.size} 个")
+            return item
+        }
+        
+        // 如果没有本地图片，不需要上传
+        if (item.imageUris.isEmpty()) {
+            Log.d(TAG, "物品 ${item.uuid} 没有本地图片，跳过上传")
             return item
         }
 
+        Log.d(TAG, "开始上传物品图片: ${item.uuid}, 本地图片数量: ${item.imageUris.size}")
+
         val apiService = RetrofitClient.getApiService(context)
         val uploadedKeys = mutableListOf<String>()
+        val failedUploads = mutableListOf<String>()
 
-        for (path in item.imageUris) {
+        for ((index, path) in item.imageUris.withIndex()) {
+            Log.d(TAG, "上传图片 ${index + 1}/${item.imageUris.size}: $path")
             val uploadResult = uploadImage(apiService, path, item.uuid)
             if (uploadResult != null) {
                 uploadedKeys.add(uploadResult)
+                Log.d(TAG, "图片上传成功: $path -> $uploadResult")
+            } else {
+                failedUploads.add(path)
+                Log.w(TAG, "图片上传失败: $path")
             }
         }
 
         if (uploadedKeys.isEmpty()) {
+            Log.w(TAG, "物品 ${item.uuid} 的所有图片上传失败")
             return item
+        }
+
+        if (failedUploads.isNotEmpty()) {
+            Log.w(TAG, "物品 ${item.uuid} 有 ${failedUploads.size} 张图片上传失败，${uploadedKeys.size} 张成功")
+        } else {
+            Log.i(TAG, "物品 ${item.uuid} 的所有图片上传成功: ${uploadedKeys.size} 张")
         }
 
         val updated = item.copy(imageKeys = uploadedKeys)
@@ -453,39 +476,167 @@ class SyncManager(private val context: Context) {
         localPath: String,
         itemUuid: String
     ): String? {
-        val bytes = readBytes(localPath) ?: return null
-        val mimeType = resolveMimeType(localPath) ?: return null
-
-        val presignResponse = apiService.presignUpload(
-            PresignUploadRequest(
-                mimeType = mimeType,
-                fileSize = bytes.size.toLong(),
-                itemUuid = itemUuid
-            )
-        )
-        if (!presignResponse.isSuccessful || presignResponse.body()?.success != true) {
-            Log.e(TAG, "获取上传签名失败: ${presignResponse.code()}")
-            return null
-        }
-
-        val data = presignResponse.body()?.data ?: return null
-        val requestBody = RequestBody.create(mimeType.toMediaTypeOrNull(), bytes)
-        val requestBuilder = Request.Builder()
-            .url(data.uploadUrl)
-            .put(requestBody)
-        data.requiredHeaders?.forEach { (key, value) ->
-            requestBuilder.header(key, value)
-        }
-        val request = requestBuilder.build()
-
-        uploadClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                Log.e(TAG, "图片上传失败: ${response.code}")
+        return try {
+            // 验证本地文件存在且有效
+            val localFile = File(localPath)
+            if (!localFile.exists()) {
+                Log.e(TAG, "上传图片失败: 本地文件不存在: $localPath")
                 return null
             }
-        }
+            
+            // 验证文件是否为有效的图片
+            if (!com.example.itemremindertool.utils.ImageUtils.isValidImageFile(localPath)) {
+                Log.e(TAG, "上传图片失败: 本地文件不是有效的图片: $localPath")
+                return null
+            }
+            
+            val bytes = readBytes(localPath) ?: run {
+                Log.e(TAG, "上传图片失败: 无法读取文件: $localPath")
+                return null
+            }
+            
+            if (bytes.isEmpty()) {
+                Log.e(TAG, "上传图片失败: 文件为空: $localPath")
+                return null
+            }
+            
+            val mimeType = resolveMimeType(localPath) ?: run {
+                Log.e(TAG, "上传图片失败: 无法确定 MIME 类型: $localPath")
+                return null
+            }
 
-        return data.objectKey
+            Log.d(TAG, "开始上传图片: $localPath, 大小: ${bytes.size} bytes, MIME: $mimeType, UUID: $itemUuid")
+
+            val presignResponse = apiService.presignUpload(
+                PresignUploadRequest(
+                    mimeType = mimeType,
+                    fileSize = bytes.size.toLong(),
+                    itemUuid = itemUuid
+                )
+            )
+            if (!presignResponse.isSuccessful || presignResponse.body()?.success != true) {
+                Log.e(TAG, "获取上传签名失败: ${presignResponse.code()}, 响应: ${presignResponse.body()}")
+                return null
+            }
+
+            val data = presignResponse.body()?.data ?: run {
+                Log.e(TAG, "获取上传签名失败: 响应数据为空")
+                return null
+            }
+            
+            Log.d(TAG, "获取上传签名成功: objectKey=${data.objectKey}, uploadUrl=${data.uploadUrl}")
+            Log.d(TAG, "requiredHeaders: ${data.requiredHeaders}")
+
+            val requestBody = RequestBody.create(mimeType.toMediaTypeOrNull(), bytes)
+            val requestBuilder = Request.Builder()
+                .url(data.uploadUrl)
+                .put(requestBody)
+                .header("Content-Type", mimeType) // 明确设置 Content-Type
+            
+            // 设置服务器要求的请求头（如 x-amz-server-side-encryption）
+            data.requiredHeaders?.forEach { (key, value) ->
+                Log.d(TAG, "添加上传请求头: $key = $value")
+                requestBuilder.header(key, value)
+            }
+            
+            val request = requestBuilder.build()
+            
+            // 记录上传请求的详细信息
+            Log.d(TAG, "上传请求 URL: ${request.url}")
+            Log.d(TAG, "上传请求方法: ${request.method}")
+            Log.d(TAG, "上传请求头: ${request.headers}")
+            Log.d(TAG, "上传数据大小: ${bytes.size} bytes")
+
+            uploadClient.newCall(request).execute().use { response ->
+                val statusCode = response.code
+                val statusMessage = response.message
+                
+                // 记录响应头
+                Log.d(TAG, "上传响应状态码: $statusCode $statusMessage")
+                Log.d(TAG, "上传响应头: ${response.headers}")
+                
+                if (!response.isSuccessful) {
+                    val errorBody = response.body?.string() ?: ""
+                    Log.e(TAG, "========== 图片上传失败 ==========")
+                    Log.e(TAG, "objectKey: ${data.objectKey}")
+                    Log.e(TAG, "状态码: $statusCode")
+                    Log.e(TAG, "消息: $statusMessage")
+                    Log.e(TAG, "错误响应: $errorBody")
+                    Log.e(TAG, "上传URL: ${data.uploadUrl}")
+                    Log.e(TAG, "====================================")
+                    return null
+                }
+                
+                // MinIO/S3 上传成功时应该返回 200 和 ETag
+                val etag = response.header("ETag") ?: response.header("etag")
+                val contentLength = response.header("Content-Length") ?: response.header("content-length")
+                
+                // 检查响应体，如果是 HTML 说明可能是错误页面
+                val responseBody = response.body?.string() ?: ""
+                if (responseBody.isNotEmpty()) {
+                    // 检查是否为 HTML 错误页面
+                    val bodyLower = responseBody.lowercase()
+                    if (bodyLower.contains("<!doctype") || bodyLower.contains("<html")) {
+                        Log.e(TAG, "========== 图片上传返回了 HTML 错误页面 ==========")
+                        Log.e(TAG, "objectKey: ${data.objectKey}")
+                        Log.e(TAG, "状态码: $statusCode")
+                        Log.e(TAG, "响应: ${responseBody.take(500)}")
+                        Log.e(TAG, "上传URL: ${data.uploadUrl}")
+                        Log.e(TAG, "可能的原因: MinIO 配置问题或反向代理配置问题")
+                        Log.e(TAG, "================================================")
+                        return null
+                    }
+                    Log.d(TAG, "图片上传响应体: ${responseBody.take(200)}")
+                }
+                
+                // 验证上传成功的关键指标
+                // MinIO/S3 上传成功时必须返回 ETag，如果没有 ETag 说明上传失败
+                if (statusCode == 200 && etag != null) {
+                    Log.i(TAG, "========== 图片上传成功 ==========")
+                    Log.i(TAG, "objectKey: ${data.objectKey}")
+                    Log.i(TAG, "ETag: $etag")
+                    Log.i(TAG, "Content-Length: $contentLength")
+                    Log.i(TAG, "数据大小: ${bytes.size} bytes")
+                    Log.i(TAG, "====================================")
+                } else {
+                    Log.e(TAG, "========== 图片上传失败 ==========")
+                    Log.e(TAG, "objectKey: ${data.objectKey}")
+                    Log.e(TAG, "状态码: $statusCode")
+                    Log.e(TAG, "ETag: $etag")
+                    Log.e(TAG, "Content-Length: $contentLength")
+                    Log.e(TAG, "错误: MinIO/S3 上传成功必须返回 ETag，如果没有 ETag 说明实际上传失败")
+                    Log.e(TAG, "可能的原因:")
+                    Log.e(TAG, "1. 上传请求头不正确（缺少 x-amz-server-side-encryption 等）")
+                    Log.e(TAG, "2. MinIO 配置问题")
+                    Log.e(TAG, "3. 签名 URL 有问题")
+                    Log.e(TAG, "4. 网络问题导致实际上传失败")
+                    Log.e(TAG, "==========================================")
+                    return null
+                }
+            }
+
+            // 可选：验证上传是否成功（通过尝试获取文件元数据）
+            // 注意：这会增加一次请求，但可以确保文件真的上传成功
+            // 暂时注释掉，因为会增加延迟，如果下载失败会自动重新上传
+            /*
+            try {
+                val verifyResponse = apiService.presignRead(data.objectKey)
+                if (!verifyResponse.isSuccessful) {
+                    Log.w(TAG, "上传验证失败: 无法获取下载签名: ${verifyResponse.code()}")
+                } else {
+                    Log.d(TAG, "上传验证成功: 可以获取下载签名")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "上传验证时出错", e)
+            }
+            */
+
+            Log.i(TAG, "图片上传完成: $localPath -> ${data.objectKey}")
+            data.objectKey
+        } catch (e: Exception) {
+            Log.e(TAG, "上传图片时发生异常: $localPath", e)
+            null
+        }
     }
 
     private suspend fun downloadRemoteImagesIfNeeded(
@@ -493,24 +644,52 @@ class SyncManager(private val context: Context) {
         imageKeys: List<String>,
         itemDao: com.example.itemremindertool.data.dao.ItemDao
     ) {
-        if (imageKeys.isEmpty() || item.imageUris.isNotEmpty()) {
+        if (imageKeys.isEmpty()) {
+            Log.d(TAG, "跳过下载图片: 物品 ${item.uuid} 没有图片键")
             return
+        }
+
+        // 检查本地图片是否存在且有效
+        val existingValidImages = item.imageUris.filter { path ->
+            val file = File(path)
+            file.exists() && com.example.itemremindertool.utils.ImageUtils.isValidImageFile(path)
+        }
+        
+        // 如果所有本地图片都有效，不需要下载
+        if (existingValidImages.isNotEmpty() && existingValidImages.size == item.imageUris.size) {
+            Log.d(TAG, "跳过下载图片: 物品 ${item.uuid} 的本地图片都有效")
+            return
+        }
+        
+        // 如果有无效的本地图片，需要重新下载
+        if (existingValidImages.size < item.imageUris.size) {
+            Log.w(TAG, "物品 ${item.uuid} 有 ${item.imageUris.size - existingValidImages.size} 个无效的本地图片，需要重新下载")
         }
 
         val apiService = RetrofitClient.getApiService(context)
         val downloaded = mutableListOf<String>()
         val remoteKeys = imageKeys.filter { isRemoteObjectKey(it) }
+        
+        Log.d(TAG, "开始下载图片: 物品 ${item.uuid}, 远程键数量: ${remoteKeys.size}")
+        
         for (key in remoteKeys) {
+            Log.d(TAG, "下载图片: objectKey=$key")
             val localPath = downloadImage(apiService, key)
             if (localPath != null) {
                 downloaded.add(localPath)
+                Log.d(TAG, "图片下载成功: $key -> $localPath")
+            } else {
+                Log.w(TAG, "图片下载失败: $key")
             }
         }
 
         if (downloaded.isEmpty()) {
+            Log.w(TAG, "所有图片下载失败: 物品 ${item.uuid}")
             return
         }
 
+        Log.i(TAG, "图片下载完成: 物品 ${item.uuid}, 成功下载 ${downloaded.size}/${remoteKeys.size} 张图片")
+        
         val updated = item.copy(
             imageUri = downloaded.firstOrNull(),
             imageUris = downloaded
@@ -565,30 +744,196 @@ class SyncManager(private val context: Context) {
             .build()
 
         uploadClient.newCall(request).execute().use { resp ->
+            val statusCode = resp.code
+            val statusMessage = resp.message
+            
+            Log.d(TAG, "下载图片响应: objectKey=$objectKey, 状态码=$statusCode, 消息=$statusMessage")
+            
             if (!resp.isSuccessful) {
-                Log.e(TAG, "下载图片失败: ${resp.code}")
+                val errorBody = resp.body?.string() ?: ""
+                Log.e(TAG, "下载图片失败: objectKey=$objectKey, 状态码=$statusCode, 消息=$statusMessage, 错误: ${errorBody.take(200)}")
                 return null
             }
+            
+            // 检查 Content-Type，确保是图片类型
+            val contentType = resp.header("Content-Type", "")?.lowercase() ?: ""
+            Log.d(TAG, "下载图片 Content-Type: objectKey=$objectKey, Content-Type=$contentType")
+            
+            if (contentType.isNotEmpty() && !contentType.startsWith("image/")) {
+                // 如果 Content-Type 是 text/html，说明可能是错误页面
+                if (contentType.contains("text/html")) {
+                    val errorBody = resp.body?.string() ?: ""
+                    Log.e(TAG, "下载到的是 HTML 页面而不是图片: objectKey=$objectKey, Content-Type=$contentType, 预览: ${errorBody.take(200)}")
+                    return null
+                }
+                Log.w(TAG, "下载的内容不是图片类型: objectKey=$objectKey, Content-Type=$contentType, 但继续尝试解析")
+            }
+            
             val bytes = resp.body?.bytes() ?: return null
-            return writeCacheFile(objectKey, bytes)
+            
+            // 验证下载的数据不为空
+            if (bytes.isEmpty()) {
+                Log.e(TAG, "下载的图片数据为空: objectKey=$objectKey")
+                return null
+            }
+            
+            Log.d(TAG, "下载的图片数据大小: objectKey=$objectKey, 大小=${bytes.size} bytes")
+            
+            // 检查是否为 HTML 错误页面（常见错误页面的开头）
+            if (isHtmlErrorPage(bytes)) {
+                val htmlPreview = String(bytes.take(500).toByteArray(), Charsets.UTF_8)
+                Log.e(TAG, "========== 图片下载失败：返回了 HTML 错误页面 ==========")
+                Log.e(TAG, "objectKey: $objectKey")
+                Log.e(TAG, "状态码: $statusCode")
+                Log.e(TAG, "Content-Type: $contentType")
+                Log.e(TAG, "数据大小: ${bytes.size} bytes")
+                Log.e(TAG, "HTML 预览: ${htmlPreview.take(300)}")
+                Log.e(TAG, "签名URL: ${data.signedUrl}")
+                Log.e(TAG, "可能的原因:")
+                Log.e(TAG, "1. 文件实际上传失败，MinIO 中不存在该文件")
+                Log.e(TAG, "2. 反向代理配置问题，当文件不存在时返回了 HTML 错误页面")
+                Log.e(TAG, "3. MinIO 配置了错误页面")
+                Log.e(TAG, "建议: 检查 MinIO 中是否存在该文件，检查服务器配置")
+                Log.e(TAG, "================================================")
+                return null
+            }
+            
+            // 验证是否为有效的图片格式
+            if (!isValidImageData(bytes)) {
+                Log.e(TAG, "下载的图片数据无效或损坏: $objectKey, 文件头: ${bytes.take(12).joinToString(" ") { "%02X".format(it.toInt() and 0xFF) }}")
+                return null
+            }
+            
+            val filePath = writeCacheFile(objectKey, bytes)
+            
+            // 验证保存的文件是否有效
+            if (filePath != null && !isValidImageFile(filePath)) {
+                Log.e(TAG, "保存的图片文件无效，删除: $filePath")
+                try {
+                    File(filePath).delete()
+                } catch (e: Exception) {
+                    Log.e(TAG, "删除无效图片文件失败", e)
+                }
+                return null
+            }
+            
+            return filePath
+        }
+    }
+    
+    /**
+     * 检查是否为 HTML 错误页面
+     */
+    private fun isHtmlErrorPage(bytes: ByteArray): Boolean {
+        if (bytes.size < 4) {
+            return false
+        }
+        
+        // 检查常见的 HTML 开头
+        // <!DOCTYPE, <html, <HTML, <?xml (XML 错误页面)
+        val start = bytes.take(20).toByteArray()
+        val startString = String(start, Charsets.UTF_8).lowercase()
+        
+        return startString.startsWith("<!doctype") ||
+               startString.startsWith("<html") ||
+               startString.startsWith("<?xml") ||
+               startString.startsWith("<html") ||
+               startString.contains("error") ||
+               startString.contains("404") ||
+               startString.contains("not found")
+    }
+    
+    /**
+     * 验证字节数组是否为有效的图片数据
+     */
+    private fun isValidImageData(bytes: ByteArray): Boolean {
+        if (bytes.size < 4) {
+            return false
+        }
+        
+        // 检查常见图片格式的文件头
+        // JPEG: FF D8 FF
+        if (bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte() && bytes[2] == 0xFF.toByte()) {
+            return true
+        }
+        // PNG: 89 50 4E 47
+        if (bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte() && 
+            bytes[2] == 0x4E.toByte() && bytes[3] == 0x47.toByte()) {
+            return true
+        }
+        // GIF: 47 49 46 38
+        if (bytes[0] == 0x47.toByte() && bytes[1] == 0x49.toByte() && 
+            bytes[2] == 0x46.toByte() && bytes[3] == 0x38.toByte()) {
+            return true
+        }
+        // WebP: 检查 RIFF...WEBP
+        if (bytes.size >= 12 && 
+            bytes[0] == 0x52.toByte() && bytes[1] == 0x49.toByte() && 
+            bytes[2] == 0x46.toByte() && bytes[3] == 0x46.toByte() &&
+            bytes[8] == 0x57.toByte() && bytes[9] == 0x45.toByte() && 
+            bytes[10] == 0x42.toByte() && bytes[11] == 0x50.toByte()) {
+            return true
+        }
+        
+        return false
+    }
+    
+    /**
+     * 验证文件是否为有效的图片文件
+     */
+    private fun isValidImageFile(filePath: String): Boolean {
+        return try {
+            val file = File(filePath)
+            if (!file.exists() || file.length() == 0L) {
+                return false
+            }
+            
+            // 尝试解码图片以验证文件完整性
+            val options = android.graphics.BitmapFactory.Options()
+            options.inJustDecodeBounds = true
+            val result = android.graphics.BitmapFactory.decodeFile(filePath, options)
+            
+            // 如果能够读取图片尺寸，说明文件有效
+            options.outWidth > 0 && options.outHeight > 0
+        } catch (e: Exception) {
+            Log.e(TAG, "验证图片文件失败: $filePath", e)
+            false
         }
     }
 
     private fun writeCacheFile(objectKey: String, bytes: ByteArray): String? {
+        // 根据文件头确定正确的扩展名
+        val extension = detectImageExtension(bytes) ?: objectKey.substringAfterLast('.', "jpg")
+        
         val externalDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
         if (externalDir != null) {
             val dir = File(externalDir, "ItemReminderTool")
             if (!dir.exists()) {
                 dir.mkdirs()
             }
-            val extension = objectKey.substringAfterLast('.', "img")
             val fileName = sha256Hex(objectKey) + "." + extension
             val file = File(dir, fileName)
             return try {
-                file.writeBytes(bytes)
-                file.absolutePath
+                // 使用 FileOutputStream 确保原子写入
+                file.outputStream().use { output ->
+                    output.write(bytes)
+                    output.flush()
+                }
+                // 验证文件是否成功写入
+                if (file.exists() && file.length() == bytes.size.toLong()) {
+                    file.absolutePath
+                } else {
+                    Log.e(TAG, "文件写入验证失败: 期望大小=${bytes.size}, 实际大小=${file.length()}")
+                    null
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "写入默认图片目录失败", e)
+                // 如果写入失败，尝试删除可能的部分文件
+                try {
+                    if (file.exists()) {
+                        file.delete()
+                    }
+                } catch (ignored: Exception) { }
                 null
             }
         }
@@ -597,15 +942,58 @@ class SyncManager(private val context: Context) {
             if (!dir.exists()) {
                 dir.mkdirs()
             }
-            val extension = objectKey.substringAfterLast('.', "img")
             val fileName = sha256Hex(objectKey) + "." + extension
             val file = File(dir, fileName)
-            file.writeBytes(bytes)
-            file.absolutePath
+            // 使用 FileOutputStream 确保原子写入
+            file.outputStream().use { output ->
+                output.write(bytes)
+                output.flush()
+            }
+            // 验证文件是否成功写入
+            if (file.exists() && file.length() == bytes.size.toLong()) {
+                file.absolutePath
+            } else {
+                Log.e(TAG, "文件写入验证失败: 期望大小=${bytes.size}, 实际大小=${file.length()}")
+                null
+            }
         } catch (e: Exception) {
             Log.e(TAG, "写入缓存图片失败", e)
             null
         }
+    }
+    
+    /**
+     * 根据文件头检测图片扩展名
+     */
+    private fun detectImageExtension(bytes: ByteArray): String? {
+        if (bytes.size < 4) {
+            return null
+        }
+        
+        // JPEG: FF D8 FF
+        if (bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte() && bytes[2] == 0xFF.toByte()) {
+            return "jpg"
+        }
+        // PNG: 89 50 4E 47
+        if (bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte() && 
+            bytes[2] == 0x4E.toByte() && bytes[3] == 0x47.toByte()) {
+            return "png"
+        }
+        // GIF: 47 49 46 38
+        if (bytes[0] == 0x47.toByte() && bytes[1] == 0x49.toByte() && 
+            bytes[2] == 0x46.toByte() && bytes[3] == 0x38.toByte()) {
+            return "gif"
+        }
+        // WebP: 检查 RIFF...WEBP
+        if (bytes.size >= 12 && 
+            bytes[0] == 0x52.toByte() && bytes[1] == 0x49.toByte() && 
+            bytes[2] == 0x46.toByte() && bytes[3] == 0x46.toByte() &&
+            bytes[8] == 0x57.toByte() && bytes[9] == 0x45.toByte() && 
+            bytes[10] == 0x42.toByte() && bytes[11] == 0x50.toByte()) {
+            return "webp"
+        }
+        
+        return null
     }
 
     private fun sha256Hex(value: String): String {
@@ -725,7 +1113,7 @@ class SyncManager(private val context: Context) {
             val preparedWarehouse = ensureWarehouseImageKey(warehouse, warehouseDao)
             
             val apiService = RetrofitClient.getApiService(context)
-            val dto = warehouseToDto(preparedWarehouse)
+            val dto = warehouseToDto(preparedWarehouse, warehouseDao)
             val response = apiService.upsertWarehouse(dto)
             
             if (response.isSuccessful && response.body()?.success == true) {
@@ -783,20 +1171,12 @@ class SyncManager(private val context: Context) {
         warehouseDao: com.example.itemremindertool.data.dao.WarehouseDao,
         categoryDao: com.example.itemremindertool.data.dao.CategoryDao
     ): ItemDto {
-        val warehouseUuid = item.warehouseId?.let { id ->
-            warehouseDao.getWarehouseById(id)?.uuid
-        }
-        val categoryUuid = item.categoryId?.let { id ->
-            categoryDao.getCategoryById(id)?.uuid
-        }
         return ItemDto(
             uuid = item.uuid,
             name = item.name,
             description = item.description,
-            categoryId = null,
-            categoryUuid = categoryUuid,
-            warehouseId = null,
-            warehouseUuid = warehouseUuid,
+            categoryUuid = item.categoryUuid,
+            warehouseUuid = item.warehouseUuid,
             tags = item.tags,
             purchaseDate = item.purchaseDate?.let { dateFormat.format(it) },
             expiryDate = item.expiryDate?.let { dateFormat.format(it) },
@@ -823,14 +1203,17 @@ class SyncManager(private val context: Context) {
         )
     }
     
-    private fun warehouseToDto(warehouse: Warehouse): WarehouseDto {
+    private suspend fun warehouseToDto(
+        warehouse: Warehouse,
+        warehouseDao: com.example.itemremindertool.data.dao.WarehouseDao
+    ): WarehouseDto {
         return WarehouseDto(
             uuid = warehouse.uuid,
             name = warehouse.name,
             description = warehouse.description,
             location = warehouse.location,
             capacity = warehouse.capacity,
-            parentId = warehouse.parentId?.toInt(),
+            parentUuid = warehouse.parentUuid,
             level = warehouse.level,
             imageUri = warehouse.imageKey,
             createdAt = dateFormat.format(warehouse.createdAt)
@@ -845,15 +1228,12 @@ class SyncManager(private val context: Context) {
     ): Item {
         val createdAt = parseDateOrNull(dto.createdAt) ?: existing?.createdAt ?: Date()
         val updatedAt = parseDateOrNull(dto.updatedAt) ?: existing?.updatedAt ?: createdAt
-        val resolvedWarehouseId = resolveWarehouseId(dto, warehouseDao)
-        val resolvedCategoryId = resolveCategoryId(dto, categoryDao)
         return Item(
-            id = existing?.id ?: 0,
             uuid = dto.uuid,
             name = dto.name,
             description = dto.description ?: existing?.description ?: "",
-            categoryId = resolvedCategoryId ?: existing?.categoryId,
-            warehouseId = resolvedWarehouseId ?: existing?.warehouseId,
+            categoryUuid = dto.categoryUuid ?: existing?.categoryUuid,
+            warehouseUuid = dto.warehouseUuid ?: existing?.warehouseUuid,
             tags = dto.tags ?: existing?.tags ?: emptyList(),
             purchaseDate = parseDateOrNull(dto.purchaseDate),
             expiryDate = parseDateOrNull(dto.expiryDate),
@@ -874,7 +1254,6 @@ class SyncManager(private val context: Context) {
 
     private fun categoryFromDto(dto: CategoryDto, existing: Category?): Category {
         return Category(
-            id = existing?.id ?: 0,
             uuid = dto.uuid,
             name = dto.name,
             description = dto.description ?: existing?.description ?: "",
@@ -883,16 +1262,19 @@ class SyncManager(private val context: Context) {
         )
     }
 
-    private fun warehouseFromDto(dto: WarehouseDto, existing: Warehouse?): Warehouse {
+    private suspend fun warehouseFromDto(
+        dto: WarehouseDto,
+        existing: Warehouse?,
+        warehouseDao: com.example.itemremindertool.data.dao.WarehouseDao
+    ): Warehouse {
         val createdAt = parseDateOrNull(dto.createdAt) ?: existing?.createdAt ?: Date()
         return Warehouse(
-            id = existing?.id ?: 0,
             uuid = dto.uuid,
             name = dto.name,
             description = dto.description ?: existing?.description ?: "",
             location = dto.location ?: existing?.location ?: "",
             capacity = dto.capacity ?: existing?.capacity,
-            parentId = dto.parentId?.toLong() ?: existing?.parentId,
+            parentUuid = dto.parentUuid,
             level = dto.level ?: existing?.level ?: 1,
             imageUri = existing?.imageUri,
             imageKey = dto.imageUri ?: existing?.imageKey,
@@ -904,7 +1286,7 @@ class SyncManager(private val context: Context) {
     private fun shoppingItemFromDto(
         dto: ShoppingItemDto,
         existing: ShoppingItem?,
-        resolvedItemId: Long?
+        resolvedItemUuid: String?
     ): ShoppingItem {
         val createdAt = parseDateOrNull(dto.createdAt) ?: existing?.createdAt ?: Date()
         val completedAt = parseDateOrNull(dto.completedAt) ?: existing?.completedAt
@@ -912,7 +1294,6 @@ class SyncManager(private val context: Context) {
             Priority.valueOf(dto.priority ?: existing?.priority?.name ?: "MEDIUM")
         }.getOrElse { Priority.MEDIUM }
         return ShoppingItem(
-            id = existing?.id ?: 0,
             uuid = dto.uuid,
             name = dto.name,
             description = dto.description ?: existing?.description ?: "",
@@ -923,7 +1304,7 @@ class SyncManager(private val context: Context) {
             completedAt = completedAt,
             imageUri = existing?.imageUri,
             imageKey = dto.imageUri ?: existing?.imageKey,
-            itemId = resolvedItemId ?: existing?.itemId,
+            itemUuid = resolvedItemUuid ?: existing?.itemUuid,
             isSample = existing?.isSample ?: false
         )
     }
@@ -953,31 +1334,6 @@ class SyncManager(private val context: Context) {
         return remote.after(local)
     }
 
-    private suspend fun resolveItemIdByUuid(itemDao: com.example.itemremindertool.data.dao.ItemDao, uuid: String?): Long? {
-        if (uuid.isNullOrBlank()) return null
-        return itemDao.getItemByUuid(uuid)?.id
-    }
-
-    private suspend fun resolveWarehouseId(
-        dto: ItemDto,
-        warehouseDao: com.example.itemremindertool.data.dao.WarehouseDao
-    ): Long? {
-        dto.warehouseUuid?.let { uuid ->
-            return warehouseDao.getWarehouseByUuid(uuid)?.id
-        }
-        return dto.warehouseId?.toLong()
-    }
-
-    private suspend fun resolveCategoryId(
-        dto: ItemDto,
-        categoryDao: com.example.itemremindertool.data.dao.CategoryDao
-    ): Long? {
-        dto.categoryUuid?.let { uuid ->
-            return categoryDao.getCategoryByUuid(uuid)?.id
-        }
-        return dto.categoryId?.toLong()
-    }
-
     private fun buildItemSignature(dto: ItemDto): String {
         val createdAt = dto.createdAt ?: ""
         return listOf(
@@ -993,8 +1349,8 @@ class SyncManager(private val context: Context) {
         warehouseDao: com.example.itemremindertool.data.dao.WarehouseDao,
         categoryDao: com.example.itemremindertool.data.dao.CategoryDao
     ): String {
-        val warehouseUuid = item.warehouseId?.let { warehouseDao.getWarehouseById(it)?.uuid } ?: ""
-        val categoryUuid = item.categoryId?.let { categoryDao.getCategoryById(it)?.uuid } ?: ""
+        val warehouseUuid = item.warehouseUuid ?: ""
+        val categoryUuid = item.categoryUuid ?: ""
         return listOf(
             item.name.trim(),
             dateFormat.format(item.createdAt),
@@ -1014,16 +1370,35 @@ class SyncManager(private val context: Context) {
         val diff = kotlin.math.abs(remoteTime.time - local.createdAt.time)
         if (diff > 60_000) return false
         val remoteWarehouseUuid = remote.warehouseUuid
-        val localWarehouseUuid = local.warehouseId?.let { warehouseDao.getWarehouseById(it)?.uuid }
+        val localWarehouseUuid = local.warehouseUuid
         if (remoteWarehouseUuid != null && localWarehouseUuid != null && remoteWarehouseUuid != localWarehouseUuid) {
             return false
         }
         val remoteCategoryUuid = remote.categoryUuid
-        val localCategoryUuid = local.categoryId?.let { categoryDao.getCategoryById(it)?.uuid }
+        val localCategoryUuid = local.categoryUuid
         if (remoteCategoryUuid != null && localCategoryUuid != null && remoteCategoryUuid != localCategoryUuid) {
             return false
         }
         return true
+    }
+
+    /**
+     * 检查名称是否为示例数据（通过名称模式）
+     */
+    private fun isSampleDataName(name: String): Boolean {
+        val sampleKeywords = listOf("示例", "Sample", "sample", "EXAMPLE", "Example", "演示", "Demo", "demo")
+        return sampleKeywords.any { keyword -> name.contains(keyword) }
+    }
+
+    /**
+     * 标记配色设置已更新，需要同步到服务器
+     */
+    fun markColorSettingsUpdated() {
+        val now = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }.format(Date())
+        syncPrefs.edit().putString(KEY_SETTINGS_UPDATED_AT, now).apply()
+        Log.d(TAG, "配色设置已标记为需要同步: $now")
     }
 
     companion object {
@@ -1052,7 +1427,9 @@ class SyncManager(private val context: Context) {
         val items = mutableListOf<ItemDto>()
         var page = syncPrefs.getInt(KEY_RESUME_ITEMS_PAGE, 1).coerceAtLeast(1)
         val pageSize = 200
-        while (true) {
+        val maxPages = 500 // 最多100000条记录的安全限制
+        var consecutiveEmptyPages = 0
+        while (page <= maxPages) {
             val response = apiService.getItems(page = page, pageSize = pageSize)
             if (response.code() == 429) {
                 syncPrefs.edit().putInt(KEY_RESUME_ITEMS_PAGE, page).apply()
@@ -1063,13 +1440,31 @@ class SyncManager(private val context: Context) {
                 break
             }
             val data = response.body()?.data ?: break
-            items.addAll(data.items)
-            if (data.page * data.pageSize >= data.total) {
+            val currentPageItems = data.items
+            items.addAll(currentPageItems)
+            Log.d(TAG, "拉取物品: page=$page, 当前页=${currentPageItems.size}, 累计=${items.size}, 总数=${data.total}")
+            
+            // 检测空页面
+            if (currentPageItems.isEmpty()) {
+                consecutiveEmptyPages++
+                if (consecutiveEmptyPages >= 3) {
+                    Log.w(TAG, "连续3页无数据，终止拉取")
+                    break
+                }
+            } else {
+                consecutiveEmptyPages = 0
+            }
+            
+            // 退出条件：1) 已到达总数 或 2) 当前页没有数据
+            if (data.page * data.pageSize >= data.total || currentPageItems.isEmpty()) {
                 syncPrefs.edit().remove(KEY_RESUME_ITEMS_PAGE).apply()
                 break
             }
             page += 1
             syncPrefs.edit().putInt(KEY_RESUME_ITEMS_PAGE, page).apply()
+        }
+        if (page > maxPages) {
+            Log.e(TAG, "达到最大页数限制: $maxPages")
         }
         return FetchResult(items, false, null)
     }
@@ -1078,7 +1473,9 @@ class SyncManager(private val context: Context) {
         val categories = mutableListOf<CategoryDto>()
         var page = syncPrefs.getInt(KEY_RESUME_CATEGORIES_PAGE, 1).coerceAtLeast(1)
         val pageSize = 200
-        while (true) {
+        val maxPages = 100 // 分类通常不会太多
+        var consecutiveEmptyPages = 0
+        while (page <= maxPages) {
             val response = apiService.getCategories(page = page, pageSize = pageSize)
             if (response.code() == 429) {
                 syncPrefs.edit().putInt(KEY_RESUME_CATEGORIES_PAGE, page).apply()
@@ -1089,13 +1486,31 @@ class SyncManager(private val context: Context) {
                 break
             }
             val data = response.body()?.data ?: break
-            categories.addAll(data.categories)
-            if (data.page * data.pageSize >= data.total) {
+            val currentPageCategories = data.categories
+            categories.addAll(currentPageCategories)
+            Log.d(TAG, "拉取分类: page=$page, 当前页=${currentPageCategories.size}, 累计=${categories.size}, 总数=${data.total}")
+            
+            // 检测空页面
+            if (currentPageCategories.isEmpty()) {
+                consecutiveEmptyPages++
+                if (consecutiveEmptyPages >= 3) {
+                    Log.w(TAG, "连续3页无数据，终止拉取")
+                    break
+                }
+            } else {
+                consecutiveEmptyPages = 0
+            }
+            
+            // 退出条件：1) 已到达总数 或 2) 当前页没有数据
+            if (data.page * data.pageSize >= data.total || currentPageCategories.isEmpty()) {
                 syncPrefs.edit().remove(KEY_RESUME_CATEGORIES_PAGE).apply()
                 break
             }
             page += 1
             syncPrefs.edit().putInt(KEY_RESUME_CATEGORIES_PAGE, page).apply()
+        }
+        if (page > maxPages) {
+            Log.e(TAG, "达到最大页数限制: $maxPages")
         }
         return FetchResult(categories, false, null)
     }
@@ -1104,7 +1519,9 @@ class SyncManager(private val context: Context) {
         val warehouses = mutableListOf<WarehouseDto>()
         var page = syncPrefs.getInt(KEY_RESUME_WAREHOUSES_PAGE, 1).coerceAtLeast(1)
         val pageSize = 200
-        while (true) {
+        val maxPages = 200 // 容器通常不会太多
+        var consecutiveEmptyPages = 0
+        while (page <= maxPages) {
             val response = apiService.getWarehouses(page = page, pageSize = pageSize)
             if (response.code() == 429) {
                 syncPrefs.edit().putInt(KEY_RESUME_WAREHOUSES_PAGE, page).apply()
@@ -1115,13 +1532,31 @@ class SyncManager(private val context: Context) {
                 break
             }
             val data = response.body()?.data ?: break
-            warehouses.addAll(data.warehouses)
-            if (data.page * data.pageSize >= data.total) {
+            val currentPageWarehouses = data.warehouses
+            warehouses.addAll(currentPageWarehouses)
+            Log.d(TAG, "拉取容器: page=$page, 当前页=${currentPageWarehouses.size}, 累计=${warehouses.size}, 总数=${data.total}")
+            
+            // 检测空页面
+            if (currentPageWarehouses.isEmpty()) {
+                consecutiveEmptyPages++
+                if (consecutiveEmptyPages >= 3) {
+                    Log.w(TAG, "连续3页无数据，终止拉取")
+                    break
+                }
+            } else {
+                consecutiveEmptyPages = 0
+            }
+            
+            // 退出条件：1) 已到达总数 或 2) 当前页没有数据
+            if (data.page * data.pageSize >= data.total || currentPageWarehouses.isEmpty()) {
                 syncPrefs.edit().remove(KEY_RESUME_WAREHOUSES_PAGE).apply()
                 break
             }
             page += 1
             syncPrefs.edit().putInt(KEY_RESUME_WAREHOUSES_PAGE, page).apply()
+        }
+        if (page > maxPages) {
+            Log.e(TAG, "达到最大页数限制: $maxPages")
         }
         return FetchResult(warehouses, false, null)
     }
@@ -1130,7 +1565,9 @@ class SyncManager(private val context: Context) {
         val shoppingItems = mutableListOf<ShoppingItemDto>()
         var page = syncPrefs.getInt(KEY_RESUME_SHOPPING_PAGE, 1).coerceAtLeast(1)
         val pageSize = 200
-        while (true) {
+        val maxPages = 200 // 购物清单通常不会太多
+        var consecutiveEmptyPages = 0
+        while (page <= maxPages) {
             val response = apiService.getShoppingItems(page = page, pageSize = pageSize)
             if (response.code() == 429) {
                 syncPrefs.edit().putInt(KEY_RESUME_SHOPPING_PAGE, page).apply()
@@ -1141,13 +1578,31 @@ class SyncManager(private val context: Context) {
                 break
             }
             val data = response.body()?.data ?: break
-            shoppingItems.addAll(data.shoppingItems)
-            if (data.page * data.pageSize >= data.total) {
+            val currentPageShoppingItems = data.shoppingItems
+            shoppingItems.addAll(currentPageShoppingItems)
+            Log.d(TAG, "拉取购物清单: page=$page, 当前页=${currentPageShoppingItems.size}, 累计=${shoppingItems.size}, 总数=${data.total}")
+            
+            // 检测空页面
+            if (currentPageShoppingItems.isEmpty()) {
+                consecutiveEmptyPages++
+                if (consecutiveEmptyPages >= 3) {
+                    Log.w(TAG, "连续3页无数据，终止拉取")
+                    break
+                }
+            } else {
+                consecutiveEmptyPages = 0
+            }
+            
+            // 退出条件：1) 已到达总数 或 2) 当前页没有数据
+            if (data.page * data.pageSize >= data.total || currentPageShoppingItems.isEmpty()) {
                 syncPrefs.edit().remove(KEY_RESUME_SHOPPING_PAGE).apply()
                 break
             }
             page += 1
             syncPrefs.edit().putInt(KEY_RESUME_SHOPPING_PAGE, page).apply()
+        }
+        if (page > maxPages) {
+            Log.e(TAG, "达到最大页数限制: $maxPages")
         }
         return FetchResult(shoppingItems, false, null)
     }
@@ -1209,6 +1664,30 @@ class SyncManager(private val context: Context) {
             if (!ackResponse.isSuccessful || ackResponse.body()?.success != true) {
                 return Result.failure(Exception("bootstrap ack failed"))
             }
+            
+            // 处理冲突：如果有冲突的记录，重新拉取最新版本
+            val ackData = ackResponse.body()?.data
+            val conflicts = ackData?.conflicts
+            if (conflicts != null) {
+                val hasConflicts = conflicts.items.isNotEmpty() ||
+                    conflicts.categories.isNotEmpty() ||
+                    conflicts.warehouses.isNotEmpty() ||
+                    conflicts.shoppingItems.isNotEmpty() ||
+                    conflicts.activityEvents.isNotEmpty()
+                
+                if (hasConflicts) {
+                    Log.d(TAG, "检测到冲突，重新拉取冲突记录")
+                    resolveConflicts(
+                        conflicts,
+                        apiService,
+                        itemDao,
+                        categoryDao,
+                        warehouseDao,
+                        shoppingItemDao,
+                        activityEventDao
+                    )
+                }
+            }
         }
 
         return Result.success(Unit)
@@ -1221,19 +1700,27 @@ class SyncManager(private val context: Context) {
         shoppingItemDao: com.example.itemremindertool.data.dao.ShoppingItemDao,
         activityEventDao: com.example.itemremindertool.data.dao.ActivityEventDao
     ): SyncBootstrapRequest {
-        val items = itemDao.getAllItemsList().map {
-            SyncSnapshotEntry(it.uuid, dateFormat.format(it.updatedAt))
-        }
-        val categories = categoryDao.getAllCategoriesSync().map {
-            SyncSnapshotEntry(it.uuid, null)
-        }
-        val warehouses = warehouseDao.getAllWarehousesSync().map {
-            SyncSnapshotEntry(it.uuid, dateFormat.format(it.createdAt))
-        }
-        val shoppingItems = shoppingItemDao.getAllShoppingItemsSync().map {
-            val updatedAt = it.completedAt ?: it.createdAt
-            SyncSnapshotEntry(it.uuid, dateFormat.format(updatedAt))
-        }
+        // 过滤示例数据：只包含非示例数据
+        val items = itemDao.getAllItemsList()
+            .filter { !it.isSample }
+            .map {
+                SyncSnapshotEntry(it.uuid, dateFormat.format(it.updatedAt))
+            }
+        val categories = categoryDao.getAllCategoriesSync()
+            .map {
+                SyncSnapshotEntry(it.uuid, null)
+            }
+        val warehouses = warehouseDao.getAllWarehousesSync()
+            .filter { !it.isSample }
+            .map {
+                SyncSnapshotEntry(it.uuid, dateFormat.format(it.createdAt))
+            }
+        val shoppingItems = shoppingItemDao.getAllShoppingItemsSync()
+            .filter { !it.isSample }
+            .map {
+                val updatedAt = it.completedAt ?: it.createdAt
+                SyncSnapshotEntry(it.uuid, dateFormat.format(updatedAt))
+            }
         val events = activityEventDao.getAllEventsSync().map {
             SyncSnapshotEntry(it.uuid, dateFormat.format(it.createdAt))
         }
@@ -1261,9 +1748,9 @@ class SyncManager(private val context: Context) {
             categoryDao.insertCategory(categoryFromDto(dto, categoryDao.getCategoryByUuid(dto.uuid)))
         }
         payload.warehouses.forEach { dto ->
-            val entity = warehouseFromDto(dto, warehouseDao.getWarehouseByUuid(dto.uuid))
-            val id = warehouseDao.insertWarehouse(entity)
-            val inserted = warehouseDao.getWarehouseById(id) ?: entity
+            val entity = warehouseFromDto(dto, warehouseDao.getWarehouseByUuid(dto.uuid), warehouseDao)
+            warehouseDao.insertWarehouse(entity)
+            val inserted = warehouseDao.getWarehouseByUuid(entity.uuid) ?: entity
             if (dto.imageUri != null && inserted.imageUri.isNullOrBlank()) {
                 val localPath = downloadImage(RetrofitClient.getApiService(context), dto.imageUri)
                 if (localPath != null) {
@@ -1273,8 +1760,8 @@ class SyncManager(private val context: Context) {
         }
         payload.shoppingItems.forEach { dto ->
             val entity = shoppingItemFromDto(dto, shoppingItemDao.getShoppingItemByUuid(dto.uuid), null)
-            val id = shoppingItemDao.insertShoppingItem(entity)
-            val inserted = shoppingItemDao.getShoppingItemById(id) ?: entity
+            shoppingItemDao.insertShoppingItem(entity)
+            val inserted = shoppingItemDao.getShoppingItemByUuid(entity.uuid) ?: entity
             if (dto.imageUri != null && inserted.imageUri.isNullOrBlank()) {
                 val localPath = downloadImage(RetrofitClient.getApiService(context), dto.imageUri)
                 if (localPath != null) {
@@ -1284,8 +1771,8 @@ class SyncManager(private val context: Context) {
         }
         payload.items.forEach { dto ->
             val entity = itemFromDto(dto, itemDao.getItemByUuid(dto.uuid), warehouseDao, categoryDao)
-            val id = itemDao.insertItem(entity)
-            val inserted = itemDao.getItemById(id) ?: entity
+            itemDao.insertItem(entity)
+            val inserted = itemDao.getItemByUuid(entity.uuid) ?: entity
             downloadRemoteImagesIfNeeded(inserted, dto.imageUris ?: emptyList(), itemDao)
         }
         payload.activityEvents.forEach { dto ->
@@ -1297,7 +1784,7 @@ class SyncManager(private val context: Context) {
                 type = type,
                 title = dto.title,
                 description = dto.description ?: "",
-                targetId = null,
+                targetUuid = null,
                 targetName = dto.targetName ?: "",
                 iconType = dto.iconType ?: "",
                 createdAt = parseDateOrNull(dto.createdAt) ?: Date(),
@@ -1319,6 +1806,11 @@ class SyncManager(private val context: Context) {
         val items = mutableListOf<ItemDto>()
         for (uuid in plan.items) {
             val item = itemDao.getItemByUuid(uuid) ?: continue
+            // 双重检查：确保不是示例数据
+            if (item.isSample) {
+                Log.d(TAG, "跳过示例物品: ${item.name} (UUID: $uuid)")
+                continue
+            }
             items.add(itemToDto(item, warehouseDao, categoryDao))
         }
 
@@ -1331,12 +1823,22 @@ class SyncManager(private val context: Context) {
         val warehouses = mutableListOf<WarehouseDto>()
         for (uuid in plan.warehouses) {
             val warehouse = warehouseDao.getWarehouseByUuid(uuid) ?: continue
-            warehouses.add(warehouseToDto(warehouse))
+            // 双重检查：确保不是示例数据
+            if (warehouse.isSample) {
+                Log.d(TAG, "跳过示例容器: ${warehouse.name} (UUID: $uuid)")
+                continue
+            }
+            warehouses.add(warehouseToDto(warehouse, warehouseDao))
         }
 
         val shoppingItems = mutableListOf<ShoppingItemDto>()
         for (uuid in plan.shoppingItems) {
             val shoppingItem = shoppingItemDao.getShoppingItemByUuid(uuid) ?: continue
+            // 双重检查：确保不是示例数据
+            if (shoppingItem.isSample) {
+                Log.d(TAG, "跳过示例购物项: ${shoppingItem.name} (UUID: $uuid)")
+                continue
+            }
             shoppingItems.add(shoppingItemToDto(shoppingItem))
         }
 
@@ -1383,8 +1885,26 @@ class SyncManager(private val context: Context) {
 
     private fun readSettingsSnapshot(): SettingsSnapshot? {
         val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-        val data = prefs.all.mapValues { it.value?.toString() ?: "" }
-        val updatedAt = syncPrefs.getString(KEY_SETTINGS_UPDATED_AT, null)
+        // 只同步配色相关的设置
+        val keysToSync = prefs.all.keys.filter { key ->
+            key.startsWith("custom_color_") ||
+                key == "color_scheme" ||
+                key == "color_scheme_prev" ||
+                key == "custom_color_selected" ||
+                key == "custom_color_schemes"
+        }
+        val data = keysToSync.associateWith { key ->
+            prefs.all[key]?.toString() ?: ""
+        }
+        // 如果没有配色数据，返回null表示不需要同步
+        if (data.isEmpty()) {
+            return null
+        }
+        // 使用当前时间作为更新时间
+        val updatedAt = syncPrefs.getString(KEY_SETTINGS_UPDATED_AT, null) 
+            ?: SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }.format(Date())
         return SettingsSnapshot(data = data, updatedAt = updatedAt)
     }
 
@@ -1392,16 +1912,37 @@ class SyncManager(private val context: Context) {
         if (snapshot == null) return
         val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
         prefs.edit().apply {
-            clear()
+            // 不清空所有设置，只更新配色相关的设置
             snapshot.data.forEach { (key, value) ->
-                putString(key, value)
+                if (key.startsWith("custom_color_") || 
+                    key == "color_scheme" || 
+                    key == "color_scheme_prev" ||
+                    key == "custom_color_selected" ||
+                    key == "custom_color_schemes") {
+                    putString(key, value)
+                }
             }
             apply()
         }
         syncPrefs.edit().putString(KEY_SETTINGS_UPDATED_AT, snapshot.updatedAt).apply()
+        Log.d(TAG, "应用配色设置成功: ${snapshot.data.size} 项")
     }
     
     // ==================== 离线队列支持 ====================
+    
+    /**
+     * 将实体加入同步队列（用于 Excel 导入等未走 Repository 的本地变更）。
+     * 仅登录状态下入队；后续由 SyncQueueWorker 上传。
+     */
+    suspend fun enqueueForSync(
+        entityType: String,
+        entityUuid: String,
+        operation: SyncOperation,
+        entity: Any
+    ) {
+        if (!shouldSyncToRemote()) return
+        addToOfflineQueue(entityType, entityUuid, operation, entity)
+    }
     
     /**
      * 添加失败的同步任务到离线队列
@@ -1502,5 +2043,131 @@ class SyncManager(private val context: Context) {
             imageUri = shoppingItem.imageKey,
             itemUuid = null // 暂时不同步 itemId，需要转换为 itemUuid
         )
+    }
+    
+    /**
+     * 解决冲突：重新拉取冲突的记录并更新本地数据库
+     */
+    private suspend fun resolveConflicts(
+        conflicts: com.example.itemremindertool.network.dto.SyncConflicts,
+        apiService: com.example.itemremindertool.network.ApiService,
+        itemDao: com.example.itemremindertool.data.dao.ItemDao,
+        categoryDao: com.example.itemremindertool.data.dao.CategoryDao,
+        warehouseDao: com.example.itemremindertool.data.dao.WarehouseDao,
+        shoppingItemDao: com.example.itemremindertool.data.dao.ShoppingItemDao,
+        activityEventDao: com.example.itemremindertool.data.dao.ActivityEventDao
+    ) {
+        // 拉取冲突的物品
+        for (uuid in conflicts.items) {
+            try {
+                val response = apiService.getItem(uuid)
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val dto = response.body()?.data ?: continue
+                    // 检查是否为示例数据（通过名称模式）
+                    if (isSampleDataName(dto.name)) {
+                        Log.d(TAG, "跳过示例物品冲突: ${dto.name} (UUID: $uuid)")
+                        continue
+                    }
+                    val existing = itemDao.getItemByUuid(uuid)
+                    val entity = itemFromDto(dto, existing, warehouseDao, categoryDao)
+                    // 确保不会将示例数据标记为非示例
+                    if (existing?.isSample == true) {
+                        Log.d(TAG, "本地示例物品冲突，跳过更新: ${dto.name} (UUID: $uuid)")
+                        continue
+                    }
+                    itemDao.insertItem(entity)
+                    downloadRemoteImagesIfNeeded(entity, dto.imageUris ?: emptyList(), itemDao)
+                    Log.d(TAG, "已解决物品冲突: $uuid")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "拉取冲突物品失败: $uuid", e)
+            }
+        }
+        
+        // 拉取冲突的分类
+        for (uuid in conflicts.categories) {
+            try {
+                val response = apiService.getCategory(uuid)
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val dto = response.body()?.data ?: continue
+                    val existing = categoryDao.getCategoryByUuid(uuid)
+                    val entity = categoryFromDto(dto, existing)
+                    categoryDao.insertCategory(entity)
+                    Log.d(TAG, "已解决分类冲突: $uuid")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "拉取冲突分类失败: $uuid", e)
+            }
+        }
+        
+        // 拉取冲突的容器
+        for (uuid in conflicts.warehouses) {
+            try {
+                val response = apiService.getWarehouse(uuid)
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val dto = response.body()?.data ?: continue
+                    // 检查是否为示例数据（通过名称模式）
+                    if (isSampleDataName(dto.name)) {
+                        Log.d(TAG, "跳过示例容器冲突: ${dto.name} (UUID: $uuid)")
+                        continue
+                    }
+                    val existing = warehouseDao.getWarehouseByUuid(uuid)
+                    val entity = warehouseFromDto(dto, existing, warehouseDao)
+                    // 确保不会将示例数据标记为非示例
+                    if (existing?.isSample == true) {
+                        Log.d(TAG, "本地示例容器冲突，跳过更新: ${dto.name} (UUID: $uuid)")
+                        continue
+                    }
+                    warehouseDao.insertWarehouse(entity)
+                    val inserted = warehouseDao.getWarehouseByUuid(entity.uuid) ?: entity
+                    if (dto.imageUri != null && inserted.imageUri.isNullOrBlank()) {
+                        val localPath = downloadImage(apiService, dto.imageUri)
+                        if (localPath != null) {
+                            warehouseDao.updateWarehouse(inserted.copy(imageUri = localPath))
+                        }
+                    }
+                    Log.d(TAG, "已解决容器冲突: $uuid")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "拉取冲突容器失败: $uuid", e)
+            }
+        }
+        
+        // 拉取冲突的购物项
+        for (uuid in conflicts.shoppingItems) {
+            try {
+                val response = apiService.getShoppingItem(uuid)
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val dto = response.body()?.data ?: continue
+                    // 检查是否为示例数据（通过名称模式）
+                    if (isSampleDataName(dto.name)) {
+                        Log.d(TAG, "跳过示例购物项冲突: ${dto.name} (UUID: $uuid)")
+                        continue
+                    }
+                    val existing = shoppingItemDao.getShoppingItemByUuid(uuid)
+                    val entity = shoppingItemFromDto(dto, existing, dto.itemUuid)
+                    // 确保不会将示例数据标记为非示例
+                    if (existing?.isSample == true) {
+                        Log.d(TAG, "本地示例购物项冲突，跳过更新: ${dto.name} (UUID: $uuid)")
+                        continue
+                    }
+                    shoppingItemDao.insertShoppingItem(entity)
+                    val inserted = shoppingItemDao.getShoppingItemByUuid(entity.uuid) ?: entity
+                    if (dto.imageUri != null && inserted.imageUri.isNullOrBlank()) {
+                        val localPath = downloadImage(apiService, dto.imageUri)
+                        if (localPath != null) {
+                            shoppingItemDao.updateShoppingItem(inserted.copy(imageUri = localPath))
+                        }
+                    }
+                    Log.d(TAG, "已解决购物项冲突: $uuid")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "拉取冲突购物项失败: $uuid", e)
+            }
+        }
+        
+        // 活动事件冲突：由于活动事件是只读的，冲突时直接使用服务器版本
+        // 这里可以选择删除本地冲突的事件，或者保留（因为事件通常不会修改）
+        Log.d(TAG, "活动事件冲突数量: ${conflicts.activityEvents.size}")
     }
 }

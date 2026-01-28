@@ -9,7 +9,10 @@ import com.example.itemremindertool.R
 import com.example.itemremindertool.data.TagManager
 import com.example.itemremindertool.data.database.AppDatabase
 import com.example.itemremindertool.data.model.Item
+import com.example.itemremindertool.data.model.SyncOperation
 import com.example.itemremindertool.data.model.Warehouse
+import com.example.itemremindertool.sync.SyncManager
+import com.example.itemremindertool.workers.SyncQueueWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.apache.poi.ss.usermodel.Cell
@@ -219,7 +222,7 @@ object ExcelImportExportUtils {
                     sheet.setColumnWidth(index, width)
                 }
 
-                val warehouseNameMap = warehouses.associateBy({ it.id }, { it.name })
+                val warehouseNameMap = warehouses.associateBy({ it.uuid }, { it.name })
 
                 items.forEachIndexed { index, item ->
                     val rowIndex = index + 1
@@ -232,8 +235,8 @@ object ExcelImportExportUtils {
                     if (item.tags.isNotEmpty()) {
                         row.createCell(5).setCellValue(item.tags.joinToString(","))
                     }
-                    item.warehouseId?.let { warehouseId ->
-                        warehouseNameMap[warehouseId]?.let { row.createCell(6).setCellValue(it) }
+                    item.warehouseUuid?.let { warehouseUuid ->
+                        warehouseNameMap[warehouseUuid]?.let { row.createCell(6).setCellValue(it) }
                     }
                     item.expiryDate?.let { row.createCell(7).setCellValue(DATE_FORMAT.format(it)) }
                     row.createCell(8).setCellValue(if (item.enableStockAlert) yesText else noText)
@@ -306,6 +309,8 @@ object ExcelImportExportUtils {
                 val database = AppDatabase.getDatabase(context)
                 val itemDao = database.itemDao()
                 val warehouseDao = database.warehouseDao()
+                val syncManager = SyncManager.getInstance(context)
+                val syncToRemote = syncManager.shouldSyncToRemote()
 
                 val existingWarehouses = warehouseDao.getAllWarehousesSync()
                     .associateBy { it.name.trim() }
@@ -315,13 +320,17 @@ object ExcelImportExportUtils {
                     .filter { !it.barcode.isNullOrBlank() }
                     .associateBy { it.barcode!!.trim() }
                     .toMutableMap()
+                // 使用 UUID 而不是 ID 来构建映射
                 val itemsByNameWarehouse = existingItems
-                    .associateBy { buildNameWarehouseKey(it.name, it.warehouseId) }
+                    .associateBy { item ->
+                        buildNameWarehouseKey(item.name, item.warehouseUuid)
+                    }
                     .toMutableMap()
 
                 var imported = 0
                 var skipped = 0
                 var merged = 0
+                var newWarehousesEnqueued = 0
 
                 for (rowIndex in 1..sheet.lastRowNum) {
                     val row = sheet.getRow(rowIndex) ?: continue
@@ -357,10 +366,17 @@ object ExcelImportExportUtils {
                         skipped++
                         continue
                     }
-                    val warehouseId = existingWarehouses[warehouseName]?.id
-                        ?: warehouseDao.insertWarehouse(Warehouse(name = warehouseName)).also { newId ->
-                            existingWarehouses[warehouseName] = Warehouse(id = newId, name = warehouseName)
+                    val warehouseExisted = warehouseName in existingWarehouses
+                    val warehouse = existingWarehouses[warehouseName]
+                        ?: Warehouse(name = warehouseName).also { newWarehouse ->
+                            warehouseDao.insertWarehouse(newWarehouse)
+                            existingWarehouses[warehouseName] = newWarehouse
                         }
+                    if (syncToRemote && !warehouseExisted) {
+                        syncManager.enqueueForSync("warehouse", warehouse.uuid, SyncOperation.UPDATE, warehouse)
+                        newWarehousesEnqueued++
+                    }
+                    val warehouseUuid = warehouse.uuid
 
                     val expiryDate = getCellDate(row.getCell(expiryDateIndex))
                     val yesValues = getYesAliases(context)
@@ -375,7 +391,7 @@ object ExcelImportExportUtils {
 
                     val existingItem = when {
                         !barcode.isNullOrBlank() -> itemsByBarcode[barcode.trim()]
-                        else -> itemsByNameWarehouse[buildNameWarehouseKey(name, warehouseId)]
+                        else -> itemsByNameWarehouse[buildNameWarehouseKey(name, warehouseUuid)]
                     }
 
                     if (existingItem != null) {
@@ -405,16 +421,19 @@ object ExcelImportExportUtils {
                         )
                         itemDao.updateItem(updatedItem)
                         merged++
+                        if (syncToRemote && !updatedItem.isSample) {
+                            syncManager.enqueueForSync("item", updatedItem.uuid, SyncOperation.UPDATE, updatedItem)
+                        }
                         updatedItem.barcode?.trim()?.takeIf { it.isNotBlank() }?.let { trimmed ->
                             itemsByBarcode[trimmed] = updatedItem
                         }
-                        itemsByNameWarehouse[buildNameWarehouseKey(updatedItem.name, updatedItem.warehouseId)] = updatedItem
+                        itemsByNameWarehouse[buildNameWarehouseKey(updatedItem.name, updatedItem.warehouseUuid)] = updatedItem
                     } else {
                         val item = Item(
                             name = name,
                             description = description,
-                            categoryId = null,
-                            warehouseId = warehouseId,
+                            categoryUuid = null,
+                            warehouseUuid = warehouseUuid,
                             tags = effectiveTags.toList(),
                             purchaseDate = null,
                             expiryDate = expiryDate,
@@ -429,16 +448,21 @@ object ExcelImportExportUtils {
                             updatedAt = Date()
                         )
 
-                        val newId = itemDao.insertItem(item)
-                        val insertedItem = item.copy(id = newId)
-                        insertedItem.barcode?.trim()?.takeIf { it.isNotBlank() }?.let { trimmed ->
-                            itemsByBarcode[trimmed] = insertedItem
+                        itemDao.insertItem(item)
+                        if (syncToRemote && !item.isSample) {
+                            syncManager.enqueueForSync("item", item.uuid, SyncOperation.UPDATE, item)
                         }
-                        itemsByNameWarehouse[buildNameWarehouseKey(insertedItem.name, insertedItem.warehouseId)] = insertedItem
+                        item.barcode?.trim()?.takeIf { it.isNotBlank() }?.let { trimmed ->
+                            itemsByBarcode[trimmed] = item
+                        }
+                        itemsByNameWarehouse[buildNameWarehouseKey(item.name, warehouseUuid)] = item
                         imported++
                     }
                 }
 
+                if (syncToRemote && (imported > 0 || merged > 0 || newWarehousesEnqueued > 0)) {
+                    SyncQueueWorker.runNow(context)
+                }
                 Result.success(ExcelImportSummary(imported, skipped, merged))
             }
         } catch (e: Exception) {
@@ -587,8 +611,8 @@ object ExcelImportExportUtils {
         }
     }
 
-    private fun buildNameWarehouseKey(name: String, warehouseId: Long?): String {
+    private fun buildNameWarehouseKey(name: String, warehouseUuid: String?): String {
         val normalizedName = name.trim().lowercase(Locale.getDefault())
-        return "${normalizedName}#${warehouseId ?: -1}"
+        return "${normalizedName}#${warehouseUuid ?: "null"}"
     }
 }

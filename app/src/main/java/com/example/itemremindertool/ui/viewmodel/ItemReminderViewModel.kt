@@ -9,6 +9,7 @@ import com.example.itemremindertool.data.model.ItemReminder
 import com.example.itemremindertool.utils.ReminderScheduler
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.launch
 
 class ItemReminderViewModel(application: Application) : AndroidViewModel(application) {
@@ -18,17 +19,21 @@ class ItemReminderViewModel(application: Application) : AndroidViewModel(applica
     val allActiveReminders: Flow<List<ItemReminder>> = itemReminderDao.getAllActiveReminders()
     val allReminders: Flow<List<ItemReminder>> = itemReminderDao.getAllReminders()
     
-    fun getRemindersByItemId(itemId: Long): Flow<List<ItemReminder>> {
-        return itemReminderDao.getRemindersByItemId(itemId)
+    fun getRemindersByItemId(itemId: String): Flow<List<ItemReminder>> {
+        // 已废弃：为保持兼容性保留，但实际调用UUID版本
+        return getRemindersByItemUuid(itemId)
+    }
+    
+    fun getRemindersByItemUuid(itemUuid: String): Flow<List<ItemReminder>> {
+        return itemReminderDao.getRemindersByItemId(itemUuid)
     }
     
     fun insertReminder(reminder: ItemReminder) {
         viewModelScope.launch {
-            val reminderId = itemReminderDao.insertReminder(reminder)
-            // 如果插入成功，调度提醒
-            if (reminderId > 0 && reminder.isEnabled) {
-                val insertedReminder = reminder.copy(id = reminderId)
-                ReminderScheduler.scheduleReminder(context, insertedReminder)
+            itemReminderDao.insertReminder(reminder)
+            // 如果插入成功并且启用了提醒，调度提醒
+            if (reminder.isEnabled) {
+                ReminderScheduler.scheduleReminder(context, reminder)
             }
         }
     }
@@ -41,7 +46,7 @@ class ItemReminderViewModel(application: Application) : AndroidViewModel(applica
                 ReminderScheduler.scheduleReminder(context, reminder)
             } else {
                 // 如果禁用，取消提醒
-                ReminderScheduler.cancelReminder(context, reminder.id)
+                ReminderScheduler.cancelReminder(context, reminder.uuid)
             }
         }
     }
@@ -50,19 +55,24 @@ class ItemReminderViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             itemReminderDao.deleteReminder(reminder)
             // 删除后取消提醒
-            ReminderScheduler.cancelReminder(context, reminder.id)
+            ReminderScheduler.cancelReminder(context, reminder.uuid)
         }
     }
     
-    fun deleteRemindersByItemId(itemId: Long) {
+    fun deleteRemindersByItemId(itemId: String) {
+        // 已废弃：为保持兼容性保留，但实际调用UUID版本
+        deleteRemindersByItemUuid(itemId)
+    }
+    
+    fun deleteRemindersByItemUuid(itemUuid: String) {
         viewModelScope.launch {
             // 先获取所有提醒，以便取消调度
-            val reminders = itemReminderDao.getRemindersByItemId(itemId)
+            val reminders = itemReminderDao.getRemindersByItemId(itemUuid)
             val reminderList = reminders.first()
             reminderList.forEach { reminder ->
-                ReminderScheduler.cancelReminder(context, reminder.id)
+                ReminderScheduler.cancelReminder(context, reminder.uuid)
             }
-            itemReminderDao.deleteRemindersByItemId(itemId)
+            itemReminderDao.deleteRemindersByItemId(itemUuid)
         }
     }
 }

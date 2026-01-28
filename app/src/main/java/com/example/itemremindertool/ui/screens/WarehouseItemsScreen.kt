@@ -32,16 +32,16 @@ import java.util.Date
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WarehouseItemsScreen(
-    warehouseId: Long,
+    warehouseUuid: String,
     warehouseViewModel: WarehouseViewModel,
     itemViewModel: ItemViewModel,
-    onEditItem: (Long) -> Unit,
-    onViewItem: (Long) -> Unit = {},
+    onEditItem: (String) -> Unit,
+    onViewItem: (String) -> Unit = {},
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LaunchedEffect(warehouseId) {
-        warehouseViewModel.loadWarehouseItems(warehouseId)
+    LaunchedEffect(warehouseUuid) {
+        warehouseViewModel.loadWarehouseItems(warehouseUuid)
     }
 
     val warehouseItems by warehouseViewModel.uiState.collectAsState()
@@ -100,11 +100,11 @@ fun WarehouseItemsScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(warehouseItems.warehouseItems, key = { it.id }) { item ->
+                items(warehouseItems.warehouseItems, key = { it.uuid }) { item ->
                     ItemCard(
                         item = item,
-                        onClick = { onViewItem(item.id) },
-                        onEdit = { onEditItem(item.id) },
+                        onClick = { onViewItem(item.uuid) },
+                        onEdit = { onEditItem(item.uuid) },
                         onDelete = { itemViewModel.deleteItem(item) },
                         onMoveToContainer = {
                             itemToMove = item
@@ -120,20 +120,20 @@ fun WarehouseItemsScreen(
     if (showMoveDialog && itemToMove != null) {
         MoveItemDialog(
             itemName = itemToMove!!.name,
-            currentWarehouseId = itemToMove!!.warehouseId,
+            currentWarehouseUuid = itemToMove!!.warehouseUuid,
             warehouseViewModel = warehouseViewModel,
             onDismiss = {
                 showMoveDialog = false
                 itemToMove = null
             },
-            onConfirm = { targetWarehouseId ->
+            onConfirm = { targetWarehouseUuid ->
                 val updatedItem = itemToMove!!.copy(
-                    warehouseId = targetWarehouseId,
+                    warehouseUuid = targetWarehouseUuid,
                     updatedAt = Date()
                 )
                 itemViewModel.updateItem(updatedItem)
                 // 重新加载容器物品列表
-                warehouseViewModel.loadWarehouseItems(warehouseId)
+                warehouseViewModel.loadWarehouseItems(warehouseUuid)
                 showMoveDialog = false
                 itemToMove = null
             }

@@ -31,7 +31,7 @@ import androidx.compose.ui.res.stringResource
 fun CategoriesScreen(
     viewModel: CategoryViewModel,
     onAddCategory: () -> Unit,
-    onEditCategory: (Long) -> Unit,
+    onEditCategory: (String) -> Unit,
     onNavigateBack: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -102,10 +102,10 @@ fun CategoriesScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(categories, key = { it.id }) { category ->
+                items(categories, key = { it.uuid }) { category ->
                     CategoryCard(
                         category = category,
-                        onEdit = { onEditCategory(category.id) },
+                        onEdit = { onEditCategory(category.uuid) },
                         onDelete = { viewModel.deleteCategory(category) }
                     )
                 }

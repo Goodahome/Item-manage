@@ -15,15 +15,9 @@ data class ItemDto(
     @SerializedName("description")
     val description: String? = null,
     
-    @SerializedName("categoryId")
-    val categoryId: Int? = null,
-
     @SerializedName("categoryUuid")
     val categoryUuid: String? = null,
     
-    @SerializedName("warehouseId")
-    val warehouseId: Int? = null,
-
     @SerializedName("warehouseUuid")
     val warehouseUuid: String? = null,
     

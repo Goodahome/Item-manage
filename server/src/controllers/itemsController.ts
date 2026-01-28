@@ -8,10 +8,8 @@ const itemSchema = z.object({
   uuid: z.string().min(1),
   name: z.string().min(1),
   description: z.string().optional(),
-  categoryId: z.number().int().nullable().optional(),
-  categoryUuid: z.string().min(1).nullable().optional(),
-  warehouseId: z.number().int().nullable().optional(),
-  warehouseUuid: z.string().min(1).nullable().optional(),
+  categoryUuid: z.string().uuid().nullable().optional(),
+  warehouseUuid: z.string().uuid().nullable().optional(),
   tags: z.array(z.string()).optional(),
   purchaseDate: z.string().datetime().nullable().optional(),
   expiryDate: z.string().datetime().nullable().optional(),
@@ -29,7 +27,7 @@ const itemSchema = z.object({
 
 export async function listItems(req: Request, res: Response) {
   const { page, pageSize } = parsePagination(req.query);
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -40,24 +38,24 @@ export async function listItems(req: Request, res: Response) {
   }
 
   const search = typeof req.query.search === "string" ? req.query.search : "";
-  const categoryId =
-    typeof req.query.categoryId === "string"
-      ? Number(req.query.categoryId)
+  const categoryUuid =
+    typeof req.query.categoryUuid === "string" && req.query.categoryUuid.length > 0
+      ? req.query.categoryUuid
       : undefined;
-  const warehouseId =
-    typeof req.query.warehouseId === "string"
-      ? Number(req.query.warehouseId)
+  const warehouseUuid =
+    typeof req.query.warehouseUuid === "string" && req.query.warehouseUuid.length > 0
+      ? req.query.warehouseUuid
       : undefined;
 
   const where: Record<string, unknown> = { userId };
   if (search) {
     where.name = { contains: search };
   }
-  if (!Number.isNaN(categoryId)) {
-    where.categoryId = categoryId;
+  if (categoryUuid) {
+    where.categoryUuid = categoryUuid;
   }
-  if (!Number.isNaN(warehouseId)) {
-    where.warehouseId = warehouseId;
+  if (warehouseUuid) {
+    where.warehouseUuid = warehouseUuid;
   }
 
   const [items, total] = await Promise.all([
@@ -70,27 +68,10 @@ export async function listItems(req: Request, res: Response) {
     prisma.item.count({ where })
   ]);
 
-  const warehouseIds = Array.from(
-    new Set(items.map((item) => item.warehouseId).filter((id): id is number => typeof id === "number"))
-  );
-  const categoryIds = Array.from(
-    new Set(items.map((item) => item.categoryId).filter((id): id is number => typeof id === "number"))
-  );
-  const [warehouses, categories] = await Promise.all([
-    warehouseIds.length
-      ? prisma.warehouse.findMany({ where: { userId, id: { in: warehouseIds } } })
-      : Promise.resolve([]),
-    categoryIds.length
-      ? prisma.category.findMany({ where: { userId, id: { in: categoryIds } } })
-      : Promise.resolve([])
-  ]);
-  const warehouseMap = new Map(warehouses.map((wh) => [wh.id, wh.uuid]));
-  const categoryMap = new Map(categories.map((cat) => [cat.id, cat.uuid]));
-
   const withUuids = items.map((item) => ({
     ...item,
-    warehouseUuid: item.warehouseId ? warehouseMap.get(item.warehouseId) ?? null : null,
-    categoryUuid: item.categoryId ? categoryMap.get(item.categoryId) ?? null : null
+    warehouseUuid: item.warehouseUuid ?? null,
+    categoryUuid: item.categoryUuid ?? null
   }));
 
   return res.json(
@@ -104,7 +85,7 @@ export async function listItems(req: Request, res: Response) {
 }
 
 export async function getItem(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -130,26 +111,17 @@ export async function getItem(req: Request, res: Response) {
     );
   }
 
-  const [warehouse, category] = await Promise.all([
-    item.warehouseId
-      ? prisma.warehouse.findFirst({ where: { id: item.warehouseId, userId } })
-      : Promise.resolve(null),
-    item.categoryId
-      ? prisma.category.findFirst({ where: { id: item.categoryId, userId } })
-      : Promise.resolve(null)
-  ]);
-
   return res.json(
     ok({
       ...item,
-      warehouseUuid: warehouse?.uuid ?? null,
-      categoryUuid: category?.uuid ?? null
+      warehouseUuid: item.warehouseUuid ?? null,
+      categoryUuid: item.categoryUuid ?? null
     })
   );
 }
 
 export async function upsertItem(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -173,14 +145,8 @@ export async function upsertItem(req: Request, res: Response) {
   const data = parsed.data;
   const createdAt = data.createdAt ? new Date(data.createdAt) : undefined;
   const updatedAt = data.updatedAt ? new Date(data.updatedAt) : undefined;
-  const resolvedWarehouse = data.warehouseUuid
-    ? await prisma.warehouse.findFirst({ where: { uuid: data.warehouseUuid, userId } })
-    : null;
-  const resolvedCategory = data.categoryUuid
-    ? await prisma.category.findFirst({ where: { uuid: data.categoryUuid, userId } })
-    : null;
-  const categoryId = resolvedCategory?.id ?? data.categoryId ?? null;
-  const warehouseId = resolvedWarehouse?.id ?? data.warehouseId ?? null;
+  const categoryUuid = data.categoryUuid ?? null;
+  const warehouseUuid = data.warehouseUuid ?? null;
 
   const item = await prisma.item.upsert({
     where: {
@@ -192,8 +158,8 @@ export async function upsertItem(req: Request, res: Response) {
     update: {
       name: data.name,
       description: data.description ?? "",
-      categoryId,
-      warehouseId,
+      categoryUuid,
+      warehouseUuid,
       tags: data.tags ?? [],
       purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : null,
       expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
@@ -213,8 +179,8 @@ export async function upsertItem(req: Request, res: Response) {
       userId,
       name: data.name,
       description: data.description ?? "",
-      categoryId,
-      warehouseId,
+      categoryUuid,
+      warehouseUuid,
       tags: data.tags ?? [],
       purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : null,
       expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
@@ -235,7 +201,7 @@ export async function upsertItem(req: Request, res: Response) {
 }
 
 export async function deleteItem(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -262,9 +228,7 @@ export async function deleteItem(req: Request, res: Response) {
   }
 
   await prisma.item.delete({
-    where: {
-      id: item.id
-    }
+    where: { uuid_userId: { uuid: item.uuid, userId: item.userId } }
   });
 
   return res.json(ok({ deleted: true }));

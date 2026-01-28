@@ -23,10 +23,10 @@ async function writeSettingsFile(data) {
 }
 async function getUserSettings(userId) {
     const all = await readSettingsFile();
-    return all[String(userId)] ?? null;
+    return all[userId] ?? null;
 }
 async function setUserSettings(userId, settings) {
     const all = await readSettingsFile();
-    all[String(userId)] = settings;
+    all[userId] = settings;
     await writeSettingsFile(all);
 }

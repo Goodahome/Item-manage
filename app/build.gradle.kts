@@ -86,6 +86,11 @@ android {
     }
 }
 
+ksp {
+    arg("room.schemaLocation", file("$projectDir/schemas").absolutePath)
+    arg("room.incremental", "true")
+}
+
 // 全局排除 litert-api，强制使用 tensorflow-lite-api，避免与 ML Kit 冲突
 configurations.all {
     exclude(group = "com.google.ai.edge.litert", module = "litert-api")

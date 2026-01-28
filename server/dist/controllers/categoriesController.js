@@ -19,7 +19,7 @@ const categorySchema = zod_1.z.object({
 });
 async function listCategories(req, res) {
     const { page, pageSize } = (0, pagination_1.parsePagination)(req.query);
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -43,7 +43,7 @@ async function listCategories(req, res) {
     }));
 }
 async function getCategory(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -63,7 +63,7 @@ async function getCategory(req, res) {
     return res.json((0, response_1.ok)(category));
 }
 async function upsertCategory(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -110,7 +110,7 @@ async function upsertCategory(req, res) {
     return res.json((0, response_1.ok)(category));
 }
 async function deleteCategory(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -127,6 +127,8 @@ async function deleteCategory(req, res) {
             message: "Category not found"
         }));
     }
-    await prisma_1.prisma.category.delete({ where: { id: category.id } });
+    await prisma_1.prisma.category.delete({
+        where: { uuid_userId: { uuid: category.uuid, userId: category.userId } }
+    });
     return res.json((0, response_1.ok)({ deleted: true }));
 }

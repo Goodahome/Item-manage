@@ -31,8 +31,8 @@ import com.example.itemremindertool.data.dao.ActivityEventDao
 
 @Database(
     entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class, ItemReminder::class, DeletedRecord::class, ActivityEvent::class, SyncQueueItem::class],
-    version = 16,
-    exportSchema = false
+    version = 18,
+    exportSchema = true
 )
 @TypeConverters(DateConverters::class, StringListConverters::class, ReminderTypeConverters::class, ActivityEventTypeConverters::class, SyncOperationConverters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -117,7 +117,7 @@ abstract class AppDatabase : RoomDatabase() {
                             )
                         }
                     })
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
@@ -318,6 +318,329 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // 1. warehouses: parentId (INTEGER) -> parentUuid (TEXT)
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS warehouses_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        uuid TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT NOT NULL DEFAULT '',
+                        location TEXT NOT NULL DEFAULT '',
+                        capacity INTEGER,
+                        parentUuid TEXT,
+                        level INTEGER NOT NULL DEFAULT 1,
+                        imageUri TEXT,
+                        imageKey TEXT,
+                        createdAt INTEGER NOT NULL,
+                        isSample INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+                database.execSQL("""
+                    INSERT INTO warehouses_new (id, uuid, name, description, location, capacity, parentUuid, level, imageUri, imageKey, createdAt, isSample)
+                    SELECT w.id, w.uuid, w.name, w.description, w.location, w.capacity,
+                        (SELECT p.uuid FROM warehouses p WHERE p.id = w.parentId),
+                        w.level, w.imageUri, w.imageKey, w.createdAt, w.isSample
+                    FROM warehouses w
+                """.trimIndent())
+                database.execSQL("DROP TABLE warehouses")
+                database.execSQL("ALTER TABLE warehouses_new RENAME TO warehouses")
+
+                // 2. items: categoryId, warehouseId -> categoryUuid, warehouseUuid
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS items_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        uuid TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT NOT NULL DEFAULT '',
+                        categoryUuid TEXT,
+                        warehouseUuid TEXT,
+                        tags TEXT NOT NULL DEFAULT '',
+                        purchaseDate INTEGER,
+                        expiryDate INTEGER,
+                        price REAL,
+                        quantity INTEGER NOT NULL DEFAULT 1,
+                        barcode TEXT,
+                        imageUri TEXT,
+                        imageUris TEXT,
+                        imageKeys TEXT NOT NULL DEFAULT '',
+                        isSample INTEGER NOT NULL DEFAULT 0,
+                        primaryImageIndex INTEGER NOT NULL DEFAULT 0,
+                        featureCode TEXT,
+                        enableStockAlert INTEGER NOT NULL DEFAULT 1,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                database.execSQL("""
+                    INSERT INTO items_new (id, uuid, name, description, categoryUuid, warehouseUuid, tags, purchaseDate, expiryDate, price, quantity, barcode, imageUri, imageUris, imageKeys, isSample, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt)
+                    SELECT i.id, i.uuid, i.name, i.description,
+                        (SELECT c.uuid FROM categories c WHERE c.id = i.categoryId),
+                        (SELECT w.uuid FROM warehouses w WHERE w.id = i.warehouseId),
+                        i.tags, i.purchaseDate, i.expiryDate, i.price, i.quantity, i.barcode, i.imageUri, i.imageUris, i.imageKeys, i.isSample, i.primaryImageIndex, i.featureCode, i.enableStockAlert, i.createdAt, i.updatedAt
+                    FROM items i
+                """.trimIndent())
+                database.execSQL("DROP TABLE items")
+                database.execSQL("ALTER TABLE items_new RENAME TO items")
+
+                // 3. shopping_items: itemId -> itemUuid
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS shopping_items_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        uuid TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT NOT NULL DEFAULT '',
+                        quantity INTEGER NOT NULL DEFAULT 1,
+                        isCompleted INTEGER NOT NULL DEFAULT 0,
+                        priority TEXT NOT NULL DEFAULT 'MEDIUM',
+                        createdAt INTEGER NOT NULL,
+                        completedAt INTEGER,
+                        imageUri TEXT,
+                        imageKey TEXT,
+                        itemUuid TEXT,
+                        isSample INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+                database.execSQL("""
+                    INSERT INTO shopping_items_new (id, uuid, name, description, quantity, isCompleted, priority, createdAt, completedAt, imageUri, imageKey, itemUuid, isSample)
+                    SELECT s.id, s.uuid, s.name, s.description, s.quantity, s.isCompleted, s.priority, s.createdAt, s.completedAt, s.imageUri, s.imageKey,
+                        (SELECT i.uuid FROM items i WHERE i.id = s.itemId),
+                        s.isSample
+                    FROM shopping_items s
+                """.trimIndent())
+                database.execSQL("DROP TABLE shopping_items")
+                database.execSQL("ALTER TABLE shopping_items_new RENAME TO shopping_items")
+
+                // 4. item_reminders: itemId -> itemUuid
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS item_reminders_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        uuid TEXT NOT NULL,
+                        itemUuid TEXT NOT NULL,
+                        reminderType TEXT NOT NULL,
+                        reminderTime INTEGER,
+                        dailyTime TEXT,
+                        monthlyDay INTEGER,
+                        monthlyTime TEXT,
+                        yearlyMonth INTEGER,
+                        yearlyDay INTEGER,
+                        yearlyTime TEXT,
+                        reason TEXT NOT NULL DEFAULT '',
+                        isEnabled INTEGER NOT NULL DEFAULT 1,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                database.execSQL("""
+                    INSERT INTO item_reminders_new (id, uuid, itemUuid, reminderType, reminderTime, dailyTime, monthlyDay, monthlyTime, yearlyMonth, yearlyDay, yearlyTime, reason, isEnabled, createdAt, updatedAt)
+                    SELECT r.id, r.uuid,
+                        (SELECT i.uuid FROM items i WHERE i.id = r.itemId),
+                        r.reminderType, r.reminderTime, r.dailyTime, r.monthlyDay, r.monthlyTime, r.yearlyMonth, r.yearlyDay, r.yearlyTime, r.reason, r.isEnabled, r.createdAt, r.updatedAt
+                    FROM item_reminders r
+                """.trimIndent())
+                database.execSQL("DROP TABLE item_reminders")
+                database.execSQL("ALTER TABLE item_reminders_new RENAME TO item_reminders")
+
+                // 5. activity_events: targetId -> targetUuid (targetId 可能为 item 或 warehouse)
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS activity_events_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        uuid TEXT NOT NULL,
+                        type TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        description TEXT NOT NULL DEFAULT '',
+                        targetUuid TEXT,
+                        targetName TEXT NOT NULL DEFAULT '',
+                        iconType TEXT NOT NULL DEFAULT '',
+                        createdAt INTEGER NOT NULL,
+                        metadata TEXT NOT NULL DEFAULT ''
+                    )
+                """.trimIndent())
+                database.execSQL("""
+                    INSERT INTO activity_events_new (id, uuid, type, title, description, targetUuid, targetName, iconType, createdAt, metadata)
+                    SELECT e.id, e.uuid, e.type, e.title, e.description,
+                        COALESCE(
+                            (SELECT i.uuid FROM items i WHERE i.id = e.targetId),
+                            (SELECT w.uuid FROM warehouses w WHERE w.id = e.targetId)
+                        ),
+                        e.targetName, e.iconType, e.createdAt, e.metadata
+                    FROM activity_events e
+                """.trimIndent())
+                database.execSQL("DROP TABLE activity_events")
+                database.execSQL("ALTER TABLE activity_events_new RENAME TO activity_events")
+
+                // 6. deleted_records: entityId -> entityUuid
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS deleted_records_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        uuid TEXT NOT NULL,
+                        entityType TEXT NOT NULL,
+                        entityUuid TEXT NOT NULL,
+                        deletedAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                database.execSQL("""
+                    INSERT INTO deleted_records_new (id, uuid, entityType, entityUuid, deletedAt)
+                    SELECT d.id, d.uuid, d.entityType,
+                        CASE d.entityType
+                            WHEN 'item' THEN (SELECT uuid FROM items WHERE id = d.entityId)
+                            WHEN 'warehouse' THEN (SELECT uuid FROM warehouses WHERE id = d.entityId)
+                            WHEN 'category' THEN (SELECT uuid FROM categories WHERE id = d.entityId)
+                            WHEN 'shopping_item' THEN (SELECT uuid FROM shopping_items WHERE id = d.entityId)
+                            WHEN 'reminder' THEN (SELECT uuid FROM item_reminders WHERE id = d.entityId)
+                            ELSE ''
+                        END,
+                        d.deletedAt
+                    FROM deleted_records d
+                """.trimIndent())
+                database.execSQL("DROP TABLE deleted_records")
+                database.execSQL("ALTER TABLE deleted_records_new RENAME TO deleted_records")
+            }
+        }
+
+        private val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // 1. categories: uuid 为主键，移除 id
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS categories_new (
+                        uuid TEXT PRIMARY KEY NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT NOT NULL DEFAULT '',
+                        color TEXT NOT NULL DEFAULT '#6200EE',
+                        icon TEXT NOT NULL DEFAULT 'category'
+                    )
+                """.trimIndent())
+                database.execSQL("INSERT INTO categories_new (uuid, name, description, color, icon) SELECT uuid, name, description, color, icon FROM categories")
+                database.execSQL("DROP TABLE categories")
+                database.execSQL("ALTER TABLE categories_new RENAME TO categories")
+
+                // 2. warehouses: uuid 为主键，移除 id
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS warehouses_new (
+                        uuid TEXT PRIMARY KEY NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT NOT NULL DEFAULT '',
+                        location TEXT NOT NULL DEFAULT '',
+                        capacity INTEGER,
+                        parentUuid TEXT,
+                        level INTEGER NOT NULL DEFAULT 1,
+                        imageUri TEXT,
+                        imageKey TEXT,
+                        createdAt INTEGER NOT NULL,
+                        isSample INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+                database.execSQL("INSERT INTO warehouses_new (uuid, name, description, location, capacity, parentUuid, level, imageUri, imageKey, createdAt, isSample) SELECT uuid, name, description, location, capacity, parentUuid, level, imageUri, imageKey, createdAt, isSample FROM warehouses")
+                database.execSQL("DROP TABLE warehouses")
+                database.execSQL("ALTER TABLE warehouses_new RENAME TO warehouses")
+
+                // 3. items: uuid 为主键，移除 id
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS items_new (
+                        uuid TEXT PRIMARY KEY NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT NOT NULL DEFAULT '',
+                        categoryUuid TEXT,
+                        warehouseUuid TEXT,
+                        tags TEXT NOT NULL DEFAULT '',
+                        purchaseDate INTEGER,
+                        expiryDate INTEGER,
+                        price REAL,
+                        quantity INTEGER NOT NULL DEFAULT 1,
+                        barcode TEXT,
+                        imageUri TEXT,
+                        imageUris TEXT,
+                        imageKeys TEXT NOT NULL DEFAULT '',
+                        isSample INTEGER NOT NULL DEFAULT 0,
+                        primaryImageIndex INTEGER NOT NULL DEFAULT 0,
+                        featureCode TEXT,
+                        enableStockAlert INTEGER NOT NULL DEFAULT 1,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                database.execSQL("INSERT INTO items_new (uuid, name, description, categoryUuid, warehouseUuid, tags, purchaseDate, expiryDate, price, quantity, barcode, imageUri, imageUris, imageKeys, isSample, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt) SELECT uuid, name, description, categoryUuid, warehouseUuid, tags, purchaseDate, expiryDate, price, quantity, barcode, imageUri, imageUris, imageKeys, isSample, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt FROM items")
+                database.execSQL("DROP TABLE items")
+                database.execSQL("ALTER TABLE items_new RENAME TO items")
+
+                // 4. shopping_items: uuid 为主键，移除 id
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS shopping_items_new (
+                        uuid TEXT PRIMARY KEY NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT NOT NULL DEFAULT '',
+                        quantity INTEGER NOT NULL DEFAULT 1,
+                        isCompleted INTEGER NOT NULL DEFAULT 0,
+                        priority TEXT NOT NULL DEFAULT 'MEDIUM',
+                        createdAt INTEGER NOT NULL,
+                        completedAt INTEGER,
+                        imageUri TEXT,
+                        imageKey TEXT,
+                        itemUuid TEXT,
+                        isSample INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+                database.execSQL("INSERT INTO shopping_items_new (uuid, name, description, quantity, isCompleted, priority, createdAt, completedAt, imageUri, imageKey, itemUuid, isSample) SELECT uuid, name, description, quantity, isCompleted, priority, createdAt, completedAt, imageUri, imageKey, itemUuid, isSample FROM shopping_items")
+                database.execSQL("DROP TABLE shopping_items")
+                database.execSQL("ALTER TABLE shopping_items_new RENAME TO shopping_items")
+
+                // 5. item_reminders: uuid 为主键，移除 id
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS item_reminders_new (
+                        uuid TEXT PRIMARY KEY NOT NULL,
+                        itemUuid TEXT NOT NULL,
+                        reminderType TEXT NOT NULL,
+                        reminderTime INTEGER,
+                        dailyTime TEXT,
+                        monthlyDay INTEGER,
+                        monthlyTime TEXT,
+                        yearlyMonth INTEGER,
+                        yearlyDay INTEGER,
+                        yearlyTime TEXT,
+                        reason TEXT NOT NULL DEFAULT '',
+                        isEnabled INTEGER NOT NULL DEFAULT 1,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                database.execSQL("INSERT INTO item_reminders_new (uuid, itemUuid, reminderType, reminderTime, dailyTime, monthlyDay, monthlyTime, yearlyMonth, yearlyDay, yearlyTime, reason, isEnabled, createdAt, updatedAt) SELECT uuid, itemUuid, reminderType, reminderTime, dailyTime, monthlyDay, monthlyTime, yearlyMonth, yearlyDay, yearlyTime, reason, isEnabled, createdAt, updatedAt FROM item_reminders")
+                database.execSQL("DROP TABLE item_reminders")
+                database.execSQL("ALTER TABLE item_reminders_new RENAME TO item_reminders")
+
+                // 6. activity_events: uuid 为主键，移除 id
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS activity_events_new (
+                        uuid TEXT PRIMARY KEY NOT NULL,
+                        type TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        description TEXT NOT NULL DEFAULT '',
+                        targetUuid TEXT,
+                        targetName TEXT NOT NULL DEFAULT '',
+                        iconType TEXT NOT NULL DEFAULT '',
+                        createdAt INTEGER NOT NULL,
+                        metadata TEXT NOT NULL DEFAULT ''
+                    )
+                """.trimIndent())
+                database.execSQL("INSERT INTO activity_events_new (uuid, type, title, description, targetUuid, targetName, iconType, createdAt, metadata) SELECT uuid, type, title, description, targetUuid, targetName, iconType, createdAt, metadata FROM activity_events")
+                database.execSQL("DROP TABLE activity_events")
+                database.execSQL("ALTER TABLE activity_events_new RENAME TO activity_events")
+
+                // 7. deleted_records: uuid 为主键，移除 id
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS deleted_records_new (
+                        uuid TEXT PRIMARY KEY NOT NULL,
+                        entityType TEXT NOT NULL,
+                        entityUuid TEXT NOT NULL,
+                        deletedAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                database.execSQL("INSERT INTO deleted_records_new (uuid, entityType, entityUuid, deletedAt) SELECT uuid, entityType, entityUuid, deletedAt FROM deleted_records")
+                database.execSQL("DROP TABLE deleted_records")
+                database.execSQL("ALTER TABLE deleted_records_new RENAME TO deleted_records")
+            }
+        }
+
         private fun seedSampleData(db: SupportSQLiteDatabase) {
             val now = System.currentTimeMillis()
             val dayMillis = 24 * 60 * 60 * 1000L
@@ -327,54 +650,40 @@ abstract class AppDatabase : RoomDatabase() {
             val itemUuid2 = java.util.UUID.randomUUID().toString()
             val shoppingUuid1 = java.util.UUID.randomUUID().toString()
 
-            // 示例容器与子容器
             db.execSQL(
                 """
-                INSERT INTO warehouses (id, uuid, name, description, location, capacity, parentId, level, imageUri, imageKey, createdAt, isSample)
-                VALUES (1, '$warehouseUuid1', '示例容器', '用于演示的示例容器', '家中', 50, NULL, 1, NULL, NULL, $now, 1)
+                INSERT INTO warehouses (uuid, name, description, location, capacity, parentUuid, level, imageUri, imageKey, createdAt, isSample)
+                VALUES ('$warehouseUuid1', '示例容器', '用于演示的示例容器', '家中', 50, NULL, 1, NULL, NULL, $now, 1)
                 """.trimIndent()
             )
             db.execSQL(
                 """
-                INSERT INTO warehouses (id, uuid, name, description, location, capacity, parentId, level, imageUri, imageKey, createdAt, isSample)
-                VALUES (2, '$warehouseUuid2', '子容器', '子容器示例', '', NULL, 1, 2, NULL, NULL, $now, 1)
+                INSERT INTO warehouses (uuid, name, description, location, capacity, parentUuid, level, imageUri, imageKey, createdAt, isSample)
+                VALUES ('$warehouseUuid2', '子容器', '子容器示例', '', NULL, '$warehouseUuid1', 2, NULL, NULL, $now, 1)
                 """.trimIndent()
             )
 
-            // 示例物品（带标签，便于展示筛选与信息卡片）
             db.execSQL(
                 """
-                INSERT INTO items (
-                    id, uuid, name, description, categoryId, warehouseId, tags, purchaseDate, expiryDate, price, quantity,
-                    barcode, imageUri, imageUris, imageKeys, isSample, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt
-                ) VALUES (
-                    1, '$itemUuid1', '示例物品A', '用于演示标签筛选和信息卡片', NULL, 1, '常用,食品',
+                INSERT INTO items (uuid, name, description, categoryUuid, warehouseUuid, tags, purchaseDate, expiryDate, price, quantity, barcode, imageUri, imageUris, imageKeys, isSample, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt)
+                VALUES ('$itemUuid1', '示例物品A', '用于演示标签筛选和信息卡片', NULL, '$warehouseUuid1', '常用,食品',
                     ${now - dayMillis * 2}, ${now + dayMillis * 5}, 12.5, 3,
-                    NULL, NULL, '', '', 1, 0, NULL, 1, $now, $now
-                )
+                    NULL, NULL, '', '', 1, 0, NULL, 1, $now, $now)
                 """.trimIndent()
             )
             db.execSQL(
                 """
-                INSERT INTO items (
-                    id, uuid, name, description, categoryId, warehouseId, tags, purchaseDate, expiryDate, price, quantity,
-                    barcode, imageUri, imageUris, imageKeys, isSample, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt
-                ) VALUES (
-                    2, '$itemUuid2', '示例物品B', '点击网格卡片查看详情', NULL, 1, '工具,示例',
+                INSERT INTO items (uuid, name, description, categoryUuid, warehouseUuid, tags, purchaseDate, expiryDate, price, quantity, barcode, imageUri, imageUris, imageKeys, isSample, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt)
+                VALUES ('$itemUuid2', '示例物品B', '点击网格卡片查看详情', NULL, '$warehouseUuid1', '工具,示例',
                     ${now - dayMillis * 3}, NULL, NULL, 1,
-                    NULL, NULL, '', '', 1, 0, NULL, 1, $now, $now
-                )
+                    NULL, NULL, '', '', 1, 0, NULL, 1, $now, $now)
                 """.trimIndent()
             )
 
-            // 示例待购物品
             db.execSQL(
                 """
-                INSERT INTO shopping_items (
-                    id, uuid, name, description, quantity, isCompleted, priority, createdAt, completedAt, imageUri, imageKey, itemId, isSample
-                ) VALUES (
-                    1, '$shoppingUuid1', '示例待购物品', '用于演示待购列表', 2, 0, 'MEDIUM', $now, NULL, NULL, NULL, NULL, 1
-                )
+                INSERT INTO shopping_items (uuid, name, description, quantity, isCompleted, priority, createdAt, completedAt, imageUri, imageKey, itemUuid, isSample)
+                VALUES ('$shoppingUuid1', '示例待购物品', '用于演示待购列表', 2, 0, 'MEDIUM', $now, NULL, NULL, NULL, NULL, 1)
                 """.trimIndent()
             )
         }

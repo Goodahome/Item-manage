@@ -12,9 +12,6 @@ interface CategoryDao {
     @Query("SELECT * FROM categories ORDER BY name ASC")
     suspend fun getAllCategoriesSync(): List<Category>
 
-    @Query("SELECT * FROM categories WHERE id = :id")
-    suspend fun getCategoryById(id: Long): Category?
-
     @Query("SELECT * FROM categories WHERE uuid = :uuid LIMIT 1")
     suspend fun getCategoryByUuid(uuid: String): Category?
 
@@ -27,7 +24,7 @@ interface CategoryDao {
     @Delete
     suspend fun deleteCategory(category: Category): Int
 
-    @Query("DELETE FROM categories WHERE id = :id")
-    suspend fun deleteCategoryById(id: Long): Int
+    @Query("DELETE FROM categories WHERE uuid = :uuid")
+    suspend fun deleteCategoryByUuid(uuid: String): Int
 }
 

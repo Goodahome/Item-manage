@@ -134,3 +134,28 @@ data class ActivityEventDto(
     @SerializedName("metadata")
     val metadata: String? = null
 )
+
+data class SyncConflicts(
+    @SerializedName("items")
+    val items: List<String> = emptyList(),
+
+    @SerializedName("categories")
+    val categories: List<String> = emptyList(),
+
+    @SerializedName("warehouses")
+    val warehouses: List<String> = emptyList(),
+
+    @SerializedName("shoppingItems")
+    val shoppingItems: List<String> = emptyList(),
+
+    @SerializedName("activityEvents")
+    val activityEvents: List<String> = emptyList()
+)
+
+data class SyncBootstrapAckResponse(
+    @SerializedName("success")
+    val success: Boolean = true,
+
+    @SerializedName("conflicts")
+    val conflicts: SyncConflicts? = null
+)

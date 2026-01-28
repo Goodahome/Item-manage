@@ -25,7 +25,7 @@ import androidx.compose.ui.res.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryEditScreen(
-    categoryId: Long?,
+    categoryId: String?,
     viewModel: CategoryViewModel,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
@@ -66,16 +66,24 @@ fun CategoryEditScreen(
                 actions = {
                     TextButton(
                         onClick = {
-                            val category = Category(
-                                id = categoryId ?: 0,
-                                name = name,
-                                description = description,
-                                color = selectedColor
-                            )
+                            val category = if (categoryId != null) {
+                                Category(
+                                    uuid = categoryId,
+                                    name = name,
+                                    description = description,
+                                    color = selectedColor
+                                )
+                            } else {
+                                Category(
+                                    name = name,
+                                    description = description,
+                                    color = selectedColor
+                                )
+                            }
                             if (categoryId == null) {
                                 viewModel.insertCategory(category)
                             } else {
-                                viewModel.updateCategory(category.copy(id = categoryId))
+                                viewModel.updateCategory(category)
                             }
                             onNavigateBack()
                         }

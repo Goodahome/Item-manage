@@ -13,9 +13,12 @@
 ### 2. 复制以下内容到 .env 文件
 
 ```env
-# 数据库连接 URL
-# 格式: mysql://用户名:密码@主机:端口/数据库名
-DATABASE_URL="mysql://root:123456@localhost:3306/itemreminder"
+# 数据库配置（推荐方式 - 分开配置，自动处理特殊字符）
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD="your_password_here"  # 如果密码包含 #、@、: 等特殊字符，必须用引号包裹
+DB_NAME=itemreminder
 
 # JWT 密钥（开发环境示例，生产环境务必修改）
 JWT_SECRET="dev_secret_key_change_this_in_production_32chars"
@@ -29,6 +32,11 @@ PORT=3000
 # 运行环境
 NODE_ENV="development"
 ```
+
+**重要提示**：
+- 如果密码包含 `#` 字符，**必须用引号包裹**，否则 `#` 后面的内容会被当作注释
+- 如果密码包含 `@`、`:`、`/`、`%` 等特殊字符，也建议用引号包裹
+- 示例：`DB_PASSWORD="RVx#PmU3"` 或 `DB_PASSWORD="Admin@123"`
 
 ### 3. 修改配置
 

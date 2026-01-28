@@ -14,7 +14,7 @@ const warehouseSchema = zod_1.z.object({
     description: zod_1.z.string().optional(),
     location: zod_1.z.string().optional(),
     capacity: zod_1.z.number().int().nullable().optional(),
-    parentId: zod_1.z.number().int().nullable().optional(),
+    parentUuid: zod_1.z.string().uuid().nullable().optional(),
     level: zod_1.z.number().int().optional(),
     imageUri: zod_1.z.string().nullable().optional(),
     createdAt: zod_1.z.string().datetime().optional(),
@@ -22,7 +22,7 @@ const warehouseSchema = zod_1.z.object({
 });
 async function listWarehouses(req, res) {
     const { page, pageSize } = (0, pagination_1.parsePagination)(req.query);
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -46,7 +46,7 @@ async function listWarehouses(req, res) {
     }));
 }
 async function getWarehouse(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -66,7 +66,7 @@ async function getWarehouse(req, res) {
     return res.json((0, response_1.ok)(warehouse));
 }
 async function upsertWarehouse(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -96,7 +96,7 @@ async function upsertWarehouse(req, res) {
             description: data.description ?? "",
             location: data.location ?? "",
             capacity: data.capacity ?? null,
-            parentId: data.parentId ?? null,
+            parentUuid: data.parentUuid ?? null,
             level: data.level ?? 1,
             imageUri: data.imageUri ?? null,
             createdAt: createdAt ?? undefined,
@@ -109,7 +109,7 @@ async function upsertWarehouse(req, res) {
             description: data.description ?? "",
             location: data.location ?? "",
             capacity: data.capacity ?? null,
-            parentId: data.parentId ?? null,
+            parentUuid: data.parentUuid ?? null,
             level: data.level ?? 1,
             imageUri: data.imageUri ?? null,
             createdAt: createdAt ?? undefined,
@@ -119,7 +119,7 @@ async function upsertWarehouse(req, res) {
     return res.json((0, response_1.ok)(warehouse));
 }
 async function deleteWarehouse(req, res) {
-    const userId = req.user?.id;
+    const userId = req.user?.uuid;
     if (!userId) {
         return res.status(401).json((0, response_1.fail)({
             code: "UNAUTHORIZED",
@@ -136,6 +136,8 @@ async function deleteWarehouse(req, res) {
             message: "Warehouse not found"
         }));
     }
-    await prisma_1.prisma.warehouse.delete({ where: { id: warehouse.id } });
+    await prisma_1.prisma.warehouse.delete({
+        where: { uuid_userId: { uuid: warehouse.uuid, userId: warehouse.userId } }
+    });
     return res.json((0, response_1.ok)({ deleted: true }));
 }

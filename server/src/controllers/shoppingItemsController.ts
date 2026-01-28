@@ -19,7 +19,7 @@ const shoppingItemSchema = z.object({
 
 export async function listShoppingItems(req: Request, res: Response) {
   const { page, pageSize } = parsePagination(req.query);
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -50,7 +50,7 @@ export async function listShoppingItems(req: Request, res: Response) {
 }
 
 export async function getShoppingItem(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -77,7 +77,7 @@ export async function getShoppingItem(req: Request, res: Response) {
 }
 
 export async function upsertShoppingItem(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -139,7 +139,7 @@ export async function upsertShoppingItem(req: Request, res: Response) {
 }
 
 export async function deleteShoppingItem(req: Request, res: Response) {
-  const userId = req.user?.id;
+  const userId = req.user?.uuid;
   if (!userId) {
     return res.status(401).json(
       fail({
@@ -162,6 +162,8 @@ export async function deleteShoppingItem(req: Request, res: Response) {
     );
   }
 
-  await prisma.shoppingItem.delete({ where: { id: shoppingItem.id } });
+  await prisma.shoppingItem.delete({
+    where: { uuid_userId: { uuid: shoppingItem.uuid, userId: shoppingItem.userId } }
+  });
   return res.json(ok({ deleted: true }));
 }

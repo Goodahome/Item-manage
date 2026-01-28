@@ -12,10 +12,9 @@ import java.util.UUID
 @Entity(tableName = "deleted_records")
 data class DeletedRecord(
     @PrimaryKey
-    val id: Long = 0,
     val uuid: String = UUID.randomUUID().toString(),
     val entityType: String, // "item", "warehouse", "category", "shopping_item", "reminder"
-    val entityId: Long, // 被删除实体的ID
+    val entityUuid: String, // 被删除实体的 UUID
     val deletedAt: Date = Date() // 删除时间
 )
 

@@ -22,13 +22,13 @@ import com.example.itemremindertool.ui.theme.ColorHelpers
 @Composable
 fun MoveItemDialog(
     itemName: String,
-    currentWarehouseId: Long?,
+    currentWarehouseUuid: String?,
     warehouseViewModel: WarehouseViewModel,
     onDismiss: () -> Unit,
-    onConfirm: (Long?) -> Unit
+    onConfirm: (String?) -> Unit
 ) {
     val warehouses by warehouseViewModel.warehouses.collectAsState(initial = emptyList())
-    var selectedWarehouseId by remember { mutableStateOf<Long?>(null) }
+    var selectedWarehouseUuid by remember { mutableStateOf<String?>(null) }
 
     AppDialogLayout(
         title = stringResource(R.string.move_to_container),
@@ -44,7 +44,7 @@ fun MoveItemDialog(
             }
             Button(
                 onClick = {
-                    onConfirm(selectedWarehouseId)
+                    onConfirm(selectedWarehouseUuid)
                     onDismiss()
                 },
                 modifier = Modifier.weight(1f)
@@ -63,9 +63,9 @@ fun MoveItemDialog(
         // 无容器选项
         Card(
             modifier = Modifier.fillMaxWidth(),
-            onClick = { selectedWarehouseId = null },
+            onClick = { selectedWarehouseUuid = null },
             colors = CardDefaults.cardColors(
-                containerColor = if (selectedWarehouseId == null) {
+                containerColor = if (selectedWarehouseUuid == null) {
                     MaterialTheme.colorScheme.primaryContainer
                 } else {
                     MaterialTheme.colorScheme.surface
@@ -82,7 +82,7 @@ fun MoveItemDialog(
                 Icon(
                     Icons.Default.Block,
                     contentDescription = null,
-                    tint = if (selectedWarehouseId == null) {
+                    tint = if (selectedWarehouseUuid == null) {
                         MaterialTheme.colorScheme.onPrimaryContainer
                     } else {
                         MaterialTheme.colorScheme.onSurface
@@ -91,7 +91,7 @@ fun MoveItemDialog(
                 Text(
                     text = stringResource(R.string.no_warehouse_option),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = if (selectedWarehouseId == null) {
+                    color = if (selectedWarehouseUuid == null) {
                         MaterialTheme.colorScheme.onPrimaryContainer
                     } else {
                         MaterialTheme.colorScheme.onSurface
@@ -105,12 +105,12 @@ fun MoveItemDialog(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(warehouses.filter { it.id != currentWarehouseId }, key = { it.id }) { warehouse ->
+            items(warehouses.filter { it.uuid != currentWarehouseUuid }, key = { it.uuid }) { warehouse ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = { selectedWarehouseId = warehouse.id },
+                    onClick = { selectedWarehouseUuid = warehouse.uuid },
                     colors = CardDefaults.cardColors(
-                        containerColor = if (selectedWarehouseId == warehouse.id) {
+                        containerColor = if (selectedWarehouseUuid == warehouse.uuid) {
                             MaterialTheme.colorScheme.primaryContainer
                         } else {
                             MaterialTheme.colorScheme.surface
@@ -127,7 +127,7 @@ fun MoveItemDialog(
                         Icon(
                             Icons.Default.Inventory2,
                             contentDescription = null,
-                            tint = if (selectedWarehouseId == warehouse.id) {
+                            tint = if (selectedWarehouseUuid == warehouse.uuid) {
                                 MaterialTheme.colorScheme.onPrimaryContainer
                             } else {
                                 MaterialTheme.colorScheme.onSurface
@@ -138,7 +138,7 @@ fun MoveItemDialog(
                                 text = warehouse.name,
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
-                                color = if (selectedWarehouseId == warehouse.id) {
+                                color = if (selectedWarehouseUuid == warehouse.uuid) {
                                     MaterialTheme.colorScheme.onPrimaryContainer
                                 } else {
                                     MaterialTheme.colorScheme.onSurface
@@ -148,7 +148,7 @@ fun MoveItemDialog(
                                 Text(
                                     text = warehouse.description,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = if (selectedWarehouseId == warehouse.id) {
+                                    color = if (selectedWarehouseUuid == warehouse.uuid) {
                                         MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                                     } else {
                                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)

@@ -32,6 +32,7 @@ import com.example.itemremindertool.R
 import com.example.itemremindertool.billing.BillingManager
 import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.config.FeatureFlags
+import com.example.itemremindertool.sync.SyncManager
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.theme.OnSurfaceHighContrast
@@ -50,6 +51,13 @@ import com.example.itemremindertool.ui.theme.RedBlueTertiary
 import org.json.JSONObject
 
 data class CustomColorField(val key: String, val label: String, val defaultColor: Color)
+
+/**
+ * 标记配色设置已更新，需要同步到服务器
+ */
+private fun markColorSettingsNeedSync(context: Context) {
+    SyncManager.getInstance(context).markColorSettingsUpdated()
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,7 +139,8 @@ fun CustomColorSettingsScreen(
                 fieldState = customFieldState,
                 schemeName = currentScheme,
                 scheme = loadedSchemes.getValue(currentScheme),
-                setAsActive = false
+                setAsActive = false,
+                context = null // 初始加载时不需要标记同步
             )
         }
     }
@@ -193,6 +202,7 @@ fun CustomColorSettingsScreen(
                                 val previous = prefs.getString("color_scheme_prev", "red_blue") ?: "red_blue"
                                 prefs.edit().putString("color_scheme", previous).apply()
                             }
+                            markColorSettingsNeedSync(context)
                         }
                     )
                 },
@@ -250,7 +260,8 @@ fun CustomColorSettingsScreen(
                             fieldState = customFieldState,
                             schemeName = name,
                             scheme = scheme,
-                            setAsActive = customEnabled
+                            setAsActive = customEnabled,
+                            context = context
                         )
                     }
                 ) {
@@ -290,7 +301,8 @@ fun CustomColorSettingsScreen(
                                         fieldState = customFieldState,
                                         schemeName = schemeName,
                                         scheme = scheme,
-                                        setAsActive = customEnabled
+                                        setAsActive = customEnabled,
+                                        context = context
                                     )
                                 }
                             )
@@ -306,6 +318,7 @@ fun CustomColorSettingsScreen(
                                         prefs.edit().remove("custom_color_selected").apply()
                                     }
                                     writeCustomColorSchemes(prefs, savedSchemes)
+                                    markColorSettingsNeedSync(context)
                                 }
                             ) {
                                 Icon(
@@ -330,7 +343,8 @@ fun CustomColorSettingsScreen(
                                 fieldState = customFieldState,
                                 schemeName = schemeName,
                                 scheme = scheme,
-                                setAsActive = customEnabled
+                                setAsActive = customEnabled,
+                                context = context
                             )
                         }
                     )
@@ -367,6 +381,7 @@ fun CustomColorSettingsScreen(
                         } else if (isValidHex(normalizedInput)) {
                             prefs.edit().putString(field.key, normalizedInput).apply()
                         }
+                        markColorSettingsNeedSync(context)
                     },
                     label = { Text(field.label) },
                     placeholder = { Text(stringResource(R.string.custom_color_hex_placeholder)) },
@@ -509,7 +524,8 @@ private fun applyCustomScheme(
     fieldState: MutableMap<String, String>,
     schemeName: String,
     scheme: Map<String, String>,
-    setAsActive: Boolean
+    setAsActive: Boolean,
+    context: Context? = null
 ) {
     if (setAsActive) {
         val currentScheme = prefs.getString("color_scheme", "red_blue") ?: "red_blue"
@@ -531,6 +547,7 @@ private fun applyCustomScheme(
     if (setAsActive) {
         prefs.edit().putString("color_scheme", "custom").apply()
     }
+    context?.let { markColorSettingsNeedSync(it) }
 }
 
 private fun readCustomColorSchemes(prefs: SharedPreferences): Map<String, Map<String, String>> {

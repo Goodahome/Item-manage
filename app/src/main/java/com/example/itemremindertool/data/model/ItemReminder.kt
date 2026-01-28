@@ -10,12 +10,9 @@ import java.util.UUID
  */
 @Entity(tableName = "item_reminders")
 data class ItemReminder(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    @PrimaryKey
     val uuid: String = UUID.randomUUID().toString(),
-    
-    // 关联的物品ID
-    val itemId: Long,
+    val itemUuid: String,
     
     // 提醒类型
     val reminderType: ReminderType,

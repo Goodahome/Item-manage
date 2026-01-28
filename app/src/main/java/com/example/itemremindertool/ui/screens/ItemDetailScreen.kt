@@ -79,24 +79,29 @@ private fun firstDisplayChar(text: String): String {
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ItemDetailScreen(
-    itemId: Long,
+    itemUuid: String,
     itemViewModel: ItemViewModel,
     reminderViewModel: ItemReminderViewModel,
     onNavigateBack: () -> Unit,
-    onEditItem: (Long) -> Unit,
+    onEditItem: (String) -> Unit,
     onAddAlert: (Item) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val activityEventViewModel: ActivityEventViewModel = viewModel()
-    // 加载物品信息
-    LaunchedEffect(itemId) {
-        itemViewModel.loadItem(itemId)
+    LaunchedEffect(itemUuid) {
+        itemViewModel.loadItemByUuid(itemUuid)
     }
     val uiState by itemViewModel.uiState.collectAsState()
     val item = uiState.selectedItem
     
     // 加载提醒信息
-    val reminders by reminderViewModel.getRemindersByItemId(itemId).collectAsState(initial = emptyList())
+    val reminders by remember(item?.uuid) {
+        if (item?.uuid != null) {
+            reminderViewModel.getRemindersByItemUuid(item.uuid)
+        } else {
+            kotlinx.coroutines.flow.flowOf(emptyList<ItemReminder>())
+        }
+    }.collectAsState(initial = emptyList())
     
     // 提醒设置弹窗状态
     var showReminderDialog by remember { mutableStateOf(false) }
@@ -106,9 +111,9 @@ fun ItemDetailScreen(
     var showImageDialog by remember { mutableStateOf(false) }
     var selectedImageIndex by remember { mutableStateOf(0) }
     
-    LaunchedEffect(item?.id) {
+    LaunchedEffect(item?.uuid) {
         item?.let { loadedItem ->
-            activityEventViewModel.logItemViewed(loadedItem.id, loadedItem.name)
+            activityEventViewModel.logItemViewed(loadedItem.uuid, loadedItem.name)
         }
     }
 
@@ -149,7 +154,7 @@ fun ItemDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { onEditItem(item.id) }) {
+                    IconButton(onClick = { onEditItem(item.uuid) }) {
                         Icon(Icons.Default.Edit, stringResource(R.string.edit))
                     }
                 }
@@ -1312,8 +1317,8 @@ fun ModernReminderDialog(
                                 return@Button
                             }
                             val reminder = ItemReminder(
-                                id = existingReminder?.id ?: 0,
-                                itemId = item.id,
+                                uuid = existingReminder?.uuid ?: java.util.UUID.randomUUID().toString(),
+                                itemUuid = item.uuid,
                                 reminderType = selectedType,
                                 reminderTime = if (selectedType == ReminderType.ONCE) reminderTime else null,
                                 dailyTime = if (selectedType == ReminderType.DAILY) dailyTime else null,

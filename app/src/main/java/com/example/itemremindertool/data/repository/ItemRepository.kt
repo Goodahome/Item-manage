@@ -25,11 +25,11 @@ class ItemRepository(
     }
     fun getAllItems(): Flow<List<Item>> = itemDao.getAllItems()
 
-    suspend fun getItemById(id: Long): Item? = itemDao.getItemById(id)
+    suspend fun getItemByUuid(uuid: String): Item? = itemDao.getItemByUuid(uuid)
 
-    fun getItemsByCategory(categoryId: Long): Flow<List<Item>> = itemDao.getItemsByCategory(categoryId)
+    fun getItemsByCategory(categoryUuid: String): Flow<List<Item>> = itemDao.getItemsByCategory(categoryUuid)
 
-    fun getItemsByWarehouse(warehouseId: Long): Flow<List<Item>> = itemDao.getItemsByWarehouse(warehouseId)
+    fun getItemsByWarehouse(warehouseUuid: String): Flow<List<Item>> = itemDao.getItemsByWarehouse(warehouseUuid)
 
     fun getExpiredItems(currentTime: Long = System.currentTimeMillis()): Flow<List<Item>> = itemDao.getExpiredItems(currentTime)
 
@@ -47,10 +47,10 @@ class ItemRepository(
 
     fun getExpiredItemCount(currentTime: Long = System.currentTimeMillis()): Flow<Int> = itemDao.getExpiredItemCount(currentTime)
 
-    suspend fun insertItem(item: Item): Long {
+    suspend fun insertItem(item: Item) {
         // 1. 本地写入
-        val itemId = itemDao.insertItem(item)
-        val savedItem = itemDao.getItemById(itemId) ?: item
+        itemDao.insertItem(item)
+        val savedItem = itemDao.getItemByUuid(item.uuid) ?: item
         
         // 2. 记录动态
         context?.let {
@@ -60,7 +60,7 @@ class ItemRepository(
                     type = com.example.itemremindertool.data.model.ActivityEventType.ITEM_ADDED,
                     title = it.getString(com.example.itemremindertool.R.string.event_added_item),
                     description = item.name,
-                    targetId = itemId,
+                    targetUuid = savedItem.uuid,
                     targetName = item.name,
                     iconType = "add_item",
                     createdAt = Date()
@@ -81,8 +81,6 @@ class ItemRepository(
                 }
             }
         }
-        
-        return itemId
     }
 
     suspend fun updateItem(item: Item) {
@@ -97,7 +95,7 @@ class ItemRepository(
                     type = com.example.itemremindertool.data.model.ActivityEventType.ITEM_UPDATED,
                     title = it.getString(com.example.itemremindertool.R.string.event_updated_item),
                     description = item.name,
-                    targetId = item.id,
+                    targetUuid = item.uuid,
                     targetName = item.name,
                     iconType = "update_item",
                     createdAt = Date()
@@ -135,7 +133,7 @@ class ItemRepository(
                     type = com.example.itemremindertool.data.model.ActivityEventType.ITEM_USED,
                     title = it.getString(com.example.itemremindertool.R.string.event_used_item),
                     description = "${item.name} × $usedQuantity",
-                    targetId = item.id,
+                    targetUuid = item.uuid,
                     targetName = item.name,
                     iconType = "use_item",
                     createdAt = Date()
@@ -156,7 +154,7 @@ class ItemRepository(
         deletedRecordDao?.insertDeletedRecord(
             DeletedRecord(
                 entityType = "item",
-                entityId = item.id,
+                entityUuid = item.uuid,
                 deletedAt = Date()
             )
         )
@@ -169,7 +167,7 @@ class ItemRepository(
                     type = com.example.itemremindertool.data.model.ActivityEventType.ITEM_DELETED,
                     title = it.getString(com.example.itemremindertool.R.string.event_deleted_item),
                     description = item.name,
-                    targetId = item.id,
+                    targetUuid = item.uuid,
                     targetName = item.name,
                     iconType = "delete_item",
                     createdAt = Date()
@@ -193,17 +191,13 @@ class ItemRepository(
     }
 
     @androidx.room.Transaction
-    suspend fun deleteItemById(id: Long) {
-        // 在事务中删除数据和记录删除操作，确保原子性
-        itemDao.deleteItemById(id)
-        // 记录删除操作
-        deletedRecordDao?.insertDeletedRecord(
-            DeletedRecord(
-                entityType = "item",
-                entityId = id,
-                deletedAt = Date()
-            )
-        )
+    suspend fun deleteItemByUuid(uuid: String) {
+        val item = itemDao.getItemByUuid(uuid)
+        if (item != null) {
+            deleteItem(item)
+        } else {
+            itemDao.deleteItemByUuid(uuid)
+        }
     }
 }
 

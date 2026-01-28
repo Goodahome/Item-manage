@@ -273,15 +273,15 @@ fun CloudStorageSettingsScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = stringResource(R.string.auto_sync),
+                                text = stringResource(R.string.auto_backup),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = ColorHelpers.getGroup4TextColor()
                             )
                             Text(
                                 text = if (autoSyncEnabled) {
-                                    stringResource(R.string.auto_sync_enabled)
+                                    stringResource(R.string.auto_backup_enabled)
                                 } else {
-                                    stringResource(R.string.auto_sync_disabled)
+                                    stringResource(R.string.auto_backup_disabled)
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = ColorHelpers.getGroup4TextColor(0.7f),
@@ -306,10 +306,10 @@ fun CloudStorageSettingsScreen(
                                 prefs.edit().putBoolean("auto_sync_enabled", it).apply()
                                 if (it && isProviderReady) {
                                     com.example.itemremindertool.utils.CloudSyncScheduler.scheduleSync(context)
-                                    viewModel.showSuccess("自动同步已启用")
+                                    viewModel.showSuccess(context.getString(R.string.auto_backup_toast_enabled))
                                 } else {
                                     com.example.itemremindertool.utils.CloudSyncScheduler.cancelSync(context)
-                                    viewModel.showSuccess("自动同步已禁用")
+                                    viewModel.showSuccess(context.getString(R.string.auto_backup_toast_disabled))
                                 }
                             }
                         )
