@@ -21,7 +21,7 @@ android {
         targetSdk = 36
         // 版本号配置 - 每次发布新版本时递增 versionCode，更新 versionName
         versionCode = 2
-        versionName = "1.0.1"
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
