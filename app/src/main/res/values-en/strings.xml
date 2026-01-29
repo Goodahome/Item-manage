@@ -587,6 +587,7 @@
     <string name="item_used_quantity_description">%1$s × %2$d</string>
     <string name="item_current_stock_description">%1$s current stock: %2$d</string>
     <string name="item_days_until_expiry_description">%1$s will expire in %2$d days</string>
+    <string name="item_days_until_reminder_title">Item will be reminded in %1$d days</string>
     
     <!-- 云端同步消息 -->
     <string name="sync">Sync</string>
@@ -660,7 +661,6 @@
     <string name="reminder_type_yearly_display">Yearly Reminder</string>
     
     <!-- Reminder Type Display (Simple) -->
-    <string name="reminder_type_once_simple">One-time Reminder</string>
     <string name="reminder_type_once_short">Once</string>
     <string name="reminder_type_daily_short">Daily</string>
     <string name="reminder_type_monthly_short">Monthly</string>
@@ -859,6 +859,11 @@
     <string name="drawer_account_label">Account: %1$s</string>
     <string name="drawer_login">Log in</string>
     <string name="drawer_logout">Log out</string>
+    <string name="register">Register</string>
+    <string name="switch_account">Switch account</string>
+    <string name="select_account">Select account</string>
+    <string name="back_to_login">Back to login</string>
+    <string name="no_saved_accounts">No accounts available</string>
     <string name="drawer_name_hint">Name</string>
     <string name="drawer_account_hint">Account</string>
 </resources>

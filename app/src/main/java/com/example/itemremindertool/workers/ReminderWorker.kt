@@ -5,6 +5,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.itemremindertool.data.database.AppDatabase
 import com.example.itemremindertool.data.model.ItemReminder
+import com.example.itemremindertool.data.model.ReminderType
+import com.example.itemremindertool.sync.SyncManager
 import com.example.itemremindertool.utils.NotificationHelper
 import com.example.itemremindertool.utils.ReminderScheduler
 import kotlinx.coroutines.Dispatchers
@@ -47,8 +49,17 @@ class ReminderWorker(
                 item
             )
             
-            // 如果是循环提醒，需要重新调度下一次提醒
-            if (reminder.reminderType != com.example.itemremindertool.data.model.ReminderType.ONCE) {
+            if (reminder.reminderType == ReminderType.ONCE) {
+                // 单次提醒触发后自动删除
+                reminderDao.deleteReminder(reminder)
+                ReminderScheduler.cancelReminder(applicationContext, reminder.uuid)
+                try {
+                    SyncManager.getInstance(applicationContext).deleteReminderFromRemote(reminder.uuid)
+                } catch (e: Exception) {
+                    android.util.Log.e("ReminderWorker", "同步删除单次提醒失败", e)
+                }
+            } else {
+                // 循环提醒需要重新调度下一次提醒
                 ReminderScheduler.scheduleReminder(applicationContext, reminder)
             }
             

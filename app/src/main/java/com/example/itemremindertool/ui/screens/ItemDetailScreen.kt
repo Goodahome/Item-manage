@@ -587,7 +587,7 @@ fun ItemDetailScreen(
                                     }
                                     val borderWidth = if (outlineEnabled) 2.dp else 1.dp
                                     Surface(
-                                        shape = RoundedCornerShape(16.dp),
+                                        shape = MaterialTheme.shapes.medium,
                                         color = if (outlineEnabled) Color.Transparent else tagBgColor,
                                         modifier = Modifier.padding(vertical = 4.dp),
                                         border = BorderStroke(borderWidth, borderColor)

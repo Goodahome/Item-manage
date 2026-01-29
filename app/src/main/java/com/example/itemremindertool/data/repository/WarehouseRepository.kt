@@ -53,6 +53,15 @@ class WarehouseRepository(
                     createdAt = Date()
                 )
                 activityEventDao.insert(event)
+                syncManager?.let { manager ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            manager.syncActivityEventToRemote(event)
+                        } catch (e: Exception) {
+                            android.util.Log.e("WarehouseRepository", "同步创建容器动态失败", e)
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 android.util.Log.e("WarehouseRepository", "记录创建容器动态失败", e)
             }
@@ -88,6 +97,15 @@ class WarehouseRepository(
                     createdAt = Date()
                 )
                 activityEventDao.insert(event)
+                syncManager?.let { manager ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            manager.syncActivityEventToRemote(event)
+                        } catch (e: Exception) {
+                            android.util.Log.e("WarehouseRepository", "同步更新容器动态失败", e)
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 android.util.Log.e("WarehouseRepository", "记录更新容器动态失败", e)
             }
@@ -308,6 +326,15 @@ class WarehouseRepository(
                     createdAt = Date()
                 )
                 activityEventDao.insert(event)
+                syncManager?.let { manager ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            manager.syncActivityEventToRemote(event)
+                        } catch (e: Exception) {
+                            android.util.Log.e("WarehouseRepository", "同步删除容器动态失败", e)
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 android.util.Log.e("WarehouseRepository", "记录删除容器动态失败", e)
             }
@@ -332,6 +359,15 @@ class WarehouseRepository(
                     createdAt = Date()
                 )
                 activityEventDao.insert(event)
+                syncManager?.let { manager ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            manager.syncActivityEventToRemote(event)
+                        } catch (e: Exception) {
+                            android.util.Log.e("WarehouseRepository", "同步删除容器动态失败", e)
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 android.util.Log.e("WarehouseRepository", "记录删除容器动态失败", e)
             }

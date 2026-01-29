@@ -89,5 +89,28 @@ export async function upsertDeletedRecord(req: Request, res: Response) {
     }
   });
 
+  switch (record.entityType) {
+    case "item":
+      await prisma.item.deleteMany({ where: { uuid: record.entityUuid, userId } });
+      break;
+    case "category":
+      await prisma.category.deleteMany({ where: { uuid: record.entityUuid, userId } });
+      break;
+    case "warehouse":
+      await prisma.warehouse.deleteMany({ where: { uuid: record.entityUuid, userId } });
+      break;
+    case "shopping_item":
+      await prisma.shoppingItem.deleteMany({ where: { uuid: record.entityUuid, userId } });
+      break;
+    case "reminder":
+      await prisma.itemReminder.deleteMany({ where: { uuid: record.entityUuid, userId } });
+      break;
+    case "activity_event":
+      await prisma.activityEvent.deleteMany({ where: { uuid: record.entityUuid, userId } });
+      break;
+    default:
+      break;
+  }
+
   return res.json(ok(record));
 }

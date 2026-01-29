@@ -59,19 +59,19 @@ class ShoppingItemRepository(
         }
     }
 
-    suspend fun deleteShoppingItem(item: ShoppingItem) {
+    suspend fun deleteShoppingItem(item: ShoppingItem, recordPurchaseEvent: Boolean = true) {
         val uuid = item.uuid
         
         // 1. 本地删除
         shoppingItemDao.deleteShoppingItem(item)
         
         // 2. 如果是已完成的购物项，记录购买动态
-        if (item.isCompleted) {
+        if (item.isCompleted && recordPurchaseEvent) {
             context?.let {
                 try {
                     val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
                     val event = com.example.itemremindertool.data.model.ActivityEvent(
-                        type = com.example.itemremindertool.data.model.ActivityEventType.ITEM_ADDED,
+                        type = com.example.itemremindertool.data.model.ActivityEventType.ITEM_PURCHASED,
                         title = it.getString(com.example.itemremindertool.R.string.event_purchased_item),
                         description = "${item.name}${if (item.quantity > 1) " × ${item.quantity}" else ""}",
                         targetUuid = item.itemUuid,
@@ -80,6 +80,15 @@ class ShoppingItemRepository(
                         createdAt = Date()
                     )
                     activityEventDao.insert(event)
+                    syncManager?.let { manager ->
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                manager.syncActivityEventToRemote(event)
+                            } catch (e: Exception) {
+                                android.util.Log.e("ShoppingItemRepository", "同步购买动态失败", e)
+                            }
+                        }
+                    }
                 } catch (e: Exception) {
                     android.util.Log.e("ShoppingItemRepository", "记录购买动态失败", e)
                 }

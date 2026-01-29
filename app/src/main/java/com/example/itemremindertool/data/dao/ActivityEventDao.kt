@@ -21,6 +21,9 @@ interface ActivityEventDao {
 
     @Query("SELECT * FROM activity_events ORDER BY createdAt DESC")
     suspend fun getAllEventsSync(): List<ActivityEvent>
+
+    @Query("SELECT * FROM activity_events ORDER BY createdAt DESC LIMIT :limit")
+    suspend fun getRecentEventsSync(limit: Int = 5): List<ActivityEvent>
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(event: ActivityEvent): Long

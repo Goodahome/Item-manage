@@ -321,7 +321,7 @@ object ExcelImportExportUtils {
                     .associateBy { it.barcode!!.trim() }
                     .toMutableMap()
                 // 使用 UUID 而不是 ID 来构建映射
-                val itemsByNameWarehouse = existingItems
+                val itemsByNameWarehouse: MutableMap<String, Item> = existingItems
                     .associateBy { item ->
                         buildNameWarehouseKey(item.name, item.warehouseUuid)
                     }

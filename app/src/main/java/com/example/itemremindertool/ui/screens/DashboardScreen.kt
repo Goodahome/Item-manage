@@ -12,6 +12,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -29,11 +32,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.DisposableEffect
@@ -45,6 +55,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -476,7 +487,7 @@ fun DashboardScreen(
                             isRefreshing = true
                             scope.launch {
                                 withContext(Dispatchers.IO) {
-                                    SyncManager.getInstance(context).mergeRemoteAndLocalOnce()
+                                    SyncManager.getInstance(context).mergeRemoteAndLocalOnce(force = true)
                                     SyncQueueWorker.runNow(context)
                                 }
                                 dashboardViewModel.refresh()
@@ -1439,7 +1450,7 @@ fun WarehouseInfoBottomSheet(
 
     // 获取子容器（使用 derivedStateOf 优化性能）
     val childWarehouses by remember {
-        derivedStateOf {
+        derivedStateOf<List<Warehouse>> {
             val warehouseUuid = warehouse.uuid
             allWarehouses.filter { it.parentUuid == warehouseUuid }
         }
@@ -1474,7 +1485,7 @@ fun WarehouseInfoBottomSheet(
     val surfaceVariantColor = ColorHelpers.getSurfaceVariantColor()
     // 使用程序文字色作为内容颜色
     val breadcrumbTextColor = ColorHelpers.getGroup4TextColor()
-    
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         modifier = modifier,
@@ -1487,7 +1498,7 @@ fun WarehouseInfoBottomSheet(
         ) {
             // maxHeight 是 ModalBottomSheet 提供的可用高度（已自动减去系统栏等）
             // 使用更大的高度百分比，确保所有内容（包括创建时间）都能显示
-            val contentMaxHeight = maxHeight * 0.9f
+            val contentMaxHeight = this@BoxWithConstraints.maxHeight * 0.9f
 
             Column(
                 modifier = Modifier
@@ -1702,6 +1713,7 @@ fun WarehouseInfoBottomSheet(
     }
 }
 
+
 /**
  * 左侧容器图标列表项
  */
@@ -1719,6 +1731,8 @@ fun WarehouseIconItem(
     warehouseViewModel: WarehouseViewModel? = null, // 用于获取删除统计信息
     useCircleIcon: Boolean = true,
     useOutlineIcon: Boolean = false,
+    isExpanded: Boolean = false, // 新增：是否展开显示名称
+    expandedIconWidth: Dp = 96.dp, // 展开时图标背景宽度
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -1743,11 +1757,14 @@ fun WarehouseIconItem(
             )
         }
         
-        // 图标圆形容器（居中显示）
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
+        // 图标和名称（展开时显示名称）
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
             // 加载容器图片（检查文件是否存在）
             val warehouseImageBitmap = remember(warehouse.imageUri) {
                 if (warehouse.imageUri != null) {
@@ -1813,11 +1830,17 @@ fun WarehouseIconItem(
             var pendingClick by remember { mutableStateOf(false) }
             var clickJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
             
+            val iconWidth by animateDpAsState(
+                targetValue = if (isExpanded) expandedIconWidth else 44.dp,
+                animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+                label = "warehouse_icon_width"
+            )
             Box {
                 val iconShapeForShadow = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
                 Box(
                     modifier = Modifier
-                        .size(44.dp) // 略增尺寸
+                        .height(44.dp)
+                        .width(iconWidth) // 展开/折叠动画
                         .then(
                             if (useOutlineIcon) {
                                 Modifier
@@ -1877,17 +1900,21 @@ fun WarehouseIconItem(
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        // 显示容器首字母或图标（无图片时显示文字）
-                    val displayChar = firstDisplayChar(warehouse.name)
-                    Text(
-                        text = displayChar, // 支持 emoji
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = textColor // 根据背景颜色对比度自动切换
-                    )
+                        // 展开时显示完整名称，收起时显示首字母
+                        Text(
+                            text = if (isExpanded) warehouse.name else firstDisplayChar(warehouse.name),
+                            style = if (isExpanded) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = if (isExpanded) 16.sp else 16.sp,
+                            color = textColor, // 根据背景颜色对比度自动切换
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = if (isExpanded) Modifier.padding(horizontal = 6.dp) else Modifier
+                        )
                     }
                 }
+            } // 关闭 Row
+        } // 关闭外层 Box
                 
                 // 长按菜单 - 添加背景层以支持点击外部关闭
                 if (showMenu) {
@@ -2009,7 +2036,7 @@ fun WarehouseIconItem(
                         )
                     }
             }
-        }
+
         
         // 删除确认对话框（简化版，只显示风险提示）
         if (showDeleteConfirmDialog) {
@@ -2055,7 +2082,8 @@ fun WarehouseIconItem(
             }
         }
     }
-}
+
+
 
 /**
  * 左侧容器图标列
@@ -2079,30 +2107,59 @@ fun WarehouseSidebarColumn(
     onAddButtonPositioned: ((androidx.compose.ui.layout.LayoutCoordinates) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    // 展开/折叠状态
+    var isExpanded by remember { mutableStateOf(false) }
+    val expandedIconWidth = 96.dp
+    val homeIconWidth by animateDpAsState(
+        targetValue = if (isExpanded) expandedIconWidth else 44.dp,
+        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+        label = "home_icon_width"
+    )
+    val addIconWidth by animateDpAsState(
+        targetValue = if (isExpanded) expandedIconWidth else 44.dp,
+        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+        label = "add_icon_width"
+    )
+    val sidebarWidth by animateDpAsState(
+        targetValue = if (isExpanded) 118.dp else 66.dp,
+        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+        label = "sidebar_width"
+    )
+
     // Card 容器（与右侧子容器列表样式一致）
-    Card(
-        modifier = modifier
-            .width(66.dp)
-            .fillMaxHeight()
-            .padding(start = 0.dp, end = 0.dp, top = 3.dp, bottom = 3.dp),
-        shape = RoundedCornerShape(12.dp), // 与右侧子容器列表一致
-        colors = CardDefaults.cardColors(
-            containerColor = ColorHelpers.getGroup3CardBgColor()
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // 与右侧子容器列表一致
-    ) {
-        Column(
+    Box(modifier = modifier.fillMaxHeight()) {
+        Card(
             modifier = Modifier
+                .width(sidebarWidth)
                 .fillMaxHeight()
-                .fillMaxWidth()
-                .padding(vertical = 6.dp), // 减小：8dp → 6dp
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp) // 减小：12dp → 8dp
+                .padding(start = 0.dp, end = 0.dp, top = 3.dp, bottom = 3.dp),
+            shape = RoundedCornerShape(12.dp), // 与右侧子容器列表一致
+            colors = CardDefaults.cardColors(
+                containerColor = ColorHelpers.getGroup3CardBgColor()
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // 与右侧子容器列表一致
         ) {
-            // 首页图标（固定在顶部）
-            val isHomeSelected = selectedWarehouseUuid == null
-            val iconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
-            Box(
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp) // 减小：8dp → 6dp
+                    .pointerInput(isExpanded) {
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = true)
+                            val up = waitForUpOrCancellation()
+                            if (up != null) {
+                                isExpanded = !isExpanded
+                            }
+                        }
+                    },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp) // 减小：12dp → 8dp
+            ) {
+                // 首页图标（固定在顶部）
+                val isHomeSelected = selectedWarehouseUuid == null
+                val iconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
+                Box(
                     modifier = Modifier.fillMaxWidth() // 确保容器占满宽度，让指示器能正确显示
                 ) {
                     // 选中指示器（左侧竖条）
@@ -2120,10 +2177,13 @@ fun WarehouseSidebarColumn(
                         )
                     }
 
-                    // 首页图标圆形容器（居中显示）
+                    // 首页图标和文字（展开时显示）
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
                         val iconColor = if (useOutlineIcon) {
@@ -2133,7 +2193,8 @@ fun WarehouseSidebarColumn(
                         }
                         Box(
                             modifier = Modifier
-                                .size(44.dp) // 略增尺寸，提升点击面积
+                            .height(44.dp)
+                            .width(homeIconWidth) // 展开/折叠动画
                                 .then(
                                     if (useOutlineIcon) {
                                         Modifier
@@ -2157,117 +2218,134 @@ fun WarehouseSidebarColumn(
                                 .clickable(onClick = onHomeClick),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                Icons.Default.Home,
-                                contentDescription = "首页",
-                                tint = iconColor, // 根据背景颜色对比度自动切换
-                                modifier = Modifier.size(22.dp) // 与外圈同比增大
-                            )
-                        }
-                    }
-                }
-
-
-            // 分隔线（两端半圆）
-            Box(
-                modifier = Modifier
-                    .width(32.dp)
-                    .height(2.dp)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(ColorHelpers.getDividerColor())
-            )
-
-            // 容器列表（可滚动）- 支持嵌套滚动以允许下拉刷新
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .nestedScroll(object : NestedScrollConnection {
-                        override fun onPreScroll(
-                            available: Offset,
-                            source: NestedScrollSource
-                        ): Offset {
-                            // 允许下拉手势向上传递
-                            return Offset.Zero
-                        }
-                    }),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp) // 减小：12dp → 8dp
-            ) {
-                itemsIndexed(warehouses, key = { _, warehouse -> warehouse.uuid }) { index, warehouse ->
-                    WarehouseIconItem(
-                        warehouse = warehouse,
-                        isSelected = warehouse.uuid == selectedWarehouseUuid,
-                        itemCount = warehouseItemCounts[warehouse.uuid] ?: 0,
-                        onClick = { onWarehouseClick(warehouse) },
-                        onEditWarehouse = onEditWarehouse,
-                        onDeleteWarehouse = onDeleteWarehouse,
-                        onViewInfo = onViewInfo,
-                        onGenerateQRCode = onGenerateQRCode,
-                        warehouseViewModel = warehouseViewModel,
-                        useCircleIcon = useCircleIcon,
-                        useOutlineIcon = useOutlineIcon,
-                        modifier = if (index == 0 && onFirstWarehousePositioned != null) {
-                            Modifier.onGloballyPositioned { onFirstWarehousePositioned(it) }
-                        } else {
-                            Modifier
-                        }
-                    )
-                }
-
-                // 添加按钮（跟随在容器图标后面）
-                item {
-                    val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
-                    val iconColor = if (useOutlineIcon) {
-                        backgroundColor
-                    } else {
-                        ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
-                    }
-                    val addButtonIconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp) // 与容器图标同步增大
-                            .then(
-                                if (useOutlineIcon) {
-                                    Modifier
-                                } else {
-                                    Modifier.shadow(
-                                        elevation = 4.dp,
-                                        shape = addButtonIconShape,
-                                        spotColor = Color.Black.copy(alpha = 0.3f),
-                                        ambientColor = Color.Black.copy(alpha = 0.15f)
-                                    )
-                                }
-                            )
-                            .clip(addButtonIconShape)
-                            .then(
-                                if (useOutlineIcon) {
-                                    Modifier.border(2.dp, backgroundColor, addButtonIconShape)
-                                } else {
-                                    Modifier.background(backgroundColor) // 与容器图标颜色一致
-                                }
-                            )
-                            .clickable(onClick = onAddWarehouse)
-                            .then(
-                                if (onAddButtonPositioned != null) {
-                                    Modifier.onGloballyPositioned { onAddButtonPositioned(it) }
-                                } else {
-                                    Modifier
-                                }
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
                         Icon(
-                            Icons.Default.Add,
-                            contentDescription = "添加容器",
+                            Icons.Default.Home,
+                            contentDescription = "首页",
                             tint = iconColor, // 根据背景颜色对比度自动切换
-                            modifier = Modifier.size(22.dp) // 与容器图标大小一致
+                            modifier = Modifier.size(22.dp) // 与外圈同比增大
+                        )
+                        }
+                    }
+                }
+
+
+                // 分隔线（两端半圆）
+                Box(
+                    modifier = Modifier
+                        .width(32.dp)
+                        .height(2.dp)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(ColorHelpers.getDividerColor())
+                )
+
+                // 容器列表（可滚动）- 支持嵌套滚动以允许下拉刷新
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .nestedScroll(object : NestedScrollConnection {
+                            override fun onPreScroll(
+                                available: Offset,
+                                source: NestedScrollSource
+                            ): Offset {
+                                // 允许下拉手势向上传递
+                                return Offset.Zero
+                            }
+                        }),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp) // 减小：12dp → 8dp
+                ) {
+                    itemsIndexed(
+                        warehouses,
+                        key = { _, warehouse -> warehouse.uuid }) { index, warehouse ->
+                        WarehouseIconItem(
+                            warehouse = warehouse,
+                            isSelected = warehouse.uuid == selectedWarehouseUuid,
+                            itemCount = warehouseItemCounts[warehouse.uuid] ?: 0,
+                            onClick = { onWarehouseClick(warehouse) },
+                            onEditWarehouse = onEditWarehouse,
+                            onDeleteWarehouse = onDeleteWarehouse,
+                            onViewInfo = onViewInfo,
+                            onGenerateQRCode = onGenerateQRCode,
+                            warehouseViewModel = warehouseViewModel,
+                            useCircleIcon = useCircleIcon,
+                            useOutlineIcon = useOutlineIcon,
+                            isExpanded = isExpanded,
+                            expandedIconWidth = expandedIconWidth,
+                            modifier = if (index == 0 && onFirstWarehousePositioned != null) {
+                                Modifier.onGloballyPositioned { onFirstWarehousePositioned(it) }
+                            } else {
+                                Modifier
+                            }
                         )
                     }
+
+                    // 添加按钮（跟随在容器图标后面）
+                    item {
+                        val backgroundColor = ColorHelpers.getGroup2SettingsBtnColor()
+                        val iconColor = if (useOutlineIcon) {
+                            backgroundColor
+                        } else {
+                            ColorHelpers.getGroup4IconColorByContrast(backgroundColor)
+                        }
+                        val addButtonIconShape =
+                            if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp),
+                            horizontalArrangement = Arrangement.Start,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .height(44.dp)
+                                    .width(addIconWidth) // 与容器图标同步动画
+                                    .then(
+                                        if (useOutlineIcon) {
+                                            Modifier
+                                        } else {
+                                            Modifier.shadow(
+                                                elevation = 4.dp,
+                                                shape = addButtonIconShape,
+                                                spotColor = Color.Black.copy(alpha = 0.3f),
+                                                ambientColor = Color.Black.copy(alpha = 0.15f)
+                                            )
+                                        }
+                                    )
+                                    .clip(addButtonIconShape)
+                                    .then(
+                                        if (useOutlineIcon) {
+                                            Modifier.border(2.dp, backgroundColor, addButtonIconShape)
+                                        } else {
+                                            Modifier.background(backgroundColor) // 与容器图标颜色一致
+                                        }
+                                    )
+                                    .clickable(onClick = onAddWarehouse)
+                                    .then(
+                                        if (onAddButtonPositioned != null) {
+                                            Modifier.onGloballyPositioned { onAddButtonPositioned(it) }
+                                        } else {
+                                            Modifier
+                                        }
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = "添加容器",
+                                    tint = iconColor, // 根据背景颜色对比度自动切换
+                                    modifier = Modifier.size(22.dp) // 与容器图标大小一致
+                                )
+                            }
+                        }
+                    }
+
                 }
             }
         }
-    }
+    } // 关闭外层 Box
 }
+
 
 /**
  * 右上子容器图标项
@@ -2936,6 +3014,7 @@ fun ItemListRow(
                             }
                         }
                     }
+
                 }
                 
                 // 过期日期和条码信息 - 分行显示，确保都能看到
@@ -3412,6 +3491,8 @@ fun ItemListSection(
     
     // 选中的物品（仅网格模式使用）- 使用 rememberSaveable 保存配置变更
     var selectedItemUuid by rememberSaveable { mutableStateOf<String?>(null) }
+    var infoCardBoundsInRoot by remember { mutableStateOf<Rect?>(null) }
+    var gridContainerBoundsInRoot by remember { mutableStateOf<Rect?>(null) }
     var itemToMove by remember { mutableStateOf<Item?>(null) }
     var showMoveDialog by remember { mutableStateOf(false) }
     val canMoveItems = warehouseViewModel != null
@@ -3424,24 +3505,17 @@ fun ItemListSection(
     
     // 配置变更标志位 - 用于在配置变更时延迟复杂渲染
     var isConfigChanging by remember { mutableStateOf(false) }
+    var hasConfigInitialized by remember { mutableStateOf(false) }
     
-    // 监听配置变更
-    DisposableEffect(configuration) {
-        // 配置变更开始
-        isConfigChanging = true
-        selectedItemUuid = null
-        
-        onDispose {
-            // 配置变更结束
-            isConfigChanging = false
-        }
-    }
-    
-    // 延迟恢复渲染，给配置变更留出时间
-    LaunchedEffect(isConfigChanging) {
-        if (isConfigChanging) {
+    // 监听配置变更（跳过首次进入，避免闪屏）
+    LaunchedEffect(configuration) {
+        if (hasConfigInitialized) {
+            isConfigChanging = true
+            selectedItemUuid = null
             kotlinx.coroutines.delay(100) // 延迟100ms
             isConfigChanging = false
+        } else {
+            hasConfigInitialized = true
         }
     }
     
@@ -3803,30 +3877,61 @@ fun ItemListSection(
                                 )
                             }
                             
-                            // 网格物品列表
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(gridColumns), // 使用固定列数，确保与计算一致
-                                state = gridState,
+                            // 网格物品列表（仅在网格区域空白处点击时取消选中）
+                            Box(
                                 modifier = Modifier
                                     .weight(1f)
                                     .fillMaxSize()
-                                    .nestedScroll(object : NestedScrollConnection {
-                                        override fun onPreScroll(
-                                            available: Offset,
-                                            source: NestedScrollSource
-                                        ): Offset {
-                                            return Offset.Zero
+                                    .onGloballyPositioned { coordinates ->
+                                        gridContainerBoundsInRoot = coordinates.boundsInRoot()
+                                    }
+                                    .pointerInput(selectedItemUuid) {
+                                        awaitEachGesture {
+                                            val down = awaitFirstDown(requireUnconsumed = false)
+                                            val up = waitForUpOrCancellation()
+                                            if (up != null && !up.isConsumed && selectedItemUuid != null) {
+                                                val containerBounds = gridContainerBoundsInRoot
+                                                val infoBounds = infoCardBoundsInRoot
+                                                val tapInRoot = if (containerBounds != null) {
+                                                    Offset(
+                                                        x = containerBounds.left + down.position.x,
+                                                        y = containerBounds.top + down.position.y
+                                                    )
+                                                } else {
+                                                    null
+                                                }
+                                                val isInInfoCard = tapInRoot != null &&
+                                                    infoBounds != null &&
+                                                    infoBounds.contains(tapInRoot)
+                                                if (!isInInfoCard) {
+                                                    selectedItemUuid = null
+                                                }
+                                            }
                                         }
-                                    }),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                contentPadding = PaddingValues(
-                                    bottom = 12.dp,
-                                    top = if (allTags.isNotEmpty()) 0.dp else 12.dp,
-                                    start = 12.dp,
-                                    end = 12.dp // 右侧留出空间显示圆角
-                                )
+                                    }
                             ) {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(gridColumns), // 使用固定列数，确保与计算一致
+                                    state = gridState,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .nestedScroll(object : NestedScrollConnection {
+                                            override fun onPreScroll(
+                                                available: Offset,
+                                                source: NestedScrollSource
+                                            ): Offset {
+                                                return Offset.Zero
+                                            }
+                                        }),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    contentPadding = PaddingValues(
+                                        bottom = 12.dp,
+                                        top = if (allTags.isNotEmpty()) 0.dp else 12.dp,
+                                        start = 12.dp,
+                                        end = 12.dp // 右侧留出空间显示圆角
+                                    )
+                                ) {
                             val firstGridItemUuid = filteredItems.firstOrNull()?.uuid
                             items(
                                 count = itemsWithDetail.size,
@@ -3893,13 +3998,10 @@ fun ItemListSection(
                                             },
                                             modifier = Modifier
                                                 .widthIn(max = 500.dp)
-                                                .then(
-                                                    if (onInfoCardPositioned != null) {
-                                                        Modifier.onGloballyPositioned { onInfoCardPositioned(it) }
-                                                    } else {
-                                                        Modifier
-                                                    }
-                                                ) // 限制最大宽度，平板上不会太宽
+                                                .onGloballyPositioned { coordinates ->
+                                                    infoCardBoundsInRoot = coordinates.boundsInRoot()
+                                                    onInfoCardPositioned?.invoke(coordinates)
+                                                } // 限制最大宽度，平板上不会太宽
                                         )
                                     }
                                 } else {
@@ -3925,6 +4027,7 @@ fun ItemListSection(
                                             Modifier
                                         }
                                     )
+                                }
                                 }
                             }
                         }
@@ -3955,7 +4058,7 @@ fun ItemListSection(
             }
         )
     }
-}
+    }
 }
 
 /**
@@ -5109,6 +5212,12 @@ fun ShoppingListSection(
                                     val itemDao = com.example.itemremindertool.data.database.AppDatabase
                                         .getDatabase(context)
                                         .itemDao()
+                                    val activityEventDao = com.example.itemremindertool.data.database.AppDatabase
+                                        .getDatabase(context)
+                                        .activityEventDao()
+                                    val purchaseSummary = completedItems.joinToString(", ") { shoppingItem ->
+                                        "${shoppingItem.name} × ${shoppingItem.quantity}"
+                                    }
 
                                     completedItems.forEach { shoppingItem ->
                                         // 如果有关联的物品，补充库存
@@ -5117,9 +5226,12 @@ fun ShoppingListSection(
                                                 val item = itemDao.getItemByUuid(itemUuid)
                                                 item?.let {
                                                     val updatedItem = it.copy(
-                                                        quantity = it.quantity + shoppingItem.quantity
+                                                        quantity = it.quantity + shoppingItem.quantity,
+                                                        updatedAt = Date()
                                                     )
                                                     itemDao.updateItem(updatedItem)
+                                                    // 补充库存后立即同步到远端
+                                                    SyncManager.getInstance(context).syncItemToRemote(updatedItem)
                                                 } ?: run {
                                                     // 如果物品不存在，记录错误但不阻止删除购物项
                                                     android.util.Log.e("ShoppingList", "物品不存在: itemUuid=$itemUuid")
@@ -5132,7 +5244,25 @@ fun ShoppingListSection(
                                             android.util.Log.w("ShoppingList", "购物项没有关联的物品ID: ${shoppingItem.name}")
                                         }
                                         // 删除已完成的待购物品
-                                        shoppingItemViewModel?.deleteShoppingItem(shoppingItem)
+                                        shoppingItemViewModel?.deleteShoppingItem(shoppingItem, recordPurchaseEvent = false)
+                                    }
+
+                                    if (completedItems.isNotEmpty()) {
+                                        try {
+                                            val event = com.example.itemremindertool.data.model.ActivityEvent(
+                                                type = com.example.itemremindertool.data.model.ActivityEventType.ITEM_PURCHASED,
+                                                title = context.getString(com.example.itemremindertool.R.string.event_purchased_item),
+                                                description = purchaseSummary,
+                                                targetUuid = null,
+                                                targetName = "",
+                                                iconType = "purchase",
+                                                createdAt = Date()
+                                            )
+                                            activityEventDao.insert(event)
+                                            SyncManager.getInstance(context).syncActivityEventToRemote(event)
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("ShoppingList", "记录购买动态失败", e)
+                                        }
                                     }
                                 }
                                 showCompletePurchaseDialog = false
@@ -5710,8 +5840,131 @@ fun AlertListSection(
     val themeColor = MaterialTheme.colorScheme.primary
     val expiringSoonTitle = stringResource(R.string.expiring_soon_title)
     val lowStockTitle = stringResource(R.string.low_stock_title)
-    val allTimeline = remember(expiringItems, lowStockItems, activeReminders, activityEvents, forgetCandidates, themeColor, expiringSoonTitle, lowStockTitle) {
+    val reminderSoonDays = expiryReminderDays
+    fun parseHourMinute(time: String?): Pair<Int, Int>? {
+        if (time.isNullOrBlank()) return null
+        val parts = time.split(":")
+        if (parts.size < 2) return null
+        val hour = parts[0].toIntOrNull() ?: return null
+        val minute = parts[1].toIntOrNull() ?: return null
+        if (hour !in 0..23 || minute !in 0..59) return null
+        return hour to minute
+    }
+    fun computeNextReminderTime(
+        reminder: com.example.itemremindertool.data.model.ItemReminder,
+        now: Long
+    ): Long? {
+        val calendar = Calendar.getInstance().apply { timeInMillis = now }
+        return when (reminder.reminderType) {
+            com.example.itemremindertool.data.model.ReminderType.ONCE -> reminder.reminderTime?.time
+            com.example.itemremindertool.data.model.ReminderType.DAILY -> {
+                val hm = parseHourMinute(reminder.dailyTime) ?: return null
+                calendar.set(Calendar.HOUR_OF_DAY, hm.first)
+                calendar.set(Calendar.MINUTE, hm.second)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                if (calendar.timeInMillis <= now) {
+                    calendar.add(Calendar.DAY_OF_YEAR, 1)
+                }
+                calendar.timeInMillis
+            }
+            com.example.itemremindertool.data.model.ReminderType.MONTHLY -> {
+                val hm = parseHourMinute(reminder.monthlyTime) ?: return null
+                val day = reminder.monthlyDay ?: return null
+                val maxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+                calendar.set(Calendar.DAY_OF_MONTH, minOf(day, maxDay))
+                calendar.set(Calendar.HOUR_OF_DAY, hm.first)
+                calendar.set(Calendar.MINUTE, hm.second)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                if (calendar.timeInMillis <= now) {
+                    calendar.add(Calendar.MONTH, 1)
+                    val newMaxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+                    calendar.set(Calendar.DAY_OF_MONTH, minOf(day, newMaxDay))
+                }
+                calendar.timeInMillis
+            }
+            com.example.itemremindertool.data.model.ReminderType.YEARLY -> {
+                val hm = parseHourMinute(reminder.yearlyTime) ?: return null
+                val month = reminder.yearlyMonth ?: return null
+                val day = reminder.yearlyDay ?: return null
+                calendar.set(Calendar.MONTH, month - 1)
+                val maxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+                calendar.set(Calendar.DAY_OF_MONTH, minOf(day, maxDay))
+                calendar.set(Calendar.HOUR_OF_DAY, hm.first)
+                calendar.set(Calendar.MINUTE, hm.second)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                if (calendar.timeInMillis <= now) {
+                    calendar.add(Calendar.YEAR, 1)
+                    calendar.set(Calendar.MONTH, month - 1)
+                    val newMaxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+                    calendar.set(Calendar.DAY_OF_MONTH, minOf(day, newMaxDay))
+                }
+                calendar.timeInMillis
+            }
+        }
+    }
+    fun buildReminderSchedule(
+        reminder: com.example.itemremindertool.data.model.ItemReminder,
+        reminderTime: Long
+    ): String {
+        val timeFormat = DateFormat.getTimeInstance(DateFormat.SHORT, Locale.getDefault())
+        val dateTimeFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault())
+        return when (reminder.reminderType) {
+            com.example.itemremindertool.data.model.ReminderType.ONCE -> {
+                context.getString(
+                    R.string.reminder_time_prefix,
+                    dateTimeFormat.format(Date(reminderTime))
+                )
+            }
+            com.example.itemremindertool.data.model.ReminderType.DAILY -> {
+                val hm = parseHourMinute(reminder.dailyTime)
+                val timeText = hm?.let {
+                    val cal = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, it.first)
+                        set(Calendar.MINUTE, it.second)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    timeFormat.format(cal.time)
+                } ?: context.getString(R.string.reminder_time_not_set)
+                context.getString(R.string.reminder_daily_prefix, timeText)
+            }
+            com.example.itemremindertool.data.model.ReminderType.MONTHLY -> {
+                val hm = parseHourMinute(reminder.monthlyTime)
+                val timeText = hm?.let {
+                    val cal = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, it.first)
+                        set(Calendar.MINUTE, it.second)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    timeFormat.format(cal.time)
+                } ?: context.getString(R.string.reminder_time_not_set)
+                val day = reminder.monthlyDay ?: 1
+                context.getString(R.string.reminder_monthly_prefix, day, timeText)
+            }
+            com.example.itemremindertool.data.model.ReminderType.YEARLY -> {
+                val hm = parseHourMinute(reminder.yearlyTime)
+                val timeText = hm?.let {
+                    val cal = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, it.first)
+                        set(Calendar.MINUTE, it.second)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    timeFormat.format(cal.time)
+                } ?: context.getString(R.string.reminder_time_not_set)
+                val month = reminder.yearlyMonth ?: 1
+                val day = reminder.yearlyDay ?: 1
+                context.getString(R.string.reminder_yearly_prefix, month, day, timeText)
+            }
+        }
+    }
+    val allTimeline = remember(expiringItems, lowStockItems, activeReminders, activityEvents, forgetCandidates, themeColor, expiringSoonTitle, lowStockTitle, reminderSoonDays) {
         val expiringTimeline = mutableListOf<TimelineItem>()
+        val reminderSoonTimeline = mutableListOf<TimelineItem>()
         val otherTimeline = mutableListOf<TimelineItem>()
         
         // 添加动态事件（正常按时间排序）
@@ -5727,6 +5980,8 @@ fun AlertListSection(
                     Icons.Default.RemoveCircle to themeColor
                 com.example.itemremindertool.data.model.ActivityEventType.ITEM_VIEWED ->
                     Icons.Default.Visibility to themeColor
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_PURCHASED ->
+                    Icons.Default.ShoppingCart to themeColor
                 com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_ADDED -> 
                     Icons.Default.Inventory2 to themeColor
                 com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_DELETED -> 
@@ -5753,6 +6008,8 @@ fun AlertListSection(
                     context.getString(R.string.event_used_item)
                 com.example.itemremindertool.data.model.ActivityEventType.ITEM_VIEWED ->
                     context.getString(R.string.event_viewed_item)
+                com.example.itemremindertool.data.model.ActivityEventType.ITEM_PURCHASED ->
+                    context.getString(R.string.event_purchased_item)
                 com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_ADDED ->
                     context.getString(R.string.event_created_warehouse)
                 com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_DELETED ->
@@ -5767,8 +6024,14 @@ fun AlertListSection(
                     context.getString(R.string.event_low_stock)
             }
             
-            // 描述保持使用 targetName（物品名或容器名），不需要翻译
-            val localizedDescription = event.targetName.ifEmpty { event.description }
+            // 描述保持使用名称或描述，不需要翻译
+            val localizedDescription = if (
+                event.type == com.example.itemremindertool.data.model.ActivityEventType.ITEM_PURCHASED
+            ) {
+                event.description.ifEmpty { event.targetName }
+            } else {
+                event.targetName.ifEmpty { event.description }
+            }
             
             otherTimeline.add(
                 TimelineItem(
@@ -5829,33 +6092,54 @@ fun AlertListSection(
             )
         }
         
-        // 添加自定义提醒（只显示一次性提醒且未过期的，不置顶）
+        // 添加自定义提醒（显示所有类型，未过期的即将提醒置顶）
         val currentTime = System.currentTimeMillis()
         activeReminders.forEach { reminder ->
             val item = items.find { it.uuid == reminder.itemUuid }
-            if (item != null && reminder.reminderType == com.example.itemremindertool.data.model.ReminderType.ONCE) {
-                val reminderTime = reminder.reminderTime?.time ?: currentTime
-                
-                // 只显示未过期的一次性提醒
-                if (reminderTime >= currentTime) {
-                    val typeStr = context.getString(R.string.reminder_type_once_display)
-                    
-                    otherTimeline.add(
-                        TimelineItem(
-                            id = "custom_${reminder.uuid}",
-                            type = "custom",
-                            title = typeStr,
-                            description = "${item.name} - ${reminder.reason}",
-                            time = reminderTime,
-                            icon = Icons.Default.Alarm,
-                            iconColor = themeColor,
-                            targetId = item.uuid,
-                            item = item,
-                            reminder = reminder
-                        )
-                    )
-                }
+            if (item == null) return@forEach
+            val reminderTime = computeNextReminderTime(reminder, currentTime) ?: return@forEach
+            if (reminderTime < currentTime) return@forEach
+            val dayMillis = 24 * 60 * 60 * 1000L
+            val daysUntil = ((reminderTime - currentTime + dayMillis - 1) / dayMillis).toInt()
+            val scheduleText = buildReminderSchedule(reminder, reminderTime)
+            val baseDescription = if (reminder.reason.isNotBlank()) {
+                "${item.name} - ${reminder.reason}"
+            } else {
+                item.name
             }
+            val description = "$baseDescription · $scheduleText"
+            val typeTitle = when (reminder.reminderType) {
+                com.example.itemremindertool.data.model.ReminderType.ONCE ->
+                    context.getString(R.string.reminder_type_once_display)
+                com.example.itemremindertool.data.model.ReminderType.DAILY ->
+                    context.getString(R.string.reminder_type_daily_display)
+                com.example.itemremindertool.data.model.ReminderType.MONTHLY ->
+                    context.getString(R.string.reminder_type_monthly_display)
+                com.example.itemremindertool.data.model.ReminderType.YEARLY ->
+                    context.getString(R.string.reminder_type_yearly_display)
+            }
+            val isSoon = daysUntil <= reminderSoonDays
+            val title = if (isSoon) {
+                context.getString(R.string.item_days_until_reminder_title, daysUntil)
+            } else {
+                typeTitle
+            }
+            val timelineTime = if (isSoon) reminderTime else reminder.createdAt.time
+            val targetTimeline = if (isSoon) reminderSoonTimeline else otherTimeline
+            targetTimeline.add(
+                TimelineItem(
+                    id = "custom_${reminder.uuid}",
+                    type = "custom",
+                    title = title,
+                    description = description,
+                    time = timelineTime,
+                    icon = Icons.Default.Alarm,
+                    iconColor = themeColor,
+                    targetId = item.uuid,
+                    item = item,
+                    reminder = reminder
+                )
+            )
         }
 
         // 添加防遗忘提醒入口（不置顶）
@@ -5873,10 +6157,12 @@ fun AlertListSection(
             )
         }
         
-        // 即将过期置顶（按到期时间升序），其他按时间降序
+        // 即将过期/即将提醒置顶（按时间升序），其他按时间排序
         val sortedExpiring = expiringTimeline.sortedBy { it.time }
-        val sortedOthers = otherTimeline.sortedByDescending { it.time }
-        sortedExpiring + sortedOthers
+        val sortedReminderSoon = reminderSoonTimeline.sortedBy { it.time }
+        val pastOthers = otherTimeline.filter { it.time <= currentTime }.sortedByDescending { it.time }
+        val futureOthers = otherTimeline.filter { it.time > currentTime }.sortedBy { it.time }
+        sortedExpiring + sortedReminderSoon + pastOthers + futureOthers
     }
     
     if (showForgetList) {

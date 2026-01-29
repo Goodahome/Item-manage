@@ -286,9 +286,9 @@ fun WarehouseDetailScreen(
                 warehouseViewModel = warehouseViewModel,
                 itemViewModel = itemViewModel,
                 shoppingItemViewModel = shoppingItemViewModel,
-                onWarehouseClick = { childWarehouseId ->
+                onWarehouseClick = { childWarehouseUuid ->
                     // 导航到子容器详情页面
-                    onNavigateToWarehouseItemsTab(childWarehouseId)
+                    onNavigateToWarehouseItemsTab(childWarehouseUuid)
                 },
                 onEditWarehouse = { /* 已移到顶部菜单 */ },
                 onEditItem = onEditItem,

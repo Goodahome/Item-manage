@@ -574,6 +574,7 @@
     <string name="item_used_quantity_description">%1$s × %2$d</string>
     <string name="item_current_stock_description">%1$s stock actuel : %2$d</string>
     <string name="item_days_until_expiry_description">%1$s expirera dans %2$d jours</string>
+    <string name="item_days_until_reminder_title">Rappel dans %1$d jours</string>
     
     <!-- 云端同步消息 -->
     <string name="sync">Synchroniser</string>
@@ -693,7 +694,6 @@
     <string name="reminder_type_yearly_display">Rappel annuel</string>
 
     <!-- Affichage du type de rappel (version simplifiée) -->
-    <string name="reminder_type_once_simple">Rappel unique</string>
     <string name="reminder_type_once_short">Unique</string>
     <string name="reminder_type_daily_short">Quotidien</string>
     <string name="reminder_type_monthly_short">Mensuel</string>
@@ -849,6 +849,11 @@
     <string name="drawer_account_label">Compte : %1$s</string>
     <string name="drawer_login">Se connecter</string>
     <string name="drawer_logout">Se déconnecter</string>
+    <string name="register">S’inscrire</string>
+    <string name="switch_account">Changer de compte</string>
+    <string name="select_account">Sélectionner un compte</string>
+    <string name="back_to_login">Retour à la connexion</string>
+    <string name="no_saved_accounts">Aucun compte disponible</string>
     <string name="drawer_name_hint">Nom</string>
     <string name="drawer_account_hint">Compte</string>
 </resources>

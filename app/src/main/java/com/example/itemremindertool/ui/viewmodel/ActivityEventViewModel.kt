@@ -6,13 +6,17 @@ import androidx.lifecycle.viewModelScope
 import com.example.itemremindertool.data.database.AppDatabase
 import com.example.itemremindertool.data.model.ActivityEvent
 import com.example.itemremindertool.data.model.ActivityEventType
+import com.example.itemremindertool.sync.SyncManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Date
 
 class ActivityEventViewModel(application: Application) : AndroidViewModel(application) {
     private val database = AppDatabase.getDatabase(application)
     private val activityEventDao = database.activityEventDao()
+    private val syncManager = SyncManager.getInstance(application)
     
     // 获取最近的动态（默认50条）
     val recentEvents: Flow<List<ActivityEvent>> = activityEventDao.getRecentEvents(50)
@@ -39,7 +43,7 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
                 iconType = "add_item",
                 createdAt = Date()
             )
-            activityEventDao.insert(event)
+            insertAndSync(event)
         }
     }
     
@@ -58,7 +62,7 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
                 iconType = "delete_item",
                 createdAt = Date()
             )
-            activityEventDao.insert(event)
+            insertAndSync(event)
         }
     }
     
@@ -77,7 +81,7 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
                 iconType = "update_item",
                 createdAt = Date()
             )
-            activityEventDao.insert(event)
+            insertAndSync(event)
         }
     }
     
@@ -96,7 +100,7 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
                 iconType = "use_item",
                 createdAt = Date()
             )
-            activityEventDao.insert(event)
+            insertAndSync(event)
         }
     }
 
@@ -115,7 +119,7 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
                 iconType = "view_item",
                 createdAt = Date()
             )
-            activityEventDao.insert(event)
+            insertAndSync(event)
         }
     }
     
@@ -134,7 +138,7 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
                 iconType = "add_warehouse",
                 createdAt = Date()
             )
-            activityEventDao.insert(event)
+            insertAndSync(event)
         }
     }
     
@@ -153,7 +157,7 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
                 iconType = "delete_warehouse",
                 createdAt = Date()
             )
-            activityEventDao.insert(event)
+            insertAndSync(event)
         }
     }
     
@@ -172,7 +176,7 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
                 iconType = "update_warehouse",
                 createdAt = Date()
             )
-            activityEventDao.insert(event)
+            insertAndSync(event)
         }
     }
     
@@ -191,7 +195,7 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
                 iconType = "reminder",
                 createdAt = Date()
             )
-            activityEventDao.insert(event)
+            insertAndSync(event)
         }
     }
     
@@ -214,7 +218,7 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
                 iconType = "expiring",
                 createdAt = Date()
             )
-            activityEventDao.insert(event)
+            insertAndSync(event)
         }
     }
     
@@ -237,7 +241,18 @@ class ActivityEventViewModel(application: Application) : AndroidViewModel(applic
                 iconType = "low_stock",
                 createdAt = Date()
             )
-            activityEventDao.insert(event)
+            insertAndSync(event)
+        }
+    }
+
+    private suspend fun insertAndSync(event: ActivityEvent) {
+        activityEventDao.insert(event)
+        try {
+            withContext(Dispatchers.IO) {
+                syncManager.syncActivityEventToRemote(event)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ActivityEventViewModel", "同步动态失败", e)
         }
     }
     

@@ -11,6 +11,7 @@ const eventSchema = z.object({
     "ITEM_DELETED",
     "ITEM_UPDATED",
     "ITEM_USED",
+    "ITEM_PURCHASED",
     "ITEM_VIEWED",
     "WAREHOUSE_ADDED",
     "WAREHOUSE_DELETED",
@@ -142,6 +143,21 @@ export async function upsertActivityEvent(req: Request, res: Response) {
       metadata: data.metadata ?? ""
     }
   });
+
+  const latestEvents = await prisma.activityEvent.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    select: { uuid: true }
+  });
+  if (latestEvents.length > 0) {
+    await prisma.activityEvent.deleteMany({
+      where: {
+        userId,
+        uuid: { notIn: latestEvents.map((entry) => entry.uuid) }
+      }
+    });
+  }
 
   return res.json(ok(event));
 }

@@ -35,7 +35,7 @@ class SyncManager(private val context: Context) {
     private val syncPrefs = context.getSharedPreferences("sync_prefs", Context.MODE_PRIVATE)
     @Volatile
     private var isMergeRunning = false
-    
+
     /**
      * 检查是否应该同步到远端
      */
@@ -48,13 +48,25 @@ class SyncManager(private val context: Context) {
      * - Item/ShoppingItem/Warehouse 使用时间戳进行合并
      * - Category 无本地时间戳，若双方存在则保留本地不覆盖
      */
-    suspend fun mergeRemoteAndLocalOnce(): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun mergeRemoteAndLocalOnce(force: Boolean = false): Result<Unit> = withContext(Dispatchers.IO) {
         if (!shouldSyncToRemote()) {
             return@withContext Result.success(Unit)
         }
+        if (force) {
+            syncPrefs.edit()
+                .remove(KEY_NEXT_RETRY_AT)
+                .remove(KEY_RESUME_ITEMS_PAGE)
+                .remove(KEY_RESUME_CATEGORIES_PAGE)
+                .remove(KEY_RESUME_WAREHOUSES_PAGE)
+                .remove(KEY_RESUME_SHOPPING_PAGE)
+                .remove(KEY_RESUME_DELETED_PAGE)
+                .remove(KEY_RESUME_REMINDERS_PAGE)
+                .apply()
+            Log.d(TAG, "手动同步：已清理重试与分页断点")
+        }
         val now = System.currentTimeMillis()
         val nextRetryAt = syncPrefs.getLong(KEY_NEXT_RETRY_AT, 0L)
-        if (nextRetryAt > now) {
+        if (!force && nextRetryAt > now) {
             Log.d(TAG, "跳过合并：未到重试时间")
             return@withContext Result.success(Unit)
         }
@@ -72,6 +84,8 @@ class SyncManager(private val context: Context) {
             val warehouseDao = db.warehouseDao()
             val shoppingItemDao = db.shoppingItemDao()
             val activityEventDao = db.activityEventDao()
+            val deletedRecordDao = db.deletedRecordDao()
+            val itemReminderDao = db.itemReminderDao()
             val syncQueueDao = db.syncQueueDao()
 
             if (!syncPrefs.getBoolean(KEY_BOOTSTRAP_COMPLETED, false)) {
@@ -90,6 +104,33 @@ class SyncManager(private val context: Context) {
                     return@withContext Result.success(Unit)
                 }
                 Log.e(TAG, "批量同步失败，回退分页拉取")
+            }
+
+            val deletedResult = fetchAllDeletedRecords(apiService)
+            if (deletedResult.rateLimited) {
+                scheduleRetry(deletedResult.retryAfterSec)
+                return@withContext Result.failure(Exception("Rate limited"))
+            }
+
+            applyRemoteDeletedRecords(
+                deletedResult.items,
+                deletedRecordDao,
+                itemDao,
+                categoryDao,
+                warehouseDao,
+                shoppingItemDao,
+                activityEventDao,
+                itemReminderDao,
+                syncQueueDao
+            )
+
+            val localDeletedRecords = deletedRecordDao.getAllDeletedRecords()
+            val remoteDeletedKeys = deletedResult.items.associateBy { "${it.entityType}:${it.entityUuid}" }
+            for (record in localDeletedRecords) {
+                val key = "${record.entityType}:${record.entityUuid}"
+                if (!remoteDeletedKeys.containsKey(key)) {
+                    syncDeletedRecordToRemote(record)
+                }
             }
 
             val categoriesResult = fetchAllCategories(apiService)
@@ -112,26 +153,56 @@ class SyncManager(private val context: Context) {
                 scheduleRetry(itemsResult.retryAfterSec)
                 return@withContext Result.failure(Exception("Rate limited"))
             }
+            val remindersResult = fetchAllReminders(apiService)
+            if (remindersResult.rateLimited) {
+                scheduleRetry(remindersResult.retryAfterSec)
+                return@withContext Result.failure(Exception("Rate limited"))
+            }
 
-            val remoteItems = itemsResult.items
-            val remoteCategories = categoriesResult.items
-            val remoteWarehouses = warehousesResult.items
-            val remoteShoppingItems = shoppingResult.items
+            val deletedItemUuids = deletedResult.items
+                .filter { it.entityType == "item" }
+                .map { it.entityUuid }
+                .toSet()
+            val deletedCategoryUuids = deletedResult.items
+                .filter { it.entityType == "category" }
+                .map { it.entityUuid }
+                .toSet()
+            val deletedWarehouseUuids = deletedResult.items
+                .filter { it.entityType == "warehouse" }
+                .map { it.entityUuid }
+                .toSet()
+            val deletedShoppingUuids = deletedResult.items
+                .filter { it.entityType == "shopping_item" }
+                .map { it.entityUuid }
+                .toSet()
+            val deletedReminderUuids = deletedResult.items
+                .filter { it.entityType == "reminder" }
+                .map { it.entityUuid }
+                .toSet()
+
+            val remoteItems = itemsResult.items.filterNot { deletedItemUuids.contains(it.uuid) }
+            val remoteCategories = categoriesResult.items.filterNot { deletedCategoryUuids.contains(it.uuid) }
+            val remoteWarehouses = warehousesResult.items.filterNot { deletedWarehouseUuids.contains(it.uuid) }
+            val remoteShoppingItems = shoppingResult.items.filterNot { deletedShoppingUuids.contains(it.uuid) }
+            val remoteReminders = remindersResult.items.filterNot { deletedReminderUuids.contains(it.uuid) }
 
             val localItems = itemDao.getAllItemsList()
             val localCategories = categoryDao.getAllCategoriesSync()
             val localWarehouses = warehouseDao.getAllWarehousesSync()
             val localShoppingItems = shoppingItemDao.getAllShoppingItemsSync()
+            val localReminders = itemReminderDao.getAllRemindersSync()
 
             val remoteItemsByUuid = remoteItems.associateBy { it.uuid }
             val remoteCategoriesByUuid = remoteCategories.associateBy { it.uuid }
             val remoteWarehousesByUuid = remoteWarehouses.associateBy { it.uuid }
             val remoteShoppingByUuid = remoteShoppingItems.associateBy { it.uuid }
+            val remoteRemindersByUuid = remoteReminders.associateBy { it.uuid }
 
             val localItemsByUuid = localItems.associateBy { it.uuid }
             val localCategoriesByUuid = localCategories.associateBy { it.uuid }
             val localWarehousesByUuid = localWarehouses.associateBy { it.uuid }
             val localShoppingByUuid = localShoppingItems.associateBy { it.uuid }
+            val localRemindersByUuid = localReminders.associateBy { it.uuid }
 
             // 先迁移本地旧 UUID（仅在云端为空时迁移，避免重复）
             if (remoteItems.isEmpty() && remoteWarehouses.isEmpty() && remoteShoppingItems.isEmpty()) {
@@ -181,7 +252,7 @@ class SyncManager(private val context: Context) {
                                 warehouseDao.updateWarehouse(entity.copy(imageUri = localPath))
                             }
                         }
-                    } else if (local.createdAt.after(remoteTime ?: Date(0))) {
+                    } else if (local.createdAt.after(remoteTime ?: Date(0)) || !isSameWarehouse(local, remote)) {
                         syncWarehouseToRemote(local)
                     }
                 }
@@ -277,6 +348,28 @@ class SyncManager(private val context: Context) {
                 }
             }
 
+            // Reminders: 使用 updatedAt 对比，支持双向同步
+            for (remote in remoteReminders) {
+                val local = localRemindersByUuid[remote.uuid]
+                if (local == null) {
+                    val entity = reminderFromDto(remote, null)
+                    itemReminderDao.insertReminder(entity)
+                } else {
+                    val remoteTime = parseDateOrNull(remote.updatedAt) ?: parseDateOrNull(remote.createdAt)
+                    if (isRemoteNewer(remoteTime, local.updatedAt)) {
+                        val entity = reminderFromDto(remote, local)
+                        itemReminderDao.updateReminder(entity)
+                    } else if (local.updatedAt.after(remoteTime ?: Date(0))) {
+                        syncReminderToRemote(local)
+                    }
+                }
+            }
+            for (local in localReminders) {
+                if (!remoteRemindersByUuid.containsKey(local.uuid)) {
+                    syncReminderToRemote(local)
+                }
+            }
+
             Log.d(TAG, "登录后双向合并完成")
             Result.success(Unit)
         } catch (e: Exception) {
@@ -350,6 +443,76 @@ class SyncManager(private val context: Context) {
         }
 
         Log.d(TAG, "旧 UUID 迁移完成")
+    }
+
+    private suspend fun applyRemoteDeletedRecords(
+        records: List<DeletedRecordDto>,
+        deletedRecordDao: com.example.itemremindertool.data.dao.DeletedRecordDao,
+        itemDao: com.example.itemremindertool.data.dao.ItemDao,
+        categoryDao: com.example.itemremindertool.data.dao.CategoryDao,
+        warehouseDao: com.example.itemremindertool.data.dao.WarehouseDao,
+        shoppingItemDao: com.example.itemremindertool.data.dao.ShoppingItemDao,
+        activityEventDao: com.example.itemremindertool.data.dao.ActivityEventDao,
+        itemReminderDao: com.example.itemremindertool.data.dao.ItemReminderDao,
+        syncQueueDao: com.example.itemremindertool.data.dao.SyncQueueDao
+    ) {
+        for (record in records) {
+            val deletedAt = parseDateOrNull(record.deletedAt) ?: Date()
+            val existing = deletedRecordDao.getDeletedRecord(record.entityType, record.entityUuid)
+            if (existing != null && existing.deletedAt.after(deletedAt)) {
+                continue
+            }
+            deletedRecordDao.insertDeletedRecord(
+                DeletedRecord(
+                    uuid = record.uuid,
+                    entityType = record.entityType,
+                    entityUuid = record.entityUuid,
+                    deletedAt = deletedAt
+                )
+            )
+            syncQueueDao.deleteByUuid(record.entityUuid)
+            when (record.entityType) {
+                "item" -> {
+                    itemDao.deleteItemByUuid(record.entityUuid)
+                    itemReminderDao.deleteRemindersByItemId(record.entityUuid)
+                }
+                "category" -> categoryDao.deleteCategoryByUuid(record.entityUuid)
+                "warehouse" -> warehouseDao.deleteWarehouseByUuid(record.entityUuid)
+                "shopping_item" -> shoppingItemDao.deleteShoppingItemByUuid(record.entityUuid)
+                "reminder" -> {
+                    val reminder = itemReminderDao.getReminderByUuid(record.entityUuid)
+                    if (reminder != null) {
+                        itemReminderDao.deleteReminder(reminder)
+                    }
+                }
+                "activity_event" -> activityEventDao.deleteByUuid(record.entityUuid)
+                else -> Log.w(TAG, "未知删除类型: ${record.entityType}")
+            }
+        }
+    }
+
+    private suspend fun syncDeletedRecordToRemote(record: DeletedRecord): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (!shouldSyncToRemote()) {
+                return@withContext Result.success(Unit)
+            }
+            val apiService = RetrofitClient.getApiService(context)
+            val dto = DeletedRecordDto(
+                uuid = record.uuid,
+                entityType = record.entityType,
+                entityUuid = record.entityUuid,
+                deletedAt = dateFormat.format(record.deletedAt)
+            )
+            val response = apiService.upsertDeletedRecord(dto)
+            if (response.isSuccessful && response.body()?.success == true) {
+                Result.success(Unit)
+            } else {
+                val error = response.body()?.error?.message ?: "同步删除记录失败"
+                Result.failure(Exception(error))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
     
     // ==================== Item 同步 ====================
@@ -1202,6 +1365,25 @@ class SyncManager(private val context: Context) {
             icon = category.icon
         )
     }
+
+    private fun reminderToDto(reminder: ItemReminder): ItemReminderDto {
+        return ItemReminderDto(
+            uuid = reminder.uuid,
+            itemUuid = reminder.itemUuid,
+            reminderType = reminder.reminderType.name,
+            reminderTime = reminder.reminderTime?.let { dateFormat.format(it) },
+            dailyTime = reminder.dailyTime,
+            monthlyDay = reminder.monthlyDay,
+            monthlyTime = reminder.monthlyTime,
+            yearlyMonth = reminder.yearlyMonth,
+            yearlyDay = reminder.yearlyDay,
+            yearlyTime = reminder.yearlyTime,
+            reason = reminder.reason,
+            isEnabled = reminder.isEnabled,
+            createdAt = dateFormat.format(reminder.createdAt),
+            updatedAt = dateFormat.format(reminder.updatedAt)
+        )
+    }
     
     private suspend fun warehouseToDto(
         warehouse: Warehouse,
@@ -1259,6 +1441,30 @@ class SyncManager(private val context: Context) {
             description = dto.description ?: existing?.description ?: "",
             color = dto.color ?: existing?.color ?: "#6200EE",
             icon = dto.icon ?: existing?.icon ?: "category"
+        )
+    }
+
+    private fun reminderFromDto(dto: ItemReminderDto, existing: ItemReminder?): ItemReminder {
+        val createdAt = parseDateOrNull(dto.createdAt) ?: existing?.createdAt ?: Date()
+        val updatedAt = parseDateOrNull(dto.updatedAt) ?: existing?.updatedAt ?: createdAt
+        val reminderType = runCatching {
+            ReminderType.valueOf(dto.reminderType.ifBlank { "ONCE" })
+        }.getOrElse { ReminderType.ONCE }
+        return ItemReminder(
+            uuid = dto.uuid,
+            itemUuid = dto.itemUuid,
+            reminderType = reminderType,
+            reminderTime = parseDateOrNull(dto.reminderTime),
+            dailyTime = dto.dailyTime ?: existing?.dailyTime,
+            monthlyDay = dto.monthlyDay ?: existing?.monthlyDay,
+            monthlyTime = dto.monthlyTime ?: existing?.monthlyTime,
+            yearlyMonth = dto.yearlyMonth ?: existing?.yearlyMonth,
+            yearlyDay = dto.yearlyDay ?: existing?.yearlyDay,
+            yearlyTime = dto.yearlyTime ?: existing?.yearlyTime,
+            reason = dto.reason ?: existing?.reason ?: "",
+            isEnabled = dto.isEnabled ?: existing?.isEnabled ?: true,
+            createdAt = createdAt,
+            updatedAt = updatedAt
         )
     }
 
@@ -1334,6 +1540,15 @@ class SyncManager(private val context: Context) {
         return remote.after(local)
     }
 
+    private fun isSameWarehouse(local: Warehouse, remote: WarehouseDto): Boolean {
+        return local.name == remote.name &&
+            local.description == (remote.description ?: "") &&
+            local.location == (remote.location ?: "") &&
+            local.capacity == remote.capacity &&
+            local.parentUuid == remote.parentUuid &&
+            local.level == (remote.level ?: local.level)
+    }
+
     private fun buildItemSignature(dto: ItemDto): String {
         val createdAt = dto.createdAt ?: ""
         return listOf(
@@ -1403,11 +1618,14 @@ class SyncManager(private val context: Context) {
 
     companion object {
         private const val TAG = "SyncManager"
+        private const val MAX_SYNC_ACTIVITY_EVENTS = 5
         private const val KEY_NEXT_RETRY_AT = "next_retry_at"
         private const val KEY_RESUME_ITEMS_PAGE = "resume_items_page"
         private const val KEY_RESUME_CATEGORIES_PAGE = "resume_categories_page"
         private const val KEY_RESUME_WAREHOUSES_PAGE = "resume_warehouses_page"
         private const val KEY_RESUME_SHOPPING_PAGE = "resume_shopping_page"
+        private const val KEY_RESUME_DELETED_PAGE = "resume_deleted_page"
+        private const val KEY_RESUME_REMINDERS_PAGE = "resume_reminders_page"
         private const val KEY_BOOTSTRAP_COMPLETED = "bootstrap_completed"
         private const val KEY_SETTINGS_UPDATED_AT = "settings_updated_at"
         private val UUID_REGEX =
@@ -1429,6 +1647,7 @@ class SyncManager(private val context: Context) {
         val pageSize = 200
         val maxPages = 500 // 最多100000条记录的安全限制
         var consecutiveEmptyPages = 0
+        var lastPageSeen = 0
         while (page <= maxPages) {
             val response = apiService.getItems(page = page, pageSize = pageSize)
             if (response.code() == 429) {
@@ -1440,6 +1659,12 @@ class SyncManager(private val context: Context) {
                 break
             }
             val data = response.body()?.data ?: break
+            if (data.page != page || data.page <= lastPageSeen) {
+                Log.w(TAG, "分页异常，返回页=${data.page}，请求页=$page，终止拉取")
+                syncPrefs.edit().remove(KEY_RESUME_ITEMS_PAGE).apply()
+                break
+            }
+            lastPageSeen = data.page
             val currentPageItems = data.items
             items.addAll(currentPageItems)
             Log.d(TAG, "拉取物品: page=$page, 当前页=${currentPageItems.size}, 累计=${items.size}, 总数=${data.total}")
@@ -1475,6 +1700,7 @@ class SyncManager(private val context: Context) {
         val pageSize = 200
         val maxPages = 100 // 分类通常不会太多
         var consecutiveEmptyPages = 0
+        var lastPageSeen = 0
         while (page <= maxPages) {
             val response = apiService.getCategories(page = page, pageSize = pageSize)
             if (response.code() == 429) {
@@ -1486,6 +1712,12 @@ class SyncManager(private val context: Context) {
                 break
             }
             val data = response.body()?.data ?: break
+            if (data.page != page || data.page <= lastPageSeen) {
+                Log.w(TAG, "分页异常，返回页=${data.page}，请求页=$page，终止拉取")
+                syncPrefs.edit().remove(KEY_RESUME_CATEGORIES_PAGE).apply()
+                break
+            }
+            lastPageSeen = data.page
             val currentPageCategories = data.categories
             categories.addAll(currentPageCategories)
             Log.d(TAG, "拉取分类: page=$page, 当前页=${currentPageCategories.size}, 累计=${categories.size}, 总数=${data.total}")
@@ -1521,6 +1753,7 @@ class SyncManager(private val context: Context) {
         val pageSize = 200
         val maxPages = 200 // 容器通常不会太多
         var consecutiveEmptyPages = 0
+        var lastPageSeen = 0
         while (page <= maxPages) {
             val response = apiService.getWarehouses(page = page, pageSize = pageSize)
             if (response.code() == 429) {
@@ -1532,6 +1765,12 @@ class SyncManager(private val context: Context) {
                 break
             }
             val data = response.body()?.data ?: break
+            if (data.page != page || data.page <= lastPageSeen) {
+                Log.w(TAG, "分页异常，返回页=${data.page}，请求页=$page，终止拉取")
+                syncPrefs.edit().remove(KEY_RESUME_WAREHOUSES_PAGE).apply()
+                break
+            }
+            lastPageSeen = data.page
             val currentPageWarehouses = data.warehouses
             warehouses.addAll(currentPageWarehouses)
             Log.d(TAG, "拉取容器: page=$page, 当前页=${currentPageWarehouses.size}, 累计=${warehouses.size}, 总数=${data.total}")
@@ -1567,6 +1806,7 @@ class SyncManager(private val context: Context) {
         val pageSize = 200
         val maxPages = 200 // 购物清单通常不会太多
         var consecutiveEmptyPages = 0
+        var lastPageSeen = 0
         while (page <= maxPages) {
             val response = apiService.getShoppingItems(page = page, pageSize = pageSize)
             if (response.code() == 429) {
@@ -1578,6 +1818,12 @@ class SyncManager(private val context: Context) {
                 break
             }
             val data = response.body()?.data ?: break
+            if (data.page != page || data.page <= lastPageSeen) {
+                Log.w(TAG, "分页异常，返回页=${data.page}，请求页=$page，终止拉取")
+                syncPrefs.edit().remove(KEY_RESUME_SHOPPING_PAGE).apply()
+                break
+            }
+            lastPageSeen = data.page
             val currentPageShoppingItems = data.shoppingItems
             shoppingItems.addAll(currentPageShoppingItems)
             Log.d(TAG, "拉取购物清单: page=$page, 当前页=${currentPageShoppingItems.size}, 累计=${shoppingItems.size}, 总数=${data.total}")
@@ -1605,6 +1851,110 @@ class SyncManager(private val context: Context) {
             Log.e(TAG, "达到最大页数限制: $maxPages")
         }
         return FetchResult(shoppingItems, false, null)
+    }
+
+    private suspend fun fetchAllReminders(apiService: com.example.itemremindertool.network.ApiService): FetchResult<ItemReminderDto> {
+        val reminders = mutableListOf<ItemReminderDto>()
+        var page = syncPrefs.getInt(KEY_RESUME_REMINDERS_PAGE, 1).coerceAtLeast(1)
+        val pageSize = 200
+        val maxPages = 200 // 提醒数量通常不会太多
+        var consecutiveEmptyPages = 0
+        var lastPageSeen = 0
+        while (page <= maxPages) {
+            val response = apiService.getReminders(page = page, pageSize = pageSize)
+            if (response.code() == 429) {
+                syncPrefs.edit().putInt(KEY_RESUME_REMINDERS_PAGE, page).apply()
+                return FetchResult(reminders, true, response.headers()["Retry-After"]?.toLongOrNull() ?: 60L)
+            }
+            if (!response.isSuccessful || response.body()?.success != true) {
+                Log.e(TAG, "拉取提醒失败：${response.code()}")
+                break
+            }
+            val data = response.body()?.data ?: break
+            if (data.page != page || data.page <= lastPageSeen) {
+                Log.w(TAG, "分页异常，返回页=${data.page}，请求页=$page，终止拉取")
+                syncPrefs.edit().remove(KEY_RESUME_REMINDERS_PAGE).apply()
+                break
+            }
+            lastPageSeen = data.page
+            val currentPageReminders = data.reminders
+            reminders.addAll(currentPageReminders)
+            Log.d(TAG, "拉取提醒: page=$page, 当前页=${currentPageReminders.size}, 累计=${reminders.size}, 总数=${data.total}")
+
+            if (currentPageReminders.isEmpty()) {
+                consecutiveEmptyPages++
+                if (consecutiveEmptyPages >= 3) {
+                    Log.w(TAG, "连续3页无数据，终止拉取")
+                    break
+                }
+            } else {
+                consecutiveEmptyPages = 0
+            }
+
+            if (data.page * data.pageSize >= data.total || currentPageReminders.isEmpty()) {
+                syncPrefs.edit().remove(KEY_RESUME_REMINDERS_PAGE).apply()
+                break
+            }
+            page += 1
+            syncPrefs.edit().putInt(KEY_RESUME_REMINDERS_PAGE, page).apply()
+        }
+        if (page > maxPages) {
+            Log.e(TAG, "达到最大页数限制: $maxPages")
+        }
+        return FetchResult(reminders, false, null)
+    }
+
+    private suspend fun fetchAllDeletedRecords(
+        apiService: com.example.itemremindertool.network.ApiService
+    ): FetchResult<DeletedRecordDto> {
+        val records = mutableListOf<DeletedRecordDto>()
+        var page = syncPrefs.getInt(KEY_RESUME_DELETED_PAGE, 1).coerceAtLeast(1)
+        val pageSize = 200
+        val maxPages = 200 // 删除记录通常不会太多
+        var consecutiveEmptyPages = 0
+        var lastPageSeen = 0
+        while (page <= maxPages) {
+            val response = apiService.getDeletedRecords(page = page, pageSize = pageSize)
+            if (response.code() == 429) {
+                syncPrefs.edit().putInt(KEY_RESUME_DELETED_PAGE, page).apply()
+                return FetchResult(records, true, response.headers()["Retry-After"]?.toLongOrNull() ?: 60L)
+            }
+            if (!response.isSuccessful || response.body()?.success != true) {
+                Log.e(TAG, "拉取删除记录失败：${response.code()}")
+                break
+            }
+            val data = response.body()?.data ?: break
+            if (data.page != page || data.page <= lastPageSeen) {
+                Log.w(TAG, "分页异常，返回页=${data.page}，请求页=$page，终止拉取")
+                syncPrefs.edit().remove(KEY_RESUME_DELETED_PAGE).apply()
+                break
+            }
+            lastPageSeen = data.page
+            val currentPageRecords = data.deletedRecords
+            records.addAll(currentPageRecords)
+            Log.d(TAG, "拉取删除记录: page=$page, 当前页=${currentPageRecords.size}, 累计=${records.size}, 总数=${data.total}")
+
+            if (currentPageRecords.isEmpty()) {
+                consecutiveEmptyPages++
+                if (consecutiveEmptyPages >= 3) {
+                    Log.w(TAG, "连续3页无数据，终止拉取")
+                    break
+                }
+            } else {
+                consecutiveEmptyPages = 0
+            }
+
+            if (data.page * data.pageSize >= data.total || currentPageRecords.isEmpty()) {
+                syncPrefs.edit().remove(KEY_RESUME_DELETED_PAGE).apply()
+                break
+            }
+            page += 1
+            syncPrefs.edit().putInt(KEY_RESUME_DELETED_PAGE, page).apply()
+        }
+        if (page > maxPages) {
+            Log.e(TAG, "达到最大页数限制: $maxPages")
+        }
+        return FetchResult(records, false, null)
     }
 
     private fun scheduleRetry(retryAfterSec: Long?) {
@@ -1721,7 +2071,7 @@ class SyncManager(private val context: Context) {
                 val updatedAt = it.completedAt ?: it.createdAt
                 SyncSnapshotEntry(it.uuid, dateFormat.format(updatedAt))
             }
-        val events = activityEventDao.getAllEventsSync().map {
+        val events = activityEventDao.getRecentEventsSync(MAX_SYNC_ACTIVITY_EVENTS).map {
             SyncSnapshotEntry(it.uuid, dateFormat.format(it.createdAt))
         }
         val settings = readSettingsSnapshot()
@@ -1842,7 +2192,7 @@ class SyncManager(private val context: Context) {
             shoppingItems.add(shoppingItemToDto(shoppingItem))
         }
 
-        val eventsMap = activityEventDao.getAllEventsSync().associateBy { it.uuid }
+        val eventsMap = activityEventDao.getRecentEventsSync(MAX_SYNC_ACTIVITY_EVENTS).associateBy { it.uuid }
         val activityEvents = mutableListOf<ActivityEventDto>()
         for (uuid in plan.activityEvents) {
             val event = eventsMap[uuid] ?: continue
@@ -1996,6 +2346,100 @@ class SyncManager(private val context: Context) {
             Log.e(TAG, "购物项同步异常", e)
             // 添加到离线队列
             addToOfflineQueue("shopping_item", shoppingItem.uuid, SyncOperation.UPDATE, shoppingItem)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 同步动态到远端
+     */
+    suspend fun syncActivityEventToRemote(event: ActivityEvent): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (!shouldSyncToRemote()) {
+                return@withContext Result.success(Unit)
+            }
+            val apiService = RetrofitClient.getApiService(context)
+            val dto = ActivityEventDto(
+                uuid = event.uuid,
+                type = event.type.name,
+                title = event.title,
+                description = event.description,
+                targetUuid = event.targetUuid,
+                targetName = event.targetName,
+                iconType = event.iconType,
+                createdAt = dateFormat.format(event.createdAt),
+                metadata = event.metadata
+            )
+            val response = apiService.upsertActivityEvent(dto)
+            if (response.isSuccessful && response.body()?.success == true) {
+                Log.d(TAG, "动态同步成功: ${event.uuid}")
+                Result.success(Unit)
+            } else {
+                val error = response.body()?.error?.message ?: "同步失败"
+                Log.e(TAG, "动态同步失败: $error")
+                addToOfflineQueue("activity_event", event.uuid, SyncOperation.UPDATE, event)
+                Result.failure(Exception(error))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "动态同步异常", e)
+            addToOfflineQueue("activity_event", event.uuid, SyncOperation.UPDATE, event)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 同步提醒到远端
+     */
+    suspend fun syncReminderToRemote(reminder: ItemReminder): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (!shouldSyncToRemote()) {
+                return@withContext Result.success(Unit)
+            }
+            val apiService = RetrofitClient.getApiService(context)
+            val dto = reminderToDto(reminder)
+            val response = apiService.upsertReminder(dto)
+            if (response.isSuccessful && response.body()?.success == true) {
+                Log.d(TAG, "提醒同步成功: ${reminder.uuid}")
+                Result.success(Unit)
+            } else {
+                val error = response.body()?.error?.message ?: "同步失败"
+                Log.e(TAG, "提醒同步失败: $error")
+                // 添加到离线队列
+                addToOfflineQueue("reminder", reminder.uuid, SyncOperation.UPDATE, reminder)
+                Result.failure(Exception(error))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "提醒同步异常", e)
+            // 添加到离线队列
+            addToOfflineQueue("reminder", reminder.uuid, SyncOperation.UPDATE, reminder)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 从远端删除提醒
+     */
+    suspend fun deleteReminderFromRemote(uuid: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (!shouldSyncToRemote()) {
+                return@withContext Result.success(Unit)
+            }
+            val apiService = RetrofitClient.getApiService(context)
+            val response = apiService.deleteReminder(uuid)
+            if (response.isSuccessful && response.body()?.success == true) {
+                Log.d(TAG, "提醒删除同步成功: $uuid")
+                Result.success(Unit)
+            } else {
+                val error = response.body()?.error?.message ?: "删除同步失败"
+                Log.e(TAG, "提醒删除同步失败: $error")
+                // 添加到离线队列
+                addToOfflineQueue("reminder", uuid, SyncOperation.DELETE, mapOf("uuid" to uuid))
+                Result.failure(Exception(error))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "提醒删除同步异常", e)
+            // 添加到离线队列
+            addToOfflineQueue("reminder", uuid, SyncOperation.DELETE, mapOf("uuid" to uuid))
             Result.failure(e)
         }
     }

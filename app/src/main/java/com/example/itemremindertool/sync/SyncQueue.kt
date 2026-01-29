@@ -115,6 +115,8 @@ class SyncQueue(private val context: Context) {
                 "category" -> processCategorySync(item)
                 "warehouse" -> processWarehouseSync(item)
                 "shopping_item" -> processShoppingItemSync(item)
+                "reminder" -> processReminderSync(item)
+                "activity_event" -> processActivityEventSync(item)
                 else -> {
                     Log.w(TAG, "未知的实体类型：${item.entityType}")
                     false
@@ -178,6 +180,34 @@ class SyncQueue(private val context: Context) {
             else -> {
                 val entity = gson.fromJson(item.entityJson, com.example.itemremindertool.data.model.ShoppingItem::class.java)
                 val result = syncManager.syncShoppingItemToRemote(entity)
+                result.isSuccess
+            }
+        }
+    }
+
+    private suspend fun processReminderSync(item: SyncQueueItem): Boolean {
+        return when (item.operation) {
+            SyncOperation.DELETE -> {
+                val result = syncManager.deleteReminderFromRemote(item.entityUuid)
+                result.isSuccess
+            }
+            else -> {
+                val entity = gson.fromJson(item.entityJson, com.example.itemremindertool.data.model.ItemReminder::class.java)
+                val result = syncManager.syncReminderToRemote(entity)
+                result.isSuccess
+            }
+        }
+    }
+
+    private suspend fun processActivityEventSync(item: SyncQueueItem): Boolean {
+        return when (item.operation) {
+            SyncOperation.DELETE -> {
+                Log.w(TAG, "动态不支持删除同步：${item.entityUuid}")
+                false
+            }
+            else -> {
+                val entity = gson.fromJson(item.entityJson, com.example.itemremindertool.data.model.ActivityEvent::class.java)
+                val result = syncManager.syncActivityEventToRemote(entity)
                 result.isSuccess
             }
         }

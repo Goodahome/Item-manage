@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../prisma";
 import { fail, ok } from "../utils/response";
 import { parsePagination } from "../utils/pagination";
+import { recordDeletion } from "../utils/deletedRecords";
 
 const reminderSchema = z.object({
   uuid: z.string().uuid(),
@@ -165,17 +166,14 @@ export async function deleteReminder(req: Request, res: Response) {
   const reminder = await prisma.itemReminder.findFirst({
     where: { uuid, userId }
   });
-  if (!reminder) {
-    return res.status(404).json(
-      fail({
-        code: "NOT_FOUND",
-        message: "Reminder not found"
-      })
-    );
+
+  if (reminder) {
+    await prisma.itemReminder.delete({
+      where: { uuid_userId: { uuid: reminder.uuid, userId: reminder.userId } }
+    });
   }
 
-  await prisma.itemReminder.delete({
-    where: { uuid_userId: { uuid: reminder.uuid, userId: reminder.userId } }
-  });
+  await recordDeletion(userId, "reminder", uuid);
+
   return res.json(ok({ deleted: true }));
 }

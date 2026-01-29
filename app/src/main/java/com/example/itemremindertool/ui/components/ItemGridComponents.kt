@@ -750,6 +750,7 @@ fun ItemGridDetailPanel(
                     OutlinedButton(
                         onClick = onViewDetails,
                         modifier = Modifier.weight(1f).height(36.dp),
+                        shape = MaterialTheme.shapes.medium,
                         border = BorderStroke(2.dp, buttonBgColor),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = buttonTextColor,
@@ -770,6 +771,7 @@ fun ItemGridDetailPanel(
                     Button(
                         onClick = onViewDetails,
                         modifier = Modifier.weight(1f).height(36.dp),
+                        shape = MaterialTheme.shapes.medium,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = buttonBgColor,
                             contentColor = buttonTextColor,
@@ -795,6 +797,7 @@ fun ItemGridDetailPanel(
                         onClick = { onUse(useQuantity) },
                         modifier = Modifier.weight(1f).height(36.dp),
                         enabled = item.quantity > 0,
+                        shape = MaterialTheme.shapes.medium,
                         border = BorderStroke(2.dp, buttonBgColor),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = buttonTextColor,
@@ -818,6 +821,7 @@ fun ItemGridDetailPanel(
                         },
                         modifier = Modifier.weight(1f).height(36.dp),
                         enabled = item.quantity > 0,
+                        shape = MaterialTheme.shapes.medium,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = buttonBgColor,
                             contentColor = buttonTextColor,

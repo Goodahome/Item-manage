@@ -101,6 +101,8 @@ const bootstrapAckSchema = z.object({
   settings: settingsSnapshotSchema.optional().nullable()
 });
 
+const MAX_SYNC_ACTIVITY_EVENTS = 5;
+
 function parseDate(value?: string | null) {
   return value ? new Date(value) : undefined;
 }
@@ -147,7 +149,11 @@ export async function bootstrapSync(req: Request, res: Response) {
     prisma.category.findMany({ where: { userId } }),
     prisma.warehouse.findMany({ where: { userId } }),
     prisma.shoppingItem.findMany({ where: { userId } }),
-    prisma.activityEvent.findMany({ where: { userId } })
+    prisma.activityEvent.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: MAX_SYNC_ACTIVITY_EVENTS
+    })
   ]);
 
   const toApply = {
@@ -171,7 +177,17 @@ export async function bootstrapSync(req: Request, res: Response) {
   const clientCategories = new Map(client.categories.map((entry) => [entry.uuid, entry.updatedAt]));
   const clientWarehouses = new Map(client.warehouses.map((entry) => [entry.uuid, entry.updatedAt]));
   const clientShopping = new Map(client.shoppingItems.map((entry) => [entry.uuid, entry.updatedAt]));
-  const clientEvents = new Map(client.activityEvents.map((entry) => [entry.uuid, entry.updatedAt]));
+  const clientEvents = new Map(
+    client.activityEvents
+      .slice()
+      .sort((a, b) => {
+        const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+        const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+        return bTime - aTime;
+      })
+      .slice(0, MAX_SYNC_ACTIVITY_EVENTS)
+      .map((entry) => [entry.uuid, entry.updatedAt])
+  );
 
   items.forEach((item) => {
     const clientUpdatedAt = clientItems.get(item.uuid);
@@ -302,6 +318,7 @@ export async function bootstrapSyncAck(req: Request, res: Response) {
   }
 
   const payload = parsed.data;
+  const limitedActivityEvents = payload.activityEvents.slice(0, MAX_SYNC_ACTIVITY_EVENTS);
 
   // 辅助函数：检查是否为示例数据（通过名称模式）
   const isSampleData = (name: string): boolean => {
@@ -543,7 +560,7 @@ export async function bootstrapSyncAck(req: Request, res: Response) {
     }
 
     // 处理活动事件 - 使用乐观锁检查（使用 createdAt）
-    for (const event of payload.activityEvents) {
+    for (const event of limitedActivityEvents) {
       const existing = await tx.activityEvent.findUnique({
         where: { uuid_userId: { uuid: event.uuid, userId } }
       });
@@ -582,6 +599,21 @@ export async function bootstrapSyncAck(req: Request, res: Response) {
           iconType: event.iconType ?? "",
           createdAt: parseDate(event.createdAt),
           metadata: event.metadata ?? ""
+        }
+      });
+    }
+
+    const latestEvents = await tx.activityEvent.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: MAX_SYNC_ACTIVITY_EVENTS,
+      select: { uuid: true }
+    });
+    if (latestEvents.length > 0) {
+      await tx.activityEvent.deleteMany({
+        where: {
+          userId,
+          uuid: { notIn: latestEvents.map((entry) => entry.uuid) }
         }
       });
     }

@@ -21,11 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.focus.onFocusChanged
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
@@ -49,6 +51,7 @@ import com.example.itemremindertool.notification.NotificationScheduler
 import com.example.itemremindertool.ui.theme.ItemReminderToolTheme
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.AppDivider
+import com.example.itemremindertool.ui.components.AppDialogLayout
 import com.example.itemremindertool.ui.viewmodel.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.itemremindertool.utils.AppConfigManager
@@ -65,9 +68,14 @@ import com.example.itemremindertool.sync.SyncManager
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import retrofit2.Response
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.DropdownMenu
 
 class MainActivity : FragmentActivity() {
     override fun attachBaseContext(newBase: Context) {
@@ -134,6 +142,15 @@ class MainActivity : FragmentActivity() {
         val authManager = AuthManager.getInstance(applicationContext)
         if (authManager.isLoggedIn()) {
             SyncQueueWorker.schedule(this)
+            SyncQueueWorker.runNow(this)
+            lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    while (isActive) {
+                        kotlinx.coroutines.delay(5 * 60 * 1000L)
+                        SyncQueueWorker.runNow(this@MainActivity)
+                    }
+                }
+            }
         }
 
         // 收集数据库重置事件，触发 Activity 重建以重新绑定新的 DB 实例
@@ -184,6 +201,7 @@ class MainActivity : FragmentActivity() {
 @SuppressLint("StringFormatInvalid")
 @RequiresApi(Build.VERSION_CODES.O)
 @androidx.compose.runtime.Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun ItemReminderToolApp(
     itemRepository: ItemRepository,
     categoryRepository: CategoryRepository,
@@ -246,6 +264,9 @@ fun ItemReminderToolApp(
     var editingPassword by remember { mutableStateOf("") }
     var isLoggingIn by remember { mutableStateOf(false) }
     var loginError by remember { mutableStateOf<String?>(null) }
+    var savedAccounts by remember { mutableStateOf(authManager.getSavedAccounts()) }
+    var accountDropdownExpanded by remember { mutableStateOf(false) }
+    var accountFieldFocused by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     
     // 监听密码状态变化
@@ -502,6 +523,7 @@ fun ItemReminderToolApp(
                                     editingAccountName = ""
                                     editingPassword = ""
                                     loginError = null
+                                    accountDropdownExpanded = false
                                     showAccountDialog = true
                                 }
                             }
@@ -1120,181 +1142,253 @@ fun ItemReminderToolApp(
         }
             // 登录对话框
             if (showAccountDialog) {
-                AlertDialog(
-                    onDismissRequest = { 
-                        if (!isLoggingIn) {
-                            showAccountDialog = false
-                            loginError = null
-                        }
-                    },
-                    title = { Text(stringResource(R.string.drawer_login)) },
-                    text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            OutlinedTextField(
-                                value = editingAccountName,
-                                onValueChange = { editingAccountName = it },
-                                label = { Text(stringResource(R.string.drawer_account_hint)) },
-                                singleLine = true,
-                                enabled = !isLoggingIn,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            OutlinedTextField(
-                                value = editingPassword,
-                                onValueChange = { editingPassword = it },
-                                label = { Text("密码") },
-                                singleLine = true,
-                                enabled = !isLoggingIn,
-                                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            if (loginError != null) {
-                                Text(
-                                    text = loginError ?: "",
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                            if (isLoggingIn) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                val account = editingAccountName.trim()
-                                val password = editingPassword.trim()
-                                if (account.isEmpty() || password.isEmpty()) {
-                                    loginError = "账号和密码不能为空"
-                                    return@TextButton
-                                }
-                                
-                                isLoggingIn = true
-                                loginError = null
-                                
-                                scope.launch {
-                                    try {
-                                        val apiService = RetrofitClient.getApiService(context)
-                                        val response = apiService.login(LoginRequest(account, password))
-                                        
-                                        if (response.isSuccessful && response.body()?.success == true) {
-                                            val authResponse = response.body()?.data
-                                            if (authResponse != null) {
-                                                // 保存登录信息
-                                                authManager.saveLoginInfo(
-                                                    token = authResponse.token,
-                                                    userUuid = authResponse.user.uuid,
-                                                    account = authResponse.user.account,
-                                                    displayName = authResponse.user.displayName
-                                                )
-                                                
-                                                // 更新 UI 状态
-                                                isLoggedIn = true
-                                                displayName = authResponse.user.displayName
-                                                accountName = authResponse.user.account
-                                                showAccountDialog = false
-                                                SyncQueueWorker.schedule(context)
-                                                SyncQueueWorker.runNow(context)
-                                                scope.launch {
-                                                    SyncManager.getInstance(context).mergeRemoteAndLocalOnce()
-                                                }
-                                            } else {
-                                                loginError = "登录失败：响应数据为空"
-                                            }
-                                        } else {
-                                            val errorMsg = extractErrorMessage(response) ?: "登录失败"
-                                            loginError = errorMsg
-                                        }
-                                    } catch (e: Exception) {
-                                        loginError = "登录失败：${e.message}"
-                                        android.util.Log.e("MainActivity", "登录异常", e)
-                                    } finally {
-                                        isLoggingIn = false
-                                    }
-                                }
-                            },
-                            enabled = !isLoggingIn
-                        ) {
-                            Text("登录")
-                        }
-                    },
-                    dismissButton = {
-                        Column {
-                            TextButton(
-                                onClick = { showAccountDialog = false },
-                                enabled = !isLoggingIn
-                            ) {
-                                Text(stringResource(R.string.cancel))
-                            }
-                            TextButton(
-                                onClick = { 
+                val dialogButtonShape = MaterialTheme.shapes.medium
+                val attemptLogin = {
+                    val account = editingAccountName.trim()
+                    val password = editingPassword.trim()
+                    if (account.isEmpty() || password.isEmpty()) {
+                        loginError = "账号和密码不能为空"
+                    } else {
+                        isLoggingIn = true
+                        loginError = null
+
+                        scope.launch {
+                            try {
+                                val apiService = RetrofitClient.getApiService(context)
+                                val response = apiService.login(LoginRequest(account, password))
+                            
+                            if (response.isSuccessful && response.body()?.success == true) {
+                                val authResponse = response.body()?.data
+                                if (authResponse != null) {
+                                    // 保存登录信息
+                                    authManager.saveLoginInfo(
+                                        token = authResponse.token,
+                                        userUuid = authResponse.user.uuid,
+                                        account = authResponse.user.account,
+                                        displayName = authResponse.user.displayName
+                                    )
+                                    savedAccounts = authManager.getSavedAccounts()
+                                    
+                                    // 更新 UI 状态
+                                    isLoggedIn = true
+                                    displayName = authResponse.user.displayName
+                                    accountName = authResponse.user.account
                                     showAccountDialog = false
-                                    showRegisterDialog = true
-                                },
-                                enabled = !isLoggingIn
-                            ) {
-                                Text("注册")
+                                    SyncQueueWorker.schedule(context)
+                                    SyncQueueWorker.runNow(context)
+                                    scope.launch {
+                                        SyncManager.getInstance(context).mergeRemoteAndLocalOnce()
+                                    }
+                                } else {
+                                    loginError = "登录失败：响应数据为空"
+                                }
+                            } else {
+                                val errorMsg = extractErrorMessage(response) ?: "登录失败"
+                                loginError = errorMsg
+                            }
+                            } catch (e: Exception) {
+                                loginError = "登录失败：${e.message}"
+                                android.util.Log.e("MainActivity", "登录异常", e)
+                            } finally {
+                                isLoggingIn = false
                             }
                         }
                     }
-                )
+                }
+                AppDialogLayout(
+                    title = stringResource(R.string.drawer_login),
+                    icon = Icons.Default.Person,
+                    onDismiss = {
+                        if (!isLoggingIn) {
+                            showAccountDialog = false
+                            loginError = null
+                            accountDropdownExpanded = false
+                        }
+                    },
+                    footer = {
+                        OutlinedButton(
+                            onClick = {
+                                showAccountDialog = false
+                                loginError = null
+                                accountDropdownExpanded = false
+                            },
+                            enabled = !isLoggingIn,
+                            modifier = Modifier.weight(1f),
+                            shape = dialogButtonShape
+                        ) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                        Button(
+                            onClick = {
+                                showAccountDialog = false
+                                showRegisterDialog = true
+                            },
+                            enabled = !isLoggingIn,
+                            modifier = Modifier.weight(1f),
+                            shape = dialogButtonShape
+                        ) {
+                            Text(stringResource(R.string.register))
+                        }
+                    }
+                ) {
+                    val accountMatches = remember(editingAccountName, savedAccounts) {
+                        if (editingAccountName.isBlank()) {
+                            savedAccounts
+                        } else {
+                            val keyword = editingAccountName.trim()
+                            savedAccounts.filter { saved ->
+                                saved.account.contains(keyword, ignoreCase = true) ||
+                                    saved.displayName.contains(keyword, ignoreCase = true)
+                            }
+                        }
+                    }
+                    val shouldShowAccountDropdown = accountFieldFocused &&
+                        accountMatches.isNotEmpty()
+                    LaunchedEffect(shouldShowAccountDropdown) {
+                        accountDropdownExpanded = shouldShowAccountDropdown
+                    }
+                    ExposedDropdownMenuBox(
+                        expanded = accountDropdownExpanded,
+                        onExpandedChange = { expanded ->
+                            accountDropdownExpanded = expanded && accountMatches.isNotEmpty()
+                        }
+                    ) {
+                        OutlinedTextField(
+                            value = editingAccountName,
+                            onValueChange = { editingAccountName = it },
+                            label = { Text(stringResource(R.string.drawer_account_hint)) },
+                            singleLine = true,
+                            enabled = !isLoggingIn,
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountDropdownExpanded)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                                .onFocusChanged { accountFieldFocused = it.isFocused }
+                        )
+                        DropdownMenu(
+                            expanded = accountDropdownExpanded,
+                            onDismissRequest = { accountDropdownExpanded = false },
+                            modifier = Modifier
+                                .background(ColorHelpers.getGroup2PageBgColor())
+                        ) {
+                            accountMatches.forEach { saved ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text("${saved.displayName} (${saved.account})")
+                                            IconButton(
+                                                onClick = {
+                                                    authManager.removeSavedAccount(saved.account)
+                                                    savedAccounts = authManager.getSavedAccounts()
+                                                    val hasItems = if (editingAccountName.isBlank()) {
+                                                        savedAccounts.isNotEmpty()
+                                                    } else {
+                                                        savedAccounts.any {
+                                                            it.account.contains(editingAccountName.trim(), ignoreCase = true) ||
+                                                                it.displayName.contains(editingAccountName.trim(), ignoreCase = true)
+                                                        }
+                                                    }
+                                                    accountDropdownExpanded = accountFieldFocused && hasItems
+                                                }
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.error
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        val switched = authManager.switchToAccount(saved.account)
+                                        if (switched != null) {
+                                            savedAccounts = authManager.getSavedAccounts()
+                                            isLoggedIn = true
+                                            displayName = switched.displayName
+                                            accountName = switched.account
+                                            showAccountDialog = false
+                                            loginError = null
+                                            SyncQueueWorker.schedule(context)
+                                            SyncQueueWorker.runNow(context)
+                                            scope.launch {
+                                                SyncManager.getInstance(context).mergeRemoteAndLocalOnce()
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = editingPassword,
+                        onValueChange = { editingPassword = it },
+                        label = { Text(stringResource(R.string.password)) },
+                        singleLine = true,
+                        enabled = !isLoggingIn,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                attemptLogin()
+                            },
+                            enabled = !isLoggingIn,
+                            modifier = Modifier.weight(1f),
+                            shape = dialogButtonShape
+                        ) {
+                            Text(stringResource(R.string.drawer_login))
+                        }
+                    }
+                    if (loginError != null) {
+                        Text(
+                            text = loginError ?: "",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    if (isLoggingIn) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
             }
             
             // 注册对话框
             if (showRegisterDialog) {
-                AlertDialog(
-                    onDismissRequest = { 
+                val dialogButtonShape = MaterialTheme.shapes.medium
+                AppDialogLayout(
+                    title = stringResource(R.string.register),
+                    icon = Icons.Default.PersonAdd,
+                    onDismiss = {
                         if (!isLoggingIn) {
                             showRegisterDialog = false
                             loginError = null
                         }
                     },
-                    title = { Text("注册") },
-                    text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            OutlinedTextField(
-                                value = editingDisplayName,
-                                onValueChange = { editingDisplayName = it },
-                                label = { Text(stringResource(R.string.drawer_name_hint)) },
-                                singleLine = true,
-                                enabled = !isLoggingIn,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            OutlinedTextField(
-                                value = editingAccountName,
-                                onValueChange = { editingAccountName = it },
-                                label = { Text(stringResource(R.string.drawer_account_hint)) },
-                                singleLine = true,
-                                enabled = !isLoggingIn,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            OutlinedTextField(
-                                value = editingPassword,
-                                onValueChange = { editingPassword = it },
-                                label = { Text("密码") },
-                                singleLine = true,
-                                enabled = !isLoggingIn,
-                                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            if (loginError != null) {
-                                Text(
-                                    text = loginError ?: "",
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                            if (isLoggingIn) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
+                    footer = {
+                        OutlinedButton(
+                            onClick = {
+                                showRegisterDialog = false
+                                loginError = null
+                            },
+                            enabled = !isLoggingIn,
+                            modifier = Modifier.weight(1f),
+                            shape = dialogButtonShape
+                        ) {
+                            Text(stringResource(R.string.cancel))
                         }
-                    },
-                    confirmButton = {
-                        TextButton(
+                        Button(
                             onClick = {
                                 val name = editingDisplayName.trim()
                                 val account = editingAccountName.trim()
@@ -1302,7 +1396,7 @@ fun ItemReminderToolApp(
                                 
                                 if (name.isEmpty() || account.isEmpty() || password.isEmpty()) {
                                     loginError = "所有字段都不能为空"
-                                    return@TextButton
+                                    return@Button
                                 }
                                 
                                 isLoggingIn = true
@@ -1325,6 +1419,7 @@ fun ItemReminderToolApp(
                                                     account = authResponse.user.account,
                                                     displayName = authResponse.user.displayName
                                                 )
+                                                savedAccounts = authManager.getSavedAccounts()
                                                 
                                                 // 更新 UI 状态
                                                 isLoggedIn = true
@@ -1351,31 +1446,69 @@ fun ItemReminderToolApp(
                                     }
                                 }
                             },
-                            enabled = !isLoggingIn
+                            enabled = !isLoggingIn,
+                            modifier = Modifier.weight(1f),
+                            shape = dialogButtonShape
                         ) {
-                            Text("注册")
-                        }
-                    },
-                    dismissButton = {
-                        Column {
-                            TextButton(
-                                onClick = { showRegisterDialog = false },
-                                enabled = !isLoggingIn
-                            ) {
-                                Text(stringResource(R.string.cancel))
-                            }
-                            TextButton(
-                                onClick = { 
-                                    showRegisterDialog = false
-                                    showAccountDialog = true
-                                },
-                                enabled = !isLoggingIn
-                            ) {
-                                Text("已有账号？登录")
-                            }
+                            Text(stringResource(R.string.register))
                         }
                     }
-                )
+                ) {
+                    OutlinedTextField(
+                        value = editingDisplayName,
+                        onValueChange = { editingDisplayName = it },
+                        label = { Text(stringResource(R.string.drawer_name_hint)) },
+                        singleLine = true,
+                        enabled = !isLoggingIn,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = editingAccountName,
+                        onValueChange = { editingAccountName = it },
+                        label = { Text(stringResource(R.string.drawer_account_hint)) },
+                        singleLine = true,
+                        enabled = !isLoggingIn,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = editingPassword,
+                        onValueChange = { editingPassword = it },
+                        label = { Text(stringResource(R.string.password)) },
+                        singleLine = true,
+                        enabled = !isLoggingIn,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                showRegisterDialog = false
+                                showAccountDialog = true
+                                accountDropdownExpanded = false
+                            },
+                            enabled = !isLoggingIn,
+                            modifier = Modifier.weight(1f),
+                            shape = dialogButtonShape
+                        ) {
+                            Text(stringResource(R.string.back_to_login))
+                        }
+                    }
+                    if (loginError != null) {
+                        Text(
+                            text = loginError ?: "",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    if (isLoggingIn) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
             }
         }
     }

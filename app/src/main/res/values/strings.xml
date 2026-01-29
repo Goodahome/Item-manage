@@ -638,6 +638,11 @@
     <string name="drawer_account_label">账号：%1$s</string>
     <string name="drawer_login">登录</string>
     <string name="drawer_logout">退出</string>
+    <string name="register">注册</string>
+    <string name="switch_account">切换账号</string>
+    <string name="select_account">选择账号</string>
+    <string name="back_to_login">返回登录</string>
+    <string name="no_saved_accounts">暂无可切换账号</string>
     <string name="drawer_name_hint">名称</string>
     <string name="drawer_account_hint">账号</string>
     <string name="no_enabled_reminders">暂无已开启的提醒</string>
@@ -681,6 +686,7 @@
     <string name="item_used_quantity_description">%1$s × %2$d</string>
     <string name="item_current_stock_description">%1$s 当前库存：%2$d</string>
     <string name="item_days_until_expiry_description">%1$s 将在 %2$d 天后过期</string>
+    <string name="item_days_until_reminder_title">物品将在 %1$d 天后提醒</string>
     
     <!-- 云端同步消息 -->
     <string name="sync">同步</string>
@@ -748,13 +754,12 @@
     <string name="reminder_yearly_prefix">%1$d月%2$d号 %3$s</string>
     
     <!-- 提醒类型显示 -->
-    <string name="reminder_type_once_display">一次性提醒</string>
+    <string name="reminder_type_once_display">单次提醒</string>
     <string name="reminder_type_daily_display">每日提醒</string>
     <string name="reminder_type_monthly_display">每月提醒</string>
     <string name="reminder_type_yearly_display">每年提醒</string>
     
     <!-- 提醒类型显示（简化版） -->
-    <string name="reminder_type_once_simple">单次提醒</string>
     <string name="reminder_type_once_short">单次</string>
     <string name="reminder_type_daily_short">每日</string>
     <string name="reminder_type_monthly_short">每月</string>

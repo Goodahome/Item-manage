@@ -66,6 +66,15 @@ class ItemRepository(
                     createdAt = Date()
                 )
                 activityEventDao.insert(event)
+                syncManager?.let { manager ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            manager.syncActivityEventToRemote(event)
+                        } catch (e: Exception) {
+                            android.util.Log.e("ItemRepository", "同步添加物品动态失败", e)
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 android.util.Log.e("ItemRepository", "记录添加物品动态失败", e)
             }
@@ -101,6 +110,15 @@ class ItemRepository(
                     createdAt = Date()
                 )
                 activityEventDao.insert(event)
+                syncManager?.let { manager ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            manager.syncActivityEventToRemote(event)
+                        } catch (e: Exception) {
+                            android.util.Log.e("ItemRepository", "同步更新物品动态失败", e)
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 android.util.Log.e("ItemRepository", "记录更新物品动态失败", e)
             }
@@ -139,8 +157,27 @@ class ItemRepository(
                     createdAt = Date()
                 )
                 activityEventDao.insert(event)
+                syncManager?.let { manager ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            manager.syncActivityEventToRemote(event)
+                        } catch (e: Exception) {
+                            android.util.Log.e("ItemRepository", "同步使用物品动态失败", e)
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 android.util.Log.e("ItemRepository", "记录使用物品动态失败", e)
+            }
+        }
+        // 远端同步（异步，不阻塞）
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    manager.syncItemToRemote(updatedItem)
+                } catch (e: Exception) {
+                    android.util.Log.e("ItemRepository", "同步物品到远端失败", e)
+                }
             }
         }
     }
@@ -173,6 +210,15 @@ class ItemRepository(
                     createdAt = Date()
                 )
                 activityEventDao.insert(event)
+                syncManager?.let { manager ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            manager.syncActivityEventToRemote(event)
+                        } catch (e: Exception) {
+                            android.util.Log.e("ItemRepository", "同步删除物品动态失败", e)
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 android.util.Log.e("ItemRepository", "记录删除物品动态失败", e)
             }

@@ -169,4 +169,37 @@ interface ApiService {
      */
     @DELETE("api/shopping-items/{uuid}")
     suspend fun deleteShoppingItem(@Path("uuid") uuid: String): Response<ApiResponse<Map<String, String>>>
+
+    // ==================== 动态相关 ====================
+
+    /**
+     * 创建或更新动态
+     */
+    @POST("api/activity-events")
+    suspend fun upsertActivityEvent(@Body event: ActivityEventDto): Response<ApiResponse<ActivityEventDto>>
+
+    // ==================== 提醒相关 ====================
+
+    @GET("api/reminders")
+    suspend fun getReminders(
+        @Query("page") page: Int = 1,
+        @Query("pageSize") pageSize: Int = 50
+    ): Response<ApiResponse<ItemReminderListResponse>>
+
+    @POST("api/reminders")
+    suspend fun upsertReminder(@Body reminder: ItemReminderDto): Response<ApiResponse<ItemReminderDto>>
+
+    @DELETE("api/reminders/{uuid}")
+    suspend fun deleteReminder(@Path("uuid") uuid: String): Response<ApiResponse<Map<String, String>>>
+
+    // ==================== 删除记录相关 ====================
+
+    @GET("api/deleted-records")
+    suspend fun getDeletedRecords(
+        @Query("page") page: Int = 1,
+        @Query("pageSize") pageSize: Int = 50
+    ): Response<ApiResponse<DeletedRecordListResponse>>
+
+    @POST("api/deleted-records")
+    suspend fun upsertDeletedRecord(@Body record: DeletedRecordDto): Response<ApiResponse<DeletedRecordDto>>
 }

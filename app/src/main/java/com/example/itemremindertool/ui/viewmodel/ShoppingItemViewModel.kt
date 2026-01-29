@@ -81,11 +81,11 @@ class ShoppingItemViewModel(
         }
     }
 
-    fun deleteShoppingItem(item: ShoppingItem) {
+    fun deleteShoppingItem(item: ShoppingItem, recordPurchaseEvent: Boolean = true) {
         viewModelScope.launch {
             try {
                 _operationState.value = OperationState.Deleting
-                shoppingItemRepository.deleteShoppingItem(item)
+                shoppingItemRepository.deleteShoppingItem(item, recordPurchaseEvent)
                 _operationState.value = OperationState.Success(
                     getApplication<Application>().getString(com.example.itemremindertool.R.string.operation_delete_success)
                 )

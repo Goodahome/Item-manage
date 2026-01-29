@@ -1,6 +1,7 @@
 package com.example.itemremindertool.network
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import com.example.itemremindertool.auth.AuthManager
 import com.example.itemremindertool.network.interceptor.AuthInterceptor
 import com.example.itemremindertool.network.interceptor.TokenRefreshInterceptor
@@ -30,8 +31,14 @@ object RetrofitClient {
             val authManager = AuthManager.getInstance(context)
             
             // 配置 OkHttpClient
+            val isDebuggable = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
             val loggingInterceptor = HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
+                // 避免大响应体导致 OOM；仅在 Debug 打开简要日志
+                level = if (isDebuggable) {
+                    HttpLoggingInterceptor.Level.BASIC
+                } else {
+                    HttpLoggingInterceptor.Level.NONE
+                }
             }
             
             val okHttpClient = OkHttpClient.Builder()

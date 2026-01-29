@@ -13,6 +13,7 @@ enum class ActivityEventType {
     ITEM_DELETED,        // 物品删除
     ITEM_UPDATED,        // 物品更新
     ITEM_USED,           // 使用了物品
+    ITEM_PURCHASED,      // 购买了物品
     ITEM_VIEWED,         // 查看了物品详情
     WAREHOUSE_ADDED,    // 容器添加
     WAREHOUSE_DELETED,   // 容器删除

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../prisma";
 import { fail, ok } from "../utils/response";
 import { parsePagination } from "../utils/pagination";
+import { recordDeletion } from "../utils/deletedRecords";
 
 const warehouseSchema = z.object({
   uuid: z.string().min(1),
@@ -153,17 +154,14 @@ export async function deleteWarehouse(req: Request, res: Response) {
   const warehouse = await prisma.warehouse.findFirst({
     where: { uuid, userId }
   });
-  if (!warehouse) {
-    return res.status(404).json(
-      fail({
-        code: "NOT_FOUND",
-        message: "Warehouse not found"
-      })
-    );
+
+  if (warehouse) {
+    await prisma.warehouse.delete({
+      where: { uuid_userId: { uuid: warehouse.uuid, userId: warehouse.userId } }
+    });
   }
 
-  await prisma.warehouse.delete({
-    where: { uuid_userId: { uuid: warehouse.uuid, userId: warehouse.userId } }
-  });
+  await recordDeletion(userId, "warehouse", uuid);
+
   return res.json(ok({ deleted: true }));
 }

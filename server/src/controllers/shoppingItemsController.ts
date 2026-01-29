@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../prisma";
 import { fail, ok } from "../utils/response";
 import { parsePagination } from "../utils/pagination";
+import { recordDeletion } from "../utils/deletedRecords";
 
 const shoppingItemSchema = z.object({
   uuid: z.string().min(1),
@@ -153,17 +154,14 @@ export async function deleteShoppingItem(req: Request, res: Response) {
   const shoppingItem = await prisma.shoppingItem.findFirst({
     where: { uuid, userId }
   });
-  if (!shoppingItem) {
-    return res.status(404).json(
-      fail({
-        code: "NOT_FOUND",
-        message: "Shopping item not found"
-      })
-    );
+
+  if (shoppingItem) {
+    await prisma.shoppingItem.delete({
+      where: { uuid_userId: { uuid: shoppingItem.uuid, userId: shoppingItem.userId } }
+    });
   }
 
-  await prisma.shoppingItem.delete({
-    where: { uuid_userId: { uuid: shoppingItem.uuid, userId: shoppingItem.userId } }
-  });
+  await recordDeletion(userId, "shopping_item", uuid);
+
   return res.json(ok({ deleted: true }));
 }

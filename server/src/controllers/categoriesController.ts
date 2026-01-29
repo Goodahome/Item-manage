@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../prisma";
 import { fail, ok } from "../utils/response";
 import { parsePagination } from "../utils/pagination";
+import { recordDeletion } from "../utils/deletedRecords";
 
 const categorySchema = z.object({
   uuid: z.string().min(1),
@@ -144,17 +145,14 @@ export async function deleteCategory(req: Request, res: Response) {
   const category = await prisma.category.findFirst({
     where: { uuid, userId }
   });
-  if (!category) {
-    return res.status(404).json(
-      fail({
-        code: "NOT_FOUND",
-        message: "Category not found"
-      })
-    );
+
+  if (category) {
+    await prisma.category.delete({
+      where: { uuid_userId: { uuid: category.uuid, userId: category.userId } }
+    });
   }
 
-  await prisma.category.delete({
-    where: { uuid_userId: { uuid: category.uuid, userId: category.userId } }
-  });
+  await recordDeletion(userId, "category", uuid);
+
   return res.json(ok({ deleted: true }));
 }
