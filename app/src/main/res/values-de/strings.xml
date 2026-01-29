@@ -245,6 +245,10 @@
     <!-- 容器 -->
     <string name="warehouse">Behälter</string>
     <string name="warehouse_settings">Behältereinstellungen</string>
+    <string name="hide_use_button">Schaltfläche „Verwenden“ ausblenden</string>
+    <string name="hide_details_button">Schaltfläche „Details“ ausblenden</string>
+    <string name="hide_quantity_display">Mengenanzeige ausblenden</string>
+    <string name="hide_quantity_slider">Mengenschieberegler ausblenden</string>
     <string name="add_warehouse">Behälter hinzufügen</string>
     <string name="add_warehouse_hint">Elternbehälter auswählen und dann hinzufügen</string>
     <string name="edit_warehouse">Behälter bearbeiten</string>
@@ -431,6 +435,7 @@
     <string name="expired_tag">Abgelaufen</string>
     <string name="price">Preis</string>
     <string name="quantity">Menge</string>
+    <string name="quantity_unit">Mengeneinheit</string>
     <string name="barcode">Strichcode</string>
     <string name="feature_code">Artikel-Merkmalscode</string>
     <string name="expiry_date">Ablaufdatum</string>
@@ -800,6 +805,7 @@
     <string name="excel_header_name">Name</string>
     <string name="excel_header_description">Beschreibung</string>
     <string name="excel_header_quantity">Menge</string>
+    <string name="excel_header_quantity_unit">Mengeneinheit</string>
     <string name="excel_header_price">Preis</string>
     <string name="excel_header_barcode">Barcode</string>
     <string name="excel_header_tags">Tags</string>

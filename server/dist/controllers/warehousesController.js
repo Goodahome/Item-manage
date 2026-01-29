@@ -8,6 +8,7 @@ const zod_1 = require("zod");
 const prisma_1 = require("../prisma");
 const response_1 = require("../utils/response");
 const pagination_1 = require("../utils/pagination");
+const deletedRecords_1 = require("../utils/deletedRecords");
 const warehouseSchema = zod_1.z.object({
     uuid: zod_1.z.string().min(1),
     name: zod_1.z.string().min(1),
@@ -17,6 +18,11 @@ const warehouseSchema = zod_1.z.object({
     parentUuid: zod_1.z.string().uuid().nullable().optional(),
     level: zod_1.z.number().int().optional(),
     imageUri: zod_1.z.string().nullable().optional(),
+    itemsSuffix: zod_1.z.string().nullable().optional(),
+    hideUseButton: zod_1.z.boolean().optional(),
+    hideDetailsButton: zod_1.z.boolean().optional(),
+    hideQuantity: zod_1.z.boolean().optional(),
+    hideQuantitySlider: zod_1.z.boolean().optional(),
     createdAt: zod_1.z.string().datetime().optional(),
     updatedAt: zod_1.z.string().datetime().optional()
 });
@@ -99,6 +105,11 @@ async function upsertWarehouse(req, res) {
             parentUuid: data.parentUuid ?? null,
             level: data.level ?? 1,
             imageUri: data.imageUri ?? null,
+            itemsSuffix: data.itemsSuffix ?? null,
+            hideUseButton: data.hideUseButton ?? false,
+            hideDetailsButton: data.hideDetailsButton ?? false,
+            hideQuantity: data.hideQuantity ?? false,
+            hideQuantitySlider: data.hideQuantitySlider ?? false,
             createdAt: createdAt ?? undefined,
             updatedAt: updatedAt ?? undefined
         },
@@ -112,6 +123,11 @@ async function upsertWarehouse(req, res) {
             parentUuid: data.parentUuid ?? null,
             level: data.level ?? 1,
             imageUri: data.imageUri ?? null,
+            itemsSuffix: data.itemsSuffix ?? null,
+            hideUseButton: data.hideUseButton ?? false,
+            hideDetailsButton: data.hideDetailsButton ?? false,
+            hideQuantity: data.hideQuantity ?? false,
+            hideQuantitySlider: data.hideQuantitySlider ?? false,
             createdAt: createdAt ?? undefined,
             updatedAt: updatedAt ?? undefined
         }
@@ -130,14 +146,11 @@ async function deleteWarehouse(req, res) {
     const warehouse = await prisma_1.prisma.warehouse.findFirst({
         where: { uuid, userId }
     });
-    if (!warehouse) {
-        return res.status(404).json((0, response_1.fail)({
-            code: "NOT_FOUND",
-            message: "Warehouse not found"
-        }));
+    if (warehouse) {
+        await prisma_1.prisma.warehouse.delete({
+            where: { uuid_userId: { uuid: warehouse.uuid, userId: warehouse.userId } }
+        });
     }
-    await prisma_1.prisma.warehouse.delete({
-        where: { uuid_userId: { uuid: warehouse.uuid, userId: warehouse.userId } }
-    });
+    await (0, deletedRecords_1.recordDeletion)(userId, "warehouse", uuid);
     return res.json((0, response_1.ok)({ deleted: true }));
 }

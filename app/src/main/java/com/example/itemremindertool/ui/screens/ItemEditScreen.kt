@@ -118,6 +118,7 @@ fun ItemEditScreen(
     var tags by remember { mutableStateOf(setOf<String>()) }
     var price by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("1") }
+    var quantityUnit by remember { mutableStateOf("") }
     var barcode by remember { mutableStateOf("") }
     var expiryDate by remember { mutableStateOf<Date?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -237,6 +238,7 @@ fun ItemEditScreen(
                 tags = item.tags.toSet()
                 price = item.price?.toString() ?: ""
                 quantity = item.quantity.toString()
+                quantityUnit = item.quantityUnit.orEmpty()
                 barcode = item.barcode ?: ""
                 expiryDate = item.expiryDate
                 enableStockAlert = item.enableStockAlert
@@ -333,6 +335,7 @@ fun ItemEditScreen(
                                 tags = tags.toList(),
                                 price = price.toDoubleOrNull(),
                                 quantity = quantity.toIntOrNull() ?: 1,
+                                quantityUnit = quantityUnit.trim().ifEmpty { null },
                                 barcode = barcode.ifEmpty { null },
                                 expiryDate = expiryDate,
                                 imageUri = if (imageUris.isNotEmpty()) {
@@ -1157,6 +1160,14 @@ fun ItemEditScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                     }
+
+                    OutlinedTextField(
+                        value = quantityUnit,
+                        onValueChange = { quantityUnit = it },
+                        label = { Text(stringResource(R.string.quantity_unit)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
 
                     // ==================== 库存提醒开关 ====================
                     Card(

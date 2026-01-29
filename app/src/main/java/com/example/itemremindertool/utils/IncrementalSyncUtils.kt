@@ -104,10 +104,19 @@ object IncrementalSyncUtils {
                         mergedCount++
                         Log.d(TAG, "添加容器: ${cloudWarehouse.name}")
                     } else {
-                        // Warehouse 没有 updatedAt，比较名称和描述是否有变化
-                        if (cloudWarehouse.name != localWarehouse.name || 
+                        // Warehouse 没有 updatedAt，比较关键字段是否有变化
+                        val hasChanges = cloudWarehouse.name != localWarehouse.name ||
                             cloudWarehouse.description != localWarehouse.description ||
-                            cloudWarehouse.parentUuid != localWarehouse.parentUuid) {
+                            cloudWarehouse.location != localWarehouse.location ||
+                            cloudWarehouse.capacity != localWarehouse.capacity ||
+                            cloudWarehouse.parentUuid != localWarehouse.parentUuid ||
+                            cloudWarehouse.level != localWarehouse.level ||
+                            cloudWarehouse.itemsSuffix != localWarehouse.itemsSuffix ||
+                            cloudWarehouse.hideUseButton != localWarehouse.hideUseButton ||
+                            cloudWarehouse.hideDetailsButton != localWarehouse.hideDetailsButton ||
+                            cloudWarehouse.hideQuantity != localWarehouse.hideQuantity ||
+                            cloudWarehouse.hideQuantitySlider != localWarehouse.hideQuantitySlider
+                        if (hasChanges) {
                             localDb.warehouseDao().updateWarehouse(cloudWarehouse)
                             mergedCount++
                             Log.d(TAG, "更新容器: ${cloudWarehouse.name}")
@@ -432,6 +441,11 @@ object IncrementalSyncUtils {
         val imageKeyCol = cursor.getColumnIndex("imageKey")
         val createdAtCol = cursor.getColumnIndex("createdAt")
         val isSampleCol = cursor.getColumnIndex("isSample")
+        val itemsSuffixCol = cursor.getColumnIndex("itemsSuffix")
+        val hideUseButtonCol = cursor.getColumnIndex("hideUseButton")
+        val hideDetailsButtonCol = cursor.getColumnIndex("hideDetailsButton")
+        val hideQuantityCol = cursor.getColumnIndex("hideQuantity")
+        val hideQuantitySliderCol = cursor.getColumnIndex("hideQuantitySlider")
         
         return Warehouse(
             uuid = if (uuidCol >= 0 && !cursor.isNull(uuidCol)) cursor.getString(uuidCol) else java.util.UUID.randomUUID().toString(),
@@ -444,7 +458,12 @@ object IncrementalSyncUtils {
             imageUri = if (imageUriCol >= 0 && !cursor.isNull(imageUriCol)) cursor.getString(imageUriCol) else null,
             imageKey = if (imageKeyCol >= 0 && !cursor.isNull(imageKeyCol)) cursor.getString(imageKeyCol) else null,
             createdAt = if (createdAtCol >= 0 && !cursor.isNull(createdAtCol)) java.util.Date(cursor.getLong(createdAtCol)) else java.util.Date(),
-            isSample = if (isSampleCol >= 0) cursor.getInt(isSampleCol) != 0 else false
+            isSample = if (isSampleCol >= 0) cursor.getInt(isSampleCol) != 0 else false,
+            itemsSuffix = if (itemsSuffixCol >= 0 && !cursor.isNull(itemsSuffixCol)) cursor.getString(itemsSuffixCol) else null,
+            hideUseButton = if (hideUseButtonCol >= 0) cursor.getInt(hideUseButtonCol) != 0 else false,
+            hideDetailsButton = if (hideDetailsButtonCol >= 0) cursor.getInt(hideDetailsButtonCol) != 0 else false,
+            hideQuantity = if (hideQuantityCol >= 0) cursor.getInt(hideQuantityCol) != 0 else false,
+            hideQuantitySlider = if (hideQuantitySliderCol >= 0) cursor.getInt(hideQuantitySliderCol) != 0 else false
         )
     }
     

@@ -29,6 +29,21 @@ data class WarehouseDto(
     
     @SerializedName("imageUri")
     val imageUri: String? = null,
+
+    @SerializedName("itemsSuffix")
+    val itemsSuffix: String? = null,
+
+    @SerializedName("hideUseButton")
+    val hideUseButton: Boolean? = null,
+
+    @SerializedName("hideDetailsButton")
+    val hideDetailsButton: Boolean? = null,
+
+    @SerializedName("hideQuantity")
+    val hideQuantity: Boolean? = null,
+
+    @SerializedName("hideQuantitySlider")
+    val hideQuantitySlider: Boolean? = null,
     
     @SerializedName("createdAt")
     val createdAt: String? = null,

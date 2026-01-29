@@ -55,6 +55,7 @@ fun WarehouseDetailScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val defaultSuffix = stringResource(R.string.warehouse_items_suffix)
 
     LaunchedEffect(warehouseUuid) {
         accessHistoryManager.recordAccess(warehouseUuid)
@@ -63,6 +64,10 @@ fun WarehouseDetailScreen(
     LaunchedEffect(warehouseUuid) {
         warehouseViewModel.loadWarehouse(warehouseUuid)
         warehouseViewModel.loadWarehouseItems(warehouseUuid)
+    }
+
+    LaunchedEffect(defaultSuffix) {
+        warehouseViewModel.migrateWarehouseSuffixIfNeeded(defaultSuffix)
     }
 
     val warehouseItemsState by warehouseViewModel.uiState.collectAsState()
@@ -84,6 +89,7 @@ fun WarehouseDetailScreen(
     
     // 顶部菜单状态
     var showTopMenu by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
     
     // 删除确认对话框状态
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -152,6 +158,27 @@ fun WarehouseDetailScreen(
                             DropdownMenuItem(
                                 text = { 
                                     Text(
+                                        stringResource(R.string.warehouse_settings),
+                                        color = ColorHelpers.getGroup4TextColor(),
+                                        maxLines = 2
+                                    ) 
+                                },
+                                onClick = {
+                                    showTopMenu = false
+                                    showSettingsDialog = true
+                                },
+                                leadingIcon = { 
+                                    Icon(
+                                        Icons.Default.Settings, 
+                                        null,
+                                        tint = ColorHelpers.getGroup4IconColor()
+                                    ) 
+                                },
+                                modifier = Modifier.heightIn(min = 36.dp)
+                            )
+                            DropdownMenuItem(
+                                text = { 
+                                    Text(
                                         stringResource(R.string.generate_qr_code),
                                         color = ColorHelpers.getGroup4TextColor(),
                                         maxLines = 2 // 允许最多2行，支持文字换行
@@ -200,6 +227,96 @@ fun WarehouseDetailScreen(
                             warehouse = warehouse,
                             onDismiss = { showQRCodeDialog = false }
                         )
+                    }
+                    
+                    if (showSettingsDialog && warehouse != null) {
+                        var suffixInput by remember(warehouse.uuid) {
+                            mutableStateOf(warehouse.itemsSuffix ?: "")
+                        }
+                        var hideUseButton by remember(warehouse.uuid) {
+                            mutableStateOf(warehouse.hideUseButton)
+                        }
+                        var hideDetailsButton by remember(warehouse.uuid) {
+                            mutableStateOf(warehouse.hideDetailsButton)
+                        }
+                        var hideQuantity by remember(warehouse.uuid) {
+                            mutableStateOf(warehouse.hideQuantity)
+                        }
+                        var hideQuantitySlider by remember(warehouse.uuid) {
+                            mutableStateOf(warehouse.hideQuantitySlider)
+                        }
+                        ModernSettingsDialog(
+                            title = stringResource(R.string.warehouse_settings),
+                            icon = Icons.Default.Settings,
+                            onDismiss = { showSettingsDialog = false },
+                            onConfirm = {
+                                val updatedWarehouse = warehouse.copy(
+                                    itemsSuffix = suffixInput.trim().ifBlank { null },
+                                    hideUseButton = hideUseButton,
+                                    hideDetailsButton = hideDetailsButton,
+                                    hideQuantity = hideQuantity,
+                                    hideQuantitySlider = hideQuantitySlider
+                                )
+                                warehouseViewModel.updateWarehouse(updatedWarehouse)
+                                warehouseViewModel.loadWarehouse(warehouse.uuid)
+                                showSettingsDialog = false
+                            }
+                        ) {
+                            OutlinedTextField(
+                                value = suffixInput,
+                                onValueChange = { suffixInput = it },
+                                label = { Text(stringResource(R.string.warehouse_items_suffix)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                supportingText = {
+                                    Text(
+                                        text = stringResource(R.string.custom_warehouse_items_suffix_desc),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = ColorHelpers.getGroup4TextColor(0.7f)
+                                    )
+                                }
+                            )
+                            ListItem(
+                                headlineContent = { Text(stringResource(R.string.hide_use_button)) },
+                                trailingContent = {
+                                    Switch(
+                                        checked = hideUseButton,
+                                        onCheckedChange = { hideUseButton = it }
+                                    )
+                                },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            )
+                            ListItem(
+                                headlineContent = { Text(stringResource(R.string.hide_details_button)) },
+                                trailingContent = {
+                                    Switch(
+                                        checked = hideDetailsButton,
+                                        onCheckedChange = { hideDetailsButton = it }
+                                    )
+                                },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            )
+                            ListItem(
+                                headlineContent = { Text(stringResource(R.string.hide_quantity_display)) },
+                                trailingContent = {
+                                    Switch(
+                                        checked = hideQuantity,
+                                        onCheckedChange = { hideQuantity = it }
+                                    )
+                                },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            )
+                            ListItem(
+                                headlineContent = { Text(stringResource(R.string.hide_quantity_slider)) },
+                                trailingContent = {
+                                    Switch(
+                                        checked = hideQuantitySlider,
+                                        onCheckedChange = { hideQuantitySlider = it }
+                                    )
+                                },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            )
+                        }
                     }
                 }
             )

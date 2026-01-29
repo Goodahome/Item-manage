@@ -8,6 +8,7 @@ const zod_1 = require("zod");
 const prisma_1 = require("../prisma");
 const response_1 = require("../utils/response");
 const pagination_1 = require("../utils/pagination");
+const deletedRecords_1 = require("../utils/deletedRecords");
 const shoppingItemSchema = zod_1.z.object({
     uuid: zod_1.z.string().min(1),
     name: zod_1.z.string().min(1),
@@ -130,14 +131,11 @@ async function deleteShoppingItem(req, res) {
     const shoppingItem = await prisma_1.prisma.shoppingItem.findFirst({
         where: { uuid, userId }
     });
-    if (!shoppingItem) {
-        return res.status(404).json((0, response_1.fail)({
-            code: "NOT_FOUND",
-            message: "Shopping item not found"
-        }));
+    if (shoppingItem) {
+        await prisma_1.prisma.shoppingItem.delete({
+            where: { uuid_userId: { uuid: shoppingItem.uuid, userId: shoppingItem.userId } }
+        });
     }
-    await prisma_1.prisma.shoppingItem.delete({
-        where: { uuid_userId: { uuid: shoppingItem.uuid, userId: shoppingItem.userId } }
-    });
+    await (0, deletedRecords_1.recordDeletion)(userId, "shopping_item", uuid);
     return res.json((0, response_1.ok)({ deleted: true }));
 }

@@ -14,6 +14,11 @@ const warehouseSchema = z.object({
   parentUuid: z.string().uuid().nullable().optional(),
   level: z.number().int().optional(),
   imageUri: z.string().nullable().optional(),
+  itemsSuffix: z.string().nullable().optional(),
+  hideUseButton: z.boolean().optional(),
+  hideDetailsButton: z.boolean().optional(),
+  hideQuantity: z.boolean().optional(),
+  hideQuantitySlider: z.boolean().optional(),
   createdAt: z.string().datetime().optional(),
   updatedAt: z.string().datetime().optional()
 });
@@ -118,6 +123,11 @@ export async function upsertWarehouse(req: Request, res: Response) {
       parentUuid: data.parentUuid ?? null,
       level: data.level ?? 1,
       imageUri: data.imageUri ?? null,
+      itemsSuffix: data.itemsSuffix ?? null,
+      hideUseButton: data.hideUseButton ?? false,
+      hideDetailsButton: data.hideDetailsButton ?? false,
+      hideQuantity: data.hideQuantity ?? false,
+      hideQuantitySlider: data.hideQuantitySlider ?? false,
       createdAt: createdAt ?? undefined,
       updatedAt: updatedAt ?? undefined
     },
@@ -131,6 +141,11 @@ export async function upsertWarehouse(req: Request, res: Response) {
       parentUuid: data.parentUuid ?? null,
       level: data.level ?? 1,
       imageUri: data.imageUri ?? null,
+      itemsSuffix: data.itemsSuffix ?? null,
+      hideUseButton: data.hideUseButton ?? false,
+      hideDetailsButton: data.hideDetailsButton ?? false,
+      hideQuantity: data.hideQuantity ?? false,
+      hideQuantitySlider: data.hideQuantitySlider ?? false,
       createdAt: createdAt ?? undefined,
       updatedAt: updatedAt ?? undefined
     }

@@ -42,6 +42,7 @@ import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.utils.CurrencyUtils
+import com.example.itemremindertool.utils.formatQuantityWithUnit
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.DraggableFab
 import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
@@ -459,7 +460,7 @@ fun ItemCard(
                             Spacer(modifier = Modifier.height(4.dp))
                         }
                     Text(
-                        text = stringResource(R.string.quantity_with_value, item.quantity),
+                        text = stringResource(R.string.quantity_with_value, formatQuantityWithUnit(item.quantity, item.quantityUnit)),
                         style = MaterialTheme.typography.bodySmall,
                             color = if (backgroundBitmap != null) {
                                 textColor.copy(alpha = 0.9f)

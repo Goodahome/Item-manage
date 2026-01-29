@@ -23,6 +23,7 @@ data class Item(
     val expiryDate: Date? = null,
     val price: Double? = null,
     val quantity: Int = 1,
+    val quantityUnit: String? = null,
     val barcode: String? = null,
     val imageUri: String? = null, // 保留向后兼容
     @ColumnInfo(name = "imageUris")

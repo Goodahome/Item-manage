@@ -9,6 +9,7 @@ import com.example.itemremindertool.data.model.ItemStatus
 import com.example.itemremindertool.data.model.DeletedRecord
 import com.example.itemremindertool.data.database.AppDatabase
 import com.example.itemremindertool.sync.SyncManager
+import com.example.itemremindertool.utils.formatQuantityWithUnit
 import java.util.Date
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.CoroutineScope
@@ -147,10 +148,11 @@ class ItemRepository(
         context?.let {
             try {
                 val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
+                val quantityText = formatQuantityWithUnit(usedQuantity, item.quantityUnit)
                 val event = com.example.itemremindertool.data.model.ActivityEvent(
                     type = com.example.itemremindertool.data.model.ActivityEventType.ITEM_USED,
                     title = it.getString(com.example.itemremindertool.R.string.event_used_item),
-                    description = "${item.name} × $usedQuantity",
+                    description = "${item.name} × $quantityText",
                     targetUuid = item.uuid,
                     targetName = item.name,
                     iconType = "use_item",

@@ -271,6 +271,10 @@
     <!-- 容器 -->
     <string name="warehouse">容器</string>
     <string name="warehouse_settings">容器设置</string>
+    <string name="hide_use_button">隐藏使用按钮</string>
+    <string name="hide_details_button">隐藏详情按钮</string>
+    <string name="hide_quantity_display">隐藏数量显示</string>
+    <string name="hide_quantity_slider">隐藏数量滑块</string>
     <string name="add_warehouse">添加容器</string>
     <string name="add_warehouse_hint">选择父容器后添加容器</string>
     <string name="edit_warehouse">编辑容器</string>
@@ -309,6 +313,7 @@
     <string name="excel_header_name">名称</string>
     <string name="excel_header_description">描述</string>
     <string name="excel_header_quantity">数量</string>
+    <string name="excel_header_quantity_unit">数量单位</string>
     <string name="excel_header_price">价格</string>
     <string name="excel_header_barcode">条码</string>
     <string name="excel_header_tags">标签</string>
@@ -463,6 +468,7 @@
     <string name="expired_tag">过期</string>
     <string name="price">价格</string>
     <string name="quantity">数量</string>
+    <string name="quantity_unit">数量单位</string>
     <string name="barcode">条形码</string>
     <string name="feature_code">物品特征码</string>
     <string name="expiry_date">到期日期</string>

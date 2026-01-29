@@ -209,20 +209,32 @@ fun WarehouseEditScreen(
                                 }
                                 
                                 val existingWarehouse = if (warehouseUuid != null) selectedWarehouse.selectedWarehouse else null
-                                val warehouse = Warehouse(
-                                    name = name,
-                                    description = description,
-                                    location = location,
-                                    capacity = capacity.toIntOrNull(),
-                                    parentUuid = parentUuid,
-                                    level = level,
-                                    imageUri = imageUri,
-                                    createdAt = existingWarehouse?.createdAt ?: java.util.Date()
-                                )
+                                val warehouse = if (existingWarehouse != null) {
+                                    existingWarehouse.copy(
+                                        name = name,
+                                        description = description,
+                                        location = location,
+                                        capacity = capacity.toIntOrNull(),
+                                        parentUuid = parentUuid,
+                                        level = level,
+                                        imageUri = imageUri
+                                    )
+                                } else {
+                                    Warehouse(
+                                        name = name,
+                                        description = description,
+                                        location = location,
+                                        capacity = capacity.toIntOrNull(),
+                                        parentUuid = parentUuid,
+                                        level = level,
+                                        imageUri = imageUri,
+                                        createdAt = java.util.Date()
+                                    )
+                                }
                                 if (warehouseUuid == null) {
                                     viewModel.insertWarehouse(warehouse)
                                 } else {
-                                    viewModel.updateWarehouse(warehouse.copy(uuid = warehouseUuid))
+                                    viewModel.updateWarehouse(warehouse)
                                 }
                                 onNavigateBack()
                             }

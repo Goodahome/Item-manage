@@ -1345,6 +1345,7 @@ class SyncManager(private val context: Context) {
             expiryDate = item.expiryDate?.let { dateFormat.format(it) },
             price = item.price,
             quantity = item.quantity,
+            quantityUnit = item.quantityUnit,
             barcode = item.barcode,
             imageUri = item.imageUri,
             imageUris = item.imageKeys,
@@ -1398,6 +1399,11 @@ class SyncManager(private val context: Context) {
             parentUuid = warehouse.parentUuid,
             level = warehouse.level,
             imageUri = warehouse.imageKey,
+            itemsSuffix = warehouse.itemsSuffix,
+            hideUseButton = warehouse.hideUseButton,
+            hideDetailsButton = warehouse.hideDetailsButton,
+            hideQuantity = warehouse.hideQuantity,
+            hideQuantitySlider = warehouse.hideQuantitySlider,
             createdAt = dateFormat.format(warehouse.createdAt)
         )
     }
@@ -1421,6 +1427,7 @@ class SyncManager(private val context: Context) {
             expiryDate = parseDateOrNull(dto.expiryDate),
             price = dto.price,
             quantity = dto.quantity ?: existing?.quantity ?: 1,
+            quantityUnit = dto.quantityUnit ?: existing?.quantityUnit,
             barcode = dto.barcode ?: existing?.barcode,
             imageUri = dto.imageUri ?: existing?.imageUri,
             imageUris = existing?.imageUris ?: emptyList(),
@@ -1485,7 +1492,12 @@ class SyncManager(private val context: Context) {
             imageUri = existing?.imageUri,
             imageKey = dto.imageUri ?: existing?.imageKey,
             createdAt = createdAt,
-            isSample = existing?.isSample ?: false
+            isSample = existing?.isSample ?: false,
+            itemsSuffix = dto.itemsSuffix ?: existing?.itemsSuffix,
+            hideUseButton = dto.hideUseButton ?: existing?.hideUseButton ?: false,
+            hideDetailsButton = dto.hideDetailsButton ?: existing?.hideDetailsButton ?: false,
+            hideQuantity = dto.hideQuantity ?: existing?.hideQuantity ?: false,
+            hideQuantitySlider = dto.hideQuantitySlider ?: existing?.hideQuantitySlider ?: false
         )
     }
 
@@ -1546,7 +1558,12 @@ class SyncManager(private val context: Context) {
             local.location == (remote.location ?: "") &&
             local.capacity == remote.capacity &&
             local.parentUuid == remote.parentUuid &&
-            local.level == (remote.level ?: local.level)
+            local.level == (remote.level ?: local.level) &&
+            local.itemsSuffix == remote.itemsSuffix &&
+            local.hideUseButton == (remote.hideUseButton ?: local.hideUseButton) &&
+            local.hideDetailsButton == (remote.hideDetailsButton ?: local.hideDetailsButton) &&
+            local.hideQuantity == (remote.hideQuantity ?: local.hideQuantity) &&
+            local.hideQuantitySlider == (remote.hideQuantitySlider ?: local.hideQuantitySlider)
     }
 
     private fun buildItemSignature(dto: ItemDto): String {

@@ -54,6 +54,7 @@ import com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.utils.CurrencyUtils
 import com.example.itemremindertool.utils.ImageUtils
+import com.example.itemremindertool.utils.formatQuantityWithUnit
 import com.example.itemremindertool.billing.BillingManager
 import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.config.FeatureFlags
@@ -171,9 +172,7 @@ fun ItemDetailScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // 物品图片 - 主图
-            val allImages = if (item.imageUris.isNotEmpty()) {
-                item.imageUris
-            } else {
+            val allImages = item.imageUris.ifEmpty {
                 item.imageUri?.let { listOf(it) } ?: emptyList()
             }
             val primaryImageIndex = if (item.imageUris.isNotEmpty()) {
@@ -408,7 +407,7 @@ fun ItemDetailScreen(
                             
                             // 数量显示
                             Text(
-                                text = item.quantity.toString(),
+                                text = formatQuantityWithUnit(item.quantity, item.quantityUnit),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = ColorHelpers.getGroup4TextColor(),
@@ -756,9 +755,7 @@ fun ItemDetailScreen(
     
     // 图片查看弹窗
     if (showImageDialog) {
-        val allImages = if (item.imageUris.isNotEmpty()) {
-            item.imageUris
-        } else {
+        val allImages = item.imageUris.ifEmpty {
             item.imageUri?.let { listOf(it) } ?: emptyList()
         }
         val currentImagePath = allImages.getOrNull(selectedImageIndex)

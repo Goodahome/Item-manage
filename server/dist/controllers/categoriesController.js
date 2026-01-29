@@ -8,6 +8,7 @@ const zod_1 = require("zod");
 const prisma_1 = require("../prisma");
 const response_1 = require("../utils/response");
 const pagination_1 = require("../utils/pagination");
+const deletedRecords_1 = require("../utils/deletedRecords");
 const categorySchema = zod_1.z.object({
     uuid: zod_1.z.string().min(1),
     name: zod_1.z.string().min(1),
@@ -121,14 +122,11 @@ async function deleteCategory(req, res) {
     const category = await prisma_1.prisma.category.findFirst({
         where: { uuid, userId }
     });
-    if (!category) {
-        return res.status(404).json((0, response_1.fail)({
-            code: "NOT_FOUND",
-            message: "Category not found"
-        }));
+    if (category) {
+        await prisma_1.prisma.category.delete({
+            where: { uuid_userId: { uuid: category.uuid, userId: category.userId } }
+        });
     }
-    await prisma_1.prisma.category.delete({
-        where: { uuid_userId: { uuid: category.uuid, userId: category.userId } }
-    });
+    await (0, deletedRecords_1.recordDeletion)(userId, "category", uuid);
     return res.json((0, response_1.ok)({ deleted: true }));
 }

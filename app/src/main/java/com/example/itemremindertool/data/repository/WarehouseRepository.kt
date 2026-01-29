@@ -123,6 +123,19 @@ class WarehouseRepository(
         }
     }
 
+    suspend fun updateWarehouseSilently(warehouse: Warehouse) {
+        warehouseDao.updateWarehouse(warehouse)
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    manager.syncWarehouseToRemote(warehouse)
+                } catch (e: Exception) {
+                    android.util.Log.e("WarehouseRepository", "静默同步容器失败", e)
+                }
+            }
+        }
+    }
+
     /**
      * 递归删除容器及其所有子容器和物品
      * @param warehouse 要删除的容器

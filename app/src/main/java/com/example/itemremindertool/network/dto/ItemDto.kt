@@ -35,6 +35,9 @@ data class ItemDto(
     
     @SerializedName("quantity")
     val quantity: Int? = null,
+
+    @SerializedName("quantityUnit")
+    val quantityUnit: String? = null,
     
     @SerializedName("barcode")
     val barcode: String? = null,

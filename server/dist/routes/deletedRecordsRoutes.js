@@ -5,4 +5,5 @@ const deletedRecordsController_1 = require("../controllers/deletedRecordsControl
 const auth_1 = require("../middleware/auth");
 const router = (0, express_1.Router)();
 router.get("/", auth_1.requireAuth, deletedRecordsController_1.listDeletedRecords);
+router.post("/", auth_1.requireAuth, deletedRecordsController_1.upsertDeletedRecord);
 exports.default = router;

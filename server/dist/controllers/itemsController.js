@@ -8,6 +8,7 @@ const zod_1 = require("zod");
 const prisma_1 = require("../prisma");
 const response_1 = require("../utils/response");
 const pagination_1 = require("../utils/pagination");
+const deletedRecords_1 = require("../utils/deletedRecords");
 const itemSchema = zod_1.z.object({
     uuid: zod_1.z.string().min(1),
     name: zod_1.z.string().min(1),
@@ -19,6 +20,7 @@ const itemSchema = zod_1.z.object({
     expiryDate: zod_1.z.string().datetime().nullable().optional(),
     price: zod_1.z.number().nullable().optional(),
     quantity: zod_1.z.number().int().optional(),
+    quantityUnit: zod_1.z.string().nullable().optional(),
     barcode: zod_1.z.string().nullable().optional(),
     imageUri: zod_1.z.string().nullable().optional(),
     imageUris: zod_1.z.array(zod_1.z.string()).optional(),
@@ -133,13 +135,14 @@ async function upsertItem(req, res) {
         update: {
             name: data.name,
             description: data.description ?? "",
-            categoryUuid: categoryUuid,
-            warehouseUuid: warehouseUuid,
+            categoryUuid,
+            warehouseUuid,
             tags: data.tags ?? [],
             purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : null,
             expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
             price: data.price ?? null,
             quantity: data.quantity ?? 1,
+            quantityUnit: data.quantityUnit ?? null,
             barcode: data.barcode ?? null,
             imageUri: data.imageUri ?? null,
             imageUris: data.imageUris ?? [],
@@ -154,13 +157,14 @@ async function upsertItem(req, res) {
             userId,
             name: data.name,
             description: data.description ?? "",
-            categoryUuid: categoryUuid,
-            warehouseUuid: warehouseUuid,
+            categoryUuid,
+            warehouseUuid,
             tags: data.tags ?? [],
             purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : null,
             expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
             price: data.price ?? null,
             quantity: data.quantity ?? 1,
+            quantityUnit: data.quantityUnit ?? null,
             barcode: data.barcode ?? null,
             imageUri: data.imageUri ?? null,
             imageUris: data.imageUris ?? [],
@@ -188,14 +192,11 @@ async function deleteItem(req, res) {
             userId
         }
     });
-    if (!item) {
-        return res.status(404).json((0, response_1.fail)({
-            code: "NOT_FOUND",
-            message: "Item not found"
-        }));
+    if (item) {
+        await prisma_1.prisma.item.delete({
+            where: { uuid_userId: { uuid: item.uuid, userId: item.userId } }
+        });
     }
-    await prisma_1.prisma.item.delete({
-        where: { uuid_userId: { uuid: item.uuid, userId: item.userId } }
-    });
+    await (0, deletedRecords_1.recordDeletion)(userId, "item", uuid);
     return res.json((0, response_1.ok)({ deleted: true }));
 }

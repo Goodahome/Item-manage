@@ -8,6 +8,10 @@ const cors_1 = __importDefault(require("cors"));
 const morgan_1 = __importDefault(require("morgan"));
 const compression_1 = __importDefault(require("compression"));
 const dotenv_1 = __importDefault(require("dotenv"));
+// 必须先加载环境变量，然后才能初始化数据库配置
+dotenv_1.default.config();
+// 初始化数据库配置（必须在 dotenv.config() 之后）
+require("./config/database");
 const errorHandler_1 = require("./middleware/errorHandler");
 const rateLimiter_1 = require("./middleware/rateLimiter");
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
@@ -20,7 +24,6 @@ const activityEventsRoutes_1 = __importDefault(require("./routes/activityEventsR
 const deletedRecordsRoutes_1 = __importDefault(require("./routes/deletedRecordsRoutes"));
 const mediaRoutes_1 = __importDefault(require("./routes/mediaRoutes"));
 const syncRoutes_1 = __importDefault(require("./routes/syncRoutes"));
-dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
 const IS_PRODUCTION = process.env.NODE_ENV === "production";

@@ -51,6 +51,7 @@ import com.example.itemremindertool.ui.components.AppDivider
 import com.example.itemremindertool.ui.components.AppDialogLayout
 import com.example.itemremindertool.utils.CurrencyUtils
 import com.example.itemremindertool.utils.ImageUtils
+import com.example.itemremindertool.utils.formatQuantityWithUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.DateFormat
@@ -66,6 +67,7 @@ fun ItemGridCard(
     item: Item,
     isSelected: Boolean = false,
     useOutlineIcon: Boolean = false,
+    hideQuantity: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -206,9 +208,9 @@ fun ItemGridCard(
                         }
 
                         // 数量（右下角）- 纯数字显示，下移到真正的底部
-                        if (item.quantity > 0) {
+                        if (!hideQuantity && item.quantity > 0) {
                             Text(
-                                text = "${item.quantity}",
+                                text = item.quantity.toString(),
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
                                     .padding(end = 4.dp, bottom = 3.dp),
@@ -342,9 +344,9 @@ fun ItemGridCard(
                     }
 
                 // 数量（右下角）- 纯数字显示，下移到真正的底部
-                if (item.quantity > 0) {
+                if (!hideQuantity && item.quantity > 0) {
                     Text(
-                        text = "${item.quantity}",
+                        text = item.quantity.toString(),
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(end = 4.dp, bottom = 3.dp),
@@ -460,6 +462,10 @@ fun ItemGridDetailPanel(
     onAddToShoppingCart: () -> Unit,
     onMoveToContainer: (() -> Unit)? = null,
     onDelete: () -> Unit,
+    hideUseButton: Boolean = false,
+    hideDetailsButton: Boolean = false,
+    hideQuantity: Boolean = false,
+    hideQuantitySlider: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -618,121 +624,130 @@ fun ItemGridDetailPanel(
                 }
             }
             
-            // 使用数量滑块（美化版 - 圆角滑块）
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 减少按钮
-                IconButton(
-                    onClick = { 
-                        if (useQuantity > 1) {
-                            useQuantity--
-                            quantityInputText = useQuantity.toString()
-                        }
-                    },
-                    modifier = Modifier.size(32.dp),
-                    enabled = useQuantity > 1
+            if (!hideQuantitySlider) {
+                // 使用数量滑块（美化版 - 圆角滑块）
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Default.Remove,
-                        contentDescription = stringResource(R.string.decrease),
-                        tint = ColorHelpers.getGroup4IconColor(),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                
-                // 自定义美化滑块
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    // 圆角轨道背景
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(ColorHelpers.getGroup4IconColor(0.15f))
-                    )
-                    
-                    // 激活部分的圆角轨道
-                    val progress = (useQuantity - 1f) / (item.quantity - 1f).coerceAtLeast(1f)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(progress)
-                            .height(8.dp)
-                            .align(Alignment.CenterStart)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(MaterialTheme.colorScheme.primary)
-                    )
-                    
-                    // 标准滑块（透明，只用于交互）
-                    Slider(
-                        value = useQuantity.toFloat(),
-                        onValueChange = { 
-                            useQuantity = it.toInt()
-                            quantityInputText = useQuantity.toString()
+                    // 减少按钮
+                    IconButton(
+                        onClick = { 
+                            if (useQuantity > 1) {
+                                useQuantity--
+                                quantityInputText = useQuantity.toString()
+                            }
                         },
-                        valueRange = 1f..item.quantity.toFloat().coerceAtLeast(1f),
-                        steps = 0,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = SliderDefaults.colors(
-                            thumbColor = MaterialTheme.colorScheme.primary,
-                            activeTrackColor = Color.Transparent,
-                            inactiveTrackColor = Color.Transparent
-                        ),
-                        thumb = {
-                            // 圆角方形滑块按钮
-                            Box(
-                                modifier = Modifier
-                                    .size(18.dp, 24.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(MaterialTheme.colorScheme.primary)
-                                    .then(
-                                        Modifier.background(
-                                            androidx.compose.ui.graphics.Brush.verticalGradient(
-                                                colors = listOf(
-                                                    Color.White.copy(alpha = 0.3f),
-                                                    Color.Transparent
+                        modifier = Modifier.size(32.dp),
+                        enabled = useQuantity > 1
+                    ) {
+                        Icon(
+                            Icons.Default.Remove,
+                            contentDescription = stringResource(R.string.decrease),
+                            tint = ColorHelpers.getGroup4IconColor(),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    
+                    // 自定义美化滑块
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // 圆角轨道背景
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(ColorHelpers.getGroup4IconColor(0.15f))
+                        )
+                        
+                        // 激活部分的圆角轨道
+                        val progress = (useQuantity - 1f) / (item.quantity - 1f).coerceAtLeast(1f)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(progress)
+                                .height(8.dp)
+                                .align(Alignment.CenterStart)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                        
+                        // 标准滑块（透明，只用于交互）
+                        Slider(
+                            value = useQuantity.toFloat(),
+                            onValueChange = { 
+                                useQuantity = it.toInt()
+                                quantityInputText = useQuantity.toString()
+                            },
+                            valueRange = 1f..item.quantity.toFloat().coerceAtLeast(1f),
+                            steps = 0,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = Color.Transparent,
+                                inactiveTrackColor = Color.Transparent
+                            ),
+                            thumb = {
+                                // 圆角方形滑块按钮
+                                Box(
+                                    modifier = Modifier
+                                        .size(18.dp, 24.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(MaterialTheme.colorScheme.primary)
+                                        .then(
+                                            Modifier.background(
+                                                androidx.compose.ui.graphics.Brush.verticalGradient(
+                                                    colors = listOf(
+                                                        Color.White.copy(alpha = 0.3f),
+                                                        Color.Transparent
+                                                    )
                                                 )
                                             )
                                         )
-                                    )
-                            )
+                                )
+                            }
+                        )
+                    }
+                    
+                    // 增加按钮
+                    IconButton(
+                        onClick = { 
+                            if (useQuantity < item.quantity) {
+                                useQuantity++
+                                quantityInputText = useQuantity.toString()
+                            }
+                        },
+                        modifier = Modifier.size(32.dp),
+                        enabled = useQuantity < item.quantity
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = stringResource(R.string.increase),
+                            tint = ColorHelpers.getGroup4IconColor(),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    
+                    // 使用数量显示（末尾）- 格式：3/5个
+                    if (!hideQuantity) {
+                        val quantityText = if (item.quantityUnit.isNullOrBlank()) {
+                            "$useQuantity/${item.quantity}"
+                        } else {
+                            "$useQuantity/${item.quantity}${item.quantityUnit}"
                         }
-                    )
+                        Text(
+                            text = quantityText,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.widthIn(min = 48.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
-                
-                // 增加按钮
-                IconButton(
-                    onClick = { 
-                        if (useQuantity < item.quantity) {
-                            useQuantity++
-                            quantityInputText = useQuantity.toString()
-                        }
-                    },
-                    modifier = Modifier.size(32.dp),
-                    enabled = useQuantity < item.quantity
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = stringResource(R.string.increase),
-                        tint = ColorHelpers.getGroup4IconColor(),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                
-                // 使用数量显示（末尾）
-                Text(
-                    text = "$useQuantity",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.widthIn(min = 36.dp),
-                    textAlign = TextAlign.Center
-                )
             }
             
             // 按钮行
@@ -741,103 +756,113 @@ fun ItemGridDetailPanel(
             val buttonTextColor = if (outlineEnabled) buttonBgColor else ColorHelpers.getGroup4TextColorByContrast(buttonBgColor)
             val buttonIconColor = if (outlineEnabled) buttonBgColor else ColorHelpers.getGroup4IconColorByContrast(buttonBgColor)
             
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                // 详情按钮（改为和使用按钮一致的样式）
-                if (outlineEnabled) {
-                    OutlinedButton(
-                        onClick = onViewDetails,
-                        modifier = Modifier.weight(1f).height(36.dp),
-                        shape = MaterialTheme.shapes.medium,
-                        border = BorderStroke(2.dp, buttonBgColor),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = buttonTextColor,
-                            disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
-                        ),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Info,
-                            contentDescription = null,
-                            tint = buttonIconColor,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(stringResource(R.string.details), fontSize = 11.sp, color = buttonTextColor)
+            val showDetailsButton = !hideDetailsButton
+            val showUseButton = !hideUseButton
+            if (showDetailsButton || showUseButton) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val singleButtonModifier = Modifier.fillMaxWidth().height(36.dp)
+                    val sharedButtonModifier = Modifier.weight(1f).height(36.dp)
+                    // 详情按钮（改为和使用按钮一致的样式）
+                    if (showDetailsButton) {
+                        if (outlineEnabled) {
+                            OutlinedButton(
+                                onClick = onViewDetails,
+                                modifier = if (showUseButton) sharedButtonModifier else singleButtonModifier,
+                                shape = MaterialTheme.shapes.medium,
+                                border = BorderStroke(2.dp, buttonBgColor),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = buttonTextColor,
+                                    disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
+                                ),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = buttonIconColor,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(stringResource(R.string.details), fontSize = 11.sp, color = buttonTextColor)
+                            }
+                        } else {
+                            Button(
+                                onClick = onViewDetails,
+                                modifier = if (showUseButton) sharedButtonModifier else singleButtonModifier,
+                                shape = MaterialTheme.shapes.medium,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = buttonBgColor,
+                                    contentColor = buttonTextColor,
+                                    disabledContainerColor = buttonBgColor.copy(alpha = 0.5f),
+                                    disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
+                                ),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = buttonIconColor,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(stringResource(R.string.details), fontSize = 11.sp, color = buttonTextColor)
+                            }
+                        }
                     }
-                } else {
-                    Button(
-                        onClick = onViewDetails,
-                        modifier = Modifier.weight(1f).height(36.dp),
-                        shape = MaterialTheme.shapes.medium,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = buttonBgColor,
-                            contentColor = buttonTextColor,
-                            disabledContainerColor = buttonBgColor.copy(alpha = 0.5f),
-                            disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
-                        ),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Info,
-                            contentDescription = null,
-                            tint = buttonIconColor,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(stringResource(R.string.details), fontSize = 11.sp, color = buttonTextColor)
-                    }
-                }
-                
-                // 使用按钮
-                if (outlineEnabled) {
-                    OutlinedButton(
-                        onClick = { onUse(useQuantity) },
-                        modifier = Modifier.weight(1f).height(36.dp),
-                        enabled = item.quantity > 0,
-                        shape = MaterialTheme.shapes.medium,
-                        border = BorderStroke(2.dp, buttonBgColor),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = buttonTextColor,
-                            disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
-                        ),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.RemoveCircle,
-                            contentDescription = null,
-                            tint = buttonIconColor,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(stringResource(R.string.use_item), fontSize = 11.sp, color = buttonTextColor)
-                    }
-                } else {
-                    Button(
-                        onClick = { 
-                            onUse(useQuantity)
-                        },
-                        modifier = Modifier.weight(1f).height(36.dp),
-                        enabled = item.quantity > 0,
-                        shape = MaterialTheme.shapes.medium,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = buttonBgColor,
-                            contentColor = buttonTextColor,
-                            disabledContainerColor = buttonBgColor.copy(alpha = 0.5f),
-                            disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
-                        ),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.RemoveCircle,
-                            contentDescription = null,
-                            tint = buttonIconColor,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(stringResource(R.string.use_item), fontSize = 11.sp, color = buttonTextColor)
+                    
+                    // 使用按钮
+                    if (showUseButton) {
+                        if (outlineEnabled) {
+                            OutlinedButton(
+                                onClick = { onUse(useQuantity) },
+                                modifier = if (showDetailsButton) sharedButtonModifier else singleButtonModifier,
+                                enabled = item.quantity > 0,
+                                shape = MaterialTheme.shapes.medium,
+                                border = BorderStroke(2.dp, buttonBgColor),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = buttonTextColor,
+                                    disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
+                                ),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.RemoveCircle,
+                                    contentDescription = null,
+                                    tint = buttonIconColor,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(stringResource(R.string.use_item), fontSize = 11.sp, color = buttonTextColor)
+                            }
+                        } else {
+                            Button(
+                                onClick = { 
+                                    onUse(useQuantity)
+                                },
+                                modifier = if (showDetailsButton) sharedButtonModifier else singleButtonModifier,
+                                enabled = item.quantity > 0,
+                                shape = MaterialTheme.shapes.medium,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = buttonBgColor,
+                                    contentColor = buttonTextColor,
+                                    disabledContainerColor = buttonBgColor.copy(alpha = 0.5f),
+                                    disabledContentColor = buttonTextColor.copy(alpha = 0.5f)
+                                ),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.RemoveCircle,
+                                    contentDescription = null,
+                                    tint = buttonIconColor,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(stringResource(R.string.use_item), fontSize = 11.sp, color = buttonTextColor)
+                            }
+                        }
                     }
                 }
             }

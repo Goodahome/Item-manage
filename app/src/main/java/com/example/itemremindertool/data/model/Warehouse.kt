@@ -18,6 +18,11 @@ data class Warehouse(
     val imageUri: String? = null, // 容器图片路径
     val imageKey: String? = null, // 远端图片对象存储 Key
     val createdAt: Date = Date(), // 创建时间戳
-    val isSample: Boolean = false // 示例数据标记（不参与云端同步）
+    val isSample: Boolean = false, // 示例数据标记（不参与云端同步）
+    val itemsSuffix: String? = null, // 容器内物品后缀（空则使用默认）
+    val hideUseButton: Boolean = false, // 隐藏“使用”按钮
+    val hideDetailsButton: Boolean = false, // 隐藏“详情”按钮
+    val hideQuantity: Boolean = false, // 隐藏数量显示
+    val hideQuantitySlider: Boolean = false // 隐藏数量滑块与 +/- 控件
 )
 

@@ -29,9 +29,15 @@ function getStorageConfig() {
 }
 function getS3Client() {
     const config = getStorageConfig();
+    // 确保端点格式正确（移除末尾斜杠）
+    let endpoint = config.endpoint;
+    if (endpoint) {
+        endpoint = endpoint.replace(/\/$/, ''); // 移除末尾斜杠
+    }
+    console.log(`[getS3Client] 配置 S3 客户端: endpoint=${endpoint}, bucket=${config.bucket}, region=${config.region}, forcePathStyle=${config.forcePathStyle}`);
     return new client_s3_1.S3Client({
         region: config.region,
-        endpoint: config.endpoint,
+        endpoint: endpoint,
         forcePathStyle: config.forcePathStyle,
         credentials: config.credentials
     });

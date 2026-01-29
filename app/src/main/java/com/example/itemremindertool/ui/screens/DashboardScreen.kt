@@ -107,6 +107,7 @@ import com.example.itemremindertool.ui.components.CameraCaptureDialog
 import com.example.itemremindertool.ui.components.ImageCropDialog
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.utils.CurrencyUtils
+import com.example.itemremindertool.utils.formatQuantityWithUnit
 import com.example.itemremindertool.sync.SyncManager
 import com.example.itemremindertool.workers.SyncQueueWorker
 import kotlinx.coroutines.Dispatchers
@@ -359,6 +360,11 @@ fun DashboardScreen(
     val warehouseNameMap by remember(allWarehouses) {
         derivedStateOf {
             allWarehouses.associate { it.uuid to it.name }
+        }
+    }
+    val warehouseByUuid by remember(allWarehouses) {
+        derivedStateOf {
+            allWarehouses.associateBy { it.uuid }
         }
     }
     
@@ -2127,7 +2133,7 @@ fun WarehouseSidebarColumn(
     )
 
     // Card 容器（与右侧子容器列表样式一致）
-    Box(modifier = modifier.fillMaxHeight()) {
+    Box(modifier = modifier.fillMaxHeight().width(sidebarWidth)) {
         Card(
             modifier = Modifier
                 .width(sidebarWidth)
@@ -2230,12 +2236,17 @@ fun WarehouseSidebarColumn(
 
 
                 // 分隔线（两端半圆）
-                Box(
-                    modifier = Modifier
-                        .width(32.dp)
-                        .height(2.dp)
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(ColorHelpers.getDividerColor())
+//                Box(
+//                    modifier = Modifier
+//                        .width(32.dp)
+//                        .height(2.dp)
+//                        .clip(RoundedCornerShape(percent = 50))
+//                        .background(ColorHelpers.getDividerColor())
+//                )
+                AppDivider(
+                    modifier = Modifier.padding(start = 17.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+                    color = ColorHelpers.getDividerColor(),
+                    thickness = 2.dp
                 )
 
                 // 容器列表（可滚动）- 支持嵌套滚动以允许下拉刷新
@@ -2593,6 +2604,10 @@ fun SubWarehouseRow(
     useOutlineIcon: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val prefs = remember(context) {
+        context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+    }
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -2627,24 +2642,12 @@ fun SubWarehouseRow(
                         val isLast = index == warehousePath.size - 1
                         
                         // 容器名称（可点击），最后一个添加自定义后缀
-                        val context = LocalContext.current
-                        val prefs = remember {
-                            context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
-                        }
-                        val customSuffix = remember {
-                            prefs.getString("warehouse_items_suffix", context.getString(R.string.warehouse_items_suffix))
-                                ?: context.getString(R.string.warehouse_items_suffix)
-                        }
                         val defaultSuffix = context.getString(R.string.warehouse_items_suffix)
-                        val effectiveSuffix = if (PremiumFeatureManager.canAccessPremiumFeatures(context)) {
-                            customSuffix
-                        } else {
-                            defaultSuffix
-                        }
-                        val unnamedText = remember {
-                            prefs.getString("unnamed_warehouse", context.getString(R.string.unnamed_warehouse))
-                                ?: context.getString(R.string.unnamed_warehouse)
-                        }
+                        val effectiveSuffix = warehouse.itemsSuffix?.ifBlank { null } ?: defaultSuffix
+                        val unnamedText = prefs.getString(
+                            "unnamed_warehouse",
+                            context.getString(R.string.unnamed_warehouse)
+                        ) ?: context.getString(R.string.unnamed_warehouse)
                         val displayText = if (isLast) {
                             "${warehouse.name.ifEmpty { unnamedText }}$effectiveSuffix"
                         } else {
@@ -3129,7 +3132,7 @@ fun ItemListRow(
                             
                             // 数量文本
                             Text(
-                                text = item.quantity.toString(),
+                                text = formatQuantityWithUnit(item.quantity, item.quantityUnit),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = ColorHelpers.getGroup4TextColor(),
@@ -3153,7 +3156,7 @@ fun ItemListRow(
                     } else {
                         // 没有回调时，只显示数量
                         Text(
-                            text = item.quantity.toString(),
+                            text = formatQuantityWithUnit(item.quantity, item.quantityUnit),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = ColorHelpers.getGroup4TextColor()
@@ -3365,7 +3368,7 @@ fun TagFilterBar(
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 6.dp)
+        contentPadding = PaddingValues(horizontal = 13.dp)
     ) {
         items(allTags, key = { it }) { tag ->
             val isSelected = selectedTags.contains(tag)
@@ -3461,6 +3464,7 @@ fun ItemListSection(
     onDeleteItem: (Item) -> Unit = {},
     onAddAlert: (Item) -> Unit = {},
     allWarehouses: List<Warehouse>? = null, // 所有容器列表（用于显示容器名称）
+    showWarehouse: Boolean = true, // 是否显示所属容器（默认显示）
     useCircleIcon: Boolean = false, // 侧边栏风格图标形状设置
     useOutlineIcon: Boolean = false,
     warehouseViewModel: WarehouseViewModel? = null,
@@ -3479,6 +3483,11 @@ fun ItemListSection(
     val warehouseNameMap by remember(allWarehouses) {
         derivedStateOf {
             (allWarehouses ?: emptyList()).associate { it.uuid to it.name }
+        }
+    }
+    val warehouseByUuid by remember(allWarehouses) {
+        derivedStateOf {
+            (allWarehouses ?: emptyList()).associateBy { it.uuid }
         }
     }
     
@@ -3701,16 +3710,20 @@ fun ItemListSection(
                     )
                 ) {
                     items(filteredItems, key = { it.uuid }) { item ->
-                        // 使用预先构建的映射查找容器名称，避免重复查找
-                        val warehouseName = item.warehouseUuid?.let { uuid ->
-                            warehouseNameMap[uuid]
+                        // 使用预先构建的映射查找容器名称，避免重复查找（仅当需要显示时）
+                        val warehouseName = if (showWarehouse) {
+                            item.warehouseUuid?.let { uuid ->
+                                warehouseNameMap[uuid]
+                            }
+                        } else {
+                            null
                         }
                         
                         ItemListRow(
                             item = item,
                             onClick = { onViewItem(item.uuid) },
                             onEditItem = onEditItem,
-                            warehouseName = warehouseName, // 传递容器名称
+                            warehouseName = warehouseName, // 传递容器名称（或null）
                             useCircleIcon = useCircleIcon, // 传递侧边栏风格图标形状设置
                             useOutlineIcon = useOutlineIcon,
                             showMoveAction = canMoveItems,
@@ -3949,6 +3962,11 @@ fun ItemListSection(
                                 }
                             ) { index ->
                                 val (item, isDetail) = itemsWithDetail[index]
+                                val itemWarehouse = item.warehouseUuid?.let { warehouseByUuid[it] }
+                                val hideUseButton = itemWarehouse?.hideUseButton ?: false
+                                val hideDetailsButton = itemWarehouse?.hideDetailsButton ?: false
+                                val hideQuantity = itemWarehouse?.hideQuantity ?: false
+                                val hideQuantitySlider = itemWarehouse?.hideQuantitySlider ?: false
                                 
                                 if (isDetail) {
                                     // 详细信息面板 - 嵌入网格中，居中显示并限制最大宽度
@@ -3996,6 +4014,10 @@ fun ItemListSection(
                                                     itemViewModel?.deleteItem(item)
                                                 }
                                             },
+                                            hideUseButton = hideUseButton,
+                                            hideDetailsButton = hideDetailsButton,
+                                            hideQuantity = hideQuantity,
+                                            hideQuantitySlider = hideQuantitySlider,
                                             modifier = Modifier
                                                 .widthIn(max = 500.dp)
                                                 .onGloballyPositioned { coordinates ->
@@ -4010,6 +4032,7 @@ fun ItemListSection(
                                         item = item,
                                         isSelected = selectedItemUuid == item.uuid,
                                         useOutlineIcon = useOutlineIcon,
+                                        hideQuantity = hideQuantity,
                                         onClick = {
                                             val willSelect = selectedItemUuid != item.uuid
                                             selectedItemUuid = if (willSelect) {
@@ -4291,6 +4314,7 @@ fun SidebarStyleMainLayout(
                                 alertSettingsManager = alertSettingsManager,
                                 onDeleteItem = onDeleteItem,
                                 onAddAlert = onAddAlert,
+                                allWarehouses = allWarehouses,
                                 useCircleIcon = useCircleIcon,
                                 useOutlineIcon = useOutlineIcon,
                                 warehouseViewModel = warehouseViewModel,
@@ -4583,6 +4607,7 @@ fun SidebarStyleMainLayout(
                                     alertSettingsManager = alertSettingsManager,
                                     onDeleteItem = onDeleteItem,
                                     onAddAlert = onAddAlert,
+                                    allWarehouses = allWarehouses,
                                     useCircleIcon = useCircleIcon,
                                     useOutlineIcon = useOutlineIcon,
                                     warehouseViewModel = warehouseViewModel,
@@ -4651,6 +4676,8 @@ fun SidebarStyleMainLayout(
                             alertSettingsManager = alertSettingsManager,
                             onDeleteItem = onDeleteItem,
                             onAddAlert = onAddAlert,
+                            allWarehouses = allContainers,
+                            showWarehouse = false, // 在容器页面不显示所属容器
                             useCircleIcon = useCircleIcon,
                             useOutlineIcon = useOutlineIcon,
                             warehouseViewModel = warehouseViewModel,

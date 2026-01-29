@@ -134,6 +134,28 @@ class WarehouseViewModel(
         }
     }
 
+    fun migrateWarehouseSuffixIfNeeded(defaultSuffix: String) {
+        viewModelScope.launch {
+            val context = getApplication<Application>()
+            val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+            if (prefs.getBoolean("warehouse_items_suffix_migrated", false)) {
+                return@launch
+            }
+            val storedSuffix = prefs.getString("warehouse_items_suffix", defaultSuffix) ?: defaultSuffix
+            if (storedSuffix != defaultSuffix) {
+                val warehouses = warehouseRepository.getAllWarehousesSync()
+                warehouses.forEach { warehouse ->
+                    if (warehouse.itemsSuffix.isNullOrBlank()) {
+                        warehouseRepository.updateWarehouseSilently(
+                            warehouse.copy(itemsSuffix = storedSuffix)
+                        )
+                    }
+                }
+            }
+            prefs.edit().putBoolean("warehouse_items_suffix_migrated", true).apply()
+        }
+    }
+
     /**
      * 获取删除容器时的统计信息
      */

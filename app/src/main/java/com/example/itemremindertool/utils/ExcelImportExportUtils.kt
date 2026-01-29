@@ -43,13 +43,14 @@ object ExcelImportExportUtils {
     private const val TAG = "ExcelImportExportUtils"
     private const val SHEET_NAME = "Items"
     private val DATE_FORMAT = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    private const val IMAGE_COLUMN_INDEX = 9
+    private const val IMAGE_COLUMN_INDEX = 10
     private const val MAX_IMAGE_SIZE = 400
 
     private data class ExcelHeaderLabels(
         val name: String,
         val description: String,
         val quantity: String,
+        val quantityUnit: String,
         val price: String,
         val barcode: String,
         val tags: String,
@@ -65,6 +66,7 @@ object ExcelImportExportUtils {
             name = context.getString(R.string.excel_header_name),
             description = context.getString(R.string.excel_header_description),
             quantity = context.getString(R.string.excel_header_quantity),
+            quantityUnit = context.getString(R.string.excel_header_quantity_unit),
             price = context.getString(R.string.excel_header_price),
             barcode = context.getString(R.string.excel_header_barcode),
             tags = context.getString(R.string.excel_header_tags),
@@ -91,6 +93,7 @@ object ExcelImportExportUtils {
         val name: Set<String>,
         val description: Set<String>,
         val quantity: Set<String>,
+        val quantityUnit: Set<String>,
         val price: Set<String>,
         val barcode: Set<String>,
         val tags: Set<String>,
@@ -113,6 +116,7 @@ object ExcelImportExportUtils {
         val name = mutableSetOf<String>()
         val description = mutableSetOf<String>()
         val quantity = mutableSetOf<String>()
+        val quantityUnit = mutableSetOf<String>()
         val price = mutableSetOf<String>()
         val barcode = mutableSetOf<String>()
         val tags = mutableSetOf<String>()
@@ -127,6 +131,7 @@ object ExcelImportExportUtils {
             name.add(normalizeHeader(labels.name))
             description.add(normalizeHeader(labels.description))
             quantity.add(normalizeHeader(labels.quantity))
+            quantityUnit.add(normalizeHeader(labels.quantityUnit))
             price.add(normalizeHeader(labels.price))
             barcode.add(normalizeHeader(labels.barcode))
             tags.add(normalizeHeader(labels.tags))
@@ -141,6 +146,7 @@ object ExcelImportExportUtils {
             name = name,
             description = description,
             quantity = quantity,
+            quantityUnit = quantityUnit,
             price = price,
             barcode = barcode,
             tags = tags,
@@ -187,6 +193,7 @@ object ExcelImportExportUtils {
             labels.name,
             labels.description,
             labels.quantity,
+            labels.quantityUnit,
             labels.price,
             labels.barcode,
             labels.tags,
@@ -230,16 +237,17 @@ object ExcelImportExportUtils {
                     row.createCell(0).setCellValue(item.name)
                     row.createCell(1).setCellValue(item.description)
                     row.createCell(2).setCellValue(item.quantity.toDouble())
-                    item.price?.let { row.createCell(3).setCellValue(it) }
-                    item.barcode?.let { row.createCell(4).setCellValue(it) }
+                    item.quantityUnit?.let { row.createCell(3).setCellValue(it) }
+                    item.price?.let { row.createCell(4).setCellValue(it) }
+                    item.barcode?.let { row.createCell(5).setCellValue(it) }
                     if (item.tags.isNotEmpty()) {
-                        row.createCell(5).setCellValue(item.tags.joinToString(","))
+                        row.createCell(6).setCellValue(item.tags.joinToString(","))
                     }
                     item.warehouseUuid?.let { warehouseUuid ->
-                        warehouseNameMap[warehouseUuid]?.let { row.createCell(6).setCellValue(it) }
+                        warehouseNameMap[warehouseUuid]?.let { row.createCell(7).setCellValue(it) }
                     }
-                    item.expiryDate?.let { row.createCell(7).setCellValue(DATE_FORMAT.format(it)) }
-                    row.createCell(8).setCellValue(if (item.enableStockAlert) yesText else noText)
+                    item.expiryDate?.let { row.createCell(8).setCellValue(DATE_FORMAT.format(it)) }
+                    row.createCell(9).setCellValue(if (item.enableStockAlert) yesText else noText)
 
                     val imagePath = selectPrimaryImagePath(item)
                     if (imagePath != null) {
@@ -296,13 +304,14 @@ object ExcelImportExportUtils {
                 val nameIndex = resolveHeaderIndex(headerIndexMap, headerAliases.name, 0)
                 val descriptionIndex = resolveHeaderIndex(headerIndexMap, headerAliases.description, 1)
                 val quantityIndex = resolveHeaderIndex(headerIndexMap, headerAliases.quantity, 2)
-                val priceIndex = resolveHeaderIndex(headerIndexMap, headerAliases.price, 3)
-                val barcodeIndex = resolveHeaderIndex(headerIndexMap, headerAliases.barcode, 4)
-                val tagsIndex = resolveHeaderIndex(headerIndexMap, headerAliases.tags, 5)
+                val quantityUnitIndex = resolveHeaderIndex(headerIndexMap, headerAliases.quantityUnit, 3)
+                val priceIndex = resolveHeaderIndex(headerIndexMap, headerAliases.price, 4)
+                val barcodeIndex = resolveHeaderIndex(headerIndexMap, headerAliases.barcode, 5)
+                val tagsIndex = resolveHeaderIndex(headerIndexMap, headerAliases.tags, 6)
                 val warehouseRequiredIndex = resolveHeaderIndex(headerIndexMap, headerAliases.warehouseRequired, -1)
                 val warehouseIndex = resolveHeaderIndex(headerIndexMap, headerAliases.warehouse, -1)
-                val expiryDateIndex = resolveHeaderIndex(headerIndexMap, headerAliases.expiryDate, 7)
-                val stockAlertIndex = resolveHeaderIndex(headerIndexMap, headerAliases.stockAlert, 8)
+                val expiryDateIndex = resolveHeaderIndex(headerIndexMap, headerAliases.expiryDate, 8)
+                val stockAlertIndex = resolveHeaderIndex(headerIndexMap, headerAliases.stockAlert, 9)
                 val imageColumn = resolveHeaderIndex(headerIndexMap, headerAliases.image, IMAGE_COLUMN_INDEX)
                 val picturesByRow = extractPicturesByRow(sheet, imageColumn)
 
@@ -342,6 +351,7 @@ object ExcelImportExportUtils {
 
                     val description = getCellString(row.getCell(descriptionIndex))
                     val quantity = getCellInt(row.getCell(quantityIndex), 1)
+                    val quantityUnit = getCellString(row.getCell(quantityUnitIndex)).trim().ifEmpty { null }
                     val price = getCellDouble(row.getCell(priceIndex))
                     val barcode = getCellString(row.getCell(barcodeIndex)).ifBlank { null }
                     val tagsText = getCellString(row.getCell(tagsIndex))
@@ -416,6 +426,7 @@ object ExcelImportExportUtils {
                                 0
                             },
                             quantity = existingItem.quantity + quantity,
+                            quantityUnit = existingItem.quantityUnit ?: quantityUnit,
                             enableStockAlert = existingItem.enableStockAlert || enableStockAlert,
                             updatedAt = Date()
                         )
@@ -439,6 +450,7 @@ object ExcelImportExportUtils {
                             expiryDate = expiryDate,
                             price = price,
                             quantity = quantity,
+                            quantityUnit = quantityUnit,
                             barcode = barcode,
                             imageUri = imagePath,
                             imageUris = imageUris,

@@ -250,6 +250,10 @@
     <!-- 容器 -->
     <string name="warehouse">Conteneur</string>
     <string name="warehouse_settings">Paramètres du conteneur</string>
+    <string name="hide_use_button">Masquer le bouton Utiliser</string>
+    <string name="hide_details_button">Masquer le bouton Détails</string>
+    <string name="hide_quantity_display">Masquer l\'affichage de la quantité</string>
+    <string name="hide_quantity_slider">Masquer le curseur de quantité</string>
     <string name="add_warehouse">Ajouter un conteneur</string>
     <string name="add_warehouse_hint">Sélectionner le conteneur parent puis ajouter</string>
     <string name="edit_warehouse">Modifier le conteneur</string>
@@ -435,6 +439,7 @@
     <string name="expired_tag">Expiré</string>
     <string name="price">Prix</string>
     <string name="quantity">Quantité</string>
+    <string name="quantity_unit">Unité de Quantité</string>
     <string name="barcode">Code-barres</string>
     <string name="feature_code">Code de caractéristique de l\'article</string>
     <string name="expiry_date">Date d\'expiration</string>
@@ -791,6 +796,7 @@
     <string name="excel_header_name">Nom</string>
     <string name="excel_header_description">Description</string>
     <string name="excel_header_quantity">Quantité</string>
+    <string name="excel_header_quantity_unit">Unité de Quantité</string>
     <string name="excel_header_price">Prix</string>
     <string name="excel_header_barcode">Code-barres</string>
     <string name="excel_header_tags">Étiquettes</string>

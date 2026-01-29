@@ -6,4 +6,5 @@ const auth_1 = require("../middleware/auth");
 const router = (0, express_1.Router)();
 router.get("/", auth_1.requireAuth, activityEventsController_1.listActivityEvents);
 router.get("/:uuid", auth_1.requireAuth, activityEventsController_1.getActivityEvent);
+router.post("/", auth_1.requireAuth, activityEventsController_1.upsertActivityEvent);
 exports.default = router;

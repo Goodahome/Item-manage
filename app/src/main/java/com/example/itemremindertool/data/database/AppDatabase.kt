@@ -31,7 +31,7 @@ import com.example.itemremindertool.data.dao.ActivityEventDao
 
 @Database(
     entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class, ItemReminder::class, DeletedRecord::class, ActivityEvent::class, SyncQueueItem::class],
-    version = 18,
+    version = 20,
     exportSchema = true
 )
 @TypeConverters(DateConverters::class, StringListConverters::class, ReminderTypeConverters::class, ActivityEventTypeConverters::class, SyncOperationConverters::class)
@@ -117,7 +117,7 @@ abstract class AppDatabase : RoomDatabase() {
                             )
                         }
                     })
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
@@ -638,6 +638,22 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL("INSERT INTO deleted_records_new (uuid, entityType, entityUuid, deletedAt) SELECT uuid, entityType, entityUuid, deletedAt FROM deleted_records")
                 database.execSQL("DROP TABLE deleted_records")
                 database.execSQL("ALTER TABLE deleted_records_new RENAME TO deleted_records")
+            }
+        }
+
+        private val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE warehouses ADD COLUMN itemsSuffix TEXT")
+                database.execSQL("ALTER TABLE warehouses ADD COLUMN hideUseButton INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE warehouses ADD COLUMN hideDetailsButton INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE warehouses ADD COLUMN hideQuantity INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE warehouses ADD COLUMN hideQuantitySlider INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        private val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE items ADD COLUMN quantityUnit TEXT")
             }
         }
 
