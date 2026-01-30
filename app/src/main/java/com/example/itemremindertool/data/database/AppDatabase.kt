@@ -121,7 +121,7 @@ abstract class AppDatabase : RoomDatabase() {
                         }
                     })
                     .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21)
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                 INSTANCE = instance
                 instance
@@ -139,43 +139,43 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         private val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE items ADD COLUMN tags TEXT NOT NULL DEFAULT ''")
-                database.execSQL("CREATE TABLE items_new (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, description TEXT NOT NULL, categoryId INTEGER, warehouseId INTEGER, tags TEXT NOT NULL DEFAULT '', purchaseDate INTEGER, expiryDate INTEGER, price REAL, quantity INTEGER NOT NULL DEFAULT 1, barcode TEXT, imageUri TEXT, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
-                database.execSQL("INSERT INTO items_new (id, name, description, categoryId, warehouseId, tags, purchaseDate, expiryDate, price, quantity, barcode, imageUri, createdAt, updatedAt) SELECT id, name, description, categoryId, warehouseId, '', purchaseDate, expiryDate, price, quantity, barcode, imageUri, createdAt, updatedAt FROM items")
-                database.execSQL("DROP TABLE items")
-                database.execSQL("ALTER TABLE items_new RENAME TO items")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE items ADD COLUMN tags TEXT NOT NULL DEFAULT ''")
+                db.execSQL("CREATE TABLE items_new (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, description TEXT NOT NULL, categoryId INTEGER, warehouseId INTEGER, tags TEXT NOT NULL DEFAULT '', purchaseDate INTEGER, expiryDate INTEGER, price REAL, quantity INTEGER NOT NULL DEFAULT 1, barcode TEXT, imageUri TEXT, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
+                db.execSQL("INSERT INTO items_new (id, name, description, categoryId, warehouseId, tags, purchaseDate, expiryDate, price, quantity, barcode, imageUri, createdAt, updatedAt) SELECT id, name, description, categoryId, warehouseId, '', purchaseDate, expiryDate, price, quantity, barcode, imageUri, createdAt, updatedAt FROM items")
+                db.execSQL("DROP TABLE items")
+                db.execSQL("ALTER TABLE items_new RENAME TO items")
             }
         }
         
         private val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE items ADD COLUMN featureCode TEXT")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE items ADD COLUMN featureCode TEXT")
             }
         }
         
         private val MIGRATION_3_4 = object : Migration(3, 4) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE shopping_items ADD COLUMN imageUri TEXT")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE shopping_items ADD COLUMN imageUri TEXT")
             }
         }
         
         private val MIGRATION_4_5 = object : Migration(4, 5) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE warehouses ADD COLUMN parentId INTEGER")
-                database.execSQL("ALTER TABLE warehouses ADD COLUMN level INTEGER NOT NULL DEFAULT 1")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE warehouses ADD COLUMN parentId INTEGER")
+                db.execSQL("ALTER TABLE warehouses ADD COLUMN level INTEGER NOT NULL DEFAULT 1")
             }
         }
         
         private val MIGRATION_5_6 = object : Migration(5, 6) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE items ADD COLUMN enableStockAlert INTEGER NOT NULL DEFAULT 1")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE items ADD COLUMN enableStockAlert INTEGER NOT NULL DEFAULT 1")
             }
         }
         
         private val MIGRATION_6_7 = object : Migration(6, 7) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("""
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS item_reminders (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         itemId INTEGER NOT NULL,
@@ -197,16 +197,16 @@ abstract class AppDatabase : RoomDatabase() {
         }
         
         private val MIGRATION_7_8 = object : Migration(7, 8) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // 为 shopping_items 表添加 itemId 字段
-                database.execSQL("ALTER TABLE shopping_items ADD COLUMN itemId INTEGER")
+                db.execSQL("ALTER TABLE shopping_items ADD COLUMN itemId INTEGER")
             }
         }
         
         private val MIGRATION_8_9 = object : Migration(8, 9) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // 创建删除记录表
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS deleted_records (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         entityType TEXT NOT NULL,
@@ -219,9 +219,9 @@ abstract class AppDatabase : RoomDatabase() {
         }
         
         private val MIGRATION_9_10 = object : Migration(9, 10) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // 创建动态事件表
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS activity_events (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         type TEXT NOT NULL,
@@ -238,24 +238,24 @@ abstract class AppDatabase : RoomDatabase() {
         }
         
         private val MIGRATION_10_11 = object : Migration(10, 11) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // 为 warehouses 表添加 imageUri 字段
-                database.execSQL("ALTER TABLE warehouses ADD COLUMN imageUri TEXT")
+                db.execSQL("ALTER TABLE warehouses ADD COLUMN imageUri TEXT")
             }
         }
         
         private val MIGRATION_11_12 = object : Migration(11, 12) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // 为 warehouses 表添加 createdAt 字段，默认值为当前时间
                 val currentTimeMillis = System.currentTimeMillis()
-                database.execSQL("ALTER TABLE warehouses ADD COLUMN createdAt INTEGER NOT NULL DEFAULT $currentTimeMillis")
+                db.execSQL("ALTER TABLE warehouses ADD COLUMN createdAt INTEGER NOT NULL DEFAULT $currentTimeMillis")
             }
         }
         
         private val MIGRATION_12_13 = object : Migration(12, 13) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // 创建同步队列表
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS sync_queue (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         entityType TEXT NOT NULL,
@@ -270,61 +270,61 @@ abstract class AppDatabase : RoomDatabase() {
                 """)
                 
                 // 为 items 表添加 uuid 字段
-                database.execSQL("ALTER TABLE items ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE items ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
                 // 为现有数据生成 UUID（使用 id 作为临时值，实际使用时会在代码中生成真正的 UUID）
-                database.execSQL("UPDATE items SET uuid = 'item-' || id WHERE uuid = ''")
+                db.execSQL("UPDATE items SET uuid = 'item-' || id WHERE uuid = ''")
                 
                 // 为 categories 表添加 uuid 字段
-                database.execSQL("ALTER TABLE categories ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
-                database.execSQL("UPDATE categories SET uuid = 'category-' || id WHERE uuid = ''")
+                db.execSQL("ALTER TABLE categories ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
+                db.execSQL("UPDATE categories SET uuid = 'category-' || id WHERE uuid = ''")
                 
                 // 为 warehouses 表添加 uuid 字段
-                database.execSQL("ALTER TABLE warehouses ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
-                database.execSQL("UPDATE warehouses SET uuid = 'warehouse-' || id WHERE uuid = ''")
+                db.execSQL("ALTER TABLE warehouses ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
+                db.execSQL("UPDATE warehouses SET uuid = 'warehouse-' || id WHERE uuid = ''")
                 
                 // 为 shopping_items 表添加 uuid 字段
-                database.execSQL("ALTER TABLE shopping_items ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
-                database.execSQL("UPDATE shopping_items SET uuid = 'shopping-' || id WHERE uuid = ''")
+                db.execSQL("ALTER TABLE shopping_items ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
+                db.execSQL("UPDATE shopping_items SET uuid = 'shopping-' || id WHERE uuid = ''")
                 
                 // 为 item_reminders 表添加 uuid 字段
-                database.execSQL("ALTER TABLE item_reminders ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
-                database.execSQL("UPDATE item_reminders SET uuid = 'reminder-' || id WHERE uuid = ''")
+                db.execSQL("ALTER TABLE item_reminders ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
+                db.execSQL("UPDATE item_reminders SET uuid = 'reminder-' || id WHERE uuid = ''")
                 
                 // 为 deleted_records 表添加 uuid 字段
-                database.execSQL("ALTER TABLE deleted_records ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
-                database.execSQL("UPDATE deleted_records SET uuid = 'deleted-' || id WHERE uuid = ''")
+                db.execSQL("ALTER TABLE deleted_records ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
+                db.execSQL("UPDATE deleted_records SET uuid = 'deleted-' || id WHERE uuid = ''")
                 
                 // 为 activity_events 表添加 uuid 字段
-                database.execSQL("ALTER TABLE activity_events ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
-                database.execSQL("UPDATE activity_events SET uuid = 'event-' || id WHERE uuid = ''")
+                db.execSQL("ALTER TABLE activity_events ADD COLUMN uuid TEXT NOT NULL DEFAULT ''")
+                db.execSQL("UPDATE activity_events SET uuid = 'event-' || id WHERE uuid = ''")
             }
         }
 
         private val MIGRATION_13_14 = object : Migration(13, 14) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE items ADD COLUMN imageKeys TEXT NOT NULL DEFAULT ''")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE items ADD COLUMN imageKeys TEXT NOT NULL DEFAULT ''")
             }
         }
 
         private val MIGRATION_14_15 = object : Migration(14, 15) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE items ADD COLUMN isSample INTEGER NOT NULL DEFAULT 0")
-                database.execSQL("ALTER TABLE warehouses ADD COLUMN isSample INTEGER NOT NULL DEFAULT 0")
-                database.execSQL("ALTER TABLE shopping_items ADD COLUMN isSample INTEGER NOT NULL DEFAULT 0")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE items ADD COLUMN isSample INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE warehouses ADD COLUMN isSample INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE shopping_items ADD COLUMN isSample INTEGER NOT NULL DEFAULT 0")
             }
         }
 
         private val MIGRATION_15_16 = object : Migration(15, 16) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE warehouses ADD COLUMN imageKey TEXT")
-                database.execSQL("ALTER TABLE shopping_items ADD COLUMN imageKey TEXT")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE warehouses ADD COLUMN imageKey TEXT")
+                db.execSQL("ALTER TABLE shopping_items ADD COLUMN imageKey TEXT")
             }
         }
 
         private val MIGRATION_16_17 = object : Migration(16, 17) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // 1. warehouses: parentId (INTEGER) -> parentUuid (TEXT)
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS warehouses_new (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         uuid TEXT NOT NULL,
@@ -340,18 +340,18 @@ abstract class AppDatabase : RoomDatabase() {
                         isSample INTEGER NOT NULL DEFAULT 0
                     )
                 """.trimIndent())
-                database.execSQL("""
+                db.execSQL("""
                     INSERT INTO warehouses_new (id, uuid, name, description, location, capacity, parentUuid, level, imageUri, imageKey, createdAt, isSample)
                     SELECT w.id, w.uuid, w.name, w.description, w.location, w.capacity,
                         (SELECT p.uuid FROM warehouses p WHERE p.id = w.parentId),
                         w.level, w.imageUri, w.imageKey, w.createdAt, w.isSample
                     FROM warehouses w
                 """.trimIndent())
-                database.execSQL("DROP TABLE warehouses")
-                database.execSQL("ALTER TABLE warehouses_new RENAME TO warehouses")
+                db.execSQL("DROP TABLE warehouses")
+                db.execSQL("ALTER TABLE warehouses_new RENAME TO warehouses")
 
                 // 2. items: categoryId, warehouseId -> categoryUuid, warehouseUuid
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS items_new (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         uuid TEXT NOT NULL,
@@ -376,7 +376,7 @@ abstract class AppDatabase : RoomDatabase() {
                         updatedAt INTEGER NOT NULL
                     )
                 """.trimIndent())
-                database.execSQL("""
+                db.execSQL("""
                     INSERT INTO items_new (id, uuid, name, description, categoryUuid, warehouseUuid, tags, purchaseDate, expiryDate, price, quantity, barcode, imageUri, imageUris, imageKeys, isSample, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt)
                     SELECT i.id, i.uuid, i.name, i.description,
                         (SELECT c.uuid FROM categories c WHERE c.id = i.categoryId),
@@ -384,11 +384,11 @@ abstract class AppDatabase : RoomDatabase() {
                         i.tags, i.purchaseDate, i.expiryDate, i.price, i.quantity, i.barcode, i.imageUri, i.imageUris, i.imageKeys, i.isSample, i.primaryImageIndex, i.featureCode, i.enableStockAlert, i.createdAt, i.updatedAt
                     FROM items i
                 """.trimIndent())
-                database.execSQL("DROP TABLE items")
-                database.execSQL("ALTER TABLE items_new RENAME TO items")
+                db.execSQL("DROP TABLE items")
+                db.execSQL("ALTER TABLE items_new RENAME TO items")
 
                 // 3. shopping_items: itemId -> itemUuid
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS shopping_items_new (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         uuid TEXT NOT NULL,
@@ -405,18 +405,18 @@ abstract class AppDatabase : RoomDatabase() {
                         isSample INTEGER NOT NULL DEFAULT 0
                     )
                 """.trimIndent())
-                database.execSQL("""
+                db.execSQL("""
                     INSERT INTO shopping_items_new (id, uuid, name, description, quantity, isCompleted, priority, createdAt, completedAt, imageUri, imageKey, itemUuid, isSample)
                     SELECT s.id, s.uuid, s.name, s.description, s.quantity, s.isCompleted, s.priority, s.createdAt, s.completedAt, s.imageUri, s.imageKey,
                         (SELECT i.uuid FROM items i WHERE i.id = s.itemId),
                         s.isSample
                     FROM shopping_items s
                 """.trimIndent())
-                database.execSQL("DROP TABLE shopping_items")
-                database.execSQL("ALTER TABLE shopping_items_new RENAME TO shopping_items")
+                db.execSQL("DROP TABLE shopping_items")
+                db.execSQL("ALTER TABLE shopping_items_new RENAME TO shopping_items")
 
                 // 4. item_reminders: itemId -> itemUuid
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS item_reminders_new (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         uuid TEXT NOT NULL,
@@ -435,18 +435,18 @@ abstract class AppDatabase : RoomDatabase() {
                         updatedAt INTEGER NOT NULL
                     )
                 """.trimIndent())
-                database.execSQL("""
+                db.execSQL("""
                     INSERT INTO item_reminders_new (id, uuid, itemUuid, reminderType, reminderTime, dailyTime, monthlyDay, monthlyTime, yearlyMonth, yearlyDay, yearlyTime, reason, isEnabled, createdAt, updatedAt)
                     SELECT r.id, r.uuid,
                         (SELECT i.uuid FROM items i WHERE i.id = r.itemId),
                         r.reminderType, r.reminderTime, r.dailyTime, r.monthlyDay, r.monthlyTime, r.yearlyMonth, r.yearlyDay, r.yearlyTime, r.reason, r.isEnabled, r.createdAt, r.updatedAt
                     FROM item_reminders r
                 """.trimIndent())
-                database.execSQL("DROP TABLE item_reminders")
-                database.execSQL("ALTER TABLE item_reminders_new RENAME TO item_reminders")
+                db.execSQL("DROP TABLE item_reminders")
+                db.execSQL("ALTER TABLE item_reminders_new RENAME TO item_reminders")
 
                 // 5. activity_events: targetId -> targetUuid (targetId 可能为 item 或 warehouse)
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS activity_events_new (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         uuid TEXT NOT NULL,
@@ -460,7 +460,7 @@ abstract class AppDatabase : RoomDatabase() {
                         metadata TEXT NOT NULL DEFAULT ''
                     )
                 """.trimIndent())
-                database.execSQL("""
+                db.execSQL("""
                     INSERT INTO activity_events_new (id, uuid, type, title, description, targetUuid, targetName, iconType, createdAt, metadata)
                     SELECT e.id, e.uuid, e.type, e.title, e.description,
                         COALESCE(
@@ -470,11 +470,11 @@ abstract class AppDatabase : RoomDatabase() {
                         e.targetName, e.iconType, e.createdAt, e.metadata
                     FROM activity_events e
                 """.trimIndent())
-                database.execSQL("DROP TABLE activity_events")
-                database.execSQL("ALTER TABLE activity_events_new RENAME TO activity_events")
+                db.execSQL("DROP TABLE activity_events")
+                db.execSQL("ALTER TABLE activity_events_new RENAME TO activity_events")
 
                 // 6. deleted_records: entityId -> entityUuid
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS deleted_records_new (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         uuid TEXT NOT NULL,
@@ -483,7 +483,7 @@ abstract class AppDatabase : RoomDatabase() {
                         deletedAt INTEGER NOT NULL
                     )
                 """.trimIndent())
-                database.execSQL("""
+                db.execSQL("""
                     INSERT INTO deleted_records_new (id, uuid, entityType, entityUuid, deletedAt)
                     SELECT d.id, d.uuid, d.entityType,
                         CASE d.entityType
@@ -497,15 +497,15 @@ abstract class AppDatabase : RoomDatabase() {
                         d.deletedAt
                     FROM deleted_records d
                 """.trimIndent())
-                database.execSQL("DROP TABLE deleted_records")
-                database.execSQL("ALTER TABLE deleted_records_new RENAME TO deleted_records")
+                db.execSQL("DROP TABLE deleted_records")
+                db.execSQL("ALTER TABLE deleted_records_new RENAME TO deleted_records")
             }
         }
 
         private val MIGRATION_17_18 = object : Migration(17, 18) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // 1. categories: uuid 为主键，移除 id
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS categories_new (
                         uuid TEXT PRIMARY KEY NOT NULL,
                         name TEXT NOT NULL,
@@ -514,12 +514,12 @@ abstract class AppDatabase : RoomDatabase() {
                         icon TEXT NOT NULL DEFAULT 'category'
                     )
                 """.trimIndent())
-                database.execSQL("INSERT INTO categories_new (uuid, name, description, color, icon) SELECT uuid, name, description, color, icon FROM categories")
-                database.execSQL("DROP TABLE categories")
-                database.execSQL("ALTER TABLE categories_new RENAME TO categories")
+                db.execSQL("INSERT INTO categories_new (uuid, name, description, color, icon) SELECT uuid, name, description, color, icon FROM categories")
+                db.execSQL("DROP TABLE categories")
+                db.execSQL("ALTER TABLE categories_new RENAME TO categories")
 
                 // 2. warehouses: uuid 为主键，移除 id
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS warehouses_new (
                         uuid TEXT PRIMARY KEY NOT NULL,
                         name TEXT NOT NULL,
@@ -534,12 +534,12 @@ abstract class AppDatabase : RoomDatabase() {
                         isSample INTEGER NOT NULL DEFAULT 0
                     )
                 """.trimIndent())
-                database.execSQL("INSERT INTO warehouses_new (uuid, name, description, location, capacity, parentUuid, level, imageUri, imageKey, createdAt, isSample) SELECT uuid, name, description, location, capacity, parentUuid, level, imageUri, imageKey, createdAt, isSample FROM warehouses")
-                database.execSQL("DROP TABLE warehouses")
-                database.execSQL("ALTER TABLE warehouses_new RENAME TO warehouses")
+                db.execSQL("INSERT INTO warehouses_new (uuid, name, description, location, capacity, parentUuid, level, imageUri, imageKey, createdAt, isSample) SELECT uuid, name, description, location, capacity, parentUuid, level, imageUri, imageKey, createdAt, isSample FROM warehouses")
+                db.execSQL("DROP TABLE warehouses")
+                db.execSQL("ALTER TABLE warehouses_new RENAME TO warehouses")
 
                 // 3. items: uuid 为主键，移除 id
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS items_new (
                         uuid TEXT PRIMARY KEY NOT NULL,
                         name TEXT NOT NULL,
@@ -563,12 +563,12 @@ abstract class AppDatabase : RoomDatabase() {
                         updatedAt INTEGER NOT NULL
                     )
                 """.trimIndent())
-                database.execSQL("INSERT INTO items_new (uuid, name, description, categoryUuid, warehouseUuid, tags, purchaseDate, expiryDate, price, quantity, barcode, imageUri, imageUris, imageKeys, isSample, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt) SELECT uuid, name, description, categoryUuid, warehouseUuid, tags, purchaseDate, expiryDate, price, quantity, barcode, imageUri, imageUris, imageKeys, isSample, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt FROM items")
-                database.execSQL("DROP TABLE items")
-                database.execSQL("ALTER TABLE items_new RENAME TO items")
+                db.execSQL("INSERT INTO items_new (uuid, name, description, categoryUuid, warehouseUuid, tags, purchaseDate, expiryDate, price, quantity, barcode, imageUri, imageUris, imageKeys, isSample, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt) SELECT uuid, name, description, categoryUuid, warehouseUuid, tags, purchaseDate, expiryDate, price, quantity, barcode, imageUri, imageUris, imageKeys, isSample, primaryImageIndex, featureCode, enableStockAlert, createdAt, updatedAt FROM items")
+                db.execSQL("DROP TABLE items")
+                db.execSQL("ALTER TABLE items_new RENAME TO items")
 
                 // 4. shopping_items: uuid 为主键，移除 id
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS shopping_items_new (
                         uuid TEXT PRIMARY KEY NOT NULL,
                         name TEXT NOT NULL,
@@ -584,12 +584,12 @@ abstract class AppDatabase : RoomDatabase() {
                         isSample INTEGER NOT NULL DEFAULT 0
                     )
                 """.trimIndent())
-                database.execSQL("INSERT INTO shopping_items_new (uuid, name, description, quantity, isCompleted, priority, createdAt, completedAt, imageUri, imageKey, itemUuid, isSample) SELECT uuid, name, description, quantity, isCompleted, priority, createdAt, completedAt, imageUri, imageKey, itemUuid, isSample FROM shopping_items")
-                database.execSQL("DROP TABLE shopping_items")
-                database.execSQL("ALTER TABLE shopping_items_new RENAME TO shopping_items")
+                db.execSQL("INSERT INTO shopping_items_new (uuid, name, description, quantity, isCompleted, priority, createdAt, completedAt, imageUri, imageKey, itemUuid, isSample) SELECT uuid, name, description, quantity, isCompleted, priority, createdAt, completedAt, imageUri, imageKey, itemUuid, isSample FROM shopping_items")
+                db.execSQL("DROP TABLE shopping_items")
+                db.execSQL("ALTER TABLE shopping_items_new RENAME TO shopping_items")
 
                 // 5. item_reminders: uuid 为主键，移除 id
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS item_reminders_new (
                         uuid TEXT PRIMARY KEY NOT NULL,
                         itemUuid TEXT NOT NULL,
@@ -607,12 +607,12 @@ abstract class AppDatabase : RoomDatabase() {
                         updatedAt INTEGER NOT NULL
                     )
                 """.trimIndent())
-                database.execSQL("INSERT INTO item_reminders_new (uuid, itemUuid, reminderType, reminderTime, dailyTime, monthlyDay, monthlyTime, yearlyMonth, yearlyDay, yearlyTime, reason, isEnabled, createdAt, updatedAt) SELECT uuid, itemUuid, reminderType, reminderTime, dailyTime, monthlyDay, monthlyTime, yearlyMonth, yearlyDay, yearlyTime, reason, isEnabled, createdAt, updatedAt FROM item_reminders")
-                database.execSQL("DROP TABLE item_reminders")
-                database.execSQL("ALTER TABLE item_reminders_new RENAME TO item_reminders")
+                db.execSQL("INSERT INTO item_reminders_new (uuid, itemUuid, reminderType, reminderTime, dailyTime, monthlyDay, monthlyTime, yearlyMonth, yearlyDay, yearlyTime, reason, isEnabled, createdAt, updatedAt) SELECT uuid, itemUuid, reminderType, reminderTime, dailyTime, monthlyDay, monthlyTime, yearlyMonth, yearlyDay, yearlyTime, reason, isEnabled, createdAt, updatedAt FROM item_reminders")
+                db.execSQL("DROP TABLE item_reminders")
+                db.execSQL("ALTER TABLE item_reminders_new RENAME TO item_reminders")
 
                 // 6. activity_events: uuid 为主键，移除 id
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS activity_events_new (
                         uuid TEXT PRIMARY KEY NOT NULL,
                         type TEXT NOT NULL,
@@ -625,12 +625,12 @@ abstract class AppDatabase : RoomDatabase() {
                         metadata TEXT NOT NULL DEFAULT ''
                     )
                 """.trimIndent())
-                database.execSQL("INSERT INTO activity_events_new (uuid, type, title, description, targetUuid, targetName, iconType, createdAt, metadata) SELECT uuid, type, title, description, targetUuid, targetName, iconType, createdAt, metadata FROM activity_events")
-                database.execSQL("DROP TABLE activity_events")
-                database.execSQL("ALTER TABLE activity_events_new RENAME TO activity_events")
+                db.execSQL("INSERT INTO activity_events_new (uuid, type, title, description, targetUuid, targetName, iconType, createdAt, metadata) SELECT uuid, type, title, description, targetUuid, targetName, iconType, createdAt, metadata FROM activity_events")
+                db.execSQL("DROP TABLE activity_events")
+                db.execSQL("ALTER TABLE activity_events_new RENAME TO activity_events")
 
                 // 7. deleted_records: uuid 为主键，移除 id
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS deleted_records_new (
                         uuid TEXT PRIMARY KEY NOT NULL,
                         entityType TEXT NOT NULL,
@@ -638,32 +638,32 @@ abstract class AppDatabase : RoomDatabase() {
                         deletedAt INTEGER NOT NULL
                     )
                 """.trimIndent())
-                database.execSQL("INSERT INTO deleted_records_new (uuid, entityType, entityUuid, deletedAt) SELECT uuid, entityType, entityUuid, deletedAt FROM deleted_records")
-                database.execSQL("DROP TABLE deleted_records")
-                database.execSQL("ALTER TABLE deleted_records_new RENAME TO deleted_records")
+                db.execSQL("INSERT INTO deleted_records_new (uuid, entityType, entityUuid, deletedAt) SELECT uuid, entityType, entityUuid, deletedAt FROM deleted_records")
+                db.execSQL("DROP TABLE deleted_records")
+                db.execSQL("ALTER TABLE deleted_records_new RENAME TO deleted_records")
             }
         }
 
         private val MIGRATION_18_19 = object : Migration(18, 19) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE warehouses ADD COLUMN itemsSuffix TEXT")
-                database.execSQL("ALTER TABLE warehouses ADD COLUMN hideUseButton INTEGER NOT NULL DEFAULT 0")
-                database.execSQL("ALTER TABLE warehouses ADD COLUMN hideDetailsButton INTEGER NOT NULL DEFAULT 0")
-                database.execSQL("ALTER TABLE warehouses ADD COLUMN hideQuantity INTEGER NOT NULL DEFAULT 0")
-                database.execSQL("ALTER TABLE warehouses ADD COLUMN hideQuantitySlider INTEGER NOT NULL DEFAULT 0")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE warehouses ADD COLUMN itemsSuffix TEXT")
+                db.execSQL("ALTER TABLE warehouses ADD COLUMN hideUseButton INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE warehouses ADD COLUMN hideDetailsButton INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE warehouses ADD COLUMN hideQuantity INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE warehouses ADD COLUMN hideQuantitySlider INTEGER NOT NULL DEFAULT 0")
             }
         }
 
         private val MIGRATION_19_20 = object : Migration(19, 20) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE items ADD COLUMN quantityUnit TEXT")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE items ADD COLUMN quantityUnit TEXT")
             }
         }
 
         private val MIGRATION_20_21 = object : Migration(20, 21) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // 创建图标库表
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS icon_library (
                         uuid TEXT PRIMARY KEY NOT NULL,
                         name TEXT NOT NULL,
