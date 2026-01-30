@@ -237,6 +237,7 @@ fun ItemReminderToolApp(
             currentRoute == Screen.Tags.route -> Screen.Tags
             currentRoute == Screen.ReminderList.route -> Screen.ReminderList
             currentRoute == Screen.ExcelImportExport.route -> Screen.ExcelImportExport
+            currentRoute == Screen.IconLibrary.route -> Screen.IconLibrary
             currentRoute == Screen.CustomColorSettings.route -> Screen.CustomColorSettings
             currentRoute == Screen.Settings.route -> Screen.Settings
             currentRoute == Screen.Help.route -> Screen.Help
@@ -634,6 +635,29 @@ fun ItemReminderToolApp(
                         }
                     )
                     
+                    NavigationDrawerItem(
+                        icon = { Icon(Screen.IconLibrary.icon, null) },
+                        label = { Text(stringResource(R.string.icon_library_title)) },
+                        selected = currentDestination == Screen.IconLibrary,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                            selectedTextColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        onClick = {
+                            navController.navigate(Screen.IconLibrary.route) {
+                                popUpTo(Screen.Dashboard.route) {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
+                    
                     // Divider(modifier = Modifier.padding(vertical = 8.dp))
                     
                     NavigationDrawerItem(
@@ -936,6 +960,12 @@ fun ItemReminderToolApp(
                 ExcelImportExportScreen(
                     itemViewModel = itemViewModel,
                     tagManager = tagManager,
+                    onNavigateBack = { navController.popBackOrDashboard() }
+                )
+            }
+
+            composable(Screen.IconLibrary.route) {
+                IconLibraryScreen(
                     onNavigateBack = { navController.popBackOrDashboard() }
                 )
             }

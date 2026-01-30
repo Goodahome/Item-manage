@@ -463,6 +463,7 @@
     <string name="quick_add_continuous_mode">Mode d\'ajout continu</string>
     <string name="quick_add_target_warehouse">Conteneur cible : %s</string>
     <string name="drag_frame_to_crop">Glisser le cadre pour sélectionner la zone de recadrage</string>
+    <string name="drag_image_to_adjust">Glisser l\'image pour ajuster la position</string>
     <string name="category_name_required_field">Nom de catégorie *</string>
     <string name="select_color">Sélectionner la couleur</string>
     <string name="shopping_item_name_required_field">Nom de l\'article *</string>
@@ -733,6 +734,25 @@
     <string name="time_days_ago">Il y a %1$d jours</string>
     <string name="pinch_to_zoom">Pincer pour zoomer l\'image</string>
     <string name="rotate_image">Faire pivoter l\'image</string>
+    
+    <!-- Icon Library -->
+    <string name="icon_library_title">Bibliothèque d\'icônes</string>
+    <string name="icon_library_import">Importer une icône</string>
+    <string name="icon_library_empty">La bibliothèque d\'icônes est vide</string>
+    <string name="icon_library_empty_hint">Appuyez sur le bouton + pour importer des icônes PNG transparentes\nLa taille de l\'icône ne doit pas dépasser 20 Ko</string>
+    <string name="icon_library_delete_title">Supprimer l\'icône</string>
+    <string name="icon_library_delete_message">Êtes-vous sûr de vouloir supprimer l\'icône "%s" ?</string>
+    <string name="icon_library_read_error">Impossible de lire le fichier</string>
+    <string name="icon_library_size_limit">La taille de l\'icône ne doit pas dépasser 20 Ko</string>
+    <string name="icon_library_invalid_format">Format d\'image invalide, veuillez sélectionner le format PNG</string>
+    <string name="icon_library_save_error">Échec de l\'enregistrement de l\'icône</string>
+    <string name="icon_library_import_success">Icône importée avec succès</string>
+    <string name="icon_library_import_success_multiple">%d icônes importées avec succès</string>
+    <string name="icon_library_import_partial">Succès : %1$d, Échec : %2$d</string>
+    <string name="icon_library_import_all_failed">Échec de l\'importation de toutes les icônes</string>
+    <string name="icon_library_delete_success">Icône supprimée</string>
+    <string name="icon_library_import_error">Échec de l\'importation : %s</string>
+    <string name="select_from_icon_library">Sélectionner dans la bibliothèque d\'icônes</string>
     <string name="ad_banner_unit_id">ID d\'unité publicitaire bannière</string>
     <string name="ad_banner_unit_id_desc">Définir l\'ID d\'unité publicitaire bannière Google AdMob. Laisser vide pour utiliser l\'ID de test.</string>
     <string name="ad_banner_unit_id_hint">Saisir l\'ID d\'unité publicitaire</string>

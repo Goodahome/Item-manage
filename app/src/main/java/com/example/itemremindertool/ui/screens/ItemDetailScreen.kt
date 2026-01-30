@@ -209,7 +209,10 @@ fun ItemDetailScreen(
                                     showImageDialog = true
                                 }
                             },
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.Transparent
+                        )
                     ) {
                         Image(
                             bitmap = bitmap.asImageBitmap(),

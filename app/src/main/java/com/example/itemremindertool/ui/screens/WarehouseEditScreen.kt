@@ -31,6 +31,7 @@ import com.example.itemremindertool.ui.viewmodel.WarehouseViewModel
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.CameraCaptureDialog
 import com.example.itemremindertool.ui.components.ImageCropDialog
+import com.example.itemremindertool.ui.components.IconSelectionDialog
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.utils.ImageUtils
@@ -43,6 +44,7 @@ import android.net.Uri
 import android.graphics.BitmapFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,6 +65,7 @@ fun WarehouseEditScreen(
     var imageUri by remember { mutableStateOf<String?>(null) }
     var showCameraDialog by remember { mutableStateOf(false) }
     var showCropDialog by remember { mutableStateOf(false) }
+    var showIconSelectionDialog by remember { mutableStateOf(false) }
     var bitmapToCrop by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     var pendingImageExt by remember { mutableStateOf<String?>(null) }
 
@@ -412,6 +415,45 @@ fun WarehouseEditScreen(
                         // Text(stringResource(R.string.select_image), color = ColorHelpers.getContrastColor(galleryBackground))
                     }
                 }
+                
+                // 图标库选择按钮
+                val iconLibraryBackground = ColorHelpers.getGroup2SettingsBtnColor()
+                val iconLibraryIconColor = if (outlineEnabled) iconLibraryBackground else ColorHelpers.getGroup4IconColorByContrast(iconLibraryBackground)
+                if (outlineEnabled) {
+                    OutlinedButton(
+                        onClick = { showIconSelectionDialog = true },
+                        modifier = Modifier.weight(1f),
+                        border = BorderStroke(2.dp, iconLibraryBackground),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = iconLibraryBackground,
+                            disabledContentColor = iconLibraryBackground.copy(alpha = 0.5f)
+                        )
+                    ) {
+                        Icon(
+                            Icons.Default.Collections,
+                            contentDescription = null,
+                            tint = iconLibraryIconColor
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                } else {
+                    Button(
+                        onClick = { showIconSelectionDialog = true },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = iconLibraryBackground
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Collections,
+                            contentDescription = null,
+                            tint = iconLibraryIconColor
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                }
             }
 
             OutlinedTextField(
@@ -484,6 +526,26 @@ fun WarehouseEditScreen(
                     }
                 }
             }
+        }
+        
+        // 图标库选择对话框
+        if (showIconSelectionDialog) {
+            IconSelectionDialog(
+                onIconSelected = { iconPath ->
+                    showIconSelectionDialog = false
+                    scope.launch(Dispatchers.IO) {
+                        val bitmap = ImageUtils.loadBitmapFromPath(iconPath)
+                        if (bitmap != null) {
+                            pendingImageExt = "png" // 图标库都是PNG格式
+                            bitmapToCrop = bitmap
+                            kotlinx.coroutines.withContext(Dispatchers.Main) {
+                                showCropDialog = true
+                            }
+                        }
+                    }
+                },
+                onDismiss = { showIconSelectionDialog = false }
+            )
         }
         
         // 拍照对话框

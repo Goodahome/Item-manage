@@ -459,6 +459,7 @@
     <string name="quick_add_continuous_mode">Continuous Add Mode</string>
     <string name="quick_add_target_warehouse">Target Container: %s</string>
     <string name="drag_frame_to_crop">Drag frame to select crop area</string>
+    <string name="drag_image_to_adjust">Drag image to adjust position</string>
     <string name="category_name_required_field">Category Name *</string>
     <string name="select_color">Select Color</string>
     <string name="shopping_item_name_required_field">Item Name *</string>
@@ -742,6 +743,25 @@
     <string name="warehouse_image">Warehouse image</string>
 
     <string name="pinch_to_zoom">Pinch to zoom image</string>
+    
+    <!-- Icon Library -->
+    <string name="icon_library_title">Icon Library</string>
+    <string name="icon_library_import">Import Icon</string>
+    <string name="icon_library_empty">Icon library is empty</string>
+    <string name="icon_library_empty_hint">Tap the + button to import PNG transparent icons\nIcon size must not exceed 20KB</string>
+    <string name="icon_library_delete_title">Delete Icon</string>
+    <string name="icon_library_delete_message">Are you sure you want to delete icon "%s"?</string>
+    <string name="icon_library_read_error">Cannot read file</string>
+    <string name="icon_library_size_limit">Icon size must not exceed 20KB</string>
+    <string name="icon_library_invalid_format">Invalid image format, please select PNG format</string>
+    <string name="icon_library_save_error">Failed to save icon</string>
+    <string name="icon_library_import_success">Icon imported successfully</string>
+    <string name="icon_library_import_success_multiple">Successfully imported %d icons</string>
+    <string name="icon_library_import_partial">Success: %1$d, Failed: %2$d</string>
+    <string name="icon_library_import_all_failed">All icons failed to import</string>
+    <string name="icon_library_delete_success">Icon deleted</string>
+    <string name="icon_library_import_error">Import failed: %s</string>
+    <string name="select_from_icon_library">Select from icon library</string>
     <string name="rotate_image">Rotate image</string>
     <string name="ad_banner_unit_id">Ad banner unit ID</string>
     <string name="ad_banner_unit_id_desc">Set the Google AdMob banner ad unit ID. Leave empty to use test ID.</string>

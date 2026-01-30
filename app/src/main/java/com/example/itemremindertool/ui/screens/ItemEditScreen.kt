@@ -49,6 +49,7 @@ import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.ui.components.CameraCaptureDialog
 import com.example.itemremindertool.ui.components.ImageCropDialog
+import com.example.itemremindertool.ui.components.IconSelectionDialog
 import com.example.itemremindertool.ui.components.BarcodeScannerDialog
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 import com.example.itemremindertool.billing.BillingManager
@@ -75,6 +76,7 @@ import android.graphics.BitmapFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.text.DateFormat
 import java.time.Instant
@@ -128,6 +130,7 @@ fun ItemEditScreen(
     var primaryImageIndex by remember { mutableStateOf(0) } // 主图索引
     var showCameraDialog by remember { mutableStateOf(false) }
     var showCropDialog by remember { mutableStateOf(false) }
+    var showIconSelectionDialog by remember { mutableStateOf(false) }
     var bitmapToCrop by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     var cropImageIndex by remember { mutableStateOf<Int?>(null) } // 记录正在裁剪的图片索引，null表示是新图片
     var pendingImageExt by remember { mutableStateOf<String?>(null) } // 记录待保存图片格式
@@ -656,6 +659,45 @@ fun ItemEditScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     // Text(stringResource(R.string.select_multiple), color = ColorHelpers.getGroup4TextColorByContrast(galleryBackground))
+                                }
+                            }
+                            
+                            // 图标库选择按钮
+                            val iconLibraryBackground = ColorHelpers.getGroup2SettingsBtnColor()
+                            val iconLibraryIconColor = if (outlineEnabled) iconLibraryBackground else ColorHelpers.getGroup4IconColorByContrast(iconLibraryBackground)
+                            if (outlineEnabled) {
+                                OutlinedButton(
+                                    onClick = { showIconSelectionDialog = true },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(2.dp, iconLibraryBackground),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = iconLibraryBackground,
+                                        disabledContentColor = iconLibraryBackground.copy(alpha = 0.5f)
+                                    )
+                                ) {
+                                    Icon(
+                                        Icons.Default.Collections,
+                                        contentDescription = null,
+                                        tint = iconLibraryIconColor
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                            } else {
+                                Button(
+                                    onClick = { showIconSelectionDialog = true },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = iconLibraryBackground
+                                    )
+                                ) {
+                                    Icon(
+                                        Icons.Default.Collections,
+                                        contentDescription = null,
+                                        tint = iconLibraryIconColor
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
                                 }
                             }
                         }
@@ -1352,6 +1394,29 @@ fun ItemEditScreen(
                             onDismiss = { showCameraDialog = false },
                             cardWidth = cardWidthPx,
                             cardHeight = cardHeightPx
+                        )
+                    }
+
+                    // ==================== 图标库选择对话框 ====================
+                    if (showIconSelectionDialog) {
+                        IconSelectionDialog(
+                            onIconSelected = { iconPath ->
+                                showIconSelectionDialog = false
+                                scope.launch(Dispatchers.IO) {
+                                    // 加载图标，弹出裁剪对话框
+                                    val bitmap = ImageUtils.loadBitmapFromPath(iconPath)
+                                    if (bitmap != null) {
+                                        pendingImageExt = "png" // 图标库都是PNG格式
+                                        // 显示裁剪对话框
+                                        bitmapToCrop = bitmap
+                                        cropImageIndex = null // 新图片，索引为null
+                                        withContext(Dispatchers.Main) {
+                                            showCropDialog = true
+                                        }
+                                    }
+                                }
+                            },
+                            onDismiss = { showIconSelectionDialog = false }
                         )
                     }
 

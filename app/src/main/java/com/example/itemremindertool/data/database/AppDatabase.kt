@@ -27,11 +27,13 @@ import com.example.itemremindertool.data.model.ItemReminder
 import com.example.itemremindertool.data.model.DeletedRecord
 import com.example.itemremindertool.data.model.ActivityEvent
 import com.example.itemremindertool.data.model.SyncQueueItem
+import com.example.itemremindertool.data.model.IconLibraryItem
 import com.example.itemremindertool.data.dao.ActivityEventDao
+import com.example.itemremindertool.data.dao.IconLibraryDao
 
 @Database(
-    entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class, ItemReminder::class, DeletedRecord::class, ActivityEvent::class, SyncQueueItem::class],
-    version = 20,
+    entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class, ItemReminder::class, DeletedRecord::class, ActivityEvent::class, SyncQueueItem::class, IconLibraryItem::class],
+    version = 21,
     exportSchema = true
 )
 @TypeConverters(DateConverters::class, StringListConverters::class, ReminderTypeConverters::class, ActivityEventTypeConverters::class, SyncOperationConverters::class)
@@ -44,6 +46,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun deletedRecordDao(): DeletedRecordDao
     abstract fun activityEventDao(): ActivityEventDao
     abstract fun syncQueueDao(): SyncQueueDao
+    abstract fun iconLibraryDao(): IconLibraryDao
 
     companion object {
         @Volatile
@@ -117,7 +120,7 @@ abstract class AppDatabase : RoomDatabase() {
                             )
                         }
                     })
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
@@ -657,6 +660,21 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_20_21 = object : Migration(20, 21) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // 创建图标库表
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS icon_library (
+                        uuid TEXT PRIMARY KEY NOT NULL,
+                        name TEXT NOT NULL,
+                        imagePath TEXT NOT NULL,
+                        fileSize INTEGER NOT NULL,
+                        createdAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+            }
+        }
+
         private fun seedSampleData(db: SupportSQLiteDatabase) {
             val now = System.currentTimeMillis()
             val dayMillis = 24 * 60 * 60 * 1000L
@@ -668,14 +686,14 @@ abstract class AppDatabase : RoomDatabase() {
 
             db.execSQL(
                 """
-                INSERT INTO warehouses (uuid, name, description, location, capacity, parentUuid, level, imageUri, imageKey, createdAt, isSample)
-                VALUES ('$warehouseUuid1', '示例容器', '用于演示的示例容器', '家中', 50, NULL, 1, NULL, NULL, $now, 1)
+                INSERT INTO warehouses (uuid, name, description, location, capacity, parentUuid, level, imageUri, imageKey, createdAt, isSample, itemsSuffix, hideUseButton, hideDetailsButton, hideQuantity, hideQuantitySlider)
+                VALUES ('$warehouseUuid1', '示例容器', '用于演示的示例容器', '家中', 50, NULL, 1, NULL, NULL, $now, 1, NULL, 0, 0, 0, 0)
                 """.trimIndent()
             )
             db.execSQL(
                 """
-                INSERT INTO warehouses (uuid, name, description, location, capacity, parentUuid, level, imageUri, imageKey, createdAt, isSample)
-                VALUES ('$warehouseUuid2', '子容器', '子容器示例', '', NULL, '$warehouseUuid1', 2, NULL, NULL, $now, 1)
+                INSERT INTO warehouses (uuid, name, description, location, capacity, parentUuid, level, imageUri, imageKey, createdAt, isSample, itemsSuffix, hideUseButton, hideDetailsButton, hideQuantity, hideQuantitySlider)
+                VALUES ('$warehouseUuid2', '子容器', '子容器示例', '', NULL, '$warehouseUuid1', 2, NULL, NULL, $now, 1, NULL, 0, 0, 0, 0)
                 """.trimIndent()
             )
 

@@ -546,6 +546,7 @@
     <string name="quick_add_continuous_mode">连续添加模式</string>
     <string name="quick_add_target_warehouse">目标容器：%s</string>
     <string name="drag_frame_to_crop">拖动框选择裁剪区域</string>
+    <string name="drag_image_to_adjust">拖动图片调整位置</string>
     <string name="category_name_required_field">分类名称 *</string>
     <string name="select_color">选择颜色</string>
     <string name="shopping_item_name_required_field">物品名称 *</string>
@@ -837,6 +838,25 @@
     <string name="onboarding_warehouse_info_card_desc">这里是物品信息卡片，可查看数量、标签与操作。</string>
     <string name="pinch_to_zoom">双指捏合缩放图片</string>
     <string name="rotate_image">旋转图片</string>
+    
+    <!-- 图标库 -->
+    <string name="icon_library_title">图标库</string>
+    <string name="icon_library_import">导入图标</string>
+    <string name="icon_library_empty">图标库为空</string>
+    <string name="icon_library_empty_hint">点击右上角 + 按钮导入PNG透明图标\n图标大小不能超过20KB</string>
+    <string name="icon_library_delete_title">删除图标</string>
+    <string name="icon_library_delete_message">确定要删除图标"%s"吗？</string>
+    <string name="icon_library_read_error">无法读取文件</string>
+    <string name="icon_library_size_limit">图标大小不能超过20KB</string>
+    <string name="icon_library_invalid_format">无效的图片格式，请选择PNG格式</string>
+    <string name="icon_library_save_error">保存图标失败</string>
+    <string name="icon_library_import_success">图标导入成功</string>
+    <string name="icon_library_import_success_multiple">成功导入 %d 个图标</string>
+    <string name="icon_library_import_partial">成功 %1$d 个，失败 %2$d 个</string>
+    <string name="icon_library_import_all_failed">所有图标导入失败</string>
+    <string name="icon_library_delete_success">图标已删除</string>
+    <string name="icon_library_import_error">导入失败：%s</string>
+    <string name="select_from_icon_library">从图标库选择</string>
     <string name="ad_banner_unit_id">广告横幅单元 ID</string>
     <string name="ad_banner_unit_id_desc">设置 Google AdMob 广告横幅单元 ID。留空则使用测试 ID。</string>
     <string name="ad_banner_unit_id_hint">输入广告单元 ID</string>

@@ -15,6 +15,7 @@ sealed class Screen(val route: String, @StringRes val labelResId: Int, val icon:
     object Tags : Screen("tags", R.string.nav_tag_management, Icons.AutoMirrored.Outlined.Label, Icons.AutoMirrored.Filled.Label)
     object ReminderList : Screen("reminder_list", R.string.nav_reminder_list, Icons.Outlined.NotificationsActive, Icons.Filled.NotificationsActive)
     object ExcelImportExport : Screen("excel_import_export", R.string.nav_excel_import_export, Icons.Outlined.ImportExport, Icons.Filled.ImportExport)
+    object IconLibrary : Screen("icon_library", R.string.icon_library_title, Icons.Outlined.Collections, Icons.Filled.Collections)
     object Settings : Screen("settings", R.string.settings, Icons.Outlined.Settings, Icons.Filled.Settings)
 
     object ItemDetail : Screen("item_detail/{itemUuid}", R.string.item_detail, Icons.Default.Info, Icons.Default.Info) {

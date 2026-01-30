@@ -996,7 +996,10 @@ fun WarehouseInfoScreen(
                 modifier = Modifier
                     .size(220.dp)
                     .align(Alignment.CenterHorizontally),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.Transparent
+                )
             ) {
                 Image(
                     bitmap = warehouseImageBitmap.asImageBitmap(),
@@ -7135,23 +7138,19 @@ fun ImageCropOverlay(
     cardHeight: Int
 ) {
     var canvasSize by remember { mutableStateOf(IntSize.Zero) }
-    var frameOffset by remember { mutableStateOf(Offset.Zero) }
     var imageScale by remember { mutableStateOf(1f) }
     var imageOffset by remember { mutableStateOf(Offset.Zero) }
     var imageRotation by remember { mutableStateOf(0f) }
     
     val aspectRatio = cardWidth.toFloat() / cardHeight.toFloat()
     
+    // 裁剪框固定尺寸
     val frameSize = remember(canvasSize, aspectRatio) {
         if (canvasSize.width == 0 || canvasSize.height == 0) {
-            if (aspectRatio > 1f) {
-                Size(400f, 400f / aspectRatio)
-            } else {
-                Size(400f * aspectRatio, 400f)
-            }
+            Size(400f, 400f)
         } else {
-            val maxWidth = canvasSize.width * 0.6f
-            val maxHeight = canvasSize.height * 0.6f
+            val maxWidth = canvasSize.width * 0.7f
+            val maxHeight = canvasSize.height * 0.7f
             if (aspectRatio > 1f) {
                 val width = minOf(maxWidth, maxHeight * aspectRatio)
                 Size(width, width / aspectRatio)
@@ -7162,35 +7161,31 @@ fun ImageCropOverlay(
         }
     }
     
-    var isInitialized by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(canvasSize, frameSize) {
-        if (canvasSize.width > 0 && canvasSize.height > 0 && frameSize.width > 0 && frameSize.height > 0) {
-            val newFrameOffset = Offset(
-                (canvasSize.width - frameSize.width) / 2f,
-                (canvasSize.height - frameSize.height) / 2f
-            )
-            if (!isInitialized || 
-                kotlin.math.abs(frameOffset.x - newFrameOffset.x) > 1f || 
-                kotlin.math.abs(frameOffset.y - newFrameOffset.y) > 1f) {
-                frameOffset = newFrameOffset
-                if (!isInitialized) {
-                    imageOffset = Offset.Zero
-                    imageScale = 1f
-                    isInitialized = true
-                }
-            }
-        }
+    // 裁剪框固定位置（居中）
+    val frameOffset = remember(canvasSize, frameSize) {
+        Offset(
+            (canvasSize.width - frameSize.width) / 2f,
+            (canvasSize.height - frameSize.height) / 2f
+        )
     }
     
-    // 全屏遮罩背景
+    // 弹窗样式背景
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.95f))
+            .background(Color.Black.copy(alpha = 0.7f)),
+        contentAlignment = Alignment.Center
     ) {
-        Scaffold(
-            topBar = {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.95f)
+                .fillMaxHeight(0.9f),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Black)
+        ) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
                 TopAppBar(
                     title = { Text(stringResource(R.string.crop_image)) },
                     navigationIcon = {
@@ -7247,31 +7242,17 @@ fun ImageCropOverlay(
                         .onGloballyPositioned { coordinates ->
                             canvasSize = coordinates.size
                         }
-                        .pointerInput(frameSize) {
+                        .pointerInput(Unit) {
+                            // 单指拖动图片
                             detectDragGestures { change, dragAmount ->
-                                val touchX = change.position.x
-                                val touchY = change.position.y
-                                val isInFrame = touchX >= frameOffset.x && 
-                                               touchX <= frameOffset.x + frameSize.width &&
-                                               touchY >= frameOffset.y && 
-                                               touchY <= frameOffset.y + frameSize.height
-                                
-                                if (isInFrame) {
-                                    change.consume()
-                                    val newOffset = frameOffset + dragAmount
-                                    frameOffset = Offset(
-                                        x = newOffset.x.coerceIn(0f, canvasSize.width - frameSize.width),
-                                        y = newOffset.y.coerceIn(0f, canvasSize.height - frameSize.height)
-                                    )
-                                } else {
-                                    change.consume()
-                                    imageOffset += dragAmount
-                                }
+                                change.consume()
+                                imageOffset += dragAmount
                             }
                         }
                         .pointerInput(Unit) {
+                            // 双指缩放和平移图片
                             detectTransformGestures { _, pan, zoom, _ ->
-                                imageScale = (imageScale * zoom).coerceIn(0.5f, 3f)
+                                imageScale = (imageScale * zoom).coerceIn(0.5f, 5f)
                                 imageOffset += pan
                             }
                         }
@@ -7295,12 +7276,25 @@ fun ImageCropOverlay(
                         baseDrawWidth = canvasHeight * bitmapAspectRatio
                     }
                     
+                    // 应用缩放（围绕图片中心缩放）
                     val drawWidth = baseDrawWidth * imageScale
                     val drawHeight = baseDrawHeight * imageScale
+                    
+                    // 基础位置（居中）- 未缩放时的位置
                     val baseDrawLeft = (canvasWidth - baseDrawWidth) / 2
                     val baseDrawTop = (canvasHeight - baseDrawHeight) / 2
-                    val drawLeft = baseDrawLeft + imageOffset.x
-                    val drawTop = baseDrawTop + imageOffset.y
+                    
+                    // 计算缩放中心点（未缩放图片的中心）
+                    val baseCenterX = baseDrawLeft + baseDrawWidth / 2
+                    val baseCenterY = baseDrawTop + baseDrawHeight / 2
+                    
+                    // 缩放后，图片左上角位置会改变（围绕中心缩放）
+                    val scaledDrawLeft = baseCenterX - drawWidth / 2
+                    val scaledDrawTop = baseCenterY - drawHeight / 2
+                    
+                    // 应用用户拖动偏移
+                    val drawLeft = scaledDrawLeft + imageOffset.x
+                    val drawTop = scaledDrawTop + imageOffset.y
                     
                     if (imageRotation != 0f) {
                         val centerX = drawLeft + drawWidth / 2
@@ -7430,7 +7424,7 @@ fun ImageCropOverlay(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
                             Text(
-                                text = stringResource(R.string.drag_frame_to_crop),
+                                text = stringResource(R.string.drag_image_to_adjust),
                                 color = Color.White,
                                 style = MaterialTheme.typography.bodyMedium
                             )
@@ -7445,11 +7439,13 @@ fun ImageCropOverlay(
                 }
             }
         }
+        }
     }
 }
 
 /**
  * 裁剪图片的辅助函数（用于快速添加）
+ * 直接将裁剪框内的内容绘制到目标尺寸的 Bitmap 上
  */
 private fun cropBitmapForQuickAdd(
     bitmap: android.graphics.Bitmap,
@@ -7465,7 +7461,24 @@ private fun cropBitmapForQuickAdd(
     val canvasWidth = canvasSize.width.toFloat()
     val canvasHeight = canvasSize.height.toFloat()
     
-    val bitmapAspectRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
+    // 首先处理旋转（如果需要）
+    val workingBitmap = if (imageRotation != 0f) {
+        val matrix = android.graphics.Matrix()
+        matrix.postRotate(imageRotation)
+        android.graphics.Bitmap.createBitmap(
+            bitmap,
+            0,
+            0,
+            bitmap.width,
+            bitmap.height,
+            matrix,
+            true
+        )
+    } else {
+        bitmap
+    }
+    
+    val bitmapAspectRatio = workingBitmap.width.toFloat() / workingBitmap.height.toFloat()
     val canvasAspectRatio = canvasWidth / canvasHeight
     
     val baseDrawWidth: Float
@@ -7479,54 +7492,69 @@ private fun cropBitmapForQuickAdd(
         baseDrawWidth = canvasHeight * bitmapAspectRatio
     }
     
+    // 应用缩放（围绕图片中心缩放）
     val drawWidth = baseDrawWidth * imageScale
     val drawHeight = baseDrawHeight * imageScale
+    
+    // 基础位置（居中）- 未缩放时的位置
     val baseDrawLeft = (canvasWidth - baseDrawWidth) / 2
     val baseDrawTop = (canvasHeight - baseDrawHeight) / 2
-    val drawLeft = baseDrawLeft + imageOffset.x
-    val drawTop = baseDrawTop + imageOffset.y
     
-    val scaleX = bitmap.width / drawWidth
-    val scaleY = bitmap.height / drawHeight
+    // 计算缩放中心点（未缩放图片的中心）
+    val baseCenterX = baseDrawLeft + baseDrawWidth / 2
+    val baseCenterY = baseDrawTop + baseDrawHeight / 2
     
-    val cropX = ((frameOffset.x - drawLeft) * scaleX).toInt().coerceIn(0, bitmap.width)
-    val cropY = ((frameOffset.y - drawTop) * scaleY).toInt().coerceIn(0, bitmap.height)
-    val cropWidth = (frameSize.width * scaleX).toInt().coerceIn(1, bitmap.width - cropX)
-    val cropHeight = (frameSize.height * scaleY).toInt().coerceIn(1, bitmap.height - cropY)
+    // 缩放后，图片左上角位置会改变（围绕中心缩放）
+    val scaledDrawLeft = baseCenterX - drawWidth / 2
+    val scaledDrawTop = baseCenterY - drawHeight / 2
     
-    val finalCropWidth = cropWidth.coerceIn(1, bitmap.width - cropX)
-    val finalCropHeight = cropHeight.coerceIn(1, bitmap.height - cropY)
+    // 应用用户拖动偏移
+    val drawLeft = scaledDrawLeft + imageOffset.x
+    val drawTop = scaledDrawTop + imageOffset.y
     
-    // 记录是否有透明通道
-    val hasAlpha = bitmap.hasAlpha()
+    // 计算从屏幕坐标到图片坐标的缩放比例
+    val screenToImageScaleX = workingBitmap.width.toFloat() / drawWidth
+    val screenToImageScaleY = workingBitmap.height.toFloat() / drawHeight
     
-    var croppedBitmap = android.graphics.Bitmap.createBitmap(bitmap, cropX, cropY, finalCropWidth, finalCropHeight)
+    // 计算裁剪框在图片坐标系中的位置（相对于图片左上角）
+    val frameLeftInImage = (frameOffset.x - drawLeft) * screenToImageScaleX
+    val frameTopInImage = (frameOffset.y - drawTop) * screenToImageScaleY
+    val frameWidthInImage = frameSize.width * screenToImageScaleX
+    val frameHeightInImage = frameSize.height * screenToImageScaleY
+    
+    // 创建目标 Bitmap（直接使用目标尺寸）
+    val hasAlpha = workingBitmap.hasAlpha()
+    val resultBitmap = android.graphics.Bitmap.createBitmap(
+        cardWidth,
+        cardHeight,
+        if (hasAlpha) android.graphics.Bitmap.Config.ARGB_8888 else android.graphics.Bitmap.Config.RGB_565
+    )
+    
+    val canvas = android.graphics.Canvas(resultBitmap)
+    
+    // 计算从图片坐标到目标 Bitmap 的缩放比例
+    val imageToTargetScaleX = cardWidth.toFloat() / frameWidthInImage
+    val imageToTargetScaleY = cardHeight.toFloat() / frameHeightInImage
+    
+    // 创建变换矩阵
+    val matrix = android.graphics.Matrix()
+    // 1. 平移：将裁剪框在图片中的位置移到原点
+    matrix.postTranslate(-frameLeftInImage, -frameTopInImage)
+    // 2. 缩放：从图片尺寸缩放到目标尺寸
+    matrix.postScale(imageToTargetScaleX, imageToTargetScaleY)
+    
+    // 绘制图片
+    val paint = android.graphics.Paint().apply {
+        isAntiAlias = true
+        isFilterBitmap = true
+        isDither = true
+    }
+    canvas.drawBitmap(workingBitmap, matrix, paint)
     
     // 保留透明通道
-    if (hasAlpha && !croppedBitmap.hasAlpha()) {
-        croppedBitmap.setHasAlpha(true)
+    if (hasAlpha && !resultBitmap.hasAlpha()) {
+        resultBitmap.setHasAlpha(true)
     }
     
-    if (imageRotation != 0f) {
-        val matrix = android.graphics.Matrix()
-        matrix.postRotate(imageRotation)
-        val rotatedBitmap = android.graphics.Bitmap.createBitmap(
-            croppedBitmap,
-            0,
-            0,
-            croppedBitmap.width,
-            croppedBitmap.height,
-            matrix,
-            true
-        )
-        
-        // 保留透明通道
-        if (hasAlpha && !rotatedBitmap.hasAlpha()) {
-            rotatedBitmap.setHasAlpha(true)
-        }
-        
-        croppedBitmap = rotatedBitmap
-    }
-    
-    return croppedBitmap
+    return resultBitmap
 }

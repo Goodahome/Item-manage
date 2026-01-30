@@ -459,6 +459,7 @@
     <string name="quick_add_continuous_mode">Kontinuierlicher Hinzufügemodus</string>
     <string name="quick_add_target_warehouse">Zielbehälter: %s</string>
     <string name="drag_frame_to_crop">Rahmen ziehen, um Zuschneidebereich auszuwählen</string>
+    <string name="drag_image_to_adjust">Bild ziehen, um Position anzupassen</string>
     <string name="category_name_required_field">Kategoriename *</string>
     <string name="select_color">Farbe auswählen</string>
     <string name="shopping_item_name_required_field">Artikelname *</string>
@@ -742,6 +743,25 @@
     <string name="time_days_ago">Vor %1$d Tagen</string>
     <string name="pinch_to_zoom">Mit zwei Fingern zoomen</string>
     <string name="rotate_image">Bild drehen</string>
+    
+    <!-- Icon Library -->
+    <string name="icon_library_title">Symbolbibliothek</string>
+    <string name="icon_library_import">Symbol importieren</string>
+    <string name="icon_library_empty">Symbolbibliothek ist leer</string>
+    <string name="icon_library_empty_hint">Tippen Sie auf die Schaltfläche +, um transparente PNG-Symbole zu importieren\nSymbolgröße darf 20 KB nicht überschreiten</string>
+    <string name="icon_library_delete_title">Symbol löschen</string>
+    <string name="icon_library_delete_message">Sind Sie sicher, dass Sie das Symbol „%s" löschen möchten?</string>
+    <string name="icon_library_read_error">Datei kann nicht gelesen werden</string>
+    <string name="icon_library_size_limit">Symbolgröße darf 20 KB nicht überschreiten</string>
+    <string name="icon_library_invalid_format">Ungültiges Bildformat, bitte PNG-Format auswählen</string>
+    <string name="icon_library_save_error">Fehler beim Speichern des Symbols</string>
+    <string name="icon_library_import_success">Symbol erfolgreich importiert</string>
+    <string name="icon_library_import_success_multiple">%d Symbole erfolgreich importiert</string>
+    <string name="icon_library_import_partial">Erfolg: %1$d, Fehler: %2$d</string>
+    <string name="icon_library_import_all_failed">Alle Symbole konnten nicht importiert werden</string>
+    <string name="icon_library_delete_success">Symbol gelöscht</string>
+    <string name="icon_library_import_error">Import fehlgeschlagen: %s</string>
+    <string name="select_from_icon_library">Aus Symbolbibliothek auswählen</string>
     <string name="ad_banner_unit_id">Banner-Werbe-Unit-ID</string>
     <string name="ad_banner_unit_id_desc">Google AdMob Banner-Werbe-Unit-ID festlegen. Leer lassen für Test-ID.</string>
     <string name="ad_banner_unit_id_hint">Werbe-Unit-ID eingeben</string>
