@@ -11,6 +11,7 @@
     <string name="delete">Löschen</string>
     <string name="edit">Bearbeiten</string>
     <string name="add">Hinzufügen</string>
+    <string name="move">Verschieben</string>
     <string name="modify">Ändern</string>
     <string name="search">Suchen</string>
     <string name="settings">Einstellungen</string>
@@ -252,6 +253,12 @@
     <string name="add_warehouse">Behälter hinzufügen</string>
     <string name="add_warehouse_hint">Elternbehälter auswählen und dann hinzufügen</string>
     <string name="edit_warehouse">Behälter bearbeiten</string>
+    <string name="move_warehouse">Behälter verschieben</string>
+    <string name="move_warehouse_title">Behälter verschieben</string>
+    <string name="move_warehouse_select_target">Zielbehälter auswählen</string>
+    <string name="move_to_root">In Stammordner verschieben</string>
+    <string name="move_warehouse_success">Behälter erfolgreich verschoben</string>
+    <string name="move_warehouse_error">Fehler beim Verschieben des Behälters</string>
     <string name="delete_warehouse">Behälter löschen</string>
     <string name="delete_warehouse_title">Behälter löschen</string>
     <string name="delete_warehouse_confirm">Möchten Sie den Behälter „%1$s“ wirklich löschen? Die darin enthaltenen Artikel werden nicht zugewiesen.</string>
@@ -449,6 +456,8 @@
     <string name="camera_permission_required">Kamera-Berechtigung erforderlich</string>
     <string name="camera_permission_for_scanner">Kamera-Berechtigung für Scan-Funktion erforderlich</string>
     <string name="camera_frame_hint">Bitte Artikel in den Rahmen platzieren</string>
+    <string name="quick_add_continuous_mode">Kontinuierlicher Hinzufügemodus</string>
+    <string name="quick_add_target_warehouse">Zielbehälter: %s</string>
     <string name="drag_frame_to_crop">Rahmen ziehen, um Zuschneidebereich auszuwählen</string>
     <string name="category_name_required_field">Kategoriename *</string>
     <string name="select_color">Farbe auswählen</string>
@@ -504,6 +513,19 @@
     <string name="document_expiry">Dokumentablauf</string>
     <string name="move_item_success">Artikel nach %1$s verschoben</string>
     <string name="move_item_failed">Verschieben fehlgeschlagen</string>
+    
+    <!-- Mehrfachauswahl -->
+    <string name="multi_select_count">%d Artikel ausgewählt</string>
+    <string name="select_all">Alle auswählen</string>
+    <string name="batch_delete">Stapellöschung</string>
+    <string name="batch_move">Stapelverschiebung</string>
+    <string name="batch_delete_title">Stapellöschung bestätigen</string>
+    <string name="batch_delete_message">Möchten Sie wirklich %d ausgewählte Artikel löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="batch_move_items">%d Artikel</string>
+    <string name="batch_delete_success">%d Artikel erfolgreich gelöscht</string>
+    <string name="batch_delete_failed">Stapellöschung fehlgeschlagen: %s</string>
+    <string name="batch_move_success">%d Artikel erfolgreich verschoben</string>
+    <string name="batch_move_failed">Stapelverschiebung fehlgeschlagen: %s</string>
     
     <!-- 删除确认 -->
     <string name="confirm_delete">Löschen bestätigen</string>

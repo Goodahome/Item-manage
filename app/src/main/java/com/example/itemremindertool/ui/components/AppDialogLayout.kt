@@ -40,7 +40,7 @@ fun AppDialogLayout(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = modifier.fillMaxWidth(0.92f),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
                 containerColor = ColorHelpers.getGroup3CardBgColor()
             ),

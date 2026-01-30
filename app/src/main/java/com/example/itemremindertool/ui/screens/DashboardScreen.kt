@@ -2,16 +2,24 @@ package com.example.itemremindertool.ui.screens
 
 import android.graphics.BitmapFactory
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -32,6 +40,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -56,11 +65,16 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -70,6 +84,13 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.core.content.ContextCompat
+import androidx.camera.core.*
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import com.google.common.util.concurrent.ListenableFuture
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.LaunchedEffect
@@ -80,6 +101,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
 import com.example.itemremindertool.R
@@ -89,6 +111,7 @@ import com.example.itemremindertool.data.model.ShoppingItem
 import com.example.itemremindertool.data.model.Warehouse
 import com.example.itemremindertool.ui.components.BottomOperationStatusIndicator
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.ButtonAutoSizeText
 import com.example.itemremindertool.ui.components.WarehouseQRCodeDialog
 import com.example.itemremindertool.ui.components.UIConstants
 import com.example.itemremindertool.ui.components.HighlightShape
@@ -397,11 +420,11 @@ fun DashboardScreen(
     // 快速添加物品相关状态
     var showWarehouseSelectionForQuickAdd by remember { mutableStateOf(false) }
     var selectedWarehouseForQuickAdd by remember { mutableStateOf<Warehouse?>(null) }
-    var showCameraForQuickAdd by remember { mutableStateOf(false) }
-    var showCropDialogForQuickAdd by remember { mutableStateOf(false) }
-    var bitmapToCropForQuickAdd by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
-    var capturedImagePathForQuickAdd by remember { mutableStateOf<String?>(null) }
+    var showQuickAddCameraPage by remember { mutableStateOf(false) } // 改为显示独立页面而不是对话框
     
+    // 移动容器相关状态
+    var showMoveWarehouseDialog by remember { mutableStateOf(false) }
+    var warehouseToMove by remember { mutableStateOf<Warehouse?>(null) }
     
     // 高级功能对话框状态
     var showPremiumFeatureDialog by remember { mutableStateOf(false) }
@@ -420,7 +443,9 @@ fun DashboardScreen(
     val cardWidthPx = remember { with(density) { 400.dp.toPx().toInt() } }
     val cardHeightPx = remember { with(density) { 400.dp.toPx().toInt() } } // 改为正方形
     
-    Scaffold(
+    // 使用 Box 包裹整个页面，以便拍照页面可以覆盖在最上层
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
         topBar = {
             val appSettings = LocalAppSettings.current
             GradientTopAppBar(
@@ -866,128 +891,43 @@ fun DashboardScreen(
                     onWarehouseSelected = { warehouse ->
                         selectedWarehouseForQuickAdd = warehouse
                         showWarehouseSelectionForQuickAdd = false
-                        showCameraForQuickAdd = true
+                        showQuickAddCameraPage = true
                     },
                     onDismiss = {
                         showWarehouseSelectionForQuickAdd = false
                     }
                 )
             }
-            
-            // 拍照对话框（快速添加物品）
-            if (showCameraForQuickAdd && selectedWarehouseForQuickAdd != null) {
-                CameraCaptureDialog(
-                    onImageCaptured = { imagePath ->
-                        showCameraForQuickAdd = false
-                        if (imagePath != null) {
-                            // 加载图片并显示裁剪对话框
-                            scope.launch(Dispatchers.IO) {
-                                val bitmap = ImageUtils.loadBitmapFromPath(imagePath)
-                                if (bitmap != null) {
-                                    capturedImagePathForQuickAdd = imagePath
-                                    bitmapToCropForQuickAdd = bitmap
-                                    showCropDialogForQuickAdd = true
-                                }
-                            }
-                        } else {
-                            selectedWarehouseForQuickAdd = null
-                        }
-                    },
-                    onDismiss = {
-                        showCameraForQuickAdd = false
-                        selectedWarehouseForQuickAdd = null
-                    },
-                    cardWidth = cardWidthPx,
-                    cardHeight = cardHeightPx
-                )
-            }
-            
-            // 裁剪对话框（快速添加物品）
-            if (showCropDialogForQuickAdd && bitmapToCropForQuickAdd != null && selectedWarehouseForQuickAdd != null) {
-                ImageCropDialog(
-                    bitmap = bitmapToCropForQuickAdd!!,
-                    onCropped = { croppedBitmap ->
-                        showCropDialogForQuickAdd = false
-                        scope.launch(Dispatchers.IO) {
-                            // 保存裁剪后的图片
-                            val fileName = "item_${System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
-                            val savedPath = ImageUtils.saveImageToInternalStorage(
-                                context,
-                                croppedBitmap,
-                                fileName
-                            )
-                            
-                            savedPath?.let { imagePath ->
-                                // 为主图创建裁剪版本（与正常添加物品一致）
-                                val bitmap = ImageUtils.loadBitmapFromPath(imagePath)
-                                if (bitmap != null) {
-                                    val croppedBitmapForCard = ImageUtils.cropImageToCardSize(
-                                        bitmap,
-                                        cardWidthPx,
-                                        cardHeightPx
-                                    )
-                                    val croppedPath = ImageUtils.getCroppedImagePath(imagePath)
-                                    val croppedFileName = croppedPath?.let { File(it).name } ?: "cropped_${File(imagePath).name}"
-                                    ImageUtils.saveImageToInternalStorage(
-                                        context,
-                                        croppedBitmapForCard,
-                                        croppedFileName
-                                    )
-                                }
-                                
-                                // 创建临时物品，只保存图片，后续再维护物品信息
-                                val newItem = Item(
-                                    name = "未命名物品",
-                                    description = "",
-                                    categoryUuid = null,
-                                    warehouseUuid = selectedWarehouseForQuickAdd!!.uuid,
-                                    tags = emptyList(),
-                                    price = null,
-                                    quantity = 1,
-                                    barcode = null,
-                                    expiryDate = null,
-                                    enableStockAlert = false,
-                                    imageUri = imagePath,
-                                    imageUris = listOf(imagePath),
-                                    primaryImageIndex = 0,
-                                    featureCode = null,
-                                    createdAt = Date(),
-                                    updatedAt = Date()
-                                )
-                                itemViewModel.insertItem(newItem)
-                                // 刷新数据
-                                dashboardViewModel.refresh()
-                            }
-                            
-                            // 清理状态
-                            bitmapToCropForQuickAdd = null
-                            capturedImagePathForQuickAdd = null
-                            selectedWarehouseForQuickAdd = null
-                        }
-                    },
-                    onDismiss = {
-                        showCropDialogForQuickAdd = false
-                        bitmapToCropForQuickAdd = null
-                        capturedImagePathForQuickAdd = null
-                        selectedWarehouseForQuickAdd = null
-                    },
-                    cardWidth = cardWidthPx,
-                    cardHeight = cardHeightPx
-                )
-            }
         } // 关闭 Box
     } // 关闭 Scaffold 的 content lambda
-    
-    // 高级功能对话框（仅在启用购买功能时显示）
-    if (FeatureFlags.ENABLE_PURCHASE_FEATURE && showPremiumFeatureDialog && billingManager != null) {
-        PremiumFeatureDialog(
-            billingManager = billingManager,
-            onDismiss = { showPremiumFeatureDialog = false },
-            onTrialStart = {
-                // 试用开始后的处理（现在只有侧边栏风格，无需切换）
-            }
-        )
-    }
+        
+        // 高级功能对话框（在 Scaffold 之外，但在外层 Box 内）
+        if (FeatureFlags.ENABLE_PURCHASE_FEATURE && showPremiumFeatureDialog && billingManager != null) {
+            PremiumFeatureDialog(
+                billingManager = billingManager,
+                onDismiss = { showPremiumFeatureDialog = false },
+                onTrialStart = {
+                    // 试用开始后的处理（现在只有侧边栏风格，无需切换）
+                }
+            )
+        }
+        
+        // 快速拍照添加物品页面（独立全屏页面，覆盖在最上层）
+        if (showQuickAddCameraPage && selectedWarehouseForQuickAdd != null) {
+            QuickAddCameraPage(
+                targetWarehouse = selectedWarehouseForQuickAdd!!,
+                itemViewModel = itemViewModel,
+                dashboardViewModel = dashboardViewModel,
+                cardWidth = cardWidthPx,
+                cardHeight = cardHeightPx,
+                onDismiss = {
+                    // 用户主动退出快速添加页面
+                    showQuickAddCameraPage = false
+                    selectedWarehouseForQuickAdd = null
+                }
+            )
+        }
+    } // 关闭外层 Box
 } // 关闭 DashboardScreen 函数
 
 /**
@@ -1732,6 +1672,7 @@ fun WarehouseIconItem(
     onClick: () -> Unit,
     onEditWarehouse: (Warehouse) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
+    onMoveWarehouse: ((Warehouse) -> Unit)? = null, // 新增：移动容器回调
     onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
     onGenerateQRCode: ((Warehouse) -> Unit)? = null, // 新增：生成二维码回调
     warehouseViewModel: WarehouseViewModel? = null, // 用于获取删除统计信息
@@ -1811,6 +1752,7 @@ fun WarehouseIconItem(
             } else {
                 baseColor
             }
+            val isTransparentIcon = warehouseImageBitmap?.hasAlpha() == true
             
             // 获取背景色用于计算对比度
             val bgColorForContrast = if (warehouseImageBitmap != null && isImageBright != null) {
@@ -1848,7 +1790,7 @@ fun WarehouseIconItem(
                         .height(44.dp)
                         .width(iconWidth) // 展开/折叠动画
                         .then(
-                            if (useOutlineIcon) {
+                            if (useOutlineIcon || isTransparentIcon) {
                                 Modifier
                             } else {
                                 Modifier.shadow(
@@ -1861,7 +1803,7 @@ fun WarehouseIconItem(
                         )
                         .clip(iconShapeForShadow)
                         .then(
-                            if (useOutlineIcon) {
+                            if (useOutlineIcon && !isTransparentIcon) {
                                 Modifier.border(2.dp, baseColor, iconShapeForShadow)
                             } else if (warehouseImageBitmap != null) {
                                 Modifier
@@ -2001,8 +1943,39 @@ fun WarehouseIconItem(
                                     textColor = menuTextColor,
                                     leadingIconColor = menuIconColor
                                 )
+                        )
+                    }
+                    
+                    // 移动容器
+                    if (onMoveWarehouse != null) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(R.string.move_warehouse),
+                                    fontSize = 14.sp,
+                                    color = menuTextColor,
+                                    maxLines = 2 // 允许最多2行，支持文字换行
+                                )
+                            },
+                            onClick = {
+                                showMenu = false
+                                onMoveWarehouse(warehouse)
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.DriveFileMove,
+                                    null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = menuIconColor
+                                )
+                            },
+                            modifier = Modifier.heightIn(min = 36.dp), // 最小高度36dp，但允许根据内容自动扩展
+                            colors = MenuDefaults.itemColors(
+                                textColor = menuTextColor,
+                                leadingIconColor = menuIconColor
                             )
-                        }
+                        )
+                    }
 
                         // 分隔线
                         //HorizontalDivider(
@@ -2055,7 +2028,9 @@ fun WarehouseIconItem(
                         onClick = { showDeleteConfirmDialog = false },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text(stringResource(R.string.cancel))
+                        ButtonAutoSizeText(
+                            text = stringResource(R.string.cancel)
+                        )
                     }
                     Button(
                         onClick = {
@@ -2068,7 +2043,9 @@ fun WarehouseIconItem(
                             contentColor = MaterialTheme.colorScheme.onError
                         )
                     ) {
-                        Text(stringResource(R.string.delete))
+                        ButtonAutoSizeText(
+                            text = stringResource(R.string.delete)
+                        )
                     }
                 }
             ) {
@@ -2104,6 +2081,7 @@ fun WarehouseSidebarColumn(
     onAddWarehouse: () -> Unit,
     onEditWarehouse: (Warehouse) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
+    onMoveWarehouse: ((Warehouse) -> Unit)? = null, // 新增：移动容器回调
     onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
     onGenerateQRCode: ((Warehouse) -> Unit)? = null, // 新增：生成二维码回调
     warehouseViewModel: WarehouseViewModel? = null, // 用于获取删除统计信息
@@ -2275,6 +2253,7 @@ fun WarehouseSidebarColumn(
                             onClick = { onWarehouseClick(warehouse) },
                             onEditWarehouse = onEditWarehouse,
                             onDeleteWarehouse = onDeleteWarehouse,
+                            onMoveWarehouse = onMoveWarehouse,
                             onViewInfo = onViewInfo,
                             onGenerateQRCode = onGenerateQRCode,
                             warehouseViewModel = warehouseViewModel,
@@ -2369,10 +2348,12 @@ fun SubWarehouseIcon(
     onClick: () -> Unit,
     onEditWarehouse: (Warehouse) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
+    onMoveWarehouse: ((Warehouse) -> Unit)? = null, // 新增：移动容器回调
     onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
     onGenerateQRCode: ((Warehouse) -> Unit)? = null, // 新增：生成二维码回调
     useCircleIcon: Boolean = true,
     useOutlineIcon: Boolean = false,
+    onMenuOpenChanged: ((Boolean) -> Unit)? = null, // 菜单打开状态变化回调
     modifier: Modifier = Modifier
 ) {
     // 子容器图片加载与亮度判断
@@ -2399,6 +2380,11 @@ fun SubWarehouseIcon(
     }
 
     var showMenu by remember { mutableStateOf(false) }
+    
+    // 通知父组件菜单状态变化
+    LaunchedEffect(showMenu) {
+        onMenuOpenChanged?.invoke(showMenu)
+    }
     
     // 优化的点击检测：延迟执行单击，以便检测双击
     val scope = rememberCoroutineScope()
@@ -2461,12 +2447,13 @@ fun SubWarehouseIcon(
             }
             val bitmap = warehouseImageBitmap
             val iconShape = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
+            val isTransparentIcon = bitmap?.hasAlpha() == true
             Box(
                 modifier = Modifier
                     .size(40.dp) // 与添加按钮大小一致
                     .clip(iconShape)
                     .then(
-                        if (useOutlineIcon) {
+                        if (useOutlineIcon && !isTransparentIcon) {
                             Modifier.border(2.dp, backgroundColor, iconShape)
                         } else if (bitmap == null) {
                             Modifier.background(backgroundColor)
@@ -2514,27 +2501,27 @@ fun SubWarehouseIcon(
             )
         }
         
-        // 添加背景层以支持点击外部关闭
-        if (showMenu) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable { showMenu = false }
-                    .zIndex(1f)
-            )
-        }
+        // DropdownMenu 会自动处理外部点击关闭，不需要单独的背景层
         DropdownMenu(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
-            modifier = Modifier.zIndex(2f),
-            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .width(160.dp)
+                .zIndex(100f), // 提升到最高层级，确保不被物品列表覆盖
+            shape = RoundedCornerShape(6.dp),
             containerColor = ColorHelpers.getGroup3CardBgColor(),
-            tonalElevation = 8.dp
+            tonalElevation = 0.dp
         ) {
+            val menuBgColor = ColorHelpers.getGroup2PageBgColor()
+            val menuTextColor = ColorHelpers.getGroup4TextColor(menuBgColor)
+            val menuIconColor = ColorHelpers.getGroup4IconColor(menuBgColor)
+            
             DropdownMenuItem(
                 text = { 
                     Text(
                         stringResource(R.string.edit),
+                        fontSize = 14.sp,
+                        color = menuTextColor,
                         maxLines = 2 // 允许最多2行，支持文字换行
                     ) 
                 },
@@ -2542,8 +2529,19 @@ fun SubWarehouseIcon(
                     showMenu = false
                     onEditWarehouse(warehouse)
                 },
-                leadingIcon = { Icon(Icons.Default.Edit, null) },
-                modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
+                leadingIcon = { 
+                    Icon(
+                        Icons.Default.Edit, 
+                        null,
+                        modifier = Modifier.size(18.dp),
+                        tint = menuIconColor
+                    ) 
+                },
+                modifier = Modifier.heightIn(min = 36.dp), // 最小高度36dp，但允许根据内容自动扩展
+                colors = MenuDefaults.itemColors(
+                    textColor = menuTextColor,
+                    leadingIconColor = menuIconColor
+                )
             )
             
             // 生成二维码选项
@@ -2552,6 +2550,8 @@ fun SubWarehouseIcon(
                     text = { 
                         Text(
                             stringResource(R.string.generate_qr_code_action),
+                            fontSize = 14.sp,
+                            color = menuTextColor,
                             maxLines = 2 // 允许最多2行，支持文字换行
                         ) 
                     },
@@ -2559,8 +2559,50 @@ fun SubWarehouseIcon(
                         showMenu = false
                         onGenerateQRCode(warehouse)
                     },
-                    leadingIcon = { Icon(Icons.Default.QrCode, null) },
-                    modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
+                    leadingIcon = { 
+                        Icon(
+                            Icons.Default.QrCode, 
+                            null,
+                            modifier = Modifier.size(18.dp),
+                            tint = menuIconColor
+                        ) 
+                    },
+                    modifier = Modifier.heightIn(min = 36.dp), // 最小高度36dp，但允许根据内容自动扩展
+                    colors = MenuDefaults.itemColors(
+                        textColor = menuTextColor,
+                        leadingIconColor = menuIconColor
+                    )
+                )
+            }
+            
+            // 移动容器
+            if (onMoveWarehouse != null) {
+                DropdownMenuItem(
+                    text = { 
+                        Text(
+                            stringResource(R.string.move_warehouse),
+                            fontSize = 14.sp,
+                            color = menuTextColor,
+                            maxLines = 2 // 允许最多2行，支持文字换行
+                        ) 
+                    },
+                    onClick = {
+                        showMenu = false
+                        onMoveWarehouse(warehouse)
+                    },
+                    leadingIcon = { 
+                        Icon(
+                            Icons.Default.DriveFileMove, 
+                            null,
+                            modifier = Modifier.size(18.dp),
+                            tint = menuIconColor
+                        ) 
+                    },
+                    modifier = Modifier.heightIn(min = 36.dp), // 最小高度36dp，但允许根据内容自动扩展
+                    colors = MenuDefaults.itemColors(
+                        textColor = menuTextColor,
+                        leadingIconColor = menuIconColor
+                    )
                 )
             }
             
@@ -2568,6 +2610,8 @@ fun SubWarehouseIcon(
                 text = { 
                     Text(
                         stringResource(R.string.delete),
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.error,
                         maxLines = 2 // 允许最多2行，支持文字换行
                     ) 
                 },
@@ -2575,8 +2619,19 @@ fun SubWarehouseIcon(
                     showMenu = false
                     onDeleteWarehouse(warehouse)
                 },
-                leadingIcon = { Icon(Icons.Default.Delete, null) },
-                modifier = Modifier.heightIn(min = 36.dp) // 最小高度36dp，但允许根据内容自动扩展
+                leadingIcon = { 
+                    Icon(
+                        Icons.Default.Delete, 
+                        null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    ) 
+                },
+                modifier = Modifier.heightIn(min = 36.dp), // 最小高度36dp，但允许根据内容自动扩展
+                colors = MenuDefaults.itemColors(
+                    textColor = MaterialTheme.colorScheme.error,
+                    leadingIconColor = MaterialTheme.colorScheme.error
+                )
             )
         }
 
@@ -2596,6 +2651,7 @@ fun SubWarehouseRow(
     onAddSubWarehouse: () -> Unit,
     onEditWarehouse: (Warehouse) -> Unit = {},
     onDeleteWarehouse: (Warehouse) -> Unit = {},
+    onMoveWarehouse: ((Warehouse) -> Unit)? = null, // 新增：移动容器回调
     warehousePath: List<Warehouse> = emptyList(), // 新增：面包屑导航路径
     onNavigateToWarehouse: ((Warehouse) -> Unit)? = null, // 新增：面包屑导航回调
     onViewInfo: ((Warehouse) -> Unit)? = null, // 新增：查看信息回调
@@ -2608,10 +2664,17 @@ fun SubWarehouseRow(
     val prefs = remember(context) {
         context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
     }
+    
+    // 检测是否有子容器菜单打开（用于提升整个区域的 zIndex）
+    var hasMenuOpen by remember { mutableStateOf(false) }
+    
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(start = 6.dp, end = 5.dp, top = 3.dp, bottom = 3.dp) // 右侧留出空间显示圆角
+            .then(
+                if (hasMenuOpen) Modifier.zIndex(10f) else Modifier
+            )
             .nestedScroll(object : NestedScrollConnection {
                 override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                     // 允许下拉手势向上传递（子容器列表是横向的，不应该拦截纵向下拉）
@@ -2715,10 +2778,12 @@ fun SubWarehouseRow(
                         onClick = { onSubWarehouseClick(subWarehouse) },
                         onEditWarehouse = onEditWarehouse,
                         onDeleteWarehouse = onDeleteWarehouse,
+                        onMoveWarehouse = onMoveWarehouse,
                         onViewInfo = onViewInfo,
                         onGenerateQRCode = onGenerateQRCode,
                         useCircleIcon = useCircleIcon,
-                        useOutlineIcon = useOutlineIcon
+                        useOutlineIcon = useOutlineIcon,
+                        onMenuOpenChanged = { isOpen -> hasMenuOpen = isOpen }
                     )
                 }
                 
@@ -2785,10 +2850,14 @@ private val TAG_COLORS = listOf(
 /**
  * 右下物品列表项（带三个点菜单按钮）
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ItemListRow(
     item: Item,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
+    isInMultiSelectMode: Boolean = false,
+    isMultiSelected: Boolean = false,
     onEditItem: (String) -> Unit = {},
     onMoveToContainer: (Item) -> Unit = {},
     showMoveAction: Boolean = false,
@@ -2837,7 +2906,21 @@ fun ItemListRow(
             .fillMaxWidth()
             .padding(start = 6.dp, end = 5.dp, top = 3.dp, bottom = 3.dp)
             // .heightIn(min = 80.dp) // 设置最小高度，确保条形码等信息能够显示
-            .clickable { onClick() },
+            .combinedClickable(
+                onClick = { onClick() },
+                onLongClick = { onLongClick() }
+            )
+            .then(
+                if (isMultiSelected) {
+                    Modifier.border(
+                        width = 3.dp,
+                        color = ColorHelpers.getGroup2SettingsBtnColor(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                } else {
+                    Modifier
+                }
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = ColorHelpers.getGroup3CardBgColor()
@@ -3505,6 +3588,12 @@ fun ItemListSection(
     var itemToMove by remember { mutableStateOf<Item?>(null) }
     var showMoveDialog by remember { mutableStateOf(false) }
     val canMoveItems = warehouseViewModel != null
+    
+    // 多选模式状态
+    var isMultiSelectMode by remember { mutableStateOf(false) }
+    var multiSelectedItems by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var showBatchDeleteDialog by remember { mutableStateOf(false) }
+    var showBatchMoveDialog by remember { mutableStateOf(false) }
 
     val selectedItem by remember(items, selectedItemUuid) {
         derivedStateOf {
@@ -3645,6 +3734,103 @@ fun ItemListSection(
             }
         }
         
+        // 多选模式工具栏
+        if (isMultiSelectMode) {
+            // 使用与容器图标相同的配色方案
+            val toolbarBgColor = ColorHelpers.getGroup2SettingsBtnColor()
+            val toolbarTextColor = ColorHelpers.getGroup4TextColorByContrast(toolbarBgColor)
+            val toolbarIconColor = ColorHelpers.getGroup4IconColorByContrast(toolbarBgColor)
+            
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                color = toolbarBgColor,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.multi_select_count, multiSelectedItems.size),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = toolbarTextColor
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // 全选/取消全选按钮
+                        IconButton(
+                            onClick = {
+                                multiSelectedItems = if (multiSelectedItems.size == filteredItems.size) {
+                                    emptySet()
+                                } else {
+                                    filteredItems.map { it.uuid }.toSet()
+                                }
+                            }
+                        ) {
+                            Icon(
+                                if (multiSelectedItems.size == filteredItems.size) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+                                contentDescription = stringResource(R.string.select_all),
+                                tint = toolbarIconColor
+                            )
+                        }
+                        
+                        // 批量移动按钮
+                        if (canMoveItems && multiSelectedItems.isNotEmpty()) {
+                            IconButton(
+                                onClick = { showBatchMoveDialog = true }
+                            ) {
+                                Icon(
+                                    Icons.Default.DriveFileMove,
+                                    contentDescription = stringResource(R.string.batch_move),
+                                    tint = toolbarIconColor
+                                )
+                            }
+                        }
+                        
+                        // 批量删除按钮
+                        if (multiSelectedItems.isNotEmpty()) {
+                            IconButton(
+                                onClick = { showBatchDeleteDialog = true }
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = stringResource(R.string.batch_delete),
+                                    tint = toolbarIconColor
+                                )
+                            }
+                        }
+                        
+                        // 取消多选模式
+                        IconButton(
+                            onClick = {
+                                isMultiSelectMode = false
+                                multiSelectedItems = emptySet()
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = stringResource(R.string.cancel),
+                                tint = toolbarIconColor
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 监听选中项变化，当取消最后一个物品时自动退出多选模式
+        LaunchedEffect(multiSelectedItems.size, isMultiSelectMode) {
+            if (isMultiSelectMode && multiSelectedItems.isEmpty()) {
+                isMultiSelectMode = false
+            }
+        }
+        
         if (filteredItems.isEmpty()) {
             // 空状态 - 使用可滚动容器以支持下拉刷新
             Box(
@@ -3721,7 +3907,28 @@ fun ItemListSection(
                         
                         ItemListRow(
                             item = item,
-                            onClick = { onViewItem(item.uuid) },
+                            onClick = {
+                                if (isMultiSelectMode) {
+                                    // 多选模式下点击切换选中状态
+                                    multiSelectedItems = if (multiSelectedItems.contains(item.uuid)) {
+                                        multiSelectedItems - item.uuid
+                                    } else {
+                                        multiSelectedItems + item.uuid
+                                    }
+                                } else {
+                                    // 普通模式下点击查看详情
+                                    onViewItem(item.uuid)
+                                }
+                            },
+                            onLongClick = {
+                                // 长按进入多选模式
+                                if (!isMultiSelectMode) {
+                                    isMultiSelectMode = true
+                                    multiSelectedItems = setOf(item.uuid)
+                                }
+                            },
+                            isInMultiSelectMode = isMultiSelectMode,
+                            isMultiSelected = multiSelectedItems.contains(item.uuid),
                             onEditItem = onEditItem,
                             warehouseName = warehouseName, // 传递容器名称（或null）
                             useCircleIcon = useCircleIcon, // 传递侧边栏风格图标形状设置
@@ -4030,18 +4237,38 @@ fun ItemListSection(
                                     // 普通物品卡片
                                     com.example.itemremindertool.ui.components.ItemGridCard(
                                         item = item,
-                                        isSelected = selectedItemUuid == item.uuid,
+                                        isSelected = selectedItemUuid == item.uuid && !isMultiSelectMode,
+                                        isInMultiSelectMode = isMultiSelectMode,
+                                        isMultiSelected = multiSelectedItems.contains(item.uuid),
                                         useOutlineIcon = useOutlineIcon,
                                         hideQuantity = hideQuantity,
                                         onClick = {
-                                            val willSelect = selectedItemUuid != item.uuid
-                                            selectedItemUuid = if (willSelect) {
-                                                item.uuid
+                                            if (isMultiSelectMode) {
+                                                // 多选模式下点击切换选中状态
+                                                multiSelectedItems = if (multiSelectedItems.contains(item.uuid)) {
+                                                    multiSelectedItems - item.uuid
+                                                } else {
+                                                    multiSelectedItems + item.uuid
+                                                }
                                             } else {
-                                                null
+                                                // 普通模式下点击查看详情
+                                                val willSelect = selectedItemUuid != item.uuid
+                                                selectedItemUuid = if (willSelect) {
+                                                    item.uuid
+                                                } else {
+                                                    null
+                                                }
+                                                if (willSelect) {
+                                                    onOnboardingGridItemClick?.invoke()
+                                                }
                                             }
-                                            if (willSelect) {
-                                                onOnboardingGridItemClick?.invoke()
+                                        },
+                                        onLongClick = {
+                                            // 长按进入多选模式
+                                            if (!isMultiSelectMode) {
+                                                isMultiSelectMode = true
+                                                multiSelectedItems = setOf(item.uuid)
+                                                selectedItemUuid = null // 退出详情面板
                                             }
                                         },
                                         modifier = if (item.uuid == firstGridItemUuid && onGridItemPositioned != null) {
@@ -4081,6 +4308,82 @@ fun ItemListSection(
             }
         )
     }
+    
+    // 批量删除确认对话框
+    if (showBatchDeleteDialog && multiSelectedItems.isNotEmpty()) {
+        AppDialogLayout(
+            title = stringResource(R.string.batch_delete_title),
+            icon = Icons.Default.Delete,
+            onDismiss = { showBatchDeleteDialog = false },
+            footer = {
+                OutlinedButton(
+                    onClick = { showBatchDeleteDialog = false },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    ButtonAutoSizeText(
+                        text = stringResource(R.string.cancel)
+                    )
+                }
+                Button(
+                    onClick = {
+                        // 批量删除所选物品
+                        val itemsToDelete = multiSelectedItems.mapNotNull { itemUuid ->
+                            filteredItems.find { it.uuid == itemUuid }
+                        }
+                        itemViewModel?.batchDeleteItems(itemsToDelete)
+                        showBatchDeleteDialog = false
+                        isMultiSelectMode = false
+                        multiSelectedItems = emptySet()
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) {
+                    ButtonAutoSizeText(
+                        text = stringResource(R.string.delete)
+                    )
+                }
+            }
+        ) {
+            Text(
+                text = stringResource(R.string.batch_delete_message, multiSelectedItems.size),
+                style = MaterialTheme.typography.bodyMedium,
+                color = ColorHelpers.getGroup4TextColor()
+            )
+        }
+    }
+    
+    // 批量移动对话框
+    if (showBatchMoveDialog && multiSelectedItems.isNotEmpty() && warehouseViewModel != null) {
+        val firstItemWarehouse = filteredItems.find { it.uuid == multiSelectedItems.first() }?.warehouseUuid
+        
+        MoveItemDialog(
+            itemName = stringResource(R.string.batch_move_items, multiSelectedItems.size),
+            currentWarehouseUuid = firstItemWarehouse,
+            warehouseViewModel = warehouseViewModel,
+            onDismiss = {
+                showBatchMoveDialog = false
+            },
+            onConfirm = { targetWarehouseUuid ->
+                // 批量移动所选物品
+                val itemsToMove = multiSelectedItems.mapNotNull { itemUuid ->
+                    filteredItems.find { it.uuid == itemUuid }
+                }
+                val targetWarehouseName = if (targetWarehouseUuid != null) {
+                    warehouseByUuid[targetWarehouseUuid]?.name
+                } else {
+                    null
+                }
+                itemViewModel?.batchMoveItems(itemsToMove, targetWarehouseUuid, targetWarehouseName)
+                showBatchMoveDialog = false
+                isMultiSelectMode = false
+                multiSelectedItems = emptySet()
+            }
+        )
+    }
+    
     }
 }
 
@@ -4130,6 +4433,7 @@ fun SidebarStyleMainLayout(
     onUpdateOnboardingAnchor: (OnboardingAnchorKey, androidx.compose.ui.layout.LayoutCoordinates) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     // 搜索过滤（支持标签搜索）
     val filteredItems = remember(allItems, searchQuery) {
         if (searchQuery.isBlank()) {
@@ -4195,6 +4499,8 @@ fun SidebarStyleMainLayout(
     var warehouseToDelete by remember { mutableStateOf<Warehouse?>(null) }
     var deleteStatistics by remember { mutableStateOf<Pair<Int, Int>>(0 to 0) }
     var isSubWarehouseDelete by remember { mutableStateOf(false) }
+    var showMoveWarehouseDialog by remember { mutableStateOf(false) }
+    var warehouseToMove by remember { mutableStateOf<Warehouse?>(null) }
     val scope = rememberCoroutineScope()
     
     // 合并所有容器列表
@@ -4224,6 +4530,10 @@ fun SidebarStyleMainLayout(
                 onAddWarehouse = onAddWarehouse,
                 onEditWarehouse = { warehouse -> onEditWarehouse(warehouse.uuid) },
                 onDeleteWarehouse = onDeleteWarehouse,
+                onMoveWarehouse = { warehouse ->
+                    warehouseToMove = warehouse
+                    showMoveWarehouseDialog = true
+                },
                 onViewInfo = onViewWarehouseInfo,
                 onGenerateQRCode = onGenerateQRCode,
                 warehouseViewModel = warehouseViewModel,
@@ -4651,6 +4961,10 @@ fun SidebarStyleMainLayout(
                                     }
                                     showDeleteDialog = true
                                 },
+                                onMoveWarehouse = { warehouse ->
+                                    warehouseToMove = warehouse
+                                    showMoveWarehouseDialog = true
+                                },
                                 warehousePath = displayPath, // 传入面包屑路径
                                 onNavigateToWarehouse = { warehouse ->
                                     // 点击容器，导航到该容器
@@ -4732,7 +5046,9 @@ fun SidebarStyleMainLayout(
                         },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text(stringResource(R.string.cancel))
+                        ButtonAutoSizeText(
+                            text = stringResource(R.string.cancel)
+                        )
                     }
                     Button(
                         onClick = {
@@ -4753,7 +5069,9 @@ fun SidebarStyleMainLayout(
                             contentColor = MaterialTheme.colorScheme.onError
                         )
                     ) {
-                        Text(stringResource(R.string.delete))
+                        ButtonAutoSizeText(
+                            text = stringResource(R.string.delete)
+                        )
                     }
                 }
             ) {
@@ -4775,6 +5093,38 @@ fun SidebarStyleMainLayout(
                     textAlign = TextAlign.Center
                 )
             }
+        }
+        
+        if (showMoveWarehouseDialog && warehouseToMove != null && warehouseViewModel != null) {
+            MoveWarehouseDialog(
+                warehouse = warehouseToMove!!,
+                allWarehouses = allWarehouses,
+                onDismiss = {
+                    showMoveWarehouseDialog = false
+                    warehouseToMove = null
+                },
+                onConfirm = { targetParentUuid ->
+                    val movingWarehouse = warehouseToMove ?: return@MoveWarehouseDialog
+                    if (targetParentUuid == movingWarehouse.parentUuid) {
+                        return@MoveWarehouseDialog
+                    }
+                    scope.launch {
+                        val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+                        val canAccessPremiumFeatures = PremiumFeatureManager.canAccessPremiumFeatures(context)
+                        val unlimitedContainers = prefs.getBoolean("unlimited_containers", false) && canAccessPremiumFeatures
+                        val level = warehouseViewModel.calculateLevel(targetParentUuid)
+                        if (!unlimitedContainers && level > 5) {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.max_level_reached),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@launch
+                        }
+                        warehouseViewModel.moveWarehouse(movingWarehouse, targetParentUuid)
+                    }
+                }
+            )
         }
         
     }
@@ -6384,4 +6734,803 @@ private fun ForgetReminderList(
             }
         }
     }
+}
+
+/**
+ * 快速添加拍照页面 - 独立全屏页面，支持连续拍照添加物品
+ */
+@Composable
+fun QuickAddCameraPage(
+    targetWarehouse: Warehouse,
+    itemViewModel: ItemViewModel?,
+    dashboardViewModel: DashboardViewModel?,
+    cardWidth: Int,
+    cardHeight: Int,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    
+    // 内部状态：管理裁剪流程
+    var showCropOverlay by remember { mutableStateOf(false) }
+    var bitmapToCrop by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var capturedImagePath by remember { mutableStateOf<String?>(null) }
+    
+    // 整个页面内容
+    Box(modifier = Modifier.fillMaxSize()) {
+        // 背景：拍照界面（始终显示）
+        CameraCaptureContent(
+            targetWarehouseName = targetWarehouse.name,
+            onImageCaptured = { imagePath ->
+                if (imagePath != null) {
+                    // 加载图片并显示裁剪叠加层
+                    scope.launch(Dispatchers.IO) {
+                        val bitmap = ImageUtils.loadBitmapFromPath(imagePath)
+                        if (bitmap != null) {
+                            capturedImagePath = imagePath
+                            bitmapToCrop = bitmap
+                            showCropOverlay = true
+                        }
+                    }
+                }
+            },
+            onDismiss = onDismiss,
+            cardWidth = cardWidth,
+            cardHeight = cardHeight
+        )
+        
+        // 前景：裁剪叠加层（仅在需要时显示）
+        if (showCropOverlay && bitmapToCrop != null) {
+            ImageCropOverlay(
+                bitmap = bitmapToCrop!!,
+                onCropped = { croppedBitmap ->
+                    scope.launch(Dispatchers.IO) {
+                        // 保存裁剪后的图片，根据是否有透明通道选择格式
+                        val ext = if (croppedBitmap.hasAlpha()) "png" else "jpg"
+                        val fileName = "item_${System.currentTimeMillis()}.$ext"
+                        val savedPath = ImageUtils.saveImageToInternalStorage(
+                            context,
+                            croppedBitmap,
+                            fileName
+                        )
+                        
+                        savedPath?.let { imagePath ->
+                            // 为主图创建裁剪版本
+                            val bitmap = ImageUtils.loadBitmapFromPath(imagePath)
+                            if (bitmap != null) {
+                                val croppedBitmapForCard = ImageUtils.cropImageToCardSize(
+                                    bitmap,
+                                    cardWidth,
+                                    cardHeight
+                                )
+                                val croppedPath = ImageUtils.getCroppedImagePath(imagePath)
+                                val croppedFileName = croppedPath?.let { File(it).name } ?: "cropped_${File(imagePath).name}"
+                                ImageUtils.saveImageToInternalStorage(
+                                    context,
+                                    croppedBitmapForCard,
+                                    croppedFileName
+                                )
+                            }
+                            
+                            // 创建临时物品
+                            val newItem = Item(
+                                name = "未命名物品",
+                                description = "",
+                                categoryUuid = null,
+                                warehouseUuid = targetWarehouse.uuid,
+                                tags = emptyList(),
+                                price = null,
+                                quantity = 1,
+                                barcode = null,
+                                expiryDate = null,
+                                enableStockAlert = false,
+                                imageUri = imagePath,
+                                imageUris = listOf(imagePath),
+                                primaryImageIndex = 0,
+                                featureCode = null,
+                                createdAt = Date(),
+                                updatedAt = Date()
+                            )
+                            itemViewModel?.insertItem(newItem)
+                            dashboardViewModel?.refresh()
+                        }
+                        
+                        // 清理裁剪状态，关闭裁剪叠加层，显示背后的拍照界面
+                        bitmapToCrop = null
+                        capturedImagePath = null
+                        showCropOverlay = false
+                    }
+                },
+                onDismiss = {
+                    // 用户取消裁剪，关闭裁剪叠加层，返回拍照界面
+                    showCropOverlay = false
+                    bitmapToCrop = null
+                    capturedImagePath = null
+                },
+                cardWidth = cardWidth,
+                cardHeight = cardHeight
+            )
+        }
+    }
+}
+
+/**
+ * 拍照界面内容（不使用 Dialog）
+ */
+@Composable
+fun CameraCaptureContent(
+    targetWarehouseName: String,
+    onImageCaptured: (String?) -> Unit,
+    onDismiss: () -> Unit,
+    cardWidth: Int,
+    cardHeight: Int
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var hasPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasPermission = isGranted
+    }
+    
+    var imageFile: File? by remember { mutableStateOf(null) }
+    
+    val imageCapture = remember { 
+        ImageCapture.Builder()
+            .setTargetRotation(android.view.Surface.ROTATION_0)
+            .build()
+    }
+    
+    val cameraProviderFuture: ListenableFuture<ProcessCameraProvider> = remember { 
+        ProcessCameraProvider.getInstance(context)
+    }
+    val previewView = remember { PreviewView(context) }
+    
+    LaunchedEffect(Unit) {
+        if (!hasPermission) {
+            cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+        }
+    }
+    
+    LaunchedEffect(hasPermission) {
+        if (hasPermission) {
+            val cameraProvider = cameraProviderFuture.get()
+            val preview = Preview.Builder()
+                .setTargetRotation(android.view.Surface.ROTATION_0)
+                .build().also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
+                }
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            
+            try {
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(
+                    lifecycleOwner,
+                    cameraSelector,
+                    preview,
+                    imageCapture
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+    
+    DisposableEffect(Unit) {
+        onDispose {
+            try {
+                if (cameraProviderFuture.isDone) {
+                    cameraProviderFuture.get().unbindAll()
+                }
+            } catch (e: Exception) {
+                // 忽略清理错误
+            }
+        }
+    }
+    
+    val density = LocalDensity.current
+    val cardWidthDp = with(density) { cardWidth.toDp() }
+    val cardHeightDp = with(density) { cardHeight.toDp() }
+    
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
+        if (!hasPermission) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.camera_permission_required),
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = onDismiss) {
+                    Text(stringResource(R.string.close))
+                }
+            }
+        } else {
+            // 全屏相机预览
+            AndroidView(
+                factory = { previewView },
+                modifier = Modifier.fillMaxSize()
+            )
+            
+            // 悬浮的提示框
+            Canvas(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                val canvasWidth = size.width
+                val canvasHeight = size.height
+                val frameWidth = cardWidthDp.toPx()
+                val frameHeight = cardHeightDp.toPx()
+                val frameLeft = (canvasWidth - frameWidth) / 2
+                val frameTop = (canvasHeight - frameHeight) / 2
+                
+                // 绘制半透明遮罩
+                drawRect(
+                    color = Color.Black.copy(alpha = 0.5f),
+                    size = Size(canvasWidth, frameTop)
+                )
+                drawRect(
+                    color = Color.Black.copy(alpha = 0.5f),
+                    topLeft = Offset(0f, frameTop + frameHeight),
+                    size = Size(canvasWidth, canvasHeight - frameTop - frameHeight)
+                )
+                drawRect(
+                    color = Color.Black.copy(alpha = 0.5f),
+                    topLeft = Offset(0f, frameTop),
+                    size = Size(frameLeft, frameHeight)
+                )
+                drawRect(
+                    color = Color.Black.copy(alpha = 0.5f),
+                    topLeft = Offset(frameLeft + frameWidth, frameTop),
+                    size = Size(canvasWidth - frameLeft - frameWidth, frameHeight)
+                )
+                
+                // 绘制虚线边框
+                drawRoundRect(
+                    color = Color.White,
+                    topLeft = Offset(frameLeft, frameTop),
+                    size = Size(frameWidth, frameHeight),
+                    cornerRadius = CornerRadius(24f, 24f),
+                    style = Stroke(
+                        width = 4f,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 20f), 0f)
+                    )
+                )
+            }
+            
+            // 顶部提示文字
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 32.dp),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.Black.copy(alpha = 0.6f)
+                        )
+                    ) {
+                        Text(
+                            text = stringResource(R.string.camera_frame_hint),
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                    
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFF4CAF50).copy(alpha = 0.8f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = stringResource(R.string.quick_add_continuous_mode),
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                            Text(
+                                text = stringResource(R.string.quick_add_target_warehouse, targetWarehouseName),
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // 底部按钮区域
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 48.dp)
+            ) {
+                // 关闭按钮（X 图标，左侧）
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 32.dp)
+                        .size(56.dp)
+                        .background(Color.White.copy(alpha = 0.3f), CircleShape)
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(R.string.close),
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+                
+                // 拍照按钮（居中）
+                IconButton(
+                    onClick = {
+                        val file = File(context.cacheDir, "item_${System.currentTimeMillis()}.jpg")
+                        imageFile = file
+                        val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
+                        
+                        imageCapture.takePicture(
+                            outputOptions,
+                            java.util.concurrent.Executors.newSingleThreadExecutor(),
+                            object : ImageCapture.OnImageSavedCallback {
+                                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                                    onImageCaptured(file.absolutePath)
+                                }
+                                override fun onError(exception: ImageCaptureException) {
+                                    exception.printStackTrace()
+                                    onImageCaptured(null)
+                                }
+                            }
+                        )
+                    },
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(72.dp)
+                        .background(Color.White, CircleShape)
+                ) {
+                    Icon(
+                        Icons.Default.PhotoCamera,
+                        contentDescription = stringResource(R.string.take_photo),
+                        tint = Color.Black,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 图片裁剪叠加层 - 叠加在拍照页面上
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ImageCropOverlay(
+    bitmap: android.graphics.Bitmap,
+    onCropped: (android.graphics.Bitmap) -> Unit,
+    onDismiss: () -> Unit,
+    cardWidth: Int,
+    cardHeight: Int
+) {
+    var canvasSize by remember { mutableStateOf(IntSize.Zero) }
+    var frameOffset by remember { mutableStateOf(Offset.Zero) }
+    var imageScale by remember { mutableStateOf(1f) }
+    var imageOffset by remember { mutableStateOf(Offset.Zero) }
+    var imageRotation by remember { mutableStateOf(0f) }
+    
+    val aspectRatio = cardWidth.toFloat() / cardHeight.toFloat()
+    
+    val frameSize = remember(canvasSize, aspectRatio) {
+        if (canvasSize.width == 0 || canvasSize.height == 0) {
+            if (aspectRatio > 1f) {
+                Size(400f, 400f / aspectRatio)
+            } else {
+                Size(400f * aspectRatio, 400f)
+            }
+        } else {
+            val maxWidth = canvasSize.width * 0.6f
+            val maxHeight = canvasSize.height * 0.6f
+            if (aspectRatio > 1f) {
+                val width = minOf(maxWidth, maxHeight * aspectRatio)
+                Size(width, width / aspectRatio)
+            } else {
+                val height = minOf(maxHeight, maxWidth / aspectRatio)
+                Size(height * aspectRatio, height)
+            }
+        }
+    }
+    
+    var isInitialized by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(canvasSize, frameSize) {
+        if (canvasSize.width > 0 && canvasSize.height > 0 && frameSize.width > 0 && frameSize.height > 0) {
+            val newFrameOffset = Offset(
+                (canvasSize.width - frameSize.width) / 2f,
+                (canvasSize.height - frameSize.height) / 2f
+            )
+            if (!isInitialized || 
+                kotlin.math.abs(frameOffset.x - newFrameOffset.x) > 1f || 
+                kotlin.math.abs(frameOffset.y - newFrameOffset.y) > 1f) {
+                frameOffset = newFrameOffset
+                if (!isInitialized) {
+                    imageOffset = Offset.Zero
+                    imageScale = 1f
+                    isInitialized = true
+                }
+            }
+        }
+    }
+    
+    // 全屏遮罩背景
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.95f))
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.crop_image)) },
+                    navigationIcon = {
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.Close, stringResource(R.string.cancel))
+                        }
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = {
+                                imageRotation = (imageRotation + 90f) % 360f
+                            }
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.RotateRight, stringResource(R.string.rotate_image))
+                        }
+                        IconButton(
+                            onClick = {
+                                val croppedBitmap = cropBitmapForQuickAdd(
+                                    bitmap,
+                                    frameOffset,
+                                    frameSize,
+                                    canvasSize,
+                                    imageScale,
+                                    imageOffset,
+                                    imageRotation,
+                                    cardWidth,
+                                    cardHeight
+                                )
+                                onCropped(croppedBitmap)
+                            }
+                        ) {
+                            Icon(Icons.Default.Check, stringResource(R.string.confirm))
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Black.copy(alpha = 0.8f),
+                        titleContentColor = Color.White,
+                        navigationIconContentColor = Color.White,
+                        actionIconContentColor = Color.White
+                    )
+                )
+            },
+            containerColor = Color.Transparent
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(Color.Black)
+            ) {
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .onGloballyPositioned { coordinates ->
+                            canvasSize = coordinates.size
+                        }
+                        .pointerInput(frameSize) {
+                            detectDragGestures { change, dragAmount ->
+                                val touchX = change.position.x
+                                val touchY = change.position.y
+                                val isInFrame = touchX >= frameOffset.x && 
+                                               touchX <= frameOffset.x + frameSize.width &&
+                                               touchY >= frameOffset.y && 
+                                               touchY <= frameOffset.y + frameSize.height
+                                
+                                if (isInFrame) {
+                                    change.consume()
+                                    val newOffset = frameOffset + dragAmount
+                                    frameOffset = Offset(
+                                        x = newOffset.x.coerceIn(0f, canvasSize.width - frameSize.width),
+                                        y = newOffset.y.coerceIn(0f, canvasSize.height - frameSize.height)
+                                    )
+                                } else {
+                                    change.consume()
+                                    imageOffset += dragAmount
+                                }
+                            }
+                        }
+                        .pointerInput(Unit) {
+                            detectTransformGestures { _, pan, zoom, _ ->
+                                imageScale = (imageScale * zoom).coerceIn(0.5f, 3f)
+                                imageOffset += pan
+                            }
+                        }
+                ) {
+                    val canvasWidth = size.width
+                    val canvasHeight = size.height
+                    
+                    if (canvasWidth == 0f || canvasHeight == 0f) return@Canvas
+                    
+                    val bitmapAspectRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
+                    val canvasAspectRatio = canvasWidth / canvasHeight
+                    
+                    val baseDrawWidth: Float
+                    val baseDrawHeight: Float
+                    
+                    if (bitmapAspectRatio > canvasAspectRatio) {
+                        baseDrawWidth = canvasWidth
+                        baseDrawHeight = canvasWidth / bitmapAspectRatio
+                    } else {
+                        baseDrawHeight = canvasHeight
+                        baseDrawWidth = canvasHeight * bitmapAspectRatio
+                    }
+                    
+                    val drawWidth = baseDrawWidth * imageScale
+                    val drawHeight = baseDrawHeight * imageScale
+                    val baseDrawLeft = (canvasWidth - baseDrawWidth) / 2
+                    val baseDrawTop = (canvasHeight - baseDrawHeight) / 2
+                    val drawLeft = baseDrawLeft + imageOffset.x
+                    val drawTop = baseDrawTop + imageOffset.y
+                    
+                    if (imageRotation != 0f) {
+                        val centerX = drawLeft + drawWidth / 2
+                        val centerY = drawTop + drawHeight / 2
+                        rotate(
+                            degrees = imageRotation,
+                            pivot = Offset(centerX, centerY)
+                        ) {
+                            drawImage(
+                                image = bitmap.asImageBitmap(),
+                                dstOffset = androidx.compose.ui.unit.IntOffset(drawLeft.toInt(), drawTop.toInt()),
+                                dstSize = androidx.compose.ui.unit.IntSize(drawWidth.toInt(), drawHeight.toInt())
+                            )
+                        }
+                    } else {
+                        drawImage(
+                            image = bitmap.asImageBitmap(),
+                            dstOffset = androidx.compose.ui.unit.IntOffset(drawLeft.toInt(), drawTop.toInt()),
+                            dstSize = androidx.compose.ui.unit.IntSize(drawWidth.toInt(), drawHeight.toInt())
+                        )
+                    }
+                    
+                    // 绘制半透明遮罩
+                    drawRect(
+                        color = Color.Black.copy(alpha = 0.6f),
+                        topLeft = Offset(0f, 0f),
+                        size = Size(canvasWidth, frameOffset.y)
+                    )
+                    drawRect(
+                        color = Color.Black.copy(alpha = 0.6f),
+                        topLeft = Offset(0f, frameOffset.y + frameSize.height),
+                        size = Size(canvasWidth, canvasHeight - frameOffset.y - frameSize.height)
+                    )
+                    drawRect(
+                        color = Color.Black.copy(alpha = 0.6f),
+                        topLeft = Offset(0f, frameOffset.y),
+                        size = Size(frameOffset.x, frameSize.height)
+                    )
+                    drawRect(
+                        color = Color.Black.copy(alpha = 0.6f),
+                        topLeft = Offset(frameOffset.x + frameSize.width, frameOffset.y),
+                        size = Size(canvasWidth - frameOffset.x - frameSize.width, frameSize.height)
+                    )
+                    
+                    // 绘制裁剪框边框
+                    drawRoundRect(
+                        color = Color.White,
+                        topLeft = frameOffset,
+                        size = frameSize,
+                        cornerRadius = CornerRadius(16f, 16f),
+                        style = Stroke(
+                            width = 3f,
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 20f), 0f)
+                        )
+                    )
+                    
+                    // 绘制四个角的标记
+                    val cornerSize = 30f
+                    val cornerThickness = 4f
+                    
+                    drawLine(
+                        color = Color.White,
+                        start = frameOffset,
+                        end = Offset(frameOffset.x + cornerSize, frameOffset.y),
+                        strokeWidth = cornerThickness
+                    )
+                    drawLine(
+                        color = Color.White,
+                        start = frameOffset,
+                        end = Offset(frameOffset.x, frameOffset.y + cornerSize),
+                        strokeWidth = cornerThickness
+                    )
+                    
+                    drawLine(
+                        color = Color.White,
+                        start = Offset(frameOffset.x + frameSize.width, frameOffset.y),
+                        end = Offset(frameOffset.x + frameSize.width - cornerSize, frameOffset.y),
+                        strokeWidth = cornerThickness
+                    )
+                    drawLine(
+                        color = Color.White,
+                        start = Offset(frameOffset.x + frameSize.width, frameOffset.y),
+                        end = Offset(frameOffset.x + frameSize.width, frameOffset.y + cornerSize),
+                        strokeWidth = cornerThickness
+                    )
+                    
+                    drawLine(
+                        color = Color.White,
+                        start = Offset(frameOffset.x, frameOffset.y + frameSize.height),
+                        end = Offset(frameOffset.x + cornerSize, frameOffset.y + frameSize.height),
+                        strokeWidth = cornerThickness
+                    )
+                    drawLine(
+                        color = Color.White,
+                        start = Offset(frameOffset.x, frameOffset.y + frameSize.height),
+                        end = Offset(frameOffset.x, frameOffset.y + frameSize.height - cornerSize),
+                        strokeWidth = cornerThickness
+                    )
+                    
+                    drawLine(
+                        color = Color.White,
+                        start = Offset(frameOffset.x + frameSize.width, frameOffset.y + frameSize.height),
+                        end = Offset(frameOffset.x + frameSize.width - cornerSize, frameOffset.y + frameSize.height),
+                        strokeWidth = cornerThickness
+                    )
+                    drawLine(
+                        color = Color.White,
+                        start = Offset(frameOffset.x + frameSize.width, frameOffset.y + frameSize.height),
+                        end = Offset(frameOffset.x + frameSize.width, frameOffset.y + frameSize.height - cornerSize),
+                        strokeWidth = cornerThickness
+                    )
+                }
+                
+                // 底部提示文字
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 32.dp)
+                ) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.Black.copy(alpha = 0.7f)
+                        )
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.drag_frame_to_crop),
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = stringResource(R.string.pinch_to_zoom),
+                                color = Color.White.copy(alpha = 0.8f),
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 裁剪图片的辅助函数（用于快速添加）
+ */
+private fun cropBitmapForQuickAdd(
+    bitmap: android.graphics.Bitmap,
+    frameOffset: Offset,
+    frameSize: Size,
+    canvasSize: IntSize,
+    imageScale: Float,
+    imageOffset: Offset,
+    imageRotation: Float,
+    cardWidth: Int,
+    cardHeight: Int
+): android.graphics.Bitmap {
+    val canvasWidth = canvasSize.width.toFloat()
+    val canvasHeight = canvasSize.height.toFloat()
+    
+    val bitmapAspectRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
+    val canvasAspectRatio = canvasWidth / canvasHeight
+    
+    val baseDrawWidth: Float
+    val baseDrawHeight: Float
+    
+    if (bitmapAspectRatio > canvasAspectRatio) {
+        baseDrawWidth = canvasWidth
+        baseDrawHeight = canvasWidth / bitmapAspectRatio
+    } else {
+        baseDrawHeight = canvasHeight
+        baseDrawWidth = canvasHeight * bitmapAspectRatio
+    }
+    
+    val drawWidth = baseDrawWidth * imageScale
+    val drawHeight = baseDrawHeight * imageScale
+    val baseDrawLeft = (canvasWidth - baseDrawWidth) / 2
+    val baseDrawTop = (canvasHeight - baseDrawHeight) / 2
+    val drawLeft = baseDrawLeft + imageOffset.x
+    val drawTop = baseDrawTop + imageOffset.y
+    
+    val scaleX = bitmap.width / drawWidth
+    val scaleY = bitmap.height / drawHeight
+    
+    val cropX = ((frameOffset.x - drawLeft) * scaleX).toInt().coerceIn(0, bitmap.width)
+    val cropY = ((frameOffset.y - drawTop) * scaleY).toInt().coerceIn(0, bitmap.height)
+    val cropWidth = (frameSize.width * scaleX).toInt().coerceIn(1, bitmap.width - cropX)
+    val cropHeight = (frameSize.height * scaleY).toInt().coerceIn(1, bitmap.height - cropY)
+    
+    val finalCropWidth = cropWidth.coerceIn(1, bitmap.width - cropX)
+    val finalCropHeight = cropHeight.coerceIn(1, bitmap.height - cropY)
+    
+    // 记录是否有透明通道
+    val hasAlpha = bitmap.hasAlpha()
+    
+    var croppedBitmap = android.graphics.Bitmap.createBitmap(bitmap, cropX, cropY, finalCropWidth, finalCropHeight)
+    
+    // 保留透明通道
+    if (hasAlpha && !croppedBitmap.hasAlpha()) {
+        croppedBitmap.setHasAlpha(true)
+    }
+    
+    if (imageRotation != 0f) {
+        val matrix = android.graphics.Matrix()
+        matrix.postRotate(imageRotation)
+        val rotatedBitmap = android.graphics.Bitmap.createBitmap(
+            croppedBitmap,
+            0,
+            0,
+            croppedBitmap.width,
+            croppedBitmap.height,
+            matrix,
+            true
+        )
+        
+        // 保留透明通道
+        if (hasAlpha && !rotatedBitmap.hasAlpha()) {
+            rotatedBitmap.setHasAlpha(true)
+        }
+        
+        croppedBitmap = rotatedBitmap
+    }
+    
+    return croppedBitmap
 }

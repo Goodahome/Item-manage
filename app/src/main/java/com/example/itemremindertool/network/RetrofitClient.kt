@@ -76,10 +76,21 @@ object RetrofitClient {
      */
     private fun getServerUrl(context: Context): String {
         val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-        val url = prefs.getString("server_url", "http://localhost:3000") ?: "http://localhost:3000"
+        var url = prefs.getString("server_url", "http://localhost:3000") ?: "http://localhost:3000"
         
-        // 确保 URL 以斜杠结尾
-        return if (url.endsWith("/")) url else "$url/"
+        // 去除首尾空格
+        url = url.trim()
+        
+        // 移除末尾的多余斜杠
+        url = url.trimEnd('/')
+        
+        // 确保 URL 有协议前缀
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "http://$url"
+        }
+        
+        // 添加末尾斜杠（Retrofit 需要）
+        return "$url/"
     }
     
     /**

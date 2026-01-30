@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextLayoutResult
@@ -225,5 +226,51 @@ fun AutoSizeTextButton(
             modifier = Modifier.fillMaxWidth()
         )
         content()
+    }
+}
+
+/**
+ * 按钮内自适应文字（用于 Button/OutlinedButton 内部）
+ * 使用实际测量来自动缩小字体，确保文字完整显示不换行不省略
+ */
+@Composable
+fun ButtonAutoSizeText(
+    text: String,
+    modifier: Modifier = Modifier,
+    maxFontSize: TextUnit = 14.sp,
+    minFontSize: TextUnit = 8.sp,
+    color: Color = Color.Unspecified
+) {
+    var fontSize by remember(text) { mutableStateOf(maxFontSize) }
+    var readyToDraw by remember(text) { mutableStateOf(false) }
+    val density = LocalDensity.current
+    
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val maxWidthPx = with(density) { maxWidth.toPx() }
+        
+        Text(
+            text = text,
+            fontSize = fontSize,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Visible,
+            textAlign = TextAlign.Center,
+            color = color,
+            modifier = Modifier
+                .fillMaxWidth()
+                .graphicsLayer { alpha = if (readyToDraw) 1f else 0f },
+            onTextLayout = { textLayoutResult ->
+                val textWidth = textLayoutResult.size.width
+                if (textWidth > maxWidthPx && fontSize.value > minFontSize.value) {
+                    // 按照比例缩小，并留一点余量（0.9）
+                    val scale = (maxWidthPx / textWidth) * 0.9f
+                    val newFontSizeValue = (fontSize.value * scale).coerceAtLeast(minFontSize.value)
+                    fontSize = newFontSizeValue.sp
+                    readyToDraw = false
+                } else {
+                    readyToDraw = true
+                }
+            }
+        )
     }
 }

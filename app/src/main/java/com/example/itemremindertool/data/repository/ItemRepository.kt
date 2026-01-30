@@ -247,5 +247,142 @@ class ItemRepository(
             itemDao.deleteItemByUuid(uuid)
         }
     }
+    
+    /**
+     * 批量删除物品（合并为单条动态记录）
+     */
+    @androidx.room.Transaction
+    suspend fun batchDeleteItems(items: List<Item>) {
+        if (items.isEmpty()) return
+        
+        val itemNames = items.take(3).joinToString("、") { it.name }
+        val displayText = if (items.size > 3) {
+            "$itemNames 等${items.size}个物品"
+        } else {
+            itemNames
+        }
+        
+        // 1. 批量本地删除和记录删除操作
+        items.forEach { item ->
+            itemDao.deleteItem(item)
+            deletedRecordDao?.insertDeletedRecord(
+                DeletedRecord(
+                    entityType = "item",
+                    entityUuid = item.uuid,
+                    deletedAt = Date()
+                )
+            )
+        }
+        
+        // 2. 记录一条合并的动态
+        context?.let {
+            try {
+                val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
+                val event = com.example.itemremindertool.data.model.ActivityEvent(
+                    type = com.example.itemremindertool.data.model.ActivityEventType.ITEM_DELETED,
+                    title = "批量删除物品",
+                    description = displayText,
+                    targetUuid = items.first().uuid,
+                    targetName = displayText,
+                    iconType = "batch_delete_item",
+                    createdAt = Date()
+                )
+                activityEventDao.insert(event)
+                syncManager?.let { manager ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            manager.syncActivityEventToRemote(event)
+                        } catch (e: Exception) {
+                            android.util.Log.e("ItemRepository", "同步批量删除物品动态失败", e)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("ItemRepository", "记录批量删除物品动态失败", e)
+            }
+        }
+        
+        // 3. 批量远端同步删除（异步，不阻塞）
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                items.forEach { item ->
+                    try {
+                        manager.deleteItemFromRemote(item.uuid)
+                    } catch (e: Exception) {
+                        android.util.Log.e("ItemRepository", "同步删除物品${item.name}到远端失败", e)
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * 批量移动物品到指定容器（合并为单条动态记录）
+     */
+    @androidx.room.Transaction
+    suspend fun batchMoveItems(items: List<Item>, targetWarehouseUuid: String?, targetWarehouseName: String?) {
+        if (items.isEmpty()) return
+        
+        val itemNames = items.take(3).joinToString("、") { it.name }
+        val displayText = if (items.size > 3) {
+            "$itemNames 等${items.size}个物品"
+        } else {
+            itemNames
+        }
+        
+        val targetText = targetWarehouseName ?: "根目录"
+        
+        // 1. 批量本地更新
+        val updatedItems = items.map { item ->
+            item.copy(
+                warehouseUuid = targetWarehouseUuid,
+                updatedAt = Date()
+            )
+        }
+        updatedItems.forEach { item ->
+            itemDao.updateItem(item)
+        }
+        
+        // 2. 记录一条合并的动态
+        context?.let {
+            try {
+                val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
+                val event = com.example.itemremindertool.data.model.ActivityEvent(
+                    type = com.example.itemremindertool.data.model.ActivityEventType.ITEM_UPDATED,
+                    title = "批量移动物品",
+                    description = "将 $displayText 移动到 $targetText",
+                    targetUuid = items.first().uuid,
+                    targetName = displayText,
+                    iconType = "batch_move_item",
+                    createdAt = Date()
+                )
+                activityEventDao.insert(event)
+                syncManager?.let { manager ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            manager.syncActivityEventToRemote(event)
+                        } catch (e: Exception) {
+                            android.util.Log.e("ItemRepository", "同步批量移动物品动态失败", e)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("ItemRepository", "记录批量移动物品动态失败", e)
+            }
+        }
+        
+        // 3. 批量远端同步（异步，不阻塞）
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                updatedItems.forEach { item ->
+                    try {
+                        manager.syncItemToRemote(item)
+                    } catch (e: Exception) {
+                        android.util.Log.e("ItemRepository", "同步物品${item.name}到远端失败", e)
+                    }
+                }
+            }
+        }
+    }
 }
 

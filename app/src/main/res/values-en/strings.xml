@@ -11,6 +11,7 @@
     <string name="delete">Delete</string>
     <string name="edit">Edit</string>
     <string name="add">Add</string>
+    <string name="move">Move</string>
     <string name="modify">Modify</string>
     <string name="search">Search</string>
     <string name="settings">Settings</string>
@@ -273,6 +274,12 @@
     <string name="add_warehouse">Add Container</string>
     <string name="add_warehouse_hint">Select parent container then add</string>
     <string name="edit_warehouse">Edit Container</string>
+    <string name="move_warehouse">Move Container</string>
+    <string name="move_warehouse_title">Move Container</string>
+    <string name="move_warehouse_select_target">Select Target Parent Container</string>
+    <string name="move_to_root">Move to Root</string>
+    <string name="move_warehouse_success">Container moved successfully</string>
+    <string name="move_warehouse_error">Failed to move container</string>
     <string name="delete_warehouse">Delete Container</string>
     <string name="delete_warehouse_title">Delete Container</string>
     <string name="delete_warehouse_confirm">Are you sure you want to delete container "%1$s"? Items inside will become unassigned.</string>
@@ -449,6 +456,8 @@
     <string name="camera_permission_required">Camera permission required</string>
     <string name="camera_permission_for_scanner">Camera permission required for scanning</string>
     <string name="camera_frame_hint">Please place item inside the frame</string>
+    <string name="quick_add_continuous_mode">Continuous Add Mode</string>
+    <string name="quick_add_target_warehouse">Target Container: %s</string>
     <string name="drag_frame_to_crop">Drag frame to select crop area</string>
     <string name="category_name_required_field">Category Name *</string>
     <string name="select_color">Select Color</string>
@@ -508,6 +517,19 @@
     <string name="document_expiry">Document Expiry</string>
     <string name="move_item_success">Item moved to %1$s</string>
     <string name="move_item_failed">Move failed</string>
+    
+    <!-- Multi-select -->
+    <string name="multi_select_count">%d items selected</string>
+    <string name="select_all">Select all</string>
+    <string name="batch_delete">Batch delete</string>
+    <string name="batch_move">Batch move</string>
+    <string name="batch_delete_title">Confirm Batch Delete</string>
+    <string name="batch_delete_message">Are you sure you want to delete %d selected items? This action cannot be undone.</string>
+    <string name="batch_move_items">%d items</string>
+    <string name="batch_delete_success">Successfully deleted %d items</string>
+    <string name="batch_delete_failed">Batch delete failed: %s</string>
+    <string name="batch_move_success">Successfully moved %d items</string>
+    <string name="batch_move_failed">Batch move failed: %s</string>
     
     <!-- 删除确认 -->
     <string name="confirm_delete">Confirm Delete</string>

@@ -50,6 +50,7 @@ import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 import com.example.itemremindertool.ui.components.AppDivider
+import com.example.itemremindertool.ui.components.ButtonAutoSizeText
 import com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
 import com.example.itemremindertool.utils.CurrencyUtils
@@ -1298,14 +1299,9 @@ fun ModernReminderDialog(
                         ),
                         border = BorderStroke(1.5.dp, ColorHelpers.getGroup4TextColor(0.3f))
                     ) {
-                        Text(stringResource(R.string.cancel), fontSize = 15.sp, fontWeight = FontWeight.Medium)
-                    }
-                    val confirmText = stringResource(R.string.confirm_button)
-                    val confirmFontSize = when {
-                        confirmText.length >= 8 -> 11.sp
-                        confirmText.length >= 6 -> 12.sp
-                        confirmText.length >= 5 -> 13.sp
-                        else -> 15.sp
+                        ButtonAutoSizeText(
+                            text = stringResource(R.string.cancel)
+                        )
                     }
                     Button(
                         onClick = {
@@ -1348,12 +1344,8 @@ fun ModernReminderDialog(
                             pressedElevation = 4.dp
                         )
                     ) {
-                        Text(
-                            text = confirmText,
-                            fontSize = confirmFontSize,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            softWrap = false
+                        ButtonAutoSizeText(
+                            text = stringResource(R.string.confirm_button)
                         )
                     }
                 }

@@ -212,6 +212,35 @@ class WarehouseViewModel(
         }
     }
 
+    fun moveWarehouse(warehouse: Warehouse, newParentUuid: String?) {
+        viewModelScope.launch {
+            try {
+                if (warehouse.parentUuid == newParentUuid) {
+                    return@launch
+                }
+                _operationState.value = OperationState.Saving
+                val invalidUuids = warehouseRepository.getAllChildWarehouseUuids(warehouse.uuid)
+                    .toSet() + warehouse.uuid
+                if (newParentUuid != null && invalidUuids.contains(newParentUuid)) {
+                    throw IllegalArgumentException("Invalid parent")
+                }
+                val level = calculateLevel(newParentUuid)
+                warehouseRepository.moveWarehouse(warehouse, newParentUuid, level)
+                _operationState.value = OperationState.Success(
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.move_warehouse_success)
+                )
+                kotlinx.coroutines.delay(2000)
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                _operationState.value = OperationState.Error(
+                    getApplication<Application>().getString(com.example.itemremindertool.R.string.move_warehouse_error)
+                )
+                kotlinx.coroutines.delay(2000)
+                _operationState.value = OperationState.Idle
+            }
+        }
+    }
+
     /**
      * 计算容器的层级（基于父容器）
      *

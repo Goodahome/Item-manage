@@ -496,12 +496,20 @@ object ExcelImportExportUtils {
         val height = bitmap.height
         if (width <= maxSize && height <= maxSize) return bitmap
         val scale = maxSize.toFloat() / maxOf(width, height)
-        return Bitmap.createScaledBitmap(
+        val hasAlpha = bitmap.hasAlpha()
+        val scaledBitmap = Bitmap.createScaledBitmap(
             bitmap,
             (width * scale).toInt(),
             (height * scale).toInt(),
             true
         )
+        
+        // 保留透明通道
+        if (hasAlpha && !scaledBitmap.hasAlpha()) {
+            scaledBitmap.setHasAlpha(true)
+        }
+        
+        return scaledBitmap
     }
 
     private fun bitmapToBytes(bitmap: Bitmap, imagePath: String): ByteArray {

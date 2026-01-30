@@ -141,12 +141,18 @@ class FeatureExtractor(private val context: Context) {
             }
             
             // 预处理图片：调整大小、归一化
+            val hasAlpha = bitmap.hasAlpha()
             val resizedBitmap = Bitmap.createScaledBitmap(
                 bitmap,
                 inputImageSize,
                 inputImageSize,
                 true
             )
+            
+            // 保留透明通道（虽然ML特征提取通常不需要，但保持一致性）
+            if (hasAlpha && !resizedBitmap.hasAlpha()) {
+                resizedBitmap.setHasAlpha(true)
+            }
             
             // 转换为 ByteBuffer
             val byteBuffer = bitmapToByteBuffer(resizedBitmap)

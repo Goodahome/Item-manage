@@ -130,6 +130,7 @@ fun ItemEditScreen(
     var showCropDialog by remember { mutableStateOf(false) }
     var bitmapToCrop by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     var cropImageIndex by remember { mutableStateOf<Int?>(null) } // 记录正在裁剪的图片索引，null表示是新图片
+    var pendingImageExt by remember { mutableStateOf<String?>(null) } // 记录待保存图片格式
     // 获取 Context 和协程作用域
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -455,6 +456,9 @@ fun ItemEditScreen(
                 if (uri != null) {
                     // 处理选中的图片
                     try {
+                        pendingImageExt = ImageUtils.normalizeImageExtension(
+                            ImageUtils.getImageExtensionFromUri(context, uri)
+                        )
                         val bitmap = ImageUtils.loadBitmapFromUri(context, uri)
 
                         if (bitmap != null) {
@@ -510,6 +514,9 @@ fun ItemEditScreen(
                     scope.launch(Dispatchers.IO) {
                         try {
                             val uri = uris[0]
+                            pendingImageExt = ImageUtils.normalizeImageExtension(
+                                ImageUtils.getImageExtensionFromUri(context, uri)
+                            )
                             val bitmap = ImageUtils.loadBitmapFromUri(context, uri)
 
                             if (bitmap != null) {
@@ -526,8 +533,12 @@ fun ItemEditScreen(
                                         val remainingBitmap = ImageUtils.loadBitmapFromUri(context, remainingUri)
 
                                         if (remainingBitmap != null) {
+                                            val remainingExt = ImageUtils.normalizeImageExtension(
+                                                ImageUtils.getImageExtensionFromUri(context, remainingUri)
+                                            )
+                                            val finalExt = remainingExt ?: if (remainingBitmap.hasAlpha()) "png" else "jpg"
                                             val fileName =
-                                                "item_${itemUuid ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
+                                                "item_${itemUuid ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.$finalExt"
                                             val savedPath = ImageUtils.saveImageToInternalStorage(
                                                 context,
                                                 remainingBitmap,
@@ -718,6 +729,9 @@ fun ItemEditScreen(
                                                     // 点击编辑按钮时，弹出裁剪对话框进行手动处理
                                                     val imageBitmap = ImageUtils.loadBitmapFromPath(imagePath)
                                                     if (imageBitmap != null) {
+                                                        pendingImageExt = ImageUtils.normalizeImageExtension(
+                                                            File(imagePath).extension
+                                                        )
                                                         bitmapToCrop = imageBitmap
                                                         cropImageIndex = index // 记录正在裁剪的图片索引
                                                         showCropDialog = true
@@ -1322,6 +1336,9 @@ fun ItemEditScreen(
                                         // 加载图片，弹出裁剪对话框
                                         val bitmap = ImageUtils.loadBitmapFromPath(imagePath)
                                         if (bitmap != null) {
+                                        pendingImageExt = ImageUtils.normalizeImageExtension(
+                                            File(imagePath).extension
+                                        )
                                             // 显示裁剪对话框
                                             bitmapToCrop = bitmap
                                             cropImageIndex = null // 新图片，索引为null
@@ -1346,6 +1363,7 @@ fun ItemEditScreen(
                                 showCropDialog = false
                                 val currentCropIndex = cropImageIndex
                                 scope.launch(Dispatchers.IO) {
+                                    val finalExt = pendingImageExt ?: if (croppedBitmap.hasAlpha()) "png" else "jpg"
                                     if (currentCropIndex != null && currentCropIndex < imageUris.size) {
                                         // 更新已存在的图片
                                         val oldPath = imageUris[currentCropIndex]
@@ -1353,7 +1371,7 @@ fun ItemEditScreen(
                                         ImageUtils.deleteImageAndCropped(oldPath)
                                         // 保存新图片
                                         val fileName =
-                                            "item_${itemUuid ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
+                                            "item_${itemUuid ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.$finalExt"
                                         val savedPath = ImageUtils.saveImageToInternalStorage(
                                             context,
                                             croppedBitmap,
@@ -1372,7 +1390,7 @@ fun ItemEditScreen(
                                     } else {
                                         // 添加新图片
                                         val fileName =
-                                            "item_${itemUuid ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.jpg"
+                                            "item_${itemUuid ?: System.currentTimeMillis()}_${System.currentTimeMillis()}.$finalExt"
                                         val savedPath = ImageUtils.saveImageToInternalStorage(
                                             context,
                                             croppedBitmap,
@@ -1390,11 +1408,13 @@ fun ItemEditScreen(
                                 }
                                 bitmapToCrop = null
                                 cropImageIndex = null
+                                pendingImageExt = null
                             },
                             onDismiss = {
                                 showCropDialog = false
                                 bitmapToCrop = null
                                 cropImageIndex = null
+                                pendingImageExt = null
                             },
                             cardWidth = cardWidthPx,
                             cardHeight = cardHeightPx

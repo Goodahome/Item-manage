@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.R
 import com.example.itemremindertool.data.model.Warehouse
+import com.example.itemremindertool.ui.components.ButtonAutoSizeText
 import com.example.itemremindertool.utils.QRCodeUtils
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import kotlinx.coroutines.Dispatchers
@@ -103,7 +104,8 @@ fun WarehouseQRCodeDialog(
             OutlinedButton(
                 onClick = { saveQRCodeToGallery() },
                 enabled = !isSaving && qrCodeBitmap != null,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 if (isSaving) {
                     CircularProgressIndicator(
@@ -112,13 +114,18 @@ fun WarehouseQRCodeDialog(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
-                Text(stringResource(R.string.save_to_album))
+                ButtonAutoSizeText(
+                    text = stringResource(R.string.save_to_album)
+                )
             }
             Button(
                 onClick = onDismiss,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text(stringResource(R.string.close))
+                ButtonAutoSizeText(
+                    text = stringResource(R.string.close)
+                )
             }
         }
     ) {

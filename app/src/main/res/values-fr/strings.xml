@@ -11,6 +11,7 @@
     <string name="delete">Supprimer</string>
     <string name="edit">Modifier</string>
     <string name="add">Ajouter</string>
+    <string name="move">Déplacer</string>
     <string name="modify">Modifier</string>
     <string name="search">Rechercher</string>
     <string name="settings">Paramètres</string>
@@ -257,6 +258,12 @@
     <string name="add_warehouse">Ajouter un conteneur</string>
     <string name="add_warehouse_hint">Sélectionner le conteneur parent puis ajouter</string>
     <string name="edit_warehouse">Modifier le conteneur</string>
+    <string name="move_warehouse">Déplacer le conteneur</string>
+    <string name="move_warehouse_title">Déplacer le conteneur</string>
+    <string name="move_warehouse_select_target">Sélectionner le conteneur parent cible</string>
+    <string name="move_to_root">Déplacer vers la racine</string>
+    <string name="move_warehouse_success">Conteneur déplacé avec succès</string>
+    <string name="move_warehouse_error">Échec du déplacement du conteneur</string>
     <string name="delete_warehouse">Supprimer le conteneur</string>
     <string name="delete_warehouse_title">Supprimer le conteneur</string>
     <string name="delete_warehouse_confirm">Voulez-vous vraiment supprimer le conteneur « %1$s » ? Les articles deviendront non assignés.</string>
@@ -453,6 +460,8 @@
     <string name="camera_permission_required">Autorisation caméra requise</string>
     <string name="camera_permission_for_scanner">Autorisation caméra requise pour le scan</string>
     <string name="camera_frame_hint">Placer l\'article dans le cadre</string>
+    <string name="quick_add_continuous_mode">Mode d\'ajout continu</string>
+    <string name="quick_add_target_warehouse">Conteneur cible : %s</string>
     <string name="drag_frame_to_crop">Glisser le cadre pour sélectionner la zone de recadrage</string>
     <string name="category_name_required_field">Nom de catégorie *</string>
     <string name="select_color">Sélectionner la couleur</string>
@@ -508,6 +517,19 @@
     <string name="document_expiry">Expiration de document</string>
     <string name="move_item_success">Article déplacé vers %1$s</string>
     <string name="move_item_failed">Déplacement échoué</string>
+    
+    <!-- Sélection multiple -->
+    <string name="multi_select_count">%d articles sélectionnés</string>
+    <string name="select_all">Tout sélectionner</string>
+    <string name="batch_delete">Suppression en lot</string>
+    <string name="batch_move">Déplacement en lot</string>
+    <string name="batch_delete_title">Confirmer la suppression en lot</string>
+    <string name="batch_delete_message">Êtes-vous sûr de vouloir supprimer %d articles sélectionnés ? Cette action est irréversible.</string>
+    <string name="batch_move_items">%d articles</string>
+    <string name="batch_delete_success">%d articles supprimés avec succès</string>
+    <string name="batch_delete_failed">Échec de la suppression en lot : %s</string>
+    <string name="batch_move_success">%d articles déplacés avec succès</string>
+    <string name="batch_move_failed">Échec du déplacement en lot : %s</string>
     
     <!-- 删除确认 -->
     <string name="confirm_delete">Confirmer la suppression</string>

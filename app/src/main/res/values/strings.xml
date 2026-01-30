@@ -11,6 +11,7 @@
     <string name="delete">删除</string>
     <string name="edit">编辑</string>
     <string name="add">添加</string>
+    <string name="move">移动</string>
     <string name="modify">修改</string>
     <string name="search">搜索</string>
     <string name="settings">设置</string>
@@ -278,6 +279,12 @@
     <string name="add_warehouse">添加容器</string>
     <string name="add_warehouse_hint">选择父容器后添加容器</string>
     <string name="edit_warehouse">编辑容器</string>
+    <string name="move_warehouse">移动容器</string>
+    <string name="move_warehouse_title">移动容器</string>
+    <string name="move_warehouse_select_target">选择目标父容器</string>
+    <string name="move_to_root">移动到根容器</string>
+    <string name="move_warehouse_success">容器移动成功</string>
+    <string name="move_warehouse_error">容器移动失败</string>
     <string name="delete_warehouse">删除容器</string>
     <string name="delete_warehouse_title">删除容器</string>
     <string name="delete_warehouse_confirm">确定要删除容器「%1$s」吗？删除后该容器下的物品将变为未分配容器。</string>
@@ -536,6 +543,8 @@
     <string name="camera_permission_required">需要相机权限</string>
     <string name="camera_permission_for_scanner">需要相机权限才能使用扫码功能</string>
     <string name="camera_frame_hint">请将物品放入框内</string>
+    <string name="quick_add_continuous_mode">连续添加模式</string>
+    <string name="quick_add_target_warehouse">目标容器：%s</string>
     <string name="drag_frame_to_crop">拖动框选择裁剪区域</string>
     <string name="category_name_required_field">分类名称 *</string>
     <string name="select_color">选择颜色</string>
@@ -599,6 +608,19 @@
     <string name="document_expiry">证件到期</string>
     <string name="move_item_success">物品已移动到 %1$s</string>
     <string name="move_item_failed">移动失败</string>
+    
+    <!-- 多选相关 -->
+    <string name="multi_select_count">已选择 %d 项</string>
+    <string name="select_all">全选</string>
+    <string name="batch_delete">批量删除</string>
+    <string name="batch_move">批量移动</string>
+    <string name="batch_delete_title">批量删除确认</string>
+    <string name="batch_delete_message">确定要删除选中的 %d 个物品吗？此操作不可撤销。</string>
+    <string name="batch_move_items">%d 个物品</string>
+    <string name="batch_delete_success">已成功删除 %d 个物品</string>
+    <string name="batch_delete_failed">批量删除失败：%s</string>
+    <string name="batch_move_success">已成功移动 %d 个物品</string>
+    <string name="batch_move_failed">批量移动失败：%s</string>
     
     <!-- 删除确认 -->
     <string name="confirm_delete">确认删除</string>

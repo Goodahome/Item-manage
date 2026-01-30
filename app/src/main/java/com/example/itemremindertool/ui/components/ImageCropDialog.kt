@@ -116,7 +116,12 @@ fun ImageCropDialog(
     
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false
+        )
     ) {
         Scaffold(
             topBar = {
@@ -466,14 +471,22 @@ private fun cropBitmap(
     val finalCropWidth = cropWidth.coerceIn(1, bitmap.width - cropX)
     val finalCropHeight = cropHeight.coerceIn(1, bitmap.height - cropY)
     
+    // 记录是否有透明通道
+    val hasAlpha = bitmap.hasAlpha()
+    
     // 裁剪图片，保持宽高比
     var croppedBitmap = Bitmap.createBitmap(bitmap, cropX, cropY, finalCropWidth, finalCropHeight)
+    
+    // 保留透明通道
+    if (hasAlpha && !croppedBitmap.hasAlpha()) {
+        croppedBitmap.setHasAlpha(true)
+    }
     
     // 如果需要旋转，应用旋转
     if (imageRotation != 0f) {
         val matrix = android.graphics.Matrix()
         matrix.postRotate(imageRotation)
-        croppedBitmap = Bitmap.createBitmap(
+        val rotatedBitmap = Bitmap.createBitmap(
             croppedBitmap,
             0,
             0,
@@ -482,6 +495,13 @@ private fun cropBitmap(
             matrix,
             true
         )
+        
+        // 保留透明通道
+        if (hasAlpha && !rotatedBitmap.hasAlpha()) {
+            rotatedBitmap.setHasAlpha(true)
+        }
+        
+        croppedBitmap = rotatedBitmap
     }
     
     return croppedBitmap

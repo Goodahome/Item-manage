@@ -52,6 +52,7 @@ import com.example.itemremindertool.ui.theme.ItemReminderToolTheme
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.AppDivider
 import com.example.itemremindertool.ui.components.AppDialogLayout
+import com.example.itemremindertool.ui.components.ButtonAutoSizeText
 import com.example.itemremindertool.ui.viewmodel.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.itemremindertool.utils.AppConfigManager
@@ -1216,7 +1217,9 @@ fun ItemReminderToolApp(
                             modifier = Modifier.weight(1f),
                             shape = dialogButtonShape
                         ) {
-                            Text(stringResource(R.string.cancel))
+                            ButtonAutoSizeText(
+                                text = stringResource(R.string.cancel)
+                            )
                         }
                         Button(
                             onClick = {
@@ -1227,7 +1230,9 @@ fun ItemReminderToolApp(
                             modifier = Modifier.weight(1f),
                             shape = dialogButtonShape
                         ) {
-                            Text(stringResource(R.string.register))
+                            ButtonAutoSizeText(
+                                text = stringResource(R.string.register)
+                            )
                         }
                     }
                 ) {
@@ -1265,9 +1270,10 @@ fun ItemReminderToolApp(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .menuAnchor()
-                                .onFocusChanged { accountFieldFocused = it.isFocused }
+                                .onFocusChanged { accountFieldFocused = it.isFocused },
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                         )
-                        DropdownMenu(
+                        ExposedDropdownMenu(
                             expanded = accountDropdownExpanded,
                             onDismissRequest = { accountDropdownExpanded = false },
                             modifier = Modifier
@@ -1332,13 +1338,19 @@ fun ItemReminderToolApp(
                         singleLine = true,
                         enabled = !isLoggingIn,
                         visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                        ),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                            onDone = { attemptLogin() }
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        OutlinedButton(
+                        Button(
                             onClick = {
                                 attemptLogin()
                             },
@@ -1346,7 +1358,9 @@ fun ItemReminderToolApp(
                             modifier = Modifier.weight(1f),
                             shape = dialogButtonShape
                         ) {
-                            Text(stringResource(R.string.drawer_login))
+                            ButtonAutoSizeText(
+                                text = stringResource(R.string.drawer_login)
+                            )
                         }
                     }
                     if (loginError != null) {
@@ -1386,7 +1400,9 @@ fun ItemReminderToolApp(
                             modifier = Modifier.weight(1f),
                             shape = dialogButtonShape
                         ) {
-                            Text(stringResource(R.string.cancel))
+                            ButtonAutoSizeText(
+                                text = stringResource(R.string.cancel)
+                            )
                         }
                         Button(
                             onClick = {
@@ -1450,7 +1466,9 @@ fun ItemReminderToolApp(
                             modifier = Modifier.weight(1f),
                             shape = dialogButtonShape
                         ) {
-                            Text(stringResource(R.string.register))
+                            ButtonAutoSizeText(
+                                text = stringResource(R.string.register)
+                            )
                         }
                     }
                 ) {

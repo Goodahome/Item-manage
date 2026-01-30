@@ -31,6 +31,7 @@ import com.example.itemremindertool.ui.components.UIConstants
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.AppFloatingActionButton
 import com.example.itemremindertool.ui.components.AppDialogLayout
+import com.example.itemremindertool.ui.components.ButtonAutoSizeText
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.R
@@ -426,7 +427,9 @@ fun WarehouseDetailScreen(
                     onClick = { showDeleteDialog = false },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(stringResource(R.string.cancel))
+                    ButtonAutoSizeText(
+                        text = stringResource(R.string.cancel)
+                    )
                 }
                 Button(
                     onClick = {
@@ -439,7 +442,9 @@ fun WarehouseDetailScreen(
                         contentColor = MaterialTheme.colorScheme.onError
                     )
                 ) {
-                    Text(stringResource(R.string.delete))
+                    ButtonAutoSizeText(
+                        text = stringResource(R.string.delete)
+                    )
                 }
             }
         ) {

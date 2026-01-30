@@ -137,6 +137,61 @@ class WarehouseRepository(
     }
 
     /**
+     * 移动容器并更新其子容器层级
+     */
+    @Transaction
+    suspend fun moveWarehouse(warehouse: Warehouse, newParentUuid: String?, newLevel: Int) {
+        val updatedWarehouse = warehouse.copy(
+            parentUuid = newParentUuid,
+            level = newLevel
+        )
+        warehouseDao.updateWarehouse(updatedWarehouse)
+
+        val updatedDescendants = mutableListOf<Warehouse>()
+        updateChildLevels(updatedWarehouse.uuid, updatedWarehouse.level, updatedDescendants)
+
+        context?.let {
+            try {
+                val activityEventDao = AppDatabase.getDatabase(it).activityEventDao()
+                val event = com.example.itemremindertool.data.model.ActivityEvent(
+                    type = com.example.itemremindertool.data.model.ActivityEventType.WAREHOUSE_UPDATED,
+                    title = it.getString(com.example.itemremindertool.R.string.event_updated_warehouse),
+                    description = updatedWarehouse.name,
+                    targetUuid = updatedWarehouse.uuid,
+                    targetName = updatedWarehouse.name,
+                    iconType = "move_warehouse",
+                    createdAt = Date()
+                )
+                activityEventDao.insert(event)
+                syncManager?.let { manager ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            manager.syncActivityEventToRemote(event)
+                        } catch (e: Exception) {
+                            android.util.Log.e("WarehouseRepository", "同步移动容器动态失败", e)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("WarehouseRepository", "记录移动容器动态失败", e)
+            }
+        }
+
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    manager.syncWarehouseToRemote(updatedWarehouse)
+                    updatedDescendants.filterNot { it.isSample }.forEach { child ->
+                        manager.syncWarehouseToRemote(child)
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("WarehouseRepository", "同步移动容器到远端失败", e)
+                }
+            }
+        }
+    }
+
+    /**
      * 递归删除容器及其所有子容器和物品
      * @param warehouse 要删除的容器
      * @return 删除统计信息 (子容器数量, 物品数量)
@@ -438,6 +493,20 @@ class WarehouseRepository(
         }
         
         return allUuids
+    }
+
+    private suspend fun updateChildLevels(
+        parentUuid: String,
+        parentLevel: Int,
+        updatedDescendants: MutableList<Warehouse>
+    ) {
+        val children = getChildWarehousesSync(parentUuid)
+        children.forEach { child ->
+            val updatedChild = child.copy(level = parentLevel + 1)
+            warehouseDao.updateWarehouse(updatedChild)
+            updatedDescendants.add(updatedChild)
+            updateChildLevels(updatedChild.uuid, updatedChild.level, updatedDescendants)
+        }
     }
 }
 

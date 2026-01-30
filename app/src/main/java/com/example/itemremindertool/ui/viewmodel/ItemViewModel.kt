@@ -227,6 +227,64 @@ class ItemViewModel(
     fun searchItemsByName(query: String) = itemRepository.searchItemsByName(query)
     
     suspend fun getAllItemsList(): List<Item> = itemRepository.getAllItemsList()
+    
+    /**
+     * 批量删除物品
+     */
+    fun batchDeleteItems(items: List<Item>) {
+        viewModelScope.launch {
+            try {
+                _operationState.value = OperationState.Deleting
+                itemRepository.batchDeleteItems(items)
+                _operationState.value = OperationState.Success(
+                    getApplication<Application>().getString(
+                        com.example.itemremindertool.R.string.batch_delete_success,
+                        items.size
+                    )
+                )
+                kotlinx.coroutines.delay(2000)
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                _operationState.value = OperationState.Error(
+                    getApplication<Application>().getString(
+                        com.example.itemremindertool.R.string.batch_delete_failed,
+                        e.message ?: ""
+                    )
+                )
+                kotlinx.coroutines.delay(2000)
+                _operationState.value = OperationState.Idle
+            }
+        }
+    }
+    
+    /**
+     * 批量移动物品
+     */
+    fun batchMoveItems(items: List<Item>, targetWarehouseUuid: String?, targetWarehouseName: String?) {
+        viewModelScope.launch {
+            try {
+                _operationState.value = OperationState.Saving
+                itemRepository.batchMoveItems(items, targetWarehouseUuid, targetWarehouseName)
+                _operationState.value = OperationState.Success(
+                    getApplication<Application>().getString(
+                        com.example.itemremindertool.R.string.batch_move_success,
+                        items.size
+                    )
+                )
+                kotlinx.coroutines.delay(2000)
+                _operationState.value = OperationState.Idle
+            } catch (e: Exception) {
+                _operationState.value = OperationState.Error(
+                    getApplication<Application>().getString(
+                        com.example.itemremindertool.R.string.batch_move_failed,
+                        e.message ?: ""
+                    )
+                )
+                kotlinx.coroutines.delay(2000)
+                _operationState.value = OperationState.Idle
+            }
+        }
+    }
 }
 
 data class ItemUiState(

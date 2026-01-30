@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
 import android.os.Environment
+import android.provider.OpenableColumns
 import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
 import java.io.File
@@ -64,6 +65,62 @@ object ImageUtils {
     }
 
     /**
+     * 从 Uri 中解析图片扩展名（尽量保留原格式）
+     */
+    fun getImageExtensionFromUri(context: Context, uri: Uri): String? {
+        val mimeType = context.contentResolver.getType(uri)?.lowercase(Locale.getDefault())
+        val fromMime = when (mimeType) {
+            "image/png" -> "png"
+            "image/jpeg", "image/jpg" -> "jpg"
+            "image/webp" -> "webp"
+            "image/gif" -> "png" // GIF 不直接保存，使用 PNG 保留透明
+            else -> null
+        }
+        if (fromMime != null) {
+            return fromMime
+        }
+        return try {
+            context.contentResolver.query(
+                uri,
+                arrayOf(OpenableColumns.DISPLAY_NAME),
+                null,
+                null,
+                null
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val name = cursor.getString(0) ?: return null
+                    val dotIndex = name.lastIndexOf('.')
+                    if (dotIndex in 1 until name.lastIndex) {
+                        name.substring(dotIndex + 1).lowercase(Locale.getDefault())
+                    } else {
+                        null
+                    }
+                } else {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * 规范化扩展名，避免保存时丢失透明通道
+     */
+    fun normalizeImageExtension(ext: String?): String? {
+        if (ext.isNullOrBlank()) return null
+        return when (ext.lowercase(Locale.getDefault())) {
+            "jpeg" -> "jpg"
+            "jpg" -> "jpg"
+            "png" -> "png"
+            "webp" -> "webp"
+            "gif" -> "png"
+            else -> ext.lowercase(Locale.getDefault())
+        }
+    }
+
+    /**
      * 从 URI 加载 Bitmap
      */
     fun loadBitmapFromUri(context: Context, uri: Uri): Bitmap? {
@@ -71,7 +128,8 @@ object ImageUtils {
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 val options = BitmapFactory.Options()
                 options.inJustDecodeBounds = false
-                options.inPreferredConfig = Bitmap.Config.RGB_565
+                // 使用 ARGB_8888 以支持透明通道（PNG 透明背景）
+                options.inPreferredConfig = Bitmap.Config.ARGB_8888
                 options.inSampleSize = 1
                 
                 // 尝试解码
@@ -146,7 +204,8 @@ object ImageUtils {
             // 使用 BitmapFactory.Options 来更好地控制解码过程
             val options = BitmapFactory.Options()
             options.inJustDecodeBounds = false
-            options.inPreferredConfig = Bitmap.Config.RGB_565 // 使用更节省内存的配置
+            // 使用 ARGB_8888 以支持透明通道（PNG 透明背景）
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888
             options.inSampleSize = 1
             
             // 尝试解码图片
@@ -208,7 +267,7 @@ object ImageUtils {
 
     /**
      * 裁剪图片为指定尺寸（物品卡片大小）
-     * 此方法会自动居中裁剪
+     * 此方法会自动居中裁剪，保留透明通道
      */
     fun cropImageToCardSize(bitmap: Bitmap, cardWidth: Int, cardHeight: Int): Bitmap {
         val originalWidth = bitmap.width
@@ -223,25 +282,74 @@ object ImageUtils {
         val scaledWidth = (originalWidth * scale).toInt()
         val scaledHeight = (originalHeight * scale).toInt()
         
-        // 缩放图片
-        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
+        // 检查是否有透明通道
+        val hasAlpha = bitmap.hasAlpha()
+        
+        // 创建支持透明通道的缩放Bitmap
+        val scaledBitmap = Bitmap.createBitmap(scaledWidth, scaledHeight, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(scaledBitmap)
+        
+        // 如果有透明通道，清除画布为透明色
+        if (hasAlpha) {
+            canvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
+        }
+        
+        // 绘制缩放后的图片
+        val srcRect = android.graphics.Rect(0, 0, originalWidth, originalHeight)
+        val dstRect = android.graphics.Rect(0, 0, scaledWidth, scaledHeight)
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG)
+        canvas.drawBitmap(bitmap, srcRect, dstRect, paint)
         
         // 居中裁剪
         val x = (scaledWidth - cardWidth) / 2
         val y = (scaledHeight - cardHeight) / 2
         
-        return Bitmap.createBitmap(scaledBitmap, x, y, cardWidth, cardHeight)
+        // 创建支持透明通道的裁剪Bitmap
+        val croppedBitmap = Bitmap.createBitmap(cardWidth, cardHeight, Bitmap.Config.ARGB_8888)
+        val cropCanvas = android.graphics.Canvas(croppedBitmap)
+        
+        // 如果有透明通道，清除画布为透明色
+        if (hasAlpha) {
+            cropCanvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
+        }
+        
+        // 绘制裁剪区域
+        val cropSrcRect = android.graphics.Rect(x, y, x + cardWidth, y + cardHeight)
+        val cropDstRect = android.graphics.Rect(0, 0, cardWidth, cardHeight)
+        cropCanvas.drawBitmap(scaledBitmap, cropSrcRect, cropDstRect, paint)
+        
+        // 回收中间Bitmap
+        scaledBitmap.recycle()
+        
+        return croppedBitmap
     }
     
     /**
-     * 将裁剪后的图片缩放到目标卡片尺寸
+     * 将裁剪后的图片缩放到目标卡片尺寸，保留透明通道
      */
     fun scaleCroppedBitmapToCardSize(bitmap: Bitmap, cardWidth: Int, cardHeight: Int): Bitmap {
-        return Bitmap.createScaledBitmap(bitmap, cardWidth, cardHeight, true)
+        val hasAlpha = bitmap.hasAlpha()
+        
+        // 创建支持透明通道的Bitmap
+        val scaledBitmap = Bitmap.createBitmap(cardWidth, cardHeight, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(scaledBitmap)
+        
+        // 如果有透明通道，清除画布为透明色
+        if (hasAlpha) {
+            canvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
+        }
+        
+        // 绘制缩放后的图片
+        val srcRect = android.graphics.Rect(0, 0, bitmap.width, bitmap.height)
+        val dstRect = android.graphics.Rect(0, 0, cardWidth, cardHeight)
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG)
+        canvas.drawBitmap(bitmap, srcRect, dstRect, paint)
+        
+        return scaledBitmap
     }
 
     /**
-     * 裁剪图片为应用图标大小（正方形）
+     * 裁剪图片为应用图标大小（正方形），保留透明通道
      */
     fun cropImageToIconSize(bitmap: Bitmap, iconSize: Int): Bitmap {
         val originalWidth = bitmap.width
@@ -256,14 +364,46 @@ object ImageUtils {
         val scaledWidth = (originalWidth * scale).toInt()
         val scaledHeight = (originalHeight * scale).toInt()
         
-        // 缩放图片
-        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
+        // 检查是否有透明通道
+        val hasAlpha = bitmap.hasAlpha()
+        
+        // 创建支持透明通道的缩放Bitmap
+        val scaledBitmap = Bitmap.createBitmap(scaledWidth, scaledHeight, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(scaledBitmap)
+        
+        // 如果有透明通道，清除画布为透明色
+        if (hasAlpha) {
+            canvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
+        }
+        
+        // 绘制缩放后的图片
+        val srcRect = android.graphics.Rect(0, 0, originalWidth, originalHeight)
+        val dstRect = android.graphics.Rect(0, 0, scaledWidth, scaledHeight)
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG)
+        canvas.drawBitmap(bitmap, srcRect, dstRect, paint)
         
         // 居中裁剪为正方形
         val x = (scaledWidth - iconSize) / 2
         val y = (scaledHeight - iconSize) / 2
         
-        return Bitmap.createBitmap(scaledBitmap, x, y, iconSize, iconSize)
+        // 创建支持透明通道的裁剪Bitmap
+        val croppedBitmap = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
+        val cropCanvas = android.graphics.Canvas(croppedBitmap)
+        
+        // 如果有透明通道，清除画布为透明色
+        if (hasAlpha) {
+            cropCanvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
+        }
+        
+        // 绘制裁剪区域
+        val cropSrcRect = android.graphics.Rect(x, y, x + iconSize, y + iconSize)
+        val cropDstRect = android.graphics.Rect(0, 0, iconSize, iconSize)
+        cropCanvas.drawBitmap(scaledBitmap, cropSrcRect, cropDstRect, paint)
+        
+        // 回收中间Bitmap
+        scaledBitmap.recycle()
+        
+        return croppedBitmap
     }
 
     /**
@@ -360,7 +500,7 @@ object ImageUtils {
     
     /**
      * 获取缩略图的文件路径（基于原图路径）
-     * 缩略图用于列表展示，文件名为原图名_thumb.jpg
+     * 缩略图用于列表展示，文件名为原图名_thumb.jpg 或 _thumb.png（保留透明通道）
      */
     fun getThumbnailPath(originalPath: String): String? {
         return try {
@@ -373,8 +513,9 @@ object ImageUtils {
             if (parent == null) {
                 return null
             }
-            // 缩略图统一使用 .jpg 格式以节省空间
-            File(parent, "${nameWithoutExt}_thumb.jpg").absolutePath
+            // 如果原图是PNG格式，缩略图也使用PNG以保留透明通道
+            val ext = if (file.extension.equals("png", ignoreCase = true)) "png" else "jpg"
+            File(parent, "${nameWithoutExt}_thumb.$ext").absolutePath
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -439,12 +580,25 @@ object ImageUtils {
             
             val scaledWidth = (bitmap.width * scale).toInt().coerceAtLeast(1)
             val scaledHeight = (bitmap.height * scale).toInt().coerceAtLeast(1)
-            val thumbnailBitmap = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
+            val hasAlpha = bitmap.hasAlpha()
+            
+            // 创建支持透明通道的缩略图Bitmap
+            val thumbnailBitmap = Bitmap.createBitmap(scaledWidth, scaledHeight, Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(thumbnailBitmap)
+            
+            // 如果有透明通道，清除画布为透明色
+            if (hasAlpha) {
+                canvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
+            }
+            
+            // 绘制缩放后的图片
+            val srcRect = android.graphics.Rect(0, 0, bitmap.width, bitmap.height)
+            val dstRect = android.graphics.Rect(0, 0, scaledWidth, scaledHeight)
+            val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG)
+            canvas.drawBitmap(bitmap, srcRect, dstRect, paint)
             
             // 释放原图内存
-            if (bitmap != thumbnailBitmap) {
-                bitmap.recycle()
-            }
+            bitmap.recycle()
             
             // 保存缩略图
             val thumbnailPath = getThumbnailPath(originalPath) ?: return null
@@ -454,8 +608,13 @@ object ImageUtils {
                 parentDir.mkdirs()
             }
             
+            // 如果原图是PNG格式，缩略图也使用PNG以保留透明通道
+            val isPng = originalPath.endsWith(".png", ignoreCase = true)
+            val format = if (isPng) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
+            val compressQuality = if (isPng) 100 else quality
+            
             FileOutputStream(thumbnailFile).use { out ->
-                thumbnailBitmap.compress(Bitmap.CompressFormat.JPEG, quality, out)
+                thumbnailBitmap.compress(format, compressQuality, out)
             }
             
             thumbnailBitmap.recycle()
@@ -509,7 +668,23 @@ object ImageUtils {
                     if (scale < 1.0f) {
                         val scaledWidth = (bitmap.width * scale).toInt().coerceAtLeast(1)
                         val scaledHeight = (bitmap.height * scale).toInt().coerceAtLeast(1)
-                        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
+                        val hasAlpha = bitmap.hasAlpha()
+                        
+                        // 创建支持透明通道的缩放Bitmap
+                        val scaledBitmap = Bitmap.createBitmap(scaledWidth, scaledHeight, Bitmap.Config.ARGB_8888)
+                        val canvas = android.graphics.Canvas(scaledBitmap)
+                        
+                        // 如果有透明通道，清除画布为透明色
+                        if (hasAlpha) {
+                            canvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
+                        }
+                        
+                        // 绘制缩放后的图片
+                        val srcRect = android.graphics.Rect(0, 0, bitmap.width, bitmap.height)
+                        val dstRect = android.graphics.Rect(0, 0, scaledWidth, scaledHeight)
+                        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG)
+                        canvas.drawBitmap(bitmap, srcRect, dstRect, paint)
+                        
                         bitmap.recycle()
                         scaledBitmap
                     } else {

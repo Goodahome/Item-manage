@@ -26,6 +26,7 @@ import com.example.itemremindertool.ui.components.UIConstants
 import com.example.itemremindertool.ui.components.AppFloatingActionButton
 import com.example.itemremindertool.ui.components.AppDivider
 import com.example.itemremindertool.ui.components.AppDialogLayout
+import com.example.itemremindertool.ui.components.ButtonAutoSizeText
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.loper7.date_time_picker.dialog.CardDatePickerDialog
 import com.loper7.date_time_picker.DateTimeConfig
@@ -351,7 +352,9 @@ fun ReminderEditDialog(
                 onClick = onDismiss,
                 modifier = Modifier.weight(1f)
             ) {
-                Text(stringResource(R.string.cancel))
+                ButtonAutoSizeText(
+                    text = stringResource(R.string.cancel)
+                )
             }
             Button(
                 onClick = {
@@ -375,7 +378,9 @@ fun ReminderEditDialog(
                 },
                 modifier = Modifier.weight(1f)
             ) {
-                Text(stringResource(R.string.confirm_button))
+                ButtonAutoSizeText(
+                    text = stringResource(R.string.confirm_button)
+                )
             }
         }
     ) {

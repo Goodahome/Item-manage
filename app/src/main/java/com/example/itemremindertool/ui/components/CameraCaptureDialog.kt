@@ -52,7 +52,8 @@ fun CameraCaptureDialog(
     onImageCaptured: (String?) -> Unit,
     onDismiss: () -> Unit,
     cardWidth: Int = 400, // 物品卡片宽度（px）
-    cardHeight: Int = 400 // 物品卡片高度（px）- 使用正方形
+    cardHeight: Int = 400, // 物品卡片高度（px）- 使用正方形
+    targetWarehouseName: String? = null // 目标容器名称（用于连续添加提示）
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -134,7 +135,9 @@ fun CameraCaptureDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
             usePlatformDefaultWidth = false, // 全屏显示
-            decorFitsSystemWindows = false
+            decorFitsSystemWindows = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false
         )
     ) {
         val density = LocalDensity.current
@@ -226,17 +229,48 @@ fun CameraCaptureDialog(
                         .padding(top = 32.dp),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.Black.copy(alpha = 0.6f)
-                        )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            text = stringResource(R.string.camera_frame_hint),
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
+                        // 主提示
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color.Black.copy(alpha = 0.6f)
+                            )
+                        ) {
+                            Text(
+                                text = stringResource(R.string.camera_frame_hint),
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+                        
+                        // 连续添加提示（如果提供了容器名称）
+                        if (targetWarehouseName != null) {
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFF4CAF50).copy(alpha = 0.8f)
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.quick_add_continuous_mode),
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.labelMedium
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.quick_add_target_warehouse, targetWarehouseName),
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
                 

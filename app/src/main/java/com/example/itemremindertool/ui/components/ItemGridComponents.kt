@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -49,6 +50,7 @@ import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.AppDivider
 import com.example.itemremindertool.ui.components.AppDialogLayout
+import com.example.itemremindertool.ui.components.ButtonAutoSizeText
 import com.example.itemremindertool.utils.CurrencyUtils
 import com.example.itemremindertool.utils.ImageUtils
 import com.example.itemremindertool.utils.formatQuantityWithUnit
@@ -62,13 +64,17 @@ import java.util.*
 /**
  * 网格模式物品卡片（正方形，类似游戏背包）
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ItemGridCard(
     item: Item,
     isSelected: Boolean = false,
+    isInMultiSelectMode: Boolean = false,
+    isMultiSelected: Boolean = false,
     useOutlineIcon: Boolean = false,
     hideQuantity: Boolean = false,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -108,6 +114,7 @@ fun ItemGridCard(
     
     // 根据图片亮度决定文字颜色
     val isOutlineActive = useOutlineIcon && backgroundBitmap == null
+    val isTransparentImage = backgroundBitmap?.hasAlpha() == true
     val textColor = if (backgroundBitmap != null) {
         if (isImageBright) Color.Black else Color.White
     } else {
@@ -126,12 +133,15 @@ fun ItemGridCard(
     Box(
         modifier = modifier.aspectRatio(1f)
     ) {
-        // 选中时完全不使用 Card，只用 Box 避免任何阴影
-        if (isSelected) {
+        // 选中时完全不使用 Card，只用 Box 避免任何阴影（普通单选或多选都使用相同样式）
+        if (isSelected || (isInMultiSelectMode && isMultiSelected)) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clickable { onClick() }
+                    .combinedClickable(
+                        onClick = { onClick() },
+                        onLongClick = { onLongClick() }
+                    )
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     val contentPadding = 6.dp
@@ -229,7 +239,7 @@ fun ItemGridCard(
                     }
 
                     // 镂空模式的边框
-                    if (isOutlineActive) {
+                    if (useOutlineIcon) {
                         Box(
                             modifier = contentModifier.border(2.dp, cardBackgroundColor, RoundedCornerShape(12.dp))
                         )
@@ -241,7 +251,10 @@ fun ItemGridCard(
             Card(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clickable { onClick() },
+                    .combinedClickable(
+                        onClick = { onClick() },
+                        onLongClick = { onLongClick() }
+                    ),
                 shape = cardShape,
                 colors = CardDefaults.cardColors(
                     containerColor = if (backgroundBitmap != null || isOutlineActive) {
@@ -250,7 +263,7 @@ fun ItemGridCard(
                         cardBackgroundColor
                     }
                 ),
-                elevation = if (isOutlineActive) {
+                elevation = if (useOutlineIcon || isTransparentImage) {
                     CardDefaults.cardElevation(
                         defaultElevation = 0.dp,
                         pressedElevation = 0.dp,
@@ -365,7 +378,7 @@ fun ItemGridCard(
             }
 
             // 镂空模式的边框
-            if (isOutlineActive) {
+            if (useOutlineIcon) {
                 Box(
                     modifier = contentModifier.border(2.dp, cardBackgroundColor, RoundedCornerShape(12.dp))
                 )
@@ -375,7 +388,8 @@ fun ItemGridCard(
         }
         
         // 选中指示器绘制在最外层Box，保持原始大小包围缩小的内容
-        if (isSelected) {
+        // 普通模式的单选或多选模式下的选中都使用相同标记
+        if (isSelected || (isInMultiSelectMode && isMultiSelected)) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val strokeWidth = 3.dp.toPx()
                 val cornerLength = 14.dp.toPx()
@@ -879,7 +893,9 @@ fun ItemGridDetailPanel(
                     onClick = { showDeleteDialog = false },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(stringResource(R.string.cancel))
+                    ButtonAutoSizeText(
+                        text = stringResource(R.string.cancel)
+                    )
                 }
                 Button(
                     onClick = {
@@ -892,7 +908,9 @@ fun ItemGridDetailPanel(
                         contentColor = MaterialTheme.colorScheme.onError
                     )
                 ) {
-                    Text(stringResource(R.string.delete))
+                    ButtonAutoSizeText(
+                        text = stringResource(R.string.delete)
+                    )
                 }
             }
         ) {

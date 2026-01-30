@@ -25,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.example.itemremindertool.ui.components.AppDialogLayout
+import com.example.itemremindertool.ui.components.ButtonAutoSizeText
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.utils.ImageUtils
 
@@ -61,7 +62,9 @@ fun ItemSearchByImageDialog(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.close))
+                ButtonAutoSizeText(
+                    text = stringResource(R.string.close)
+                )
             }
         }
     ) {

@@ -64,6 +64,7 @@ fun WarehouseEditScreen(
     var showCameraDialog by remember { mutableStateOf(false) }
     var showCropDialog by remember { mutableStateOf(false) }
     var bitmapToCrop by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var pendingImageExt by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(initialParentUuid) {
         if (warehouseUuid == null) {
@@ -93,6 +94,9 @@ fun WarehouseEditScreen(
         if (uri != null) {
             scope.launch(Dispatchers.IO) {
                 try {
+                    pendingImageExt = ImageUtils.normalizeImageExtension(
+                        ImageUtils.getImageExtensionFromUri(context, uri)
+                    )
                     val bitmap = ImageUtils.loadBitmapFromUri(context, uri)
                     
                     if (bitmap != null) {
@@ -270,12 +274,6 @@ fun WarehouseEditScreen(
             )
             
             // 容器图片选择
-            Text(
-                text = stringResource(R.string.warehouse_image),
-                style = MaterialTheme.typography.labelLarge,
-                color = ColorHelpers.getGroup4TextColor()
-            )
-            
             // 显示当前图片
             if (imageUri != null) {
                 val bitmap = remember(imageUri) {
@@ -497,6 +495,9 @@ fun WarehouseEditScreen(
                         scope.launch(Dispatchers.IO) {
                             val bitmap = ImageUtils.loadBitmapFromPath(imagePath)
                             if (bitmap != null) {
+                                pendingImageExt = ImageUtils.normalizeImageExtension(
+                                    File(imagePath).extension
+                                )
                                 bitmapToCrop = bitmap
                                 showCropDialog = true
                             }
@@ -516,7 +517,8 @@ fun WarehouseEditScreen(
                 onCropped = { croppedBitmap ->
                     showCropDialog = false
                     scope.launch(Dispatchers.IO) {
-                        val fileName = "warehouse_${warehouseUuid ?: "new"}_${System.currentTimeMillis()}.jpg"
+                        val finalExt = pendingImageExt ?: if (croppedBitmap.hasAlpha()) "png" else "jpg"
+                        val fileName = "warehouse_${warehouseUuid ?: "new"}_${System.currentTimeMillis()}.$finalExt"
                         val savedPath = ImageUtils.saveImageToInternalStorage(
                             context,
                             croppedBitmap,
@@ -528,10 +530,12 @@ fun WarehouseEditScreen(
                         }
                     }
                     bitmapToCrop = null
+                    pendingImageExt = null
                 },
                 onDismiss = {
                     showCropDialog = false
                     bitmapToCrop = null
+                    pendingImageExt = null
                 },
                 cardWidth = cardWidthPx,
                 cardHeight = cardHeightPx

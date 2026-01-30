@@ -22,6 +22,7 @@ import com.example.itemremindertool.R
 import com.example.itemremindertool.data.model.ItemReminder
 import com.example.itemremindertool.data.model.ReminderType
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.ButtonAutoSizeText
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel
 import com.example.itemremindertool.ui.viewmodel.ItemViewModel
@@ -390,12 +391,16 @@ private fun ReminderCard(
                         showDeleteDialog = false
                     }
                 ) {
-                    Text(stringResource(R.string.delete))
+                    ButtonAutoSizeText(
+                        text = stringResource(R.string.delete)
+                    )
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.cancel))
+                    ButtonAutoSizeText(
+                        text = stringResource(R.string.cancel)
+                    )
                 }
             }
         )
