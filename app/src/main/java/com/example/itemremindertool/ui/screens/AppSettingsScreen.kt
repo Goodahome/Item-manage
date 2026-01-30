@@ -1,5 +1,6 @@
 package com.example.itemremindertool.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,16 +23,18 @@ import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.isSystemInDarkTheme
+//import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.itemremindertool.billing.BillingManager
 import com.example.itemremindertool.config.FeatureFlags
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
-import com.example.itemremindertool.ui.components.AppDivider
+//import com.example.itemremindertool.ui.components.AppDivider
 import android.app.Activity
 import android.content.SharedPreferences
 import androidx.compose.foundation.clickable
+import com.example.itemremindertool.ui.components.blockUserInput
+import com.example.itemremindertool.ui.components.rememberScreenInteractionBlocker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +43,9 @@ fun AppSettingsScreen(
     activityEventViewModel: com.example.itemremindertool.ui.viewmodel.ActivityEventViewModel? = null,
     modifier: Modifier = Modifier
 ) {
+    val blocker = rememberScreenInteractionBlocker()
+    BackHandler { blocker.handleBack(onNavigateBack) }
+
     val context = LocalContext.current
     val prefs = remember {
         context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
@@ -162,7 +168,7 @@ fun AppSettingsScreen(
             GradientTopAppBar(
                 title = { Text(stringResource(R.string.app_settings)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { blocker.handleBack(onNavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
@@ -175,6 +181,7 @@ fun AppSettingsScreen(
                 .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .blockUserInput(blocker.isBlocked)
         ) {
             // 程序名称
             ListItem(
@@ -205,10 +212,7 @@ fun AppSettingsScreen(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
             
-            AppDivider(
-                color = ColorHelpers.getDividerColor(),
-                thickness = 2.dp
-            )
+
             
             // 服务器地址设置
             ListItem(
@@ -234,10 +238,7 @@ fun AppSettingsScreen(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
             
-            AppDivider(
-                color = ColorHelpers.getDividerColor(),
-                thickness = 2.dp
-            )
+
             
             // 币种符号设置
             ListItem(
@@ -263,10 +264,7 @@ fun AppSettingsScreen(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
             
-            AppDivider(
-                color = ColorHelpers.getDividerColor(),
-                thickness = 2.dp
-            )
+
             
             // 广告横幅单元 ID
 //            ListItem(
@@ -379,12 +377,7 @@ fun AppSettingsScreen(
                         }
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
-                
-                AppDivider(
-                    color = ColorHelpers.getDividerColor(),
-                    thickness = 2.dp
-                )
+                )   
             }
             
             // 密码保护
@@ -431,10 +424,7 @@ fun AppSettingsScreen(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
             
-            AppDivider(
-                color = ColorHelpers.getDividerColor(),
-                thickness = 2.dp
-            )
+
             
             // 清除动态数据
             if (activityEventViewModel != null) {
@@ -794,7 +784,6 @@ fun ModernSettingsDialog(
                         )
                     }
                 }
-                AppDivider(color = Color.Transparent, thickness = 0.dp)
                 
                 // 内容区域
                 Column(

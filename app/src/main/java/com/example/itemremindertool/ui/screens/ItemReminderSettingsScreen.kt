@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+//import androidx.compose.ui.unit.sp
 import com.example.itemremindertool.R
 import com.example.itemremindertool.data.model.Item
 import com.example.itemremindertool.data.model.ItemReminder
@@ -24,7 +24,7 @@ import com.example.itemremindertool.ui.viewmodel.ItemReminderViewModel
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.UIConstants
 import com.example.itemremindertool.ui.components.AppFloatingActionButton
-import com.example.itemremindertool.ui.components.AppDivider
+//import com.example.itemremindertool.ui.components.AppDivider
 import com.example.itemremindertool.ui.components.AppDialogLayout
 import com.example.itemremindertool.ui.components.ButtonAutoSizeText
 import com.example.itemremindertool.ui.theme.ColorHelpers
@@ -409,10 +409,6 @@ fun ReminderEditDialog(
             }
         }
 
-        AppDivider(
-            color = ColorHelpers.getDividerColor(),
-            thickness = 2.dp
-        )
 
         // 根据类型显示不同的时间设置
         when (selectedType) {
@@ -543,11 +539,6 @@ fun ReminderEditDialog(
                 )
             }
         }
-
-        AppDivider(
-            color = ColorHelpers.getDividerColor(),
-            thickness = 2.dp
-        )
 
         // 提醒原因
         OutlinedTextField(

@@ -515,10 +515,10 @@
     <string name="move_item_failed">Verschieben fehlgeschlagen</string>
     
     <!-- Mehrfachauswahl -->
-    <string name="multi_select_count">%d Artikel ausgewählt</string>
+    <string name="multi_select_count">%d ausgewählt</string>
     <string name="select_all">Alle auswählen</string>
-    <string name="batch_delete">Stapellöschung</string>
-    <string name="batch_move">Stapelverschiebung</string>
+    <string name="batch_delete">Löschen</string>
+    <string name="batch_move">Verschieben</string>
     <string name="batch_delete_title">Stapellöschung bestätigen</string>
     <string name="batch_delete_message">Möchten Sie wirklich %d ausgewählte Artikel löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
     <string name="batch_move_items">%d Artikel</string>
@@ -708,7 +708,7 @@
 
     <string name="stat_label_warehouse">Lager</string>
     <string name="stat_label_item">Gegenstände</string>
-    <string name="stat_label_shopping">Einkaufsliste</string>
+    <string name="stat_label_shopping">Zu kaufen</string>
     <string name="select_warehouse">Lager auswählen</string>
     <string name="unnamed_warehouse">Unbenanntes Lager</string>
     <string name="warehouse_items_suffix">Gegenstände in</string>

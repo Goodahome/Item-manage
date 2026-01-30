@@ -1,5 +1,6 @@
 package com.example.itemremindertool.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -28,6 +29,8 @@ import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 import com.example.itemremindertool.billing.BillingManager
 import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.config.FeatureFlags
+import com.example.itemremindertool.ui.components.blockUserInput
+import com.example.itemremindertool.ui.components.rememberScreenInteractionBlocker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +38,9 @@ fun AlertSettingsScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val blocker = rememberScreenInteractionBlocker()
+    BackHandler { blocker.handleBack(onNavigateBack) }
+
     val context = LocalContext.current
     val alertSettingsManager = remember { AlertSettingsManager(context) }
     val prefs = remember {
@@ -85,7 +91,7 @@ fun AlertSettingsScreen(
             GradientTopAppBar(
                 title = { Text(stringResource(R.string.alert_settings)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { blocker.handleBack(onNavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
@@ -98,7 +104,8 @@ fun AlertSettingsScreen(
                 .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(16.dp)
+                .blockUserInput(blocker.isBlocked),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // 到期提醒期限
@@ -280,7 +287,7 @@ fun AlertSettingsScreen(
                     if (forgetProtectionEnabled) {
                         AppDivider(
                             color = ColorHelpers.getDividerColor(),
-                            modifier = Modifier.padding(vertical = 4.dp)
+                            modifier = Modifier.padding(vertical = 2.dp)
                         )
 
                         Row(
@@ -390,7 +397,7 @@ fun AlertSettingsScreen(
                     if (systemNotificationEnabled) {
                         AppDivider(
                             color = ColorHelpers.getDividerColor(),
-                            modifier = Modifier.padding(vertical = 8.dp)
+                            modifier = Modifier.padding(vertical = 4.dp)
                         )
                         
                         Row(

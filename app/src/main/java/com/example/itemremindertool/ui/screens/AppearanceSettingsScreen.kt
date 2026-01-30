@@ -1,5 +1,6 @@
 package com.example.itemremindertool.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -20,13 +21,15 @@ import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.utils.IconManager
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
-import com.example.itemremindertool.ui.components.AppDivider
+//import com.example.itemremindertool.ui.components.AppDivider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import com.example.itemremindertool.billing.BillingManager
 import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.config.FeatureFlags
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
+import com.example.itemremindertool.ui.components.blockUserInput
+import com.example.itemremindertool.ui.components.rememberScreenInteractionBlocker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +41,9 @@ fun AppearanceSettingsScreen(
     onNavigateToCustomColors: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val blocker = rememberScreenInteractionBlocker()
+    BackHandler { blocker.handleBack(onNavigateBack) }
+
     val context = LocalContext.current
     val prefs = remember {
         context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
@@ -124,7 +130,7 @@ fun AppearanceSettingsScreen(
             GradientTopAppBar(
                 title = { Text(stringResource(R.string.appearance_settings)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { blocker.handleBack(onNavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
@@ -137,6 +143,7 @@ fun AppearanceSettingsScreen(
                 .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .blockUserInput(blocker.isBlocked)
         ) {
             // 主题模式设置（浅色/深色/跟随系统）
             ListItem(
@@ -156,13 +163,10 @@ fun AppearanceSettingsScreen(
                     Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.clickable { onNavigateToTheme() }
+                modifier = Modifier.clickable { blocker.handleForward(onNavigateToTheme) }
             )
             
-            AppDivider(
-                color = ColorHelpers.getDividerColor(),
-                thickness = 2.dp
-            )
+
             
             // 配色主题设置（自动跟随主题模式）
             ListItem(
@@ -189,18 +193,17 @@ fun AppearanceSettingsScreen(
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier.clickable {
-                    if (!canAccessPremiumFeatures) {
-                        showPremiumFeatureDialog = true
-                    } else {
-                        onNavigateToColorScheme()
+                    blocker.handleForward {
+                        if (!canAccessPremiumFeatures) {
+                            showPremiumFeatureDialog = true
+                        } else {
+                            onNavigateToColorScheme()
+                        }
                     }
                 }
             )
             
-            AppDivider(
-                color = ColorHelpers.getDividerColor(),
-                thickness = 2.dp
-            )
+
 
             ListItem(
                 headlineContent = { Text(stringResource(R.string.custom_color_title)) },
@@ -216,18 +219,17 @@ fun AppearanceSettingsScreen(
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier.clickable {
-                    if (!canAccessPremiumFeatures) {
-                        showPremiumFeatureDialog = true
-                    } else {
-                        onNavigateToCustomColors()
+                    blocker.handleForward {
+                        if (!canAccessPremiumFeatures) {
+                            showPremiumFeatureDialog = true
+                        } else {
+                            onNavigateToCustomColors()
+                        }
                     }
                 }
             )
 
-            AppDivider(
-                color = ColorHelpers.getDividerColor(),
-                thickness = 2.dp
-            )
+
             
             // 应用图标设置
             ListItem(
@@ -244,18 +246,17 @@ fun AppearanceSettingsScreen(
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier.clickable { 
-                    if (!canAccessPremiumFeatures) {
-                        showPremiumFeatureDialog = true
-                    } else {
-                        onNavigateToIcon()
+                    blocker.handleForward {
+                        if (!canAccessPremiumFeatures) {
+                            showPremiumFeatureDialog = true
+                        } else {
+                            onNavigateToIcon()
+                        }
                     }
                 }
             )
 
-            AppDivider(
-                color = ColorHelpers.getDividerColor(),
-                thickness = 2.dp
-            )
+
 
             // 侧边栏容器图标形状
             ListItem(
@@ -281,10 +282,7 @@ fun AppearanceSettingsScreen(
                     .fillMaxWidth()
             )
 
-            AppDivider(
-                color = ColorHelpers.getDividerColor(),
-                thickness = 2.dp
-            )
+
 
             // 容器图标镂空开关
             ListItem(

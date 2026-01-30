@@ -519,10 +519,10 @@
     <string name="move_item_failed">Déplacement échoué</string>
     
     <!-- Sélection multiple -->
-    <string name="multi_select_count">%d articles sélectionnés</string>
+    <string name="multi_select_count">%d sélectionnés</string>
     <string name="select_all">Tout sélectionner</string>
-    <string name="batch_delete">Suppression en lot</string>
-    <string name="batch_move">Déplacement en lot</string>
+    <string name="batch_delete">Supprimer</string>
+    <string name="batch_move">Déplacer</string>
     <string name="batch_delete_title">Confirmer la suppression en lot</string>
     <string name="batch_delete_message">Êtes-vous sûr de vouloir supprimer %d articles sélectionnés ? Cette action est irréversible.</string>
     <string name="batch_move_items">%d articles</string>
@@ -697,9 +697,9 @@
     <string name="onboarding_warehouse_info_card_title">Carte d’information</string>
     <string name="onboarding_warehouse_info_card_desc">Cette carte montre la quantité, les tags et les actions.</string>
 
-    <string name="stat_label_warehouse">Conteneurs</string>
-    <string name="stat_label_item">Objets</string>
-    <string name="stat_label_shopping">Liste d\'achats</string>
+    <string name="stat_label_warehouse">Cont.</string>
+    <string name="stat_label_item">Articles</string>
+    <string name="stat_label_shopping">À Acheter</string>
     <string name="select_warehouse">Sélectionner un conteneur</string>
     <string name="unnamed_warehouse">Conteneur sans nom</string>
     <string name="warehouse_items_suffix">objets dans</string>

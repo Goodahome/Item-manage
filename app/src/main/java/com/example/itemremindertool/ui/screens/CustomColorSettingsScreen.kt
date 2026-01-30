@@ -2,6 +2,7 @@ package com.example.itemremindertool.ui.screens
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,6 +36,8 @@ import com.example.itemremindertool.config.FeatureFlags
 import com.example.itemremindertool.sync.SyncManager
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
 import com.example.itemremindertool.ui.components.GradientTopAppBar
+import com.example.itemremindertool.ui.components.blockUserInput
+import com.example.itemremindertool.ui.components.rememberScreenInteractionBlocker
 import com.example.itemremindertool.ui.theme.OnSurfaceHighContrast
 import com.example.itemremindertool.ui.theme.OnSurfaceLowContrast
 import com.example.itemremindertool.ui.theme.RedBlueBackground
@@ -65,6 +68,9 @@ fun CustomColorSettingsScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val blocker = rememberScreenInteractionBlocker()
+    BackHandler { blocker.handleBack(onNavigateBack) }
+
     val context = LocalContext.current
     val prefs = remember {
         context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
@@ -164,7 +170,7 @@ fun CustomColorSettingsScreen(
             GradientTopAppBar(
                 title = { Text(stringResource(R.string.custom_color_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { blocker.handleBack(onNavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
@@ -177,7 +183,8 @@ fun CustomColorSettingsScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(16.dp)
+                .blockUserInput(blocker.isBlocked),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             ListItem(

@@ -1,5 +1,6 @@
 package com.example.itemremindertool.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -22,6 +23,8 @@ import com.example.itemremindertool.billing.PremiumFeatureManager
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import com.example.itemremindertool.config.FeatureFlags
+import com.example.itemremindertool.ui.components.blockUserInput
+import com.example.itemremindertool.ui.components.rememberScreenInteractionBlocker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +32,9 @@ fun WarehouseSettingsScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val blocker = rememberScreenInteractionBlocker()
+    BackHandler { blocker.handleBack(onNavigateBack) }
+
     val context = LocalContext.current
     val prefs = remember {
         context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
@@ -44,19 +50,15 @@ fun WarehouseSettingsScreen(
     
     // Billing Manager
     val billingManager = remember {
-        if (FeatureFlags.ENABLE_PURCHASE_FEATURE) {
-            BillingManager(
-                context,
-                listOf(
-                    BillingManager.PRODUCT_REMOVE_ADS,
-                    BillingManager.PRODUCT_PREMIUM_FEATURES,
-                    BillingManager.PRODUCT_PREMIUM_LIFETIME
-                )
-            ).apply {
-                initialize()
-            }
-        } else {
-            null
+        BillingManager(
+            context,
+            listOf(
+                BillingManager.PRODUCT_REMOVE_ADS,
+                BillingManager.PRODUCT_PREMIUM_FEATURES,
+                BillingManager.PRODUCT_PREMIUM_LIFETIME
+            )
+        ).apply {
+            initialize()
         }
     }
 
@@ -75,7 +77,7 @@ fun WarehouseSettingsScreen(
             GradientTopAppBar(
                 title = { Text(stringResource(R.string.warehouse_settings)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { blocker.handleBack(onNavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
@@ -88,6 +90,7 @@ fun WarehouseSettingsScreen(
                 .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .blockUserInput(blocker.isBlocked)
         ) {
             // 无限容器模式开关
             ListItem(

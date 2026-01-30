@@ -1,5 +1,6 @@
 package com.example.itemremindertool.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -29,6 +30,8 @@ import com.example.itemremindertool.billing.BillingManager
 import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.config.FeatureFlags
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
+import com.example.itemremindertool.ui.components.blockUserInput
+import com.example.itemremindertool.ui.components.rememberScreenInteractionBlocker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +40,9 @@ fun IconSelectionScreen(
     onApply: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val blocker = rememberScreenInteractionBlocker()
+    BackHandler { blocker.handleBack(onNavigateBack) }
+
     val context = LocalContext.current
     
     var selectedIcon by remember { mutableStateOf(IconManager.getCurrentIcon(context)) }
@@ -80,7 +86,7 @@ fun IconSelectionScreen(
             GradientTopAppBar(
                 title = { Text(stringResource(R.string.app_icon)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { blocker.handleBack(onNavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
@@ -95,10 +101,12 @@ fun IconSelectionScreen(
                 
                 AppFloatingActionButton(
                     onClick = {
-                        if (!canAccessPremiumFeatures) {
-                            showPremiumFeatureDialog = true
-                        } else {
-                            showRestartDialog = true
+                        blocker.handleForward {
+                            if (!canAccessPremiumFeatures) {
+                                showPremiumFeatureDialog = true
+                            } else {
+                                showRestartDialog = true
+                            }
                         }
                     },
                     backgroundColor = fabBackground,
@@ -121,6 +129,7 @@ fun IconSelectionScreen(
                 .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .blockUserInput(blocker.isBlocked)
         ) {
             iconNames.forEachIndexed { index, name ->
                 val iconResId = iconResIds.getOrNull(index) ?: R.mipmap.ic_launcher
@@ -167,12 +176,6 @@ fun IconSelectionScreen(
                         }
                     }
                 )
-                if (index < iconNames.size - 1) {
-                    AppDivider(
-                        color = ColorHelpers.getDividerColor(),
-                        thickness = 2.dp
-                    )
-                }
             }
         }
     }
@@ -184,9 +187,11 @@ fun IconSelectionScreen(
             icon = Icons.Default.Refresh,
             onDismiss = { showRestartDialog = false },
             onDismissAction = {
-                IconManager.switchIcon(context, selectedIcon, commit = true)
-                showRestartDialog = false
-                onApply()
+                blocker.handleForward {
+                    IconManager.switchIcon(context, selectedIcon, commit = true)
+                    showRestartDialog = false
+                    onApply()
+                }
             },
             onConfirm = {
                 IconManager.switchIcon(context, selectedIcon, commit = true)

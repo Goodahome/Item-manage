@@ -211,9 +211,9 @@
     <string name="number_of_warehouses">Number of Containers</string>
     <string name="shopping_items">Items to Buy</string>
     <string name="items_count">%d items</string>
-    <string name="stat_label_warehouse">Containers</string>
+    <string name="stat_label_warehouse">Cont.</string>
     <string name="stat_label_item">Items</string>
-    <string name="stat_label_shopping">Shopping</string>
+    <string name="stat_label_shopping">To Buy</string>
     
     <!-- 物品相关 -->
     <string name="item_name">Item Name</string>
@@ -519,10 +519,10 @@
     <string name="move_item_failed">Move failed</string>
     
     <!-- Multi-select -->
-    <string name="multi_select_count">%d items selected</string>
+    <string name="multi_select_count">%d selected</string>
     <string name="select_all">Select all</string>
-    <string name="batch_delete">Batch delete</string>
-    <string name="batch_move">Batch move</string>
+    <string name="batch_delete">Delete</string>
+    <string name="batch_move">Move</string>
     <string name="batch_delete_title">Confirm Batch Delete</string>
     <string name="batch_delete_message">Are you sure you want to delete %d selected items? This action cannot be undone.</string>
     <string name="batch_move_items">%d items</string>

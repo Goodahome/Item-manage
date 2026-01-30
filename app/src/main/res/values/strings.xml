@@ -610,10 +610,10 @@
     <string name="move_item_failed">移动失败</string>
     
     <!-- 多选相关 -->
-    <string name="multi_select_count">已选择 %d 项</string>
+    <string name="multi_select_count">选中 %d</string>
     <string name="select_all">全选</string>
-    <string name="batch_delete">批量删除</string>
-    <string name="batch_move">批量移动</string>
+    <string name="batch_delete">删除</string>
+    <string name="batch_move">移动</string>
     <string name="batch_delete_title">批量删除确认</string>
     <string name="batch_delete_message">确定要删除选中的 %d 个物品吗？此操作不可撤销。</string>
     <string name="batch_move_items">%d 个物品</string>

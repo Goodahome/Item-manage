@@ -1,5 +1,6 @@
 package com.example.itemremindertool.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,16 +10,18 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+//import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.itemremindertool.R
 import androidx.compose.ui.res.stringResource
 import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
-import com.example.itemremindertool.ui.components.AppDivider
+//import com.example.itemremindertool.ui.components.AppDivider
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
+import com.example.itemremindertool.ui.components.blockUserInput
+import com.example.itemremindertool.ui.components.rememberScreenInteractionBlocker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,12 +36,15 @@ fun SettingsScreen(
     onNavigateToBackupRestore: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val blocker = rememberScreenInteractionBlocker()
+    BackHandler { blocker.handleBack(onNavigateBack) }
+
     Scaffold(
         topBar = {
             GradientTopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { blocker.handleBack(onNavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
@@ -51,6 +57,7 @@ fun SettingsScreen(
                 .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .blockUserInput(blocker.isBlocked)
         ) {
             // 外观设置
             ListItem(
@@ -66,16 +73,12 @@ fun SettingsScreen(
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier
-                    .clickable { onNavigateToAppearance() }
+                    .clickable { blocker.handleForward(onNavigateToAppearance) }
                     .padding(vertical = 8.dp)
             )
                     
-                    AppDivider(
-                        color = ColorHelpers.getDividerColor(),
-                        thickness = 2.dp
-                    )
-                    
-                    // 语言设置
+
+            // 语言设置
             ListItem(
                 headlineContent = { 
                             Text(
@@ -89,14 +92,11 @@ fun SettingsScreen(
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier
-                    .clickable { onNavigateToLanguage() }
+                    .clickable { blocker.handleForward(onNavigateToLanguage) }
                     .padding(vertical = 8.dp)
             )
             
-            AppDivider(
-                color = ColorHelpers.getDividerColor(),
-                thickness = 2.dp
-            )
+
             
             // 容器设置
             ListItem(
@@ -112,14 +112,11 @@ fun SettingsScreen(
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier
-                    .clickable { onNavigateToWarehouse() }
+                    .clickable { blocker.handleForward(onNavigateToWarehouse) }
                     .padding(vertical = 8.dp)
             )
             
-            AppDivider(
-                color = ColorHelpers.getDividerColor(),
-                thickness = 2.dp
-            )
+
             
             // 提醒设置
             ListItem(
@@ -135,14 +132,11 @@ fun SettingsScreen(
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier
-                    .clickable { onNavigateToAlert() }
+                    .clickable { blocker.handleForward(onNavigateToAlert) }
                     .padding(vertical = 8.dp)
             )
             
-            AppDivider(
-                color = ColorHelpers.getDividerColor(),
-                thickness = 2.dp
-            )
+
             
             // 应用设置
             ListItem(
@@ -158,14 +152,9 @@ fun SettingsScreen(
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier
-                    .clickable { onNavigateToApp() }
+                    .clickable { blocker.handleForward(onNavigateToApp) }
                     .padding(vertical = 8.dp)
             )
-                    
-                    AppDivider(
-                        color = ColorHelpers.getDividerColor(),
-                        thickness = 2.dp
-                    )
                     
             // 云端存储设置
             ListItem(
@@ -181,14 +170,11 @@ fun SettingsScreen(
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier
-                    .clickable { onNavigateToCloudStorage() }
+                    .clickable { blocker.handleForward(onNavigateToCloudStorage) }
                     .padding(vertical = 8.dp)
             )
             
-            AppDivider(
-                color = ColorHelpers.getDividerColor(),
-                thickness = 2.dp
-            )
+
             
             // 数据备份和恢复
             ListItem(
@@ -204,7 +190,7 @@ fun SettingsScreen(
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier
-                    .clickable { onNavigateToBackupRestore() }
+                    .clickable { blocker.handleForward(onNavigateToBackupRestore) }
                     .padding(vertical = 8.dp)
             )
                 }

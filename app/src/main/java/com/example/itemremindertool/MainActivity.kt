@@ -22,6 +22,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.Lifecycle
@@ -224,6 +227,8 @@ fun ItemReminderToolApp(
     // 从导航控制器的当前状态获取实际的目标路由
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    var isNavigationClickBlocked by remember { mutableStateOf(false) }
+    var hasHandledInitialRoute by remember { mutableStateOf(false) }
     
     // 根据路由找到对应的 Screen，如果找不到则默认为 Dashboard
     val currentDestination = remember(currentRoute) {
@@ -269,6 +274,23 @@ fun ItemReminderToolApp(
     var accountDropdownExpanded by remember { mutableStateOf(false) }
     var accountFieldFocused by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    fun blockNavigationInteractions() {
+        isNavigationClickBlocked = true
+        scope.launch {
+            delay(450)
+            isNavigationClickBlocked = false
+        }
+    }
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == null) return@LaunchedEffect
+        if (!hasHandledInitialRoute) {
+            hasHandledInitialRoute = true
+            return@LaunchedEffect
+        }
+        isNavigationClickBlocked = true
+        delay(450)
+        isNavigationClickBlocked = false
+    }
     
     // 监听密码状态变化
     LaunchedEffect(Unit) {
@@ -398,6 +420,7 @@ fun ItemReminderToolApp(
 
     // 安全返回：若无法再出栈，则回到首页，避免栈空导致白屏/卡动画
     fun NavController.popBackOrDashboard() {
+        blockNavigationInteractions()
         val popped = popBackStack()
         if (!popped) {
             navigate(Screen.Dashboard.route) {
@@ -1527,6 +1550,21 @@ fun ItemReminderToolApp(
                         )
                     }
                 }
+            }
+            if (isNavigationClickBlocked) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .zIndex(1f)
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    event.changes.forEach { it.consume() }
+                                }
+                            }
+                        }
+                )
             }
         }
     }

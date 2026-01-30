@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -35,6 +36,8 @@ import com.example.itemremindertool.ui.viewmodel.BackupRestoreViewModel
 import com.example.itemremindertool.utils.DatabaseBackupUtils
 import com.example.itemremindertool.utils.cloud.CloudProviderRegistry
 import android.app.Activity
+import com.example.itemremindertool.ui.components.blockUserInput
+import com.example.itemremindertool.ui.components.rememberScreenInteractionBlocker
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +52,9 @@ fun BackupRestoreScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val blocker = rememberScreenInteractionBlocker()
+    BackHandler { blocker.handleBack(onNavigateBack) }
+
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val prefs = remember {
@@ -153,7 +159,7 @@ fun BackupRestoreScreen(
                 GradientTopAppBar(
                     title = { Text(stringResource(R.string.backup_restore)) },
                     navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
+                        IconButton(onClick = { blocker.handleBack(onNavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                         }
                     }
@@ -165,7 +171,8 @@ fun BackupRestoreScreen(
                     .fillMaxSize()
                     .background(ColorHelpers.getGroup2PageBgColor())
                     .padding(paddingValues)
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    .blockUserInput(blocker.isBlocked),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // 离线备份卡片

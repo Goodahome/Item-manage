@@ -1,5 +1,6 @@
 package com.example.itemremindertool.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -23,6 +24,8 @@ import com.example.itemremindertool.ui.components.AppFloatingActionButton
 import com.example.itemremindertool.ui.components.AppDivider
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
+import com.example.itemremindertool.ui.components.blockUserInput
+import com.example.itemremindertool.ui.components.rememberScreenInteractionBlocker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +34,9 @@ fun ThemeSelectionScreen(
     onApply: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val blocker = rememberScreenInteractionBlocker()
+    BackHandler { blocker.handleBack(onNavigateBack) }
+
     val context = LocalContext.current
     val prefs = remember {
         context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
@@ -43,7 +49,7 @@ fun ThemeSelectionScreen(
             GradientTopAppBar(
                 title = { Text(stringResource(R.string.theme)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { blocker.handleBack(onNavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
@@ -58,8 +64,10 @@ fun ThemeSelectionScreen(
                 
                 AppFloatingActionButton(
                     onClick = {
-                        prefs.edit().putString("theme", selectedTheme).apply()
-                        onApply()
+                        blocker.handleForward {
+                            prefs.edit().putString("theme", selectedTheme).apply()
+                            onApply()
+                        }
                     },
                     backgroundColor = fabBackground,
                     modifier = Modifier.size(UIConstants.FAB_SIZE)
@@ -78,6 +86,7 @@ fun ThemeSelectionScreen(
                 .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .blockUserInput(blocker.isBlocked)
         ) {
             val themes = listOf(
                 "light" to R.string.theme_light,
@@ -105,12 +114,12 @@ fun ThemeSelectionScreen(
                         selectedTheme = themeKey
                     }
                 )
-                if (themeKey != themes.last().first) {
-                    AppDivider(
-                        color = ColorHelpers.getDividerColor(),
-                        thickness = 2.dp
-                    )
-                }
+//                if (themeKey != themes.last().first) {
+//                    AppDivider(
+//                        color = ColorHelpers.getDividerColor(),
+//                        thickness = 2.dp
+//                    )
+//                }
             }
         }
     }

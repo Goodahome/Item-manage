@@ -1,5 +1,6 @@
 package com.example.itemremindertool.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -36,6 +37,8 @@ import com.example.itemremindertool.utils.cloud.CloudProviderRegistry
 import com.example.itemremindertool.utils.cloud.auth.AppAuthManager
 import net.openid.appauth.AuthorizationServiceConfiguration
 import com.example.itemremindertool.config.FeatureFlags
+import com.example.itemremindertool.ui.components.blockUserInput
+import com.example.itemremindertool.ui.components.rememberScreenInteractionBlocker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +47,9 @@ fun CloudStorageSettingsScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val blocker = rememberScreenInteractionBlocker()
+    BackHandler { blocker.handleBack(onNavigateBack) }
+
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val prefs = remember {
@@ -178,7 +184,7 @@ fun CloudStorageSettingsScreen(
                 GradientTopAppBar(
                     title = { Text(stringResource(R.string.cloud_storage)) },
                     navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
+                        IconButton(onClick = { blocker.handleBack(onNavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                         }
                     }
@@ -191,7 +197,8 @@ fun CloudStorageSettingsScreen(
                     .background(ColorHelpers.getGroup2PageBgColor())
                     .padding(paddingValues)
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    .blockUserInput(blocker.isBlocked),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 val googleProvider = CloudProviderRegistry.getProvider("google_drive")

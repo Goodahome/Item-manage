@@ -1,5 +1,6 @@
 package com.example.itemremindertool.ui.components
 
+import android.graphics.Color as AndroidColor
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -38,6 +39,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import kotlin.math.max
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -92,18 +95,41 @@ fun ItemGridCard(
     // 使用缩略图加载背景图片（异步加载，避免阻塞UI）
     var backgroundBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     var isImageBright by remember { mutableStateOf(true) }
+    var isTransparentImage by remember { mutableStateOf(false) }
     
+    fun hasTransparentPixels(bitmap: android.graphics.Bitmap): Boolean {
+        if (!bitmap.hasAlpha()) return false
+        val width = bitmap.width
+        val height = bitmap.height
+        if (width == 0 || height == 0) return false
+        val stepX = max(1, width / 40)
+        val stepY = max(1, height / 40)
+        for (y in 0 until height step stepY) {
+            for (x in 0 until width step stepX) {
+                val alpha = AndroidColor.alpha(bitmap.getPixel(x, y))
+                if (alpha < 250) return true
+            }
+        }
+        return false
+    }
+
     LaunchedEffect(primaryImagePath) {
         backgroundBitmap = null
         isImageBright = true
+        isTransparentImage = false
         
         if (primaryImagePath != null) {
             scope.launch(Dispatchers.IO) {
                 // 加载缩略图（最大400像素，用于列表展示）
                 val thumbnail = ImageUtils.loadThumbnail(context, primaryImagePath, maxSize = 400)
                 if (thumbnail != null) {
-                    backgroundBitmap = thumbnail
-                    isImageBright = ImageUtils.calculateImageBrightness(thumbnail)
+                    val brightness = ImageUtils.calculateImageBrightness(thumbnail)
+                    val transparent = hasTransparentPixels(thumbnail)
+                    withContext(Dispatchers.Main) {
+                        backgroundBitmap = thumbnail
+                        isImageBright = brightness
+                        isTransparentImage = transparent
+                    }
                 }
             }
         }
@@ -114,7 +140,6 @@ fun ItemGridCard(
     
     // 根据图片亮度决定文字颜色
     val isOutlineActive = useOutlineIcon && backgroundBitmap == null
-    val isTransparentImage = backgroundBitmap?.hasAlpha() == true
     val textColor = if (backgroundBitmap != null) {
         if (isImageBright) Color.Black else Color.White
     } else {
@@ -129,6 +154,25 @@ fun ItemGridCard(
     val selectedBorderColor = cardBackgroundColor
     
     val cardShape = RoundedCornerShape(12.dp)
+    
+    // 根据状态计算 elevation（直接计算，不用 remember）
+    val cardElevation = if (useOutlineIcon || isTransparentImage) {
+        CardDefaults.cardElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 0.dp,
+            hoveredElevation = 0.dp,
+            focusedElevation = 0.dp,
+            draggedElevation = 0.dp,
+            disabledElevation = 0.dp
+        )
+    } else {
+        CardDefaults.cardElevation(
+            defaultElevation = 6.dp,
+            pressedElevation = 8.dp,
+            hoveredElevation = 7.dp,
+            focusedElevation = 7.dp
+        )
+    }
     
     Box(
         modifier = modifier.aspectRatio(1f)
@@ -247,41 +291,26 @@ fun ItemGridCard(
                 }
             }
         } else {
-            // 未选中时使用 Card
-            Card(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .combinedClickable(
-                        onClick = { onClick() },
-                        onLongClick = { onLongClick() }
+            // 未选中时使用 Card，使用 key 确保透明状态变化时重新创建
+            key(isTransparentImage) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .combinedClickable(
+                            onClick = { onClick() },
+                            onLongClick = { onLongClick() }
+                        ),
+                    shape = cardShape,
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (backgroundBitmap != null || isOutlineActive) {
+                            Color.Transparent
+                        } else {
+                            cardBackgroundColor
+                        }
                     ),
-                shape = cardShape,
-                colors = CardDefaults.cardColors(
-                    containerColor = if (backgroundBitmap != null || isOutlineActive) {
-                        Color.Transparent
-                    } else {
-                        cardBackgroundColor
-                    }
-                ),
-                elevation = if (useOutlineIcon || isTransparentImage) {
-                    CardDefaults.cardElevation(
-                        defaultElevation = 0.dp,
-                        pressedElevation = 0.dp,
-                        hoveredElevation = 0.dp,
-                        focusedElevation = 0.dp,
-                        draggedElevation = 0.dp,
-                        disabledElevation = 0.dp
-                    )
-                } else {
-                    CardDefaults.cardElevation(
-                        defaultElevation = 6.dp,
-                        pressedElevation = 8.dp,
-                        hoveredElevation = 7.dp,
-                        focusedElevation = 7.dp
-                    )
-                },
-                border = null
-            ) {
+                    elevation = cardElevation,
+                    border = null
+                ) {
         Box(modifier = Modifier.fillMaxSize()) {
             val contentPadding = 0.dp
             val contentShape = RoundedCornerShape(12.dp)
@@ -384,8 +413,9 @@ fun ItemGridCard(
                 )
             }
         }
-        }
-        }
+                } // Card 结束
+            } // key 结束
+        } // else 结束
         
         // 选中指示器绘制在最外层Box，保持原始大小包围缩小的内容
         // 普通模式的单选或多选模式下的选中都使用相同标记

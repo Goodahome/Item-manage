@@ -3,6 +3,7 @@ package com.example.itemremindertool.ui.screens
 import android.app.Activity
 import android.content.Intent
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,7 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+//import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import android.content.Context
 import com.example.itemremindertool.R
@@ -23,11 +24,13 @@ import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.UIConstants
 import com.example.itemremindertool.ui.components.AppFloatingActionButton
-import com.example.itemremindertool.ui.components.AppDivider
+//import com.example.itemremindertool.ui.components.AppDivider
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.isSystemInDarkTheme
 import com.example.itemremindertool.MainActivity
+import com.example.itemremindertool.ui.components.blockUserInput
+import com.example.itemremindertool.ui.components.rememberScreenInteractionBlocker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +39,9 @@ fun LanguageSettingsScreen(
     onApply: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val blocker = rememberScreenInteractionBlocker()
+    BackHandler { blocker.handleBack(onNavigateBack) }
+
     val context = LocalContext.current
     val prefs = remember {
         context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
@@ -48,7 +54,7 @@ fun LanguageSettingsScreen(
             GradientTopAppBar(
                 title = { Text(stringResource(R.string.language)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { blocker.handleBack(onNavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
@@ -63,15 +69,17 @@ fun LanguageSettingsScreen(
                 
                 AppFloatingActionButton(
                     onClick = {
-                        // 使用 commit 确保立即写入，避免重启过快导致未持久化
-                        prefs.edit().putString("language", selectedLanguage).commit()
-                        // 清栈重启，避免华为平板透明旧窗口残留导致黑屏
-                        val activity = context as? Activity
-                        val intent = Intent(context, MainActivity::class.java).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        blocker.handleForward {
+                            // 使用 commit 确保立即写入，避免重启过快导致未持久化
+                            prefs.edit().putString("language", selectedLanguage).commit()
+                            // 清栈重启，避免华为平板透明旧窗口残留导致黑屏
+                            val activity = context as? Activity
+                            val intent = Intent(context, MainActivity::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            }
+                            context.startActivity(intent)
+                            activity?.finishAffinity()
                         }
-                        context.startActivity(intent)
-                        activity?.finishAffinity()
                     },
                     backgroundColor = fabBackground,
                     modifier = Modifier.size(UIConstants.FAB_SIZE)
@@ -90,6 +98,7 @@ fun LanguageSettingsScreen(
                 .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .blockUserInput(blocker.isBlocked)
         ) {
             val languages = listOf("zh", "en", "fr", "de")
             languages.forEach { lang ->
@@ -118,12 +127,6 @@ fun LanguageSettingsScreen(
                         selectedLanguage = lang
                     }
                 )
-                if (lang != languages.last()) {
-                    AppDivider(
-                        color = ColorHelpers.getDividerColor(),
-                        thickness = 2.dp
-                    )
-                }
             }
         }
     }

@@ -1778,90 +1778,95 @@ fun WarehouseIconItem(
             var pendingClick by remember { mutableStateOf(false) }
             var clickJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
             
-            val iconWidth by animateDpAsState(
-                targetValue = if (isExpanded) expandedIconWidth else 44.dp,
-                animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
-                label = "warehouse_icon_width"
-            )
-            Box {
-                val iconShapeForShadow = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
-                Box(
-                    modifier = Modifier
-                        .height(44.dp)
-                        .width(iconWidth) // 展开/折叠动画
-                        .then(
-                            if (useOutlineIcon || isTransparentIcon) {
-                                Modifier
-                            } else {
-                                Modifier.shadow(
-                                    elevation = 4.dp,
-                                    shape = iconShapeForShadow,
-                                    spotColor = Color.Black.copy(alpha = 0.3f),
-                                    ambientColor = Color.Black.copy(alpha = 0.15f)
-                                )
-                            }
-                        )
-                        .clip(iconShapeForShadow)
-                        .then(
-                            if (useOutlineIcon && !isTransparentIcon) {
-                                Modifier.border(2.dp, baseColor, iconShapeForShadow)
-                            } else if (warehouseImageBitmap != null) {
-                                Modifier
-                            } else {
-                                Modifier.background(backgroundColor) // 与右侧容器按钮一致
-                            }
-                        )
-                        .pointerInput(warehouse.uuid) {
-                            detectTapGestures(
-                                onTap = {
-                                    // 取消之前的延迟任务
-                                    clickJob?.cancel()
+            val iconWidth = 44.dp
+            val iconShapeForShadow = if (useCircleIcon) CircleShape else RoundedCornerShape(12.dp)
+            Box(
+                modifier = Modifier
+                    .height(44.dp)
+                    .width(iconWidth)
+                    .then(
+                        if (useOutlineIcon || isTransparentIcon) {
+                            Modifier
+                        } else {
+                            Modifier.shadow(
+                                elevation = 4.dp,
+                                shape = iconShapeForShadow,
+                                spotColor = Color.Black.copy(alpha = 0.3f),
+                                ambientColor = Color.Black.copy(alpha = 0.15f)
+                            )
+                        }
+                    )
+                    .clip(iconShapeForShadow)
+                    .then(
+                        if (useOutlineIcon && !isTransparentIcon) {
+                            Modifier.border(2.dp, baseColor, iconShapeForShadow)
+                        } else if (warehouseImageBitmap != null) {
+                            Modifier
+                        } else {
+                            Modifier.background(backgroundColor) // 与右侧容器按钮一致
+                        }
+                    )
+                    .pointerInput(warehouse.uuid) {
+                        detectTapGestures(
+                            onTap = {
+                                // 取消之前的延迟任务
+                                clickJob?.cancel()
 
-                                    // 如果已经有待处理的单击，说明是双击
-                                    if (pendingClick) {
-                                        pendingClick = false
-                                        onViewInfo?.invoke(warehouse)
-                                    } else {
-                                        // 立即执行单击
-                                        onClick()
-                                        // 设置待处理标志，延迟检测双击
-                                        pendingClick = true
-                                        clickJob = scope.launch {
-                                            delay(300) // 300ms内检测双击
-                                            if (pendingClick) {
-                                                pendingClick = false
-                                            }
+                                // 如果已经有待处理的单击，说明是双击
+                                if (pendingClick) {
+                                    pendingClick = false
+                                    onViewInfo?.invoke(warehouse)
+                                } else {
+                                    // 立即执行单击
+                                    onClick()
+                                    // 设置待处理标志，延迟检测双击
+                                    pendingClick = true
+                                    clickJob = scope.launch {
+                                        delay(300) // 300ms内检测双击
+                                        if (pendingClick) {
+                                            pendingClick = false
                                         }
                                     }
-                                },
-                                onLongPress = { showMenu = true }
-                            )
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (warehouseImageBitmap != null) {
-                        // 显示容器图片（有图片时不显示文字）
-                        Image(
-                            bitmap = warehouseImageBitmap.asImageBitmap(),
-                            contentDescription = warehouse.name,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                                }
+                            },
+                            onLongPress = { showMenu = true }
                         )
-                    } else {
-                        // 展开时显示完整名称，收起时显示首字母
-                        Text(
-                            text = if (isExpanded) warehouse.name else firstDisplayChar(warehouse.name),
-                            style = if (isExpanded) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = if (isExpanded) 16.sp else 16.sp,
-                            color = textColor, // 根据背景颜色对比度自动切换
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = if (isExpanded) Modifier.padding(horizontal = 6.dp) else Modifier
-                        )
-                    }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                if (warehouseImageBitmap != null) {
+                    // 显示容器图片（有图片时不显示文字）
+                    Image(
+                        bitmap = warehouseImageBitmap.asImageBitmap(),
+                        contentDescription = warehouse.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // 始终显示首字母，保持原图标样式
+                    Text(
+                        text = firstDisplayChar(warehouse.name),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = textColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
-            } // 关闭 Row
+            }
+            if (isExpanded) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = warehouse.name,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ColorHelpers.getGroup4TextColor(),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        } // 关闭 Row
         } // 关闭外层 Box
                 
                 // 长按菜单 - 添加背景层以支持点击外部关闭
@@ -2014,8 +2019,6 @@ fun WarehouseIconItem(
                             )
                         )
                     }
-            }
-
         
         // 删除确认对话框（简化版，只显示风险提示）
         if (showDeleteConfirmDialog) {
@@ -2094,18 +2097,10 @@ fun WarehouseSidebarColumn(
     // 展开/折叠状态
     var isExpanded by remember { mutableStateOf(false) }
     val expandedIconWidth = 96.dp
-    val homeIconWidth by animateDpAsState(
-        targetValue = if (isExpanded) expandedIconWidth else 44.dp,
-        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
-        label = "home_icon_width"
-    )
-    val addIconWidth by animateDpAsState(
-        targetValue = if (isExpanded) expandedIconWidth else 44.dp,
-        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
-        label = "add_icon_width"
-    )
+    val homeIconWidth = 44.dp
+    val addIconWidth = 44.dp
     val sidebarWidth by animateDpAsState(
-        targetValue = if (isExpanded) 118.dp else 66.dp,
+        targetValue = if (isExpanded) 155.dp else 66.dp,
         animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
         label = "sidebar_width"
     )
@@ -2204,10 +2199,21 @@ fun WarehouseSidebarColumn(
                         ) {
                         Icon(
                             Icons.Default.Home,
-                            contentDescription = "首页",
+                            contentDescription = stringResource(R.string.nav_home),
                             tint = iconColor, // 根据背景颜色对比度自动切换
                             modifier = Modifier.size(22.dp) // 与外圈同比增大
                         )
+                        }
+                        if (isExpanded) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.nav_home),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = ColorHelpers.getGroup4TextColor(),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
@@ -3589,9 +3595,9 @@ fun ItemListSection(
     var showMoveDialog by remember { mutableStateOf(false) }
     val canMoveItems = warehouseViewModel != null
     
-    // 多选模式状态
-    var isMultiSelectMode by remember { mutableStateOf(false) }
-    var multiSelectedItems by remember { mutableStateOf<Set<String>>(emptySet()) }
+    // 多选模式状态（依赖 items 以确保切换容器时重置）
+    var isMultiSelectMode by remember(items) { mutableStateOf(false) }
+    var multiSelectedItems by remember(items) { mutableStateOf<Set<String>>(emptySet()) }
     var showBatchDeleteDialog by remember { mutableStateOf(false) }
     var showBatchMoveDialog by remember { mutableStateOf(false) }
 
@@ -3758,7 +3764,10 @@ fun ItemListSection(
                     Text(
                         text = stringResource(R.string.multi_select_count, multiSelectedItems.size),
                         style = MaterialTheme.typography.titleMedium,
-                        color = toolbarTextColor
+                        color = toolbarTextColor,
+                        modifier = Modifier.weight(1f, fill = false),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -3806,19 +3815,6 @@ fun ItemListSection(
                             }
                         }
                         
-                        // 取消多选模式
-                        IconButton(
-                            onClick = {
-                                isMultiSelectMode = false
-                                multiSelectedItems = emptySet()
-                            }
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = stringResource(R.string.cancel),
-                                tint = toolbarIconColor
-                            )
-                        }
                     }
                 }
             }

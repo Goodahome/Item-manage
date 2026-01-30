@@ -1,5 +1,6 @@
 package com.example.itemremindertool.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,9 +10,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+//import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+//import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import android.content.Context
 import com.example.itemremindertool.R
@@ -20,13 +21,15 @@ import com.example.itemremindertool.ui.theme.ColorHelpers
 import com.example.itemremindertool.ui.components.GradientTopAppBar
 import com.example.itemremindertool.ui.components.UIConstants
 import com.example.itemremindertool.ui.components.AppFloatingActionButton
-import com.example.itemremindertool.ui.components.AppDivider
+//import com.example.itemremindertool.ui.components.AppDivider
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import com.example.itemremindertool.billing.BillingManager
 import com.example.itemremindertool.billing.PremiumFeatureManager
 import com.example.itemremindertool.config.FeatureFlags
 import com.example.itemremindertool.ui.components.PremiumFeatureDialog
+import com.example.itemremindertool.ui.components.blockUserInput
+import com.example.itemremindertool.ui.components.rememberScreenInteractionBlocker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +38,9 @@ fun ColorSchemeSelectionScreen(
     onApply: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val blocker = rememberScreenInteractionBlocker()
+    BackHandler { blocker.handleBack(onNavigateBack) }
+
     val context = LocalContext.current
     val prefs = remember {
         context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
@@ -85,7 +91,7 @@ fun ColorSchemeSelectionScreen(
             GradientTopAppBar(
                 title = { Text(stringResource(R.string.color_scheme)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { blocker.handleBack(onNavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
@@ -100,11 +106,13 @@ fun ColorSchemeSelectionScreen(
                 
                 AppFloatingActionButton(
                     onClick = {
-                        if (!canAccessPremiumFeatures) {
-                            showPremiumFeatureDialog = true
-                        } else {
-                            prefs.edit().putString("color_scheme", selectedColorScheme).apply()
-                            onApply()
+                        blocker.handleForward {
+                            if (!canAccessPremiumFeatures) {
+                                showPremiumFeatureDialog = true
+                            } else {
+                                prefs.edit().putString("color_scheme", selectedColorScheme).apply()
+                                onApply()
+                            }
                         }
                     },
                     backgroundColor = fabBackground,
@@ -124,6 +132,7 @@ fun ColorSchemeSelectionScreen(
                 .background(ColorHelpers.getGroup2PageBgColor())
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .blockUserInput(blocker.isBlocked)
         ) {
             val colorSchemes = listOf(
                 "red_blue" to R.string.color_scheme_red_blue,
@@ -165,12 +174,6 @@ fun ColorSchemeSelectionScreen(
                         }
                     }
                 )
-                if (schemeKey != colorSchemes.last().first) {
-                    AppDivider(
-                        color = ColorHelpers.getDividerColor(),
-                        thickness = 2.dp
-                    )
-                }
             }
         }
     }
