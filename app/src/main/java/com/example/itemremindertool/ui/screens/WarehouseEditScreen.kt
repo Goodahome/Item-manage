@@ -217,6 +217,8 @@ fun WarehouseEditScreen(
                                 
                                 val existingWarehouse = if (warehouseUuid != null) selectedWarehouse.selectedWarehouse else null
                                 val warehouse = if (existingWarehouse != null) {
+                                    // 检查图片是否发生变化，如果变化则清空 imageKey 以触发重新上传
+                                    val imageChanged = imageUri != existingWarehouse.imageUri
                                     existingWarehouse.copy(
                                         name = name,
                                         description = description,
@@ -224,7 +226,8 @@ fun WarehouseEditScreen(
                                         capacity = capacity.toIntOrNull(),
                                         parentUuid = parentUuid,
                                         level = level,
-                                        imageUri = imageUri
+                                        imageUri = imageUri,
+                                        imageKey = if (imageChanged) null else existingWarehouse.imageKey
                                     )
                                 } else {
                                     Warehouse(
@@ -431,7 +434,7 @@ fun WarehouseEditScreen(
                         )
                     ) {
                         Icon(
-                            Icons.Default.Collections,
+                            Icons.Default.Interests,
                             contentDescription = null,
                             tint = iconLibraryIconColor
                         )
@@ -447,7 +450,7 @@ fun WarehouseEditScreen(
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Icon(
-                            Icons.Default.Collections,
+                            Icons.Default.Interests,
                             contentDescription = null,
                             tint = iconLibraryIconColor
                         )

@@ -125,6 +125,7 @@ import com.example.itemremindertool.ui.components.DraggableFab
 import com.example.itemremindertool.ui.components.AppFloatingActionButton
 import com.example.itemremindertool.ui.components.AppDivider
 import com.example.itemremindertool.ui.components.AppDialogLayout
+import com.example.itemremindertool.ui.components.ItemImagePreviewDialog
 import com.example.itemremindertool.ui.components.WarehouseSelectionBottomSheet
 import com.example.itemremindertool.ui.components.CameraCaptureDialog
 import com.example.itemremindertool.ui.components.ImageCropDialog
@@ -3603,11 +3604,16 @@ fun ItemListSection(
     var multiSelectedItems by remember(items) { mutableStateOf<Set<String>>(emptySet()) }
     var showBatchDeleteDialog by remember { mutableStateOf(false) }
     var showBatchMoveDialog by remember { mutableStateOf(false) }
+    var previewItem by remember { mutableStateOf<Item?>(null) }
 
     val selectedItem by remember(items, selectedItemUuid) {
         derivedStateOf {
             selectedItemUuid?.let { uuid -> items.find { it.uuid == uuid } }
         }
+    }
+
+    fun hasPreviewImage(target: Item): Boolean {
+        return target.imageUris.isNotEmpty() || !target.imageUri.isNullOrBlank()
     }
     
     // 配置变更标志位 - 用于在配置变更时延迟复杂渲染
@@ -3920,8 +3926,13 @@ fun ItemListSection(
                                 }
                             },
                             onLongClick = {
-                                // 长按进入多选模式
-                                if (!isMultiSelectMode) {
+                                if (isMultiSelectMode) {
+                                    return@ItemListRow
+                                }
+                                if (hasPreviewImage(item)) {
+                                    previewItem = item
+                                } else {
+                                    // 长按进入多选模式
                                     isMultiSelectMode = true
                                     multiSelectedItems = setOf(item.uuid)
                                 }
@@ -4263,8 +4274,13 @@ fun ItemListSection(
                                             }
                                         },
                                         onLongClick = {
-                                            // 长按进入多选模式
-                                            if (!isMultiSelectMode) {
+                                            if (isMultiSelectMode) {
+                                                return@ItemGridCard
+                                            }
+                                            if (hasPreviewImage(item)) {
+                                                previewItem = item
+                                            } else {
+                                                // 长按进入多选模式
                                                 isMultiSelectMode = true
                                                 multiSelectedItems = setOf(item.uuid)
                                                 selectedItemUuid = null // 退出详情面板
@@ -4285,6 +4301,55 @@ fun ItemListSection(
                 }
             }
         }
+    }
+
+    if (previewItem != null) {
+        val item = previewItem!!
+        ItemImagePreviewDialog(
+            item = item,
+            onDismiss = { previewItem = null },
+            onViewDetails = { onViewItem(item.uuid) },
+            onEdit = { onEditItem(item.uuid) },
+            onAddToShoppingCart = if (shoppingItemViewModel != null) {
+                {
+                    val shoppingItem = com.example.itemremindertool.data.model.ShoppingItem(
+                        name = item.name,
+                        description = item.description,
+                        quantity = item.quantity,
+                        priority = com.example.itemremindertool.data.model.Priority.MEDIUM,
+                        itemUuid = item.uuid
+                    )
+                    shoppingItemViewModel.insertShoppingItem(shoppingItem)
+                }
+            } else {
+                null
+            },
+            onMoveToContainer = if (canMoveItems) {
+                {
+                    itemToMove = item
+                    showMoveDialog = true
+                }
+            } else {
+                null
+            },
+            onAddAlert = if (onAddAlert != {}) {
+                { onAddAlert(item) }
+            } else {
+                null
+            },
+            onEnterMultiSelect = {
+                isMultiSelectMode = true
+                multiSelectedItems = setOf(item.uuid)
+                selectedItemUuid = null
+            },
+            onDelete = {
+                if (onDeleteItem != {}) {
+                    onDeleteItem(item)
+                } else {
+                    itemViewModel?.deleteItem(item)
+                }
+            }
+        )
     }
 
     if (showMoveDialog && itemToMove != null && warehouseViewModel != null) {

@@ -33,7 +33,7 @@ import com.example.itemremindertool.data.dao.IconLibraryDao
 
 @Database(
     entities = [Item::class, Category::class, ShoppingItem::class, Warehouse::class, ItemReminder::class, DeletedRecord::class, ActivityEvent::class, SyncQueueItem::class, IconLibraryItem::class],
-    version = 21,
+    version = 22,
     exportSchema = true
 )
 @TypeConverters(DateConverters::class, StringListConverters::class, ReminderTypeConverters::class, ActivityEventTypeConverters::class, SyncOperationConverters::class)
@@ -120,7 +120,7 @@ abstract class AppDatabase : RoomDatabase() {
                             )
                         }
                     })
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22)
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                 INSTANCE = instance
@@ -672,6 +672,15 @@ abstract class AppDatabase : RoomDatabase() {
                         createdAt INTEGER NOT NULL
                     )
                 """.trimIndent())
+            }
+        }
+
+        private val MIGRATION_21_22 = object : Migration(21, 22) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 为图标库表添加 iconKey 和 updatedAt 字段
+                db.execSQL("ALTER TABLE icon_library ADD COLUMN iconKey TEXT")
+                val currentTimeMillis = System.currentTimeMillis()
+                db.execSQL("ALTER TABLE icon_library ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT $currentTimeMillis")
             }
         }
 

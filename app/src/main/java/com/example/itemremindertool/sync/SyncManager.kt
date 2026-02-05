@@ -35,6 +35,8 @@ class SyncManager(private val context: Context) {
     private val syncPrefs = context.getSharedPreferences("sync_prefs", Context.MODE_PRIVATE)
     @Volatile
     private var isMergeRunning = false
+    @Volatile
+    private var isIconLibrarySyncRunning = false
 
     /**
      * 检查是否应该同步到远端
@@ -61,6 +63,7 @@ class SyncManager(private val context: Context) {
                 .remove(KEY_RESUME_SHOPPING_PAGE)
                 .remove(KEY_RESUME_DELETED_PAGE)
                 .remove(KEY_RESUME_REMINDERS_PAGE)
+                .remove(KEY_RESUME_ICON_LIBRARY_PAGE)
                 .apply()
             Log.d(TAG, "手动同步：已清理重试与分页断点")
         }
@@ -87,6 +90,7 @@ class SyncManager(private val context: Context) {
             val deletedRecordDao = db.deletedRecordDao()
             val itemReminderDao = db.itemReminderDao()
             val syncQueueDao = db.syncQueueDao()
+            val iconLibraryDao = db.iconLibraryDao()
 
             if (!syncPrefs.getBoolean(KEY_BOOTSTRAP_COMPLETED, false)) {
                 val bootstrapResult = runBootstrapSync(
@@ -101,6 +105,12 @@ class SyncManager(private val context: Context) {
                 if (bootstrapResult.isSuccess) {
                     syncPrefs.edit().putBoolean(KEY_BOOTSTRAP_COMPLETED, true).apply()
                     Log.d(TAG, "首次批量同步完成")
+                    val iconLibraryResult = fetchAllIconLibraryItems(apiService)
+                    if (iconLibraryResult.rateLimited) {
+                        scheduleRetry(iconLibraryResult.retryAfterSec)
+                        return@withContext Result.failure(Exception("Rate limited"))
+                    }
+                    applyIconLibraryMerge(iconLibraryResult.items, iconLibraryDao, apiService)
                     return@withContext Result.success(Unit)
                 }
                 Log.e(TAG, "批量同步失败，回退分页拉取")
@@ -158,6 +168,11 @@ class SyncManager(private val context: Context) {
                 scheduleRetry(remindersResult.retryAfterSec)
                 return@withContext Result.failure(Exception("Rate limited"))
             }
+            val iconLibraryResult = fetchAllIconLibraryItems(apiService)
+            if (iconLibraryResult.rateLimited) {
+                scheduleRetry(iconLibraryResult.retryAfterSec)
+                return@withContext Result.failure(Exception("Rate limited"))
+            }
 
             val deletedItemUuids = deletedResult.items
                 .filter { it.entityType == "item" }
@@ -191,18 +206,21 @@ class SyncManager(private val context: Context) {
             val localWarehouses = warehouseDao.getAllWarehousesSync()
             val localShoppingItems = shoppingItemDao.getAllShoppingItemsSync()
             val localReminders = itemReminderDao.getAllRemindersSync()
+            val localIconLibraryItems = iconLibraryDao.getAllIconsList()
 
             val remoteItemsByUuid = remoteItems.associateBy { it.uuid }
             val remoteCategoriesByUuid = remoteCategories.associateBy { it.uuid }
             val remoteWarehousesByUuid = remoteWarehouses.associateBy { it.uuid }
             val remoteShoppingByUuid = remoteShoppingItems.associateBy { it.uuid }
             val remoteRemindersByUuid = remoteReminders.associateBy { it.uuid }
+            val remoteIconLibraryByUuid = iconLibraryResult.items.associateBy { it.uuid }
 
             val localItemsByUuid = localItems.associateBy { it.uuid }
             val localCategoriesByUuid = localCategories.associateBy { it.uuid }
             val localWarehousesByUuid = localWarehouses.associateBy { it.uuid }
             val localShoppingByUuid = localShoppingItems.associateBy { it.uuid }
             val localRemindersByUuid = localReminders.associateBy { it.uuid }
+            val localIconLibraryByUuid = localIconLibraryItems.associateBy { it.uuid }
 
             // 先迁移本地旧 UUID（仅在云端为空时迁移，避免重复）
             if (remoteItems.isEmpty() && remoteWarehouses.isEmpty() && remoteShoppingItems.isEmpty()) {
@@ -369,6 +387,15 @@ class SyncManager(private val context: Context) {
                     syncReminderToRemote(local)
                 }
             }
+
+            // IconLibrary: 使用 updatedAt 对比，支持双向同步
+            applyIconLibraryMerge(
+                iconLibraryResult.items,
+                iconLibraryDao,
+                apiService,
+                localIconLibraryByUuid,
+                remoteIconLibraryByUuid
+            )
 
             Log.d(TAG, "登录后双向合并完成")
             Result.success(Unit)
@@ -1327,6 +1354,242 @@ class SyncManager(private val context: Context) {
         }
     }
     
+    /**
+     * 同步图标库项到远端
+     */
+    suspend fun syncIconLibraryItemToRemote(icon: IconLibraryItem): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (!shouldSyncToRemote()) {
+                return@withContext Result.success(Unit)
+            }
+            
+            val iconLibraryDao = AppDatabase.getDatabase(context).iconLibraryDao()
+            val preparedIcon = ensureIconLibraryItemIconKey(icon, iconLibraryDao)
+            
+            val apiService = RetrofitClient.getApiService(context)
+            val dto = iconLibraryItemToDto(preparedIcon)
+            val response = apiService.upsertIconLibraryItem(dto)
+            
+            if (response.isSuccessful && response.body()?.success == true) {
+                Log.d(TAG, "图标库项同步成功: ${preparedIcon.name}")
+                Result.success(Unit)
+            } else {
+                val error = response.body()?.error?.message ?: "同步失败"
+                Log.e(TAG, "图标库项同步失败: $error")
+                addToOfflineQueue("icon_library_item", preparedIcon.uuid, SyncOperation.UPDATE, preparedIcon)
+                Result.failure(Exception(error))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "图标库项同步异常", e)
+            addToOfflineQueue("icon_library_item", icon.uuid, SyncOperation.UPDATE, icon)
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * 从远端删除图标库项
+     */
+    suspend fun deleteIconLibraryItemFromRemote(uuid: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (!shouldSyncToRemote()) {
+                return@withContext Result.success(Unit)
+            }
+            
+            val apiService = RetrofitClient.getApiService(context)
+            val response = apiService.deleteIconLibraryItem(uuid)
+            
+            if (response.isSuccessful && response.body()?.success == true) {
+                Log.d(TAG, "图标库项删除同步成功: $uuid")
+                Result.success(Unit)
+            } else {
+                val error = response.body()?.error?.message ?: "删除同步失败"
+                Log.e(TAG, "图标库项删除同步失败: $error")
+                addToOfflineQueue("icon_library_item", uuid, SyncOperation.DELETE, mapOf("uuid" to uuid))
+                Result.failure(Exception(error))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "图标库项删除同步异常", e)
+            addToOfflineQueue("icon_library_item", uuid, SyncOperation.DELETE, mapOf("uuid" to uuid))
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 同步图标库（仅图标库）
+     */
+    suspend fun syncIconLibraryNow(force: Boolean = false): Result<Unit> = withContext(Dispatchers.IO) {
+        if (!shouldSyncToRemote()) {
+            return@withContext Result.success(Unit)
+        }
+        if (isIconLibrarySyncRunning) {
+            Log.d(TAG, "跳过图标库同步：已有同步进行中")
+            return@withContext Result.success(Unit)
+        }
+        if (force) {
+            syncPrefs.edit()
+                .remove(KEY_NEXT_RETRY_AT)
+                .remove(KEY_RESUME_ICON_LIBRARY_PAGE)
+                .apply()
+        }
+        isIconLibrarySyncRunning = true
+        try {
+            val apiService = RetrofitClient.getApiService(context)
+            val iconLibraryDao = AppDatabase.getDatabase(context).iconLibraryDao()
+            val iconLibraryResult = fetchAllIconLibraryItems(apiService)
+            if (iconLibraryResult.rateLimited) {
+                scheduleRetry(iconLibraryResult.retryAfterSec)
+                return@withContext Result.failure(Exception("Rate limited"))
+            }
+            val localIcons = iconLibraryDao.getAllIconsList()
+            val localByUuid = localIcons.associateBy { it.uuid }
+            val remoteByUuid = iconLibraryResult.items.associateBy { it.uuid }
+            applyIconLibraryMerge(iconLibraryResult.items, iconLibraryDao, apiService, localByUuid, remoteByUuid)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "图标库同步失败", e)
+            Result.failure(e)
+        } finally {
+            isIconLibrarySyncRunning = false
+        }
+    }
+    
+    /**
+     * 确保图标库项有远程图片键
+     */
+    private suspend fun ensureIconLibraryItemIconKey(
+        icon: IconLibraryItem,
+        iconLibraryDao: com.example.itemremindertool.data.dao.IconLibraryDao
+    ): IconLibraryItem {
+        if (!icon.iconKey.isNullOrBlank()) {
+            return icon
+        }
+        val apiService = RetrofitClient.getApiService(context)
+        val key = uploadImage(apiService, icon.imagePath, icon.uuid) ?: return icon
+        val updated = icon.copy(iconKey = key)
+        iconLibraryDao.updateIcon(updated)
+        return updated
+    }
+    
+    /**
+     * 图标库项转 DTO
+     */
+    private fun iconLibraryItemToDto(icon: IconLibraryItem): com.example.itemremindertool.network.dto.IconLibraryItemDto {
+        return com.example.itemremindertool.network.dto.IconLibraryItemDto(
+            uuid = icon.uuid,
+            name = icon.name,
+            iconKey = icon.iconKey,
+            fileSize = icon.fileSize,
+            createdAt = dateFormat.format(java.util.Date(icon.createdAt)),
+            updatedAt = dateFormat.format(java.util.Date(icon.updatedAt))
+        )
+    }
+
+    private suspend fun iconLibraryItemFromDto(
+        dto: com.example.itemremindertool.network.dto.IconLibraryItemDto,
+        existing: IconLibraryItem?,
+        apiService: com.example.itemremindertool.network.ApiService
+    ): IconLibraryItem {
+        val createdAt = parseDateOrNull(dto.createdAt)?.time ?: existing?.createdAt ?: System.currentTimeMillis()
+        val updatedAt = parseDateOrNull(dto.updatedAt)?.time ?: existing?.updatedAt ?: createdAt
+        val remoteKey = dto.iconKey ?: existing?.iconKey
+        var imagePath = existing?.imagePath ?: ""
+        if (!remoteKey.isNullOrBlank()) {
+            val needsDownload = imagePath.isBlank() || !File(imagePath).exists()
+            if (needsDownload) {
+                val downloaded = downloadImage(apiService, remoteKey)
+                if (downloaded != null) {
+                    imagePath = downloaded
+                }
+            }
+        }
+        return IconLibraryItem(
+            uuid = dto.uuid,
+            name = dto.name,
+            imagePath = imagePath,
+            iconKey = remoteKey,
+            fileSize = dto.fileSize ?: existing?.fileSize ?: 0L,
+            createdAt = createdAt,
+            updatedAt = updatedAt
+        )
+    }
+
+    private suspend fun ensureIconLibraryLocalState(
+        local: IconLibraryItem,
+        remoteKey: String?,
+        iconLibraryDao: com.example.itemremindertool.data.dao.IconLibraryDao,
+        apiService: com.example.itemremindertool.network.ApiService
+    ): IconLibraryItem {
+        if (remoteKey.isNullOrBlank()) {
+            return local
+        }
+        var imagePath = local.imagePath
+        val needsDownload = imagePath.isBlank() || !File(imagePath).exists()
+        if (needsDownload) {
+            val downloaded = downloadImage(apiService, remoteKey)
+            if (downloaded != null) {
+                imagePath = downloaded
+            }
+        }
+        if (imagePath != local.imagePath || local.iconKey != remoteKey) {
+            val updated = local.copy(imagePath = imagePath, iconKey = remoteKey)
+            iconLibraryDao.updateIcon(updated)
+            return updated
+        }
+        return local
+    }
+
+    private suspend fun applyIconLibraryMerge(
+        remoteIcons: List<com.example.itemremindertool.network.dto.IconLibraryItemDto>,
+        iconLibraryDao: com.example.itemremindertool.data.dao.IconLibraryDao,
+        apiService: com.example.itemremindertool.network.ApiService,
+        localIconLibraryByUuid: Map<String, IconLibraryItem> = emptyMap(),
+        remoteIconLibraryByUuid: Map<String, com.example.itemremindertool.network.dto.IconLibraryItemDto> = emptyMap()
+    ) {
+        val localByUuid = if (localIconLibraryByUuid.isEmpty()) {
+            iconLibraryDao.getAllIconsList().associateBy { it.uuid }
+        } else {
+            localIconLibraryByUuid
+        }
+        val remoteByUuid = if (remoteIconLibraryByUuid.isEmpty()) {
+            remoteIcons.associateBy { it.uuid }
+        } else {
+            remoteIconLibraryByUuid
+        }
+
+        for (remote in remoteIcons) {
+            val local = localByUuid[remote.uuid]
+            if (local == null) {
+                val entity = iconLibraryItemFromDto(remote, null, apiService)
+                iconLibraryDao.insertIcon(entity)
+                continue
+            }
+            val remoteTime = parseDateOrNull(remote.updatedAt) ?: parseDateOrNull(remote.createdAt)
+            if (isRemoteNewer(remoteTime, Date(local.updatedAt))) {
+                val entity = iconLibraryItemFromDto(remote, local, apiService)
+                iconLibraryDao.insertIcon(entity)
+                continue
+            }
+
+            val updatedLocal = ensureIconLibraryLocalState(local, remote.iconKey, iconLibraryDao, apiService)
+            val remoteFallbackTime = remoteTime ?: Date(0)
+            val localIsNewer = Date(updatedLocal.updatedAt).after(remoteFallbackTime)
+            val remoteMissingKey = remote.iconKey.isNullOrBlank()
+            val localHasKey = !updatedLocal.iconKey.isNullOrBlank()
+            val localHasFile = updatedLocal.imagePath.isNotBlank()
+            if (localIsNewer || updatedLocal.name != remote.name ||
+                (remoteMissingKey && (localHasKey || localHasFile))
+            ) {
+                syncIconLibraryItemToRemote(updatedLocal)
+            }
+        }
+
+        for (local in localByUuid.values) {
+            if (!remoteByUuid.containsKey(local.uuid)) {
+                syncIconLibraryItemToRemote(local)
+            }
+        }
+    }
+    
     // ==================== 数据转换方法 ====================
     
     private suspend fun itemToDto(
@@ -1643,6 +1906,7 @@ class SyncManager(private val context: Context) {
         private const val KEY_RESUME_SHOPPING_PAGE = "resume_shopping_page"
         private const val KEY_RESUME_DELETED_PAGE = "resume_deleted_page"
         private const val KEY_RESUME_REMINDERS_PAGE = "resume_reminders_page"
+        private const val KEY_RESUME_ICON_LIBRARY_PAGE = "resume_icon_library_page"
         private const val KEY_BOOTSTRAP_COMPLETED = "bootstrap_completed"
         private const val KEY_SETTINGS_UPDATED_AT = "settings_updated_at"
         private val UUID_REGEX =
@@ -1919,6 +2183,59 @@ class SyncManager(private val context: Context) {
             Log.e(TAG, "达到最大页数限制: $maxPages")
         }
         return FetchResult(reminders, false, null)
+    }
+
+    private suspend fun fetchAllIconLibraryItems(
+        apiService: com.example.itemremindertool.network.ApiService
+    ): FetchResult<com.example.itemremindertool.network.dto.IconLibraryItemDto> {
+        val icons = mutableListOf<com.example.itemremindertool.network.dto.IconLibraryItemDto>()
+        var page = syncPrefs.getInt(KEY_RESUME_ICON_LIBRARY_PAGE, 1).coerceAtLeast(1)
+        val pageSize = 200
+        val maxPages = 200
+        var consecutiveEmptyPages = 0
+        var lastPageSeen = 0
+        while (page <= maxPages) {
+            val response = apiService.getIconLibraryItems(page = page, pageSize = pageSize)
+            if (response.code() == 429) {
+                syncPrefs.edit().putInt(KEY_RESUME_ICON_LIBRARY_PAGE, page).apply()
+                return FetchResult(icons, true, response.headers()["Retry-After"]?.toLongOrNull() ?: 60L)
+            }
+            if (!response.isSuccessful || response.body()?.success != true) {
+                Log.e(TAG, "拉取图标库失败：${response.code()}")
+                break
+            }
+            val data = response.body()?.data ?: break
+            if (data.page != page || data.page <= lastPageSeen) {
+                Log.w(TAG, "分页异常，返回页=${data.page}，请求页=$page，终止拉取")
+                syncPrefs.edit().remove(KEY_RESUME_ICON_LIBRARY_PAGE).apply()
+                break
+            }
+            lastPageSeen = data.page
+            val currentPageIcons = data.icons
+            icons.addAll(currentPageIcons)
+            Log.d(TAG, "拉取图标库: page=$page, 当前页=${currentPageIcons.size}, 累计=${icons.size}, 总数=${data.total}")
+
+            if (currentPageIcons.isEmpty()) {
+                consecutiveEmptyPages++
+                if (consecutiveEmptyPages >= 3) {
+                    Log.w(TAG, "连续3页无数据，终止拉取")
+                    break
+                }
+            } else {
+                consecutiveEmptyPages = 0
+            }
+
+            if (data.page * data.pageSize >= data.total || currentPageIcons.isEmpty()) {
+                syncPrefs.edit().remove(KEY_RESUME_ICON_LIBRARY_PAGE).apply()
+                break
+            }
+            page += 1
+            syncPrefs.edit().putInt(KEY_RESUME_ICON_LIBRARY_PAGE, page).apply()
+        }
+        if (page > maxPages) {
+            Log.e(TAG, "达到最大页数限制: $maxPages")
+        }
+        return FetchResult(icons, false, null)
     }
 
     private suspend fun fetchAllDeletedRecords(

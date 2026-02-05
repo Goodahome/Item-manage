@@ -22,6 +22,7 @@ import activityEventsRoutes from "./routes/activityEventsRoutes";
 import deletedRecordsRoutes from "./routes/deletedRecordsRoutes";
 import mediaRoutes from "./routes/mediaRoutes";
 import syncRoutes from "./routes/syncRoutes";
+import iconLibraryRoutes from "./routes/iconLibraryRoutes";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -61,6 +62,7 @@ app.use("/api/activity-events", apiRateLimiter, activityEventsRoutes);
 app.use("/api/deleted-records", apiRateLimiter, deletedRecordsRoutes);
 app.use("/api/media", apiRateLimiter, mediaRoutes);
 app.use("/api/sync", apiRateLimiter, syncRoutes);
+app.use("/api/icon-library", apiRateLimiter, iconLibraryRoutes);
 
 // 错误处理
 app.use(errorHandler);

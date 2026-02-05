@@ -37,6 +37,12 @@ interface IconLibraryDao {
     suspend fun insertIcons(icons: List<IconLibraryItem>)
     
     /**
+     * 更新图标
+     */
+    @Update
+    suspend fun updateIcon(icon: IconLibraryItem)
+    
+    /**
      * 删除图标
      */
     @Delete

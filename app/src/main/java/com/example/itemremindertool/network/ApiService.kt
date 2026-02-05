@@ -169,6 +169,35 @@ interface ApiService {
      */
     @DELETE("api/shopping-items/{uuid}")
     suspend fun deleteShoppingItem(@Path("uuid") uuid: String): Response<ApiResponse<Map<String, String>>>
+    
+    // ==================== 图标库相关 ====================
+    
+    /**
+     * 获取图标库列表
+     */
+    @GET("api/icon-library")
+    suspend fun getIconLibraryItems(
+        @Query("page") page: Int = 1,
+        @Query("pageSize") pageSize: Int = 100
+    ): Response<ApiResponse<IconLibraryItemListResponse>>
+    
+    /**
+     * 获取单个图标库项
+     */
+    @GET("api/icon-library/{uuid}")
+    suspend fun getIconLibraryItem(@Path("uuid") uuid: String): Response<ApiResponse<IconLibraryItemDto>>
+    
+    /**
+     * 创建或更新图标库项
+     */
+    @POST("api/icon-library")
+    suspend fun upsertIconLibraryItem(@Body icon: IconLibraryItemDto): Response<ApiResponse<IconLibraryItemDto>>
+    
+    /**
+     * 删除图标库项
+     */
+    @DELETE("api/icon-library/{uuid}")
+    suspend fun deleteIconLibraryItem(@Path("uuid") uuid: String): Response<ApiResponse<Map<String, String>>>
 
     // ==================== 动态相关 ====================
 

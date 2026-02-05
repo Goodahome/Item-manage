@@ -622,6 +622,9 @@
     <string name="batch_delete_failed">批量删除失败：%s</string>
     <string name="batch_move_success">已成功移动 %d 个物品</string>
     <string name="batch_move_failed">批量移动失败：%s</string>
+    <string name="preview_image">预览图片</string>
+    <string name="enter_multi_select">多选</string>
+    <string name="add_alert">添加提醒</string>
     
     <!-- 删除确认 -->
     <string name="confirm_delete">确认删除</string>
@@ -857,6 +860,10 @@
     <string name="icon_library_delete_success">图标已删除</string>
     <string name="icon_library_import_error">导入失败：%s</string>
     <string name="select_from_icon_library">从图标库选择</string>
+    <string name="search_icons">搜索图标</string>
+    <string name="edit_icon_name">编辑图标名称</string>
+    <string name="icon_name">图标名称</string>
+    <string name="icon_name_updated">图标名称已更新</string>
     <string name="ad_banner_unit_id">广告横幅单元 ID</string>
     <string name="ad_banner_unit_id_desc">设置 Google AdMob 广告横幅单元 ID。留空则使用测试 ID。</string>
     <string name="ad_banner_unit_id_hint">输入广告单元 ID</string>

@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const iconLibraryController_1 = require("../controllers/iconLibraryController");
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+router.get("/", auth_1.requireAuth, iconLibraryController_1.listIconLibraryItems);
+router.get("/:uuid", auth_1.requireAuth, iconLibraryController_1.getIconLibraryItem);
+router.post("/", auth_1.requireAuth, iconLibraryController_1.upsertIconLibraryItem);
+router.delete("/:uuid", auth_1.requireAuth, iconLibraryController_1.deleteIconLibraryItem);
+exports.default = router;

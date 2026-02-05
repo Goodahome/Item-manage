@@ -330,6 +330,10 @@ fun ItemEditScreen(
                             val warehouseUuid = selectedWarehouseUuid
                             
                             val isAdd = itemUuid == null
+                            // 检查图片列表是否发生变化，如果变化则清空 imageKeys 以触发重新上传
+                            val existingItem = selectedItem.selectedItem
+                            val imageUrisChanged = existingItem?.imageUris != imageUris
+                            
                             val item = Item(
                                 uuid = if (isAdd) UUID.randomUUID().toString() else (selectedItem.selectedItem?.uuid ?: UUID.randomUUID().toString()),
                                 name = name,
@@ -348,6 +352,7 @@ fun ItemEditScreen(
                                     null // 如果没有图片，清空imageUri
                                 },
                                 imageUris = imageUris,
+                                imageKeys = if (isAdd || imageUrisChanged) emptyList() else (existingItem.imageKeys),
                                 primaryImageIndex = if (imageUris.isNotEmpty()) {
                                     primaryImageIndex.coerceIn(0, imageUris.size - 1)
                                 } else {
@@ -677,7 +682,7 @@ fun ItemEditScreen(
                                     )
                                 ) {
                                     Icon(
-                                        Icons.Default.Collections,
+                                        Icons.Default.Interests,
                                         contentDescription = null,
                                         tint = iconLibraryIconColor
                                     )
@@ -693,7 +698,7 @@ fun ItemEditScreen(
                                     )
                                 ) {
                                     Icon(
-                                        Icons.Default.Collections,
+                                        Icons.Default.Interests,
                                         contentDescription = null,
                                         tint = iconLibraryIconColor
                                     )

@@ -1,16 +1,22 @@
 package com.example.itemremindertool.data.repository
 
 import android.content.Context
+import android.util.Log
 import com.example.itemremindertool.data.dao.IconLibraryDao
 import com.example.itemremindertool.data.database.AppDatabase
 import com.example.itemremindertool.data.model.IconLibraryItem
+import com.example.itemremindertool.sync.SyncManager
 import com.example.itemremindertool.utils.ImageUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import java.io.File
 
 class IconLibraryRepository(context: Context) {
     private val iconLibraryDao: IconLibraryDao = AppDatabase.getDatabase(context).iconLibraryDao()
     private val appContext = context.applicationContext
+    private val syncManager: SyncManager? = try { SyncManager.getInstance(context) } catch (e: Exception) { null }
     
     /**
      * 获取所有图标
@@ -30,7 +36,39 @@ class IconLibraryRepository(context: Context) {
     /**
      * 插入图标
      */
-    suspend fun insertIcon(icon: IconLibraryItem) = iconLibraryDao.insertIcon(icon)
+    suspend fun insertIcon(icon: IconLibraryItem) {
+        iconLibraryDao.insertIcon(icon)
+        
+        // 同步到远端
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    manager.syncIconLibraryItemToRemote(icon)
+                } catch (e: Exception) {
+                    Log.e("IconLibraryRepository", "同步图标到远端失败", e)
+                }
+            }
+        }
+    }
+    
+    /**
+     * 更新图标
+     */
+    suspend fun updateIcon(icon: IconLibraryItem) {
+        val updatedIcon = icon.copy(updatedAt = System.currentTimeMillis())
+        iconLibraryDao.updateIcon(updatedIcon)
+        
+        // 同步到远端
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    manager.syncIconLibraryItemToRemote(updatedIcon)
+                } catch (e: Exception) {
+                    Log.e("IconLibraryRepository", "同步图标到远端失败", e)
+                }
+            }
+        }
+    }
     
     /**
      * 删除图标（同时删除文件）
@@ -56,6 +94,17 @@ class IconLibraryRepository(context: Context) {
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+        
+        // 同步删除到远端
+        syncManager?.let { manager ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    manager.deleteIconLibraryItemFromRemote(icon.uuid)
+                } catch (e: Exception) {
+                    Log.e("IconLibraryRepository", "同步删除图标到远端失败", e)
+                }
+            }
         }
     }
     

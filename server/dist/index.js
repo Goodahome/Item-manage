@@ -24,6 +24,7 @@ const activityEventsRoutes_1 = __importDefault(require("./routes/activityEventsR
 const deletedRecordsRoutes_1 = __importDefault(require("./routes/deletedRecordsRoutes"));
 const mediaRoutes_1 = __importDefault(require("./routes/mediaRoutes"));
 const syncRoutes_1 = __importDefault(require("./routes/syncRoutes"));
+const iconLibraryRoutes_1 = __importDefault(require("./routes/iconLibraryRoutes"));
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
@@ -58,6 +59,7 @@ app.use("/api/activity-events", rateLimiter_1.apiRateLimiter, activityEventsRout
 app.use("/api/deleted-records", rateLimiter_1.apiRateLimiter, deletedRecordsRoutes_1.default);
 app.use("/api/media", rateLimiter_1.apiRateLimiter, mediaRoutes_1.default);
 app.use("/api/sync", rateLimiter_1.apiRateLimiter, syncRoutes_1.default);
+app.use("/api/icon-library", rateLimiter_1.apiRateLimiter, iconLibraryRoutes_1.default);
 // 错误处理
 app.use(errorHandler_1.errorHandler);
 // 启动服务器

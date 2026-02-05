@@ -531,6 +531,9 @@
     <string name="batch_delete_failed">Batch delete failed: %s</string>
     <string name="batch_move_success">Successfully moved %d items</string>
     <string name="batch_move_failed">Batch move failed: %s</string>
+    <string name="preview_image">Preview image</string>
+    <string name="enter_multi_select">Select</string>
+    <string name="add_alert">Add alert</string>
     
     <!-- 删除确认 -->
     <string name="confirm_delete">Confirm Delete</string>
@@ -762,6 +765,10 @@
     <string name="icon_library_delete_success">Icon deleted</string>
     <string name="icon_library_import_error">Import failed: %s</string>
     <string name="select_from_icon_library">Select from icon library</string>
+    <string name="search_icons">Search icons</string>
+    <string name="edit_icon_name">Edit icon name</string>
+    <string name="icon_name">Icon name</string>
+    <string name="icon_name_updated">Icon name updated</string>
     <string name="rotate_image">Rotate image</string>
     <string name="ad_banner_unit_id">Ad banner unit ID</string>
     <string name="ad_banner_unit_id_desc">Set the Google AdMob banner ad unit ID. Leave empty to use test ID.</string>

@@ -12,6 +12,8 @@ data class IconLibraryItem(
     val uuid: String = java.util.UUID.randomUUID().toString(),
     val name: String, // 图标名称
     val imagePath: String, // 图标文件路径
+    val iconKey: String? = null, // 远端图片对象存储 Key
     val fileSize: Long, // 文件大小（字节）
-    val createdAt: Long = System.currentTimeMillis() // 创建时间
+    val createdAt: Long = System.currentTimeMillis(), // 创建时间
+    val updatedAt: Long = System.currentTimeMillis() // 更新时间
 )

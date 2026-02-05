@@ -531,6 +531,9 @@
     <string name="batch_delete_failed">Échec de la suppression en lot : %s</string>
     <string name="batch_move_success">%d articles déplacés avec succès</string>
     <string name="batch_move_failed">Échec du déplacement en lot : %s</string>
+    <string name="preview_image">Aperçu de l\'image</string>
+    <string name="enter_multi_select">Sélectionner</string>
+    <string name="add_alert">Ajouter un rappel</string>
     
     <!-- 删除确认 -->
     <string name="confirm_delete">Confirmer la suppression</string>
@@ -753,6 +756,10 @@
     <string name="icon_library_delete_success">Icône supprimée</string>
     <string name="icon_library_import_error">Échec de l\'importation : %s</string>
     <string name="select_from_icon_library">Sélectionner dans la bibliothèque d\'icônes</string>
+    <string name="search_icons">Rechercher des icônes</string>
+    <string name="edit_icon_name">Modifier le nom de l\'icône</string>
+    <string name="icon_name">Nom de l\'icône</string>
+    <string name="icon_name_updated">Nom de l\'icône mis à jour</string>
     <string name="ad_banner_unit_id">ID d\'unité publicitaire bannière</string>
     <string name="ad_banner_unit_id_desc">Définir l\'ID d\'unité publicitaire bannière Google AdMob. Laisser vide pour utiliser l\'ID de test.</string>
     <string name="ad_banner_unit_id_hint">Saisir l\'ID d\'unité publicitaire</string>
