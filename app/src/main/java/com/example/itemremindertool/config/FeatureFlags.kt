@@ -1,7 +1,7 @@
 package com.example.itemremindertool.config
 
 /**
- * 应用功能开关配置
+ * 订阅高级功能开关配置
  * 统一管理应用中的功能开关，便于开启/关闭特定功能
  */
 object FeatureFlags {
@@ -18,5 +18,5 @@ object FeatureFlags {
      * - 正常初始化 BillingManager
      * - 需要购买或试用才能使用高级功能
      */
-    const val ENABLE_PURCHASE_FEATURE = true
+    const val ENABLE_PURCHASE_FEATURE = false
 }

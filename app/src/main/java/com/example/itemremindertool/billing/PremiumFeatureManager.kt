@@ -25,7 +25,7 @@ object PremiumFeatureManager {
     }
 
     /**
-     * 检查是否已购买永久版
+     * 检查是否已购买永久版，把true改为false
      */
     fun isLifetimePurchased(context: Context): Boolean {
         val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
