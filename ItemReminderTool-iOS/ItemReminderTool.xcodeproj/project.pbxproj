@@ -1,0 +1,112 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+/* Begin PBXBuildFile section */
+		F2BC859F6046619A61A4D816 /* ItemReminderToolApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCAFF77E6A2C690DD6B0AEE /* ItemReminderToolApp.swift */; };
+		82FDB5029E6F8623BBAF7240 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB3E48D4B9BABC5FB05CF463 /* ContentView.swift */; };
+		8920DF993331D9340EABF009 /* AppRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EB35F16DF78149AEED99AD4 /* AppRoute.swift */; };
+		115230427F81FBB940BE6C3B /* MainShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 642C61797A5AF697B2DEAAF6 /* MainShellView.swift */; };
+		838086257F85A3779D3875E5 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EB0F58926D479CB33E6804B /* Theme.swift */; };
+		28A3A7A8F00610B095843EDD /* AppSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 328DB5479C434C15816E706C /* AppSettingsStore.swift */; };
+		682A32D005E0BEB00E2DE868 /* ModelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1163E798C9E85558FC02C728 /* ModelContainer.swift */; };
+		41845BE5F712C27C034C0723 /* PersistenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 688448A974ED4C81307FEE56 /* PersistenceModels.swift */; };
+		BE8CD680A9BD45BCBB77C47B /* Repositories.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C89073BBCE7D78F889D8A0A /* Repositories.swift */; };
+		C2479CCB9603DD2CB02A3996 /* NetworkLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F88BDB9AA51F530D864865E /* NetworkLayer.swift */; };
+		32BAAA34325DE06D6E7F15AF /* SyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 884E881FE68D20C326E01C2F /* SyncManager.swift */; };
+		7C6D6F69D59A96EF0EB1D4A8 /* NotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B583C9FD1C867890C6AE35DA /* NotificationScheduler.swift */; };
+		80CD139B2BBA30C4992113AC /* BackgroundTaskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00A97450B7137D75F4B2A6B /* BackgroundTaskManager.swift */; };
+		7B3F35BD00049F610AD3804C /* BarcodeScannerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29CED2978A0B2CA6C0300D54 /* BarcodeScannerService.swift */; };
+		904CC2EC4890D272312DD898 /* TensorFlowLiteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCF6C1208D82205A7EA5014 /* TensorFlowLiteService.swift */; };
+		9204D8D6B9369CC97E3714AB /* WebDAVClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92EEE02AF8BCBF996BBC300 /* WebDAVClient.swift */; };
+		BBEE30DA74B53F9041341E20 /* ExcelService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC6D9585BD90B809CA2D48E3 /* ExcelService.swift */; };
+		CC859302FB342B3BBAB1C3EA /* OAuthAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BD06C6A3B09A752AE33394E /* OAuthAuthManager.swift */; };
+		D204D04E21D4B599176D1C08 /* Monetization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0258C809A03FBEA56CDD55A1 /* Monetization.swift */; };
+		2F4E0ED00A5E058128888395 /* ScreensCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3966767FDF26272D8C9DE9 /* ScreensCore.swift */; };
+		47618AAE73755E9901C92951 /* ScreensSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCBADCD30954A08F9506D5B8 /* ScreensSettings.swift */; };
+		A6070B9CF28E71610AA267AE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E9C2B90A5DCA5D29F2BEC039 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+/* Begin PBXFileReference section */
+		7BCCADA3021C07D12E775CB5 /* ItemReminderTool.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ItemReminderTool.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BBCAFF77E6A2C690DD6B0AEE /* ItemReminderToolApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemReminderToolApp.swift; sourceTree = "<group>"; };
+		CB3E48D4B9BABC5FB05CF463 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		9EB35F16DF78149AEED99AD4 /* AppRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRoute.swift; sourceTree = "<group>"; };
+		642C61797A5AF697B2DEAAF6 /* MainShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainShellView.swift; sourceTree = "<group>"; };
+		8EB0F58926D479CB33E6804B /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		328DB5479C434C15816E706C /* AppSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsStore.swift; sourceTree = "<group>"; };
+		1163E798C9E85558FC02C728 /* ModelContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelContainer.swift; sourceTree = "<group>"; };
+		688448A974ED4C81307FEE56 /* PersistenceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceModels.swift; sourceTree = "<group>"; };
+		1C89073BBCE7D78F889D8A0A /* Repositories.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Repositories.swift; sourceTree = "<group>"; };
+		4F88BDB9AA51F530D864865E /* NetworkLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkLayer.swift; sourceTree = "<group>"; };
+		884E881FE68D20C326E01C2F /* SyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncManager.swift; sourceTree = "<group>"; };
+		B583C9FD1C867890C6AE35DA /* NotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationScheduler.swift; sourceTree = "<group>"; };
+		C00A97450B7137D75F4B2A6B /* BackgroundTaskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskManager.swift; sourceTree = "<group>"; };
+		29CED2978A0B2CA6C0300D54 /* BarcodeScannerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeScannerService.swift; sourceTree = "<group>"; };
+		BBCF6C1208D82205A7EA5014 /* TensorFlowLiteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TensorFlowLiteService.swift; sourceTree = "<group>"; };
+		F92EEE02AF8BCBF996BBC300 /* WebDAVClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebDAVClient.swift; sourceTree = "<group>"; };
+		CC6D9585BD90B809CA2D48E3 /* ExcelService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExcelService.swift; sourceTree = "<group>"; };
+		8BD06C6A3B09A752AE33394E /* OAuthAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthAuthManager.swift; sourceTree = "<group>"; };
+		0258C809A03FBEA56CDD55A1 /* Monetization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Monetization.swift; sourceTree = "<group>"; };
+		4C3966767FDF26272D8C9DE9 /* ScreensCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreensCore.swift; sourceTree = "<group>"; };
+		DCBADCD30954A08F9506D5B8 /* ScreensSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreensSettings.swift; sourceTree = "<group>"; };
+		E9C2B90A5DCA5D29F2BEC039 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+/* Begin PBXFrameworksBuildPhase section */
+		0D0D0EC4F4655E6EC05F4644 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = ( ); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+/* Begin PBXGroup section */
+		5928955287B8089ED2177128 = {isa = PBXGroup; children = (
+			BBCAFF77E6A2C690DD6B0AEE /* ItemReminderToolApp.swift */,
+			CB3E48D4B9BABC5FB05CF463 /* ContentView.swift */,
+			9EB35F16DF78149AEED99AD4 /* AppRoute.swift */,
+			642C61797A5AF697B2DEAAF6 /* MainShellView.swift */,
+			8EB0F58926D479CB33E6804B /* Theme.swift */,
+			328DB5479C434C15816E706C /* AppSettingsStore.swift */,
+			1163E798C9E85558FC02C728 /* ModelContainer.swift */,
+			688448A974ED4C81307FEE56 /* PersistenceModels.swift */,
+			1C89073BBCE7D78F889D8A0A /* Repositories.swift */,
+			4F88BDB9AA51F530D864865E /* NetworkLayer.swift */,
+			884E881FE68D20C326E01C2F /* SyncManager.swift */,
+			B583C9FD1C867890C6AE35DA /* NotificationScheduler.swift */,
+			C00A97450B7137D75F4B2A6B /* BackgroundTaskManager.swift */,
+			29CED2978A0B2CA6C0300D54 /* BarcodeScannerService.swift */,
+			BBCF6C1208D82205A7EA5014 /* TensorFlowLiteService.swift */,
+			F92EEE02AF8BCBF996BBC300 /* WebDAVClient.swift */,
+			CC6D9585BD90B809CA2D48E3 /* ExcelService.swift */,
+			8BD06C6A3B09A752AE33394E /* OAuthAuthManager.swift */,
+			0258C809A03FBEA56CDD55A1 /* Monetization.swift */,
+			4C3966767FDF26272D8C9DE9 /* ScreensCore.swift */,
+			DCBADCD30954A08F9506D5B8 /* ScreensSettings.swift */,
+			E9C2B90A5DCA5D29F2BEC039 /* Assets.xcassets */,
+		); path = ItemReminderTool; sourceTree = "<group>"; };
+		36303EABBFC709923008105E /* Products */ = {isa = PBXGroup; children = (7BCCADA3021C07D12E775CB5 /* ItemReminderTool.app */, ); name = Products; sourceTree = "<group>"; };
+		63A9F0EA7BB98050796B649E = {isa = PBXGroup; children = (5928955287B8089ED2177128 /* ItemReminderTool */, 36303EABBFC709923008105E /* Products */, ); sourceTree = "<group>"; };
+/* End PBXGroup section */
+/* Begin PBXNativeTarget section */
+		42AEFBAE01D2DFD981F7DA7D /* ItemReminderTool */ = {isa = PBXNativeTarget; buildConfigurationList = 039A649935568E87BEF725AD /* Build configuration list for PBXNativeTarget "ItemReminderTool" */; buildPhases = (E7209FB05162B7572F88D05E /* Sources */, 0D0D0EC4F4655E6EC05F4644 /* Frameworks */, B22A3451AEE081E29DEBFBCA /* Resources */); buildRules = (); dependencies = (); name = ItemReminderTool; productName = ItemReminderTool; productReference = 7BCCADA3021C07D12E775CB5 /* ItemReminderTool.app */; productType = "com.apple.product-type.application"; };
+/* End PBXNativeTarget section */
+/* Begin PBXProject section */
+		46F86FAA6BBF9AC94A7E4595 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1600; LastUpgradeCheck = 1600; TargetAttributes = {42AEFBAE01D2DFD981F7DA7D = {CreatedOnToolsVersion = 16.0; }; }; }; buildConfigurationList = 5BF065D48D8C23D03623AA6A /* Build configuration list for PBXProject "ItemReminderTool" */; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, "zh-Hans", Base, ); mainGroup = 63A9F0EA7BB98050796B649E; productRefGroup = 36303EABBFC709923008105E /* Products */; projectDirPath = ""; projectRoot = ""; targets = (42AEFBAE01D2DFD981F7DA7D /* ItemReminderTool */, ); };
+/* End PBXProject section */
+/* Begin PBXResourcesBuildPhase section */
+		B22A3451AEE081E29DEBFBCA /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A6070B9CF28E71610AA267AE /* Assets.xcassets in Resources */, ); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+/* Begin PBXSourcesBuildPhase section */
+		E7209FB05162B7572F88D05E /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (F2BC859F6046619A61A4D816 /* ItemReminderToolApp.swift in Sources */, 82FDB5029E6F8623BBAF7240 /* ContentView.swift in Sources */, 8920DF993331D9340EABF009 /* AppRoute.swift in Sources */, 115230427F81FBB940BE6C3B /* MainShellView.swift in Sources */, 838086257F85A3779D3875E5 /* Theme.swift in Sources */, 28A3A7A8F00610B095843EDD /* AppSettingsStore.swift in Sources */, 682A32D005E0BEB00E2DE868 /* ModelContainer.swift in Sources */, 41845BE5F712C27C034C0723 /* PersistenceModels.swift in Sources */, BE8CD680A9BD45BCBB77C47B /* Repositories.swift in Sources */, C2479CCB9603DD2CB02A3996 /* NetworkLayer.swift in Sources */, 32BAAA34325DE06D6E7F15AF /* SyncManager.swift in Sources */, 7C6D6F69D59A96EF0EB1D4A8 /* NotificationScheduler.swift in Sources */, 80CD139B2BBA30C4992113AC /* BackgroundTaskManager.swift in Sources */, 7B3F35BD00049F610AD3804C /* BarcodeScannerService.swift in Sources */, 904CC2EC4890D272312DD898 /* TensorFlowLiteService.swift in Sources */, 9204D8D6B9369CC97E3714AB /* WebDAVClient.swift in Sources */, BBEE30DA74B53F9041341E20 /* ExcelService.swift in Sources */, CC859302FB342B3BBAB1C3EA /* OAuthAuthManager.swift in Sources */, D204D04E21D4B599176D1C08 /* Monetization.swift in Sources */, 2F4E0ED00A5E058128888395 /* ScreensCore.swift in Sources */, 47618AAE73755E9901C92951 /* ScreensSettings.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+/* Begin XCBuildConfiguration section */
+		EC86DC4F4B4C60C3EC031655 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES; CLANG_ANALYZER_NONNULL = YES; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = dwarf; ENABLE_STRICT_OBJC_MSGSEND = YES; ENABLE_TESTABILITY = YES; GCC_DYNAMIC_NO_PIC = NO; GCC_OPTIMIZATION_LEVEL = 0; GCC_PREPROCESSOR_DEFINITIONS = ("DEBUG=1", $(inherited), ); IPHONEOS_DEPLOYMENT_TARGET = 17.0; MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE; ONLY_ACTIVE_ARCH = YES; SDKROOT = iphoneos; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };
+		7BF40F069D95C38DE60AA602 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES; CLANG_ANALYZER_NONNULL = YES; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = dwarf-with-dsym; ENABLE_NS_ASSERTIONS = NO; ENABLE_STRICT_OBJC_MSGSEND = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MTL_ENABLE_DEBUG_INFO = NO; SDKROOT = iphoneos; SWIFT_COMPILATION_MODE = wholemodule; VALIDATE_PRODUCT = YES; }; name = Release; };
+		8CBC338D09B9279147FBD852 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_PREVIEWS = YES; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = ("com.itemremindertool.sync"); INFOPLIST_KEY_CFBundleDisplayName = "盒记"; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity"; INFOPLIST_KEY_NSCameraUsageDescription = "用于扫描条码与拍摄物品照片"; INFOPLIST_KEY_NSFaceIDUsageDescription = "用于解锁敏感信息"; INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "用于保存导出文件"; INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "用于选择物品图片"; INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES; INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES; INFOPLIST_KEY_UIBackgroundModes = (fetch, processing); INFOPLIST_KEY_UILaunchScreen_Generation = YES; INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault; INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait; INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; INFOPLIST_KEY_NSUserNotificationsUsageDescription = "用于在到期与库存提醒时发送通知"; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks"); MARKETING_VERSION = 2.0.0; PRODUCT_BUNDLE_IDENTIFIER = com.example.itemremindertool.ios; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
+		C286FC8B91125F435CB47F15 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_PREVIEWS = YES; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = ("com.itemremindertool.sync"); INFOPLIST_KEY_CFBundleDisplayName = "盒记"; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity"; INFOPLIST_KEY_NSCameraUsageDescription = "用于扫描条码与拍摄物品照片"; INFOPLIST_KEY_NSFaceIDUsageDescription = "用于解锁敏感信息"; INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "用于保存导出文件"; INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "用于选择物品图片"; INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES; INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES; INFOPLIST_KEY_UIBackgroundModes = (fetch, processing); INFOPLIST_KEY_UILaunchScreen_Generation = YES; INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault; INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait; INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; INFOPLIST_KEY_NSUserNotificationsUsageDescription = "用于在到期与库存提醒时发送通知"; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks"); MARKETING_VERSION = 2.0.0; PRODUCT_BUNDLE_IDENTIFIER = com.example.itemremindertool.ios; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
+/* End XCBuildConfiguration section */
+/* Begin XCConfigurationList section */
+		5BF065D48D8C23D03623AA6A /* Build configuration list for PBXProject "ItemReminderTool" */ = {isa = XCConfigurationList; buildConfigurations = (EC86DC4F4B4C60C3EC031655 /* Debug */, 7BF40F069D95C38DE60AA602 /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		039A649935568E87BEF725AD /* Build configuration list for PBXNativeTarget "ItemReminderTool" */ = {isa = XCConfigurationList; buildConfigurations = (8CBC338D09B9279147FBD852 /* Debug */, C286FC8B91125F435CB47F15 /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = 46F86FAA6BBF9AC94A7E4595 /* Project object */;
+}

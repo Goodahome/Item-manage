@@ -18,3 +18,8 @@ local.properties
 *.keystore
 *.jks
 keystore.properties
+
+# Xcode / iOS
+**/xcuserdata/
+**/*.xcuserstate
+**/DerivedData/
